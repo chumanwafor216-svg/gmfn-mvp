@@ -137,6 +137,11 @@ assertContains(
 );
 assertContains(
   "communityConfirmationInbox",
+  /isCommunityVerificationTaskMode[\s\S]*?data-gsn-community-verification-answer-task="true"[\s\S]*?data-gsn-community-verification-answer-options="true"[\s\S]*?minHeight: 58[\s\S]*?community-verification-task\.submit[\s\S]*?data-gsn-community-verification-answer-boundary="true"/,
+  "Public community verification notifications must open one compact three-answer task without policy or responder cards."
+);
+assertContains(
+  "communityConfirmationInbox",
   /data-gsn-community-confirmation-request-navigator="true"[\s\S]*?one person and one decision at a time[\s\S]*?renderResponseTask\(row\)[\s\S]*?data-gsn-community-confirmation-request-evidence="true"[\s\S]*?data-gsn-community-confirmation-private-note="true"/,
   "Community Confirmation Inbox must show one request at a time and put the answer task before closed evidence and optional context."
 );

@@ -8,13 +8,13 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const notificationsFile = "src/pages/NotificationsPage.tsx";
 const guidanceFile = "src/lib/guidance.ts";
 const apiFile = "src/lib/api.ts";
-const communityConfirmationPolicyFile = "src/pages/CommunityConfirmationPolicyPage.tsx";
+const communityConfirmationInboxFile = "src/pages/CommunityConfirmationInboxPage.tsx";
 const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, notificationsFile), "utf8");
 const guidanceSource = readFileSync(join(frontendRoot, guidanceFile), "utf8");
 const apiSource = readFileSync(join(frontendRoot, apiFile), "utf8");
-const communityConfirmationPolicySource = readFileSync(
-  join(frontendRoot, communityConfirmationPolicyFile),
+const communityConfirmationInboxSource = readFileSync(
+  join(frontendRoot, communityConfirmationInboxFile),
   "utf8"
 );
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
@@ -86,17 +86,27 @@ function assertLayoutContains(
   });
 }
 
-function assertPolicyContains(
+function assertInboxContains(
   pattern,
   message,
-  text = "Expected Community Confirmation Policy pattern was not found."
+  text = "Expected Community Confirmation Inbox pattern was not found."
 ) {
-  if (pattern.test(communityConfirmationPolicySource)) return;
+  if (pattern.test(communityConfirmationInboxSource)) return;
   findings.push({
-    file: communityConfirmationPolicyFile,
+    file: communityConfirmationInboxFile,
     line: 1,
     message,
     text,
+  });
+}
+
+function assertNotContains(pattern, message) {
+  if (!pattern.test(source)) return;
+  findings.push({
+    file: notificationsFile,
+    line: 1,
+    message,
+    text: "Notifications retained a forbidden routing pattern.",
   });
 }
 
@@ -373,8 +383,13 @@ assertContains(
 );
 
 assertContains(
-  /function policyTargetForCommunityVerificationRequest\(target: string\): string \{[\s\S]*?COMMUNITY_CONFIRMATION_POLICY[\s\S]*?community_verification\.request_confirmation[\s\S]*?COMMUNITY_CONFIRMATION_INBOX[\s\S]*?policyTargetForCommunityVerificationRequest\(explicit\)/,
-  "Community verification request notifications must route to responder policy focus instead of a generic inbox dead end."
+  /function resolveNoticeTarget\(raw: any\): string \{[\s\S]*?const explicit = normalizeActionTargetPath[\s\S]*?if \(explicit && explicit !== NOTIFICATION_TARGETS\.NOTIFICATIONS\)[\s\S]*?return explicit;/,
+  "Community verification request notifications must preserve their explicit answer-task target."
+);
+
+assertNotContains(
+  /policyTargetForCommunityVerificationRequest|community_verification\.request_confirmation[\s\S]{0,500}COMMUNITY_CONFIRMATION_POLICY/,
+  "Community verification request notifications must not be rewritten into policy settings."
 );
 
 assertContains(
@@ -406,24 +421,24 @@ assertContains(
   "Selected terminal relay notices must render status only; Help connect and Not now controls must require active relay state."
 );
 
-assertPolicyContains(
-  /verificationRequestFocus[\s\S]*?verification_request[\s\S]*?const compactVerificationRequestFocus =[\s\S]*?isCompact && verificationRequestFocus && !memberWitnessFocus[\s\S]*?Review responder readiness before this public request continues\.[\s\S]*?data-gsn-community-confirmation-verification-focus="true"[\s\S]*?community-confirmation-policy\.verification-request\.review-routing[\s\S]*?Review responders[\s\S]*?community-confirmation-policy\.verification-request\.open-inbox[\s\S]*?Open inbox/,
-  "Community Confirmation Policy must keep the focused public-request explanation and immediate responder actions."
+assertInboxContains(
+  /community_verification_request_id[\s\S]*?legacyCommunityVerificationFocus[\s\S]*?isCommunityVerificationTaskMode[\s\S]*?loadCommunityVerificationTask\(\)[\s\S]*?data-gsn-community-verification-answer-task="true"/,
+  "Community verification notifications must open the isolated answer task, including legacy verification_request links."
 );
 
-assertPolicyContains(
-  /data-gsn-community-confirmation-verification-readiness=\{[\s\S]*?compactVerificationRequestFocus[\s\S]*?Request routing[\s\S]*?item\.key === "relay"[\s\S]*?community-confirmation-policy\.verification-request\.open-responders[\s\S]*?Continue to people who can answer/,
-  "Focused phone verification must reduce policy settings to request routing and hand off to the existing responder pool."
+assertInboxContains(
+  /data-gsn-community-verification-answer-options="true"[\s\S]*?type="radio"[\s\S]*?community-verification-task\.submit[\s\S]*?Submit my answer[\s\S]*?data-gsn-community-verification-answer-boundary="true"/,
+  "The focused community verification task must keep one compact three-answer form and one explicit submit action."
 );
 
-assertPolicyContains(
-  /compactVerificationRequestFocus[\s\S]*?setIncomingAffiliations\(\[\]\)[\s\S]*?compactVerificationRequestFocus[\s\S]*?setExternalRegistrationRecords\(\[\]\)[\s\S]*?compactVerificationRequestFocus[\s\S]*?setMembers\(\[\]\)/,
-  "Focused phone verification must not load hidden affiliation, registration, or member-witness workload."
+assertInboxContains(
+  /if \(isCommunityVerificationTaskMode\) \{[\s\S]*?void loadCommunityVerificationTask\(\);[\s\S]*?return;[\s\S]*?void loadInbox\(\);[\s\S]*?void loadSettings\(\);/,
+  "The focused community verification task must bypass inbox and settings workload."
 );
 
-assertPolicyContains(
-  /Link this group to a parent community[\s\S]*?id="member-witness"[\s\S]*?display: compactVerificationRequestFocus \? "none" : undefined[\s\S]*?data-gsn-community-confirmation-verification-responders=\{[\s\S]*?People who can answer[\s\S]*?!compactVerificationRequestFocus \? \([\s\S]*?community-confirmation-policy\.contact\.\$\{contact\.user_id\}\.instant[\s\S]*?id="community-confirmation-privacy-rule"[\s\S]*?memberWitnessFocus \|\| compactVerificationRequestFocus \? "none" : undefined/,
-  "Focused phone verification must hide affiliation, member-witness, instant-pulse, and duplicate privacy sections while preserving responder controls."
+assertApiContains(
+  /getPublicCommunityVerificationTask[\s\S]*?community-verification-task[\s\S]*?respondToPublicCommunityVerificationTask[\s\S]*?response_type/,
+  "The frontend API must keep dedicated read and response calls for the community verification task."
 );
 
 assertContains(

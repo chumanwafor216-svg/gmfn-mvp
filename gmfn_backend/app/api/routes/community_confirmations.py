@@ -25,6 +25,7 @@ from app.services.community_confirmation_service import (
     VALID_CONFIRMATION_REVIEW_RESOLUTIONS,
     VALID_CONFIRMATION_REVIEW_STATUSES,
     VALID_CONFIRMATION_TRUST_IMPACTS,
+    PUBLIC_COMMUNITY_VERIFICATION_RESPONSES,
     VALID_RESPONSES,
     add_confirmation_review_evidence,
     assign_confirmation_review_case,
@@ -33,6 +34,7 @@ from app.services.community_confirmation_service import (
     get_admin_confirmation_policy,
     get_confirmation_decision_for_actor,
     get_confirmation_review_case,
+    get_public_community_verification_response_task,
     list_confirmation_review_evidence,
     list_confirmation_review_cases,
     list_my_confirmation_contact_settings,
@@ -44,6 +46,7 @@ from app.services.community_confirmation_service import (
     request_public_community_verification_confirmation as create_public_community_verification_confirmation_request,
     scan_confirmation_review_sla_events,
     submit_confirmation_response,
+    submit_public_community_verification_response,
     update_confirmation_decision_status,
     update_confirmation_review_case,
     update_confirmation_request_status,
@@ -292,6 +295,24 @@ class CommunityConfirmationRequestIn(CommunityConfirmationPayload):
 
 class PublicCommunityVerificationRequestIn(CommunityConfirmationPayload):
     requester_external_label: Optional[str] = Field(default=None, max_length=120)
+
+
+class PublicCommunityVerificationResponseIn(CommunityConfirmationPayload):
+    response_type: str = Field(..., max_length=32)
+
+    @field_validator("response_type", mode="before")
+    @classmethod
+    def _reject_blank_response_type(cls, value: Any) -> Any:
+        return _reject_blank_string_control(value, "response_type")
+
+    @field_validator("response_type")
+    @classmethod
+    def _reject_unsupported_response_type(cls, value: Any) -> Any:
+        return _reject_unsupported_string_control(
+            value,
+            "response_type",
+            PUBLIC_COMMUNITY_VERIFICATION_RESPONSES,
+        )
 
 
 class CommunityConfirmationResponseIn(CommunityConfirmationPayload):
@@ -742,6 +763,44 @@ def get_community_confirmation_inbox(
         db,
         responder_user_id=int(getattr(current_user, "id")),
     )
+
+
+@router.get("/community-confirmations/community-verification-task")
+def get_public_community_verification_task(
+    request_event_id: Optional[int] = Query(default=None, ge=1),
+    community_id: Optional[int] = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+) -> Dict[str, Any]:
+    try:
+        return get_public_community_verification_response_task(
+            db,
+            responder_user_id=int(getattr(current_user, "id")),
+            request_event_id=request_event_id,
+            community_id=community_id,
+        )
+    except Exception as exc:
+        raise _service_error(exc) from exc
+
+
+@router.post(
+    "/community-confirmations/community-verification-task/{request_event_id}/respond"
+)
+def respond_to_public_community_verification_task(
+    request_event_id: PositivePathId,
+    payload: PublicCommunityVerificationResponseIn,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+) -> Dict[str, Any]:
+    try:
+        return submit_public_community_verification_response(
+            db,
+            request_event_id=int(request_event_id),
+            responder_user_id=int(getattr(current_user, "id")),
+            response_type=payload.response_type,
+        )
+    except Exception as exc:
+        raise _service_error(exc) from exc
 
 
 @router.get("/community-confirmations/my-contact-settings")

@@ -14,6 +14,7 @@ const files = {
   api: "src/lib/api.ts",
   publicLinks: "src/lib/publicLinks.ts",
   service: "../gmfn_backend/app/services/community_confirmation_service.py",
+  routes: "../gmfn_backend/app/api/routes/community_confirmations.py",
   package: "package.json",
   protectedFreeze: "tools/audit-protected-button-freeze.mjs",
 };
@@ -242,6 +243,18 @@ assertContains(
   "service",
   /def request_public_community_verification_confirmation\([\s\S]*?"private_contacts_exposed": False[\s\S]*?"Request sent through GSN controlled relay\. Private member contacts were not exposed\."/,
   "Backend public community confirmation request must keep contacts hidden."
+);
+
+assertContains(
+  "service",
+  /PUBLIC_COMMUNITY_VERIFICATION_RESPONSES =[\s\S]*?"confirm"[\s\S]*?"not_sure"[\s\S]*?"cannot_confirm"[\s\S]*?def get_public_community_verification_response_task\([\s\S]*?_public_community_verification_request_notification[\s\S]*?def submit_public_community_verification_response\([\s\S]*?community_verification\.confirmation_response_recorded[\s\S]*?not_whole_community_vote/,
+  "Backend public community verification must keep one permission-checked audited three-answer task without treating it as a whole-community vote."
+);
+
+assertContains(
+  "routes",
+  /class PublicCommunityVerificationResponseIn[\s\S]*?PUBLIC_COMMUNITY_VERIFICATION_RESPONSES[\s\S]*?community-verification-task"\)[\s\S]*?get_public_community_verification_response_task[\s\S]*?community-verification-task\/\{request_event_id\}\/respond[\s\S]*?submit_public_community_verification_response/,
+  "Community Confirmation routes must expose authenticated read and submit endpoints for the focused community verification task."
 );
 
 assertContains(

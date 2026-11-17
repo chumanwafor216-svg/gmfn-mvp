@@ -8,6 +8,37 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const recordedResponses = [];
+const recordedCommunityVerificationResponses = [];
+
+const communityVerificationTask = {
+  request_event_id: 701,
+  community_id: 8,
+  community_name: "Pilot Community",
+  community_code: "GMFN-C-000008",
+  status: "pending",
+  question: "Can you confirm Pilot Community is active and genuine?",
+  message: "A public viewer requested controlled confirmation for Pilot Community.",
+  answer_options: [
+    {
+      type: "confirm",
+      label: "Yes, I can confirm",
+      meaning: "I personally know this community is active and genuine.",
+    },
+    {
+      type: "not_sure",
+      label: "I'm not sure",
+      meaning: "I do not know enough to give a clear answer right now.",
+    },
+    {
+      type: "cannot_confirm",
+      label: "No, I cannot confirm",
+      meaning: "I cannot honestly confirm this community from what I know.",
+    },
+  ],
+  selected_response_type: null,
+  expires_at: "2026-11-20T12:00:00Z",
+  boundary: "One authorised representative's answer, not a whole-community vote.",
+};
 
 function json(body, status = 200) {
   return { status, contentType: "application/json", body: JSON.stringify(body) };
@@ -121,6 +152,26 @@ async function installApiMocks(page, { rows = inboxRows, reviewCases = [] } = {}
 
     if (path === "/community-confirmations/inbox") {
       return route.fulfill(json({ items: rows }));
+    }
+
+    if (
+      route.request().method() === "GET" &&
+      path === "/community-confirmations/community-verification-task"
+    ) {
+      return route.fulfill(json(communityVerificationTask));
+    }
+
+    if (
+      route.request().method() === "POST" &&
+      path === "/community-confirmations/community-verification-task/701/respond"
+    ) {
+      const body = JSON.parse(route.request().postData() || "{}");
+      recordedCommunityVerificationResponses.push({ path, body });
+      return route.fulfill(json({
+        ...communityVerificationTask,
+        status: "answered",
+        selected_response_type: body.response_type,
+      }));
     }
 
     if (path === "/community-confirmations/my-contact-settings") {
@@ -420,51 +471,58 @@ async function run() {
       token: "local-community-verification-request-token",
     });
     await verificationPage.goto(
-      routeUrl + "/policy?community_id=8&verification_request=1",
+      routeUrl + "?community_verification_request_id=701&community_id=8",
       { waitUntil: "networkidle" }
     );
     await verificationPage
-      .locator('[data-gsn-community-confirmation-verification-focus="true"]')
+      .locator('[data-gsn-community-verification-answer-task="true"]')
       .waitFor();
+    assert(
+      await verificationPage
+        .getByText("Can you confirm Pilot Community is active and genuine?", { exact: true })
+        .count() === 1,
+      "Focused public verification must show one plain community question."
+    );
+    assert(
+      (await verificationPage.locator('input[type="radio"]:visible').count()) === 3 &&
+        await verificationPage.getByRole("radio", { name: /Yes, I can confirm/ }).count() === 1 &&
+        await verificationPage.getByRole("radio", { name: /I'm not sure/ }).count() === 1 &&
+        await verificationPage.getByRole("radio", { name: /No, I cannot confirm/ }).count() === 1,
+      "Focused public verification must expose exactly three definitive answers."
+    );
+    assert(
+      await verificationPage.getByText("Request routing", { exact: true }).count() === 0 &&
+        await verificationPage.getByText("People who can answer", { exact: true }).count() === 0 &&
+        await verificationPage.getByText("Policy switches", { exact: true }).count() === 0 &&
+        await verificationPage.getByText("Responder readiness", { exact: true }).count() === 0 &&
+        await verificationPage.getByRole("button", { name: /Pause requests/ }).count() === 0,
+      "Focused public verification must not expose settings or responder administration."
+    );
+    assert(
+      await verificationPage.getByRole("button", { name: "Choose one answer", exact: true }).isDisabled(),
+      "The focused submit action must stay disabled until one answer is chosen."
+    );
+    const answerHeights = await verificationPage
+      .locator('[data-gsn-community-verification-answer-options="true"] label')
+      .evaluateAll((rows) => rows.map((row) => row.getBoundingClientRect().height));
+    assert(
+      answerHeights.length === 3 && answerHeights.every((height) => height <= 78),
+      "Focused answer rows must stay compact instead of returning to oversized cards."
+    );
+    await verificationPage.getByRole("radio", { name: /Yes, I can confirm/ }).check();
+    await verificationPage.getByRole("button", { name: "Submit my answer", exact: true }).click();
     await verificationPage
-      .locator('[data-gsn-community-confirmation-verification-readiness="true"]')
+      .locator('[data-gsn-community-verification-answer-recorded="true"]')
       .waitFor();
-    await verificationPage.getByText("Ada Responder", { exact: true }).waitFor();
     assert(
-      await verificationPage.getByText("Request routing", { exact: true }).count() === 1 &&
-        await verificationPage.getByText("People who can answer", { exact: true }).count() === 1,
-      "Focused public verification must show only routing and responder-readiness lanes."
+      recordedCommunityVerificationResponses.length === 1 &&
+        recordedCommunityVerificationResponses[0].path ===
+          "/community-confirmations/community-verification-task/701/respond" &&
+        recordedCommunityVerificationResponses[0].body.response_type === "confirm",
+      "Focused public verification must submit only the selected audited response."
     );
-    assert(
-      await verificationPage.getByText("Review timing", { exact: true }).count() === 0 &&
-        await verificationPage.getByText("Instant confirmation", { exact: true }).count() === 0 &&
-        await verificationPage.getByText("Public community signal", { exact: true }).count() === 0 &&
-        await verificationPage.getByRole("button", { name: /Refresh/ }).count() === 0 &&
-        await verificationPage.getByRole("button", { name: /Copy summary/ }).count() === 0,
-      "Focused public verification must not expose unrelated policy controls."
-    );
-    assert(
-      await verificationPage.getByText("Link this group to a parent community", { exact: true }).isHidden() &&
-        await verificationPage.getByText("Member witness records", { exact: true }).isHidden() &&
-        await verificationPage.getByText("Privacy rule", { exact: true }).isHidden(),
-      "Focused public verification must hide affiliation, witness, and duplicate privacy workload."
-    );
-    assert(
-      await verificationPage.getByRole("button", { name: /Pause requests/ }).count() === 1 &&
-        await verificationPage.getByRole("button", { name: /Instant on/ }).count() === 0,
-      "Focused public verification must retain relay eligibility without exposing instant-pulse administration."
-    );
-    await verificationPage
-      .getByRole("button", { name: /Continue to people who can answer/ })
-      .click();
-    await verificationPage.waitForFunction(() => {
-      const target = document.getElementById("community-confirmation-eligible-response-pool");
-      if (!target) return false;
-      const rect = target.getBoundingClientRect();
-      return rect.top >= 0 && rect.top < window.innerHeight;
-    });
     const verificationOverflow = await verificationPage
-      .locator('[data-gsn-community-confirmation-verification-focus="true"]')
+      .locator('[data-gsn-community-verification-answer-task="true"]')
       .evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
     assert(!verificationOverflow, "Focused public verification overflows horizontally at 390x844.");
     if (screenshotDir) {
@@ -474,6 +532,24 @@ async function run() {
       });
     }
     await verificationPage.close();
+
+    const legacyVerificationPage = await createPhonePage(browser, {
+      rows: [],
+      token: "local-community-verification-legacy-token",
+    });
+    await legacyVerificationPage.goto(
+      routeUrl + "?community_id=8&verification_request=1",
+      { waitUntil: "networkidle" }
+    );
+    await legacyVerificationPage
+      .locator('[data-gsn-community-verification-answer-task="true"]')
+      .waitFor();
+    assert(
+      await legacyVerificationPage.getByText("Policy switches", { exact: true }).count() === 0 &&
+        await legacyVerificationPage.locator('input[type="radio"]:visible').count() === 3,
+      "Legacy public-verification notifications must resolve into the same one-question task."
+    );
+    await legacyVerificationPage.close();
 
     const managerPage = await createPhonePage(browser, {
       rows: [],
@@ -524,7 +600,7 @@ async function run() {
     await managerPage.close();
 
     console.log(
-      "Community Confirmation guided phone smoke passed: task-first responder flow, neon empty state, preserved answer inventory, focused request/review behavior, compact verification readiness, compact manager settings, existing reviewer handoff, and 390x844 overflow."
+      "Community Confirmation guided phone smoke passed: task-first responder flow, neon empty state, preserved member answer inventory, focused request/review behavior, one-question community verification with legacy routing, compact manager settings, existing reviewer handoff, and 390x844 overflow."
     );
   } finally {
     await browser?.close();

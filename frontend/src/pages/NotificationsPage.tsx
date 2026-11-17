@@ -301,11 +301,6 @@ function containsAny(text: string, tokens: string[]): boolean {
   return tokens.some((token) => text.includes(token));
 }
 
-function policyTargetForCommunityVerificationRequest(target: string): string {
-  const suffix = splitPathSuffix(normalizeActionTargetPath(target)).suffix;
-  return `${NOTIFICATION_TARGETS.COMMUNITY_CONFIRMATION_POLICY}${suffix}`;
-}
-
 function isCommunityConfirmationOutcomeNotice(raw: any): boolean {
   const kind = safeStr(raw?.kind).toLowerCase();
   return (
@@ -351,18 +346,10 @@ function communityConfirmationOutcomeDecisionTarget(target: string): string {
 }
 
 function resolveNoticeTarget(raw: any): string {
-  const kind = safeStr(raw?.kind).toLowerCase();
   const explicit = normalizeActionTargetPath(
     raw?.action_url || raw?.cta_to || raw?.ctaTo || raw?.to
   );
   if (explicit && explicit !== NOTIFICATION_TARGETS.NOTIFICATIONS) {
-    if (
-      kind === "community_verification.request_confirmation" &&
-      splitPathSuffix(explicit).path === NOTIFICATION_TARGETS.COMMUNITY_CONFIRMATION_INBOX
-    ) {
-      return policyTargetForCommunityVerificationRequest(explicit);
-    }
-
     if (isCommunityConfirmationOutcomeNotice(raw)) {
       return communityConfirmationOutcomeDecisionTarget(explicit);
     }

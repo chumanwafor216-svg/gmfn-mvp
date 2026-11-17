@@ -1716,6 +1716,8 @@ def test_public_community_verify_confirmation_request_uses_controlled_relay(
     assert data["community_id"] == 1
     assert data["status"] == "requested"
     assert data["request_channel"] == "controlled_relay"
+    assert data["request_event_id"] > 0
+    assert data["request_reference"] == f"CVR-{data['request_event_id']}"
     assert data["recipient_notification_count"] >= 1
     assert data["private_contacts_exposed"] is False
     assert "phone_e164" not in payload_text
@@ -1732,6 +1734,8 @@ def test_public_community_verify_confirmation_request_uses_controlled_relay(
             f"{row.title} {row.message} {row.action_url}" for row in notifications
         )
         assert "community-confirmations" in notification_text
+        assert f"community_verification_request_id={data['request_event_id']}" in notification_text
+        assert all(row.action_label == "Answer request" for row in notifications)
         assert "private member contacts stay protected" in notification_text.lower()
         assert "phone_e164" not in notification_text
 
@@ -1744,8 +1748,92 @@ def test_public_community_verify_confirmation_request_uses_controlled_relay(
         meta = json.loads(events[-1].meta_json or "{}")
         assert meta["community_id"] == 1
         assert meta["request_channel"] == "controlled_relay"
+        assert meta["request_scope"] == "community"
+        assert meta["response_options"] == ["confirm", "not_sure", "cannot_confirm"]
         assert meta["private_contacts_exposed"] is False
         assert meta["recipient_notification_count"] >= 1
+
+    app.dependency_overrides[get_current_user] = lambda: Obj(
+        id=1,
+        email="pytest@example.com",
+        role="admin",
+    )
+    try:
+        task = client.get(
+            "/community-confirmations/community-verification-task",
+            params={"request_event_id": data["request_event_id"]},
+        )
+        assert task.status_code == 200, task.text
+        task_data = task.json()
+        assert task_data["status"] == "pending"
+        assert task_data["community_name"] == "Test Clan"
+        assert [row["type"] for row in task_data["answer_options"]] == [
+            "confirm",
+            "not_sure",
+            "cannot_confirm",
+        ]
+        assert "active and genuine" in task_data["question"]
+        assert task_data["private_contacts_exposed"] is False
+
+        with SessionLocal() as db:
+            legacy_notification = (
+                db.query(Notification)
+                .filter(Notification.kind == "community_verification.request_confirmation")
+                .filter(Notification.user_id == 1)
+                .one()
+            )
+            legacy_notification.action_url = (
+                "/app/community-confirmations?community_id=1&verification_request=1"
+            )
+            db.commit()
+
+        legacy_task = client.get(
+            "/community-confirmations/community-verification-task",
+            params={"community_id": 1},
+        )
+        assert legacy_task.status_code == 200, legacy_task.text
+        assert legacy_task.json()["request_event_id"] == data["request_event_id"]
+        assert legacy_task.json()["status"] == "pending"
+
+        answered = client.post(
+            f"/community-confirmations/community-verification-task/{data['request_event_id']}/respond",
+            json={"response_type": "confirm"},
+        )
+        assert answered.status_code == 200, answered.text
+        answered_data = answered.json()
+        assert answered_data["status"] == "answered"
+        assert answered_data["selected_response_type"] == "confirm"
+
+        repeated = client.post(
+            f"/community-confirmations/community-verification-task/{data['request_event_id']}/respond",
+            json={"response_type": "cannot_confirm"},
+        )
+        assert repeated.status_code == 200, repeated.text
+        assert repeated.json()["selected_response_type"] == "confirm"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        notification = (
+            db.query(Notification)
+            .filter(Notification.kind == "community_verification.request_confirmation")
+            .filter(Notification.user_id == 1)
+            .one()
+        )
+        assert notification.is_read is True
+        response_events = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.event_type
+                == "community_verification.confirmation_response_recorded"
+            )
+            .all()
+        )
+        assert len(response_events) == 1
+        response_meta = json.loads(response_events[0].meta_json or "{}")
+        assert response_meta["request_event_id"] == data["request_event_id"]
+        assert response_meta["response_type"] == "confirm"
+        assert response_meta["not_whole_community_vote"] is True
 
 
 def test_public_community_confirmation_request_skips_activation_pending_recipients(

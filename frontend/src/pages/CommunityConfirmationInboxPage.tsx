@@ -24,7 +24,9 @@ import {
   getCommunityConfirmationReviewEvidence,
   getMe,
   getMyCommunityConfirmationContactSettings,
+  getPublicCommunityVerificationTask,
   respondToCommunityConfirmation,
+  respondToPublicCommunityVerificationTask,
   safeCopy,
   scanCommunityConfirmationReviewSlaEvents,
   updateCommunityConfirmationReviewCase,
@@ -34,7 +36,6 @@ import {
   institutionalInnerCard,
   institutionalPageCard,
   institutionalSoftCard,
-  institutionalStatTile,
 } from "../lib/institutionalSurface";
 import { buildGsnSnapshotPaper } from "../lib/gsnSnapshotPaper";
 import { decisionPackConfirmationMechanics } from "../lib/decisionPacks";
@@ -127,6 +128,29 @@ type ReviewEvidenceRow = {
 type Notice = {
   tone: "success" | "error";
   text: string;
+};
+
+type CommunityVerificationAnswerType =
+  | "confirm"
+  | "not_sure"
+  | "cannot_confirm";
+
+type CommunityVerificationTask = {
+  requestEventId: number;
+  communityId?: number | null;
+  communityName?: string | null;
+  communityCode?: string | null;
+  status: "pending" | "answered" | "expired";
+  question: string;
+  message?: string | null;
+  answerOptions: Array<{
+    type: CommunityVerificationAnswerType;
+    label: string;
+    meaning: string;
+  }>;
+  selectedResponseType?: CommunityVerificationAnswerType | null;
+  expiresAt?: string | null;
+  boundary?: string | null;
 };
 
 type EvidenceDraft = {
@@ -394,6 +418,44 @@ function normalizeRow(raw: any): ConfirmationRow | null {
   };
 }
 
+function normalizeCommunityVerificationTask(raw: any): CommunityVerificationTask | null {
+  const src = raw?.item || raw?.task || raw;
+  const requestEventId = Number(src?.request_event_id || 0);
+  if (!Number.isFinite(requestEventId) || requestEventId <= 0) return null;
+
+  const answerOptions = rowsOf<any>(src?.answer_options)
+    .map((option) => ({
+      type: safeStr(option?.type) as CommunityVerificationAnswerType,
+      label: safeStr(option?.label),
+      meaning: safeStr(option?.meaning),
+    }))
+    .filter((option) =>
+      ["confirm", "not_sure", "cannot_confirm"].includes(option.type)
+    );
+  const selectedResponseType = safeStr(src?.selected_response_type);
+
+  return {
+    requestEventId,
+    communityId: Number(src?.community_id || 0) || null,
+    communityName: firstTruthy(src?.community_name),
+    communityCode: firstTruthy(src?.community_code),
+    status:
+      src?.status === "answered" || src?.status === "expired"
+        ? src.status
+        : "pending",
+    question: firstTruthy(src?.question, "Can you confirm this community?"),
+    message: firstTruthy(src?.message),
+    answerOptions,
+    selectedResponseType: ["confirm", "not_sure", "cannot_confirm"].includes(
+      selectedResponseType
+    )
+      ? (selectedResponseType as CommunityVerificationAnswerType)
+      : null,
+    expiresAt: firstTruthy(src?.expires_at),
+    boundary: firstTruthy(src?.boundary),
+  };
+}
+
 function normalizeSetting(raw: any): ContactSetting | null {
   const src = raw?.item || raw?.setting || raw;
   const communityId = Number(src?.community_id || 0);
@@ -490,14 +552,6 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
     ...institutionalInnerCard(bg),
     borderRadius: 18,
     padding: 15,
-    border: "1px solid rgba(37,78,119,0.12)",
-  };
-}
-
-function statTile(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    ...institutionalStatTile(bg),
-    borderRadius: 18,
     border: "1px solid rgba(37,78,119,0.12)",
   };
 }
@@ -725,6 +779,24 @@ function CommunityConfirmationInboxPage() {
   const navigate = useNavigate();
   const focusedRequestId = positiveQueryNumber(location.search, "request_id");
   const focusedReviewCaseId = positiveQueryNumber(location.search, "case_id");
+  const focusedCommunityVerificationRequestId = positiveQueryNumber(
+    location.search,
+    "community_verification_request_id"
+  );
+  const focusedCommunityVerificationCommunityId = positiveQueryNumber(
+    location.search,
+    "community_id"
+  );
+  const legacyCommunityVerificationFocus = useMemo(() => {
+    const value = safeStr(
+      new URLSearchParams(location.search).get("verification_request")
+    ).toLowerCase();
+    return value === "1" || value === "true";
+  }, [location.search]);
+  const isCommunityVerificationTaskMode = Boolean(
+    focusedCommunityVerificationRequestId ||
+      (legacyCommunityVerificationFocus && focusedCommunityVerificationCommunityId)
+  );
   const hasReviewQuery = useMemo(
     () =>
       location.search.includes("case_id=") ||
@@ -763,6 +835,14 @@ function CommunityConfirmationInboxPage() {
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [busyKey, setBusyKey] = useState("");
+  const [communityVerificationTask, setCommunityVerificationTask] =
+    useState<CommunityVerificationTask | null>(null);
+  const [communityVerificationTaskLoading, setCommunityVerificationTaskLoading] =
+    useState(false);
+  const [communityVerificationTaskError, setCommunityVerificationTaskError] =
+    useState("");
+  const [selectedCommunityVerificationAnswer, setSelectedCommunityVerificationAnswer] =
+    useState<CommunityVerificationAnswerType | "">("");
   const [responseNotes, setResponseNotes] = useState<Record<number, string>>({});
   const [selectedResponseTypes, setSelectedResponseTypes] = useState<Record<number, string>>({});
   const [showHowConfirmationWorks, setShowHowConfirmationWorks] = useState(false);
@@ -852,6 +932,35 @@ function CommunityConfirmationInboxPage() {
     reviewOffset,
     visibleReviewCaseCount,
   ]);
+
+  async function loadCommunityVerificationTask() {
+    setCommunityVerificationTaskLoading(true);
+    setCommunityVerificationTaskError("");
+    try {
+      const result = await getPublicCommunityVerificationTask({
+        request_event_id: focusedCommunityVerificationRequestId,
+        community_id:
+          focusedCommunityVerificationRequestId
+            ? undefined
+            : focusedCommunityVerificationCommunityId,
+      });
+      const normalized = normalizeCommunityVerificationTask(result);
+      if (!normalized) {
+        throw new Error("Community verification task payload was incomplete.");
+      }
+      setCommunityVerificationTask(normalized);
+      setSelectedCommunityVerificationAnswer(
+        normalized.selectedResponseType || ""
+      );
+    } catch {
+      setCommunityVerificationTask(null);
+      setCommunityVerificationTaskError(
+        "This request could not be opened. It may have expired or may not belong to you."
+      );
+    } finally {
+      setCommunityVerificationTaskLoading(false);
+    }
+  }
 
   async function loadInbox() {
     setLoading(true);
@@ -1210,6 +1319,10 @@ function CommunityConfirmationInboxPage() {
   }
 
   useEffect(() => {
+    if (isCommunityVerificationTaskMode) {
+      void loadCommunityVerificationTask();
+      return;
+    }
     void loadInbox();
     void loadSettings();
     void loadCurrentUser();
@@ -1217,10 +1330,14 @@ function CommunityConfirmationInboxPage() {
       void loadReviewCases();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [
+    focusedCommunityVerificationCommunityId,
+    focusedCommunityVerificationRequestId,
+    isCommunityVerificationTaskMode,
+  ]);
 
   useEffect(() => {
-    if (!hasReviewQuery) return;
+    if (isCommunityVerificationTaskMode || !hasReviewQuery) return;
     const status = queryOptionValue(
       location.search,
       "status",
@@ -1240,7 +1357,7 @@ function CommunityConfirmationInboxPage() {
     setReviewOffset(0);
     void loadReviewCases({ status, scope, sort, offset: 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.search]);
+  }, [isCommunityVerificationTaskMode, location.search]);
 
   useEffect(() => {
     if (focusedRows.length === 0) {
@@ -1299,6 +1416,32 @@ function CommunityConfirmationInboxPage() {
     const timer = window.setTimeout(() => setNotice(null), 2600);
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  async function recordCommunityVerificationAnswer() {
+    if (!communityVerificationTask || !selectedCommunityVerificationAnswer) return;
+    setBusyKey("community-verification-answer");
+    setCommunityVerificationTaskError("");
+    try {
+      const result = await respondToPublicCommunityVerificationTask(
+        communityVerificationTask.requestEventId,
+        selectedCommunityVerificationAnswer
+      );
+      const normalized = normalizeCommunityVerificationTask(result);
+      if (!normalized) {
+        throw new Error("Community verification response payload was incomplete.");
+      }
+      setCommunityVerificationTask(normalized);
+      setSelectedCommunityVerificationAnswer(
+        normalized.selectedResponseType || selectedCommunityVerificationAnswer
+      );
+    } catch {
+      setCommunityVerificationTaskError(
+        "GSN could not record your answer yet. Please try once more."
+      );
+    } finally {
+      setBusyKey("");
+    }
+  }
 
   async function answer(row: ConfirmationRow, option: ResponseOption) {
     if (!row.id) {
@@ -1627,6 +1770,298 @@ function CommunityConfirmationInboxPage() {
       </section>
     );
   }
+
+  if (isCommunityVerificationTaskMode) {
+    const selectedOption = communityVerificationTask?.answerOptions.find(
+      (option) => option.type === selectedCommunityVerificationAnswer
+    );
+    const recordedOption = communityVerificationTask?.answerOptions.find(
+      (option) => option.type === communityVerificationTask.selectedResponseType
+    );
+    const taskAnswered = communityVerificationTask?.status === "answered";
+    const taskExpired = communityVerificationTask?.status === "expired";
+
+    return (
+      <CommunityConfirmationNeonFrame
+        compact={isCompact}
+        style={{
+          width: "100%",
+          maxWidth: 760,
+          margin: "0 auto",
+          paddingBottom: isCompact ? 120 : 48,
+          boxSizing: "border-box",
+        }}
+      >
+        <PageTopNav
+          sectionLabel="Community confirmation"
+          title="One question"
+          subtitle="Answer only what you personally know."
+          homeTo={APP_ROUTES.DASHBOARD}
+          homeLabel="Dashboard"
+          backTo={APP_ROUTES.NOTIFICATIONS}
+          backLabel="Notifications"
+        />
+
+        <main
+          data-gsn-community-verification-answer-task="true"
+          style={{ marginTop: 14, width: "100%", boxSizing: "border-box" }}
+        >
+          {communityVerificationTaskLoading ? (
+            <section style={{ ...innerCard("#FFFFFF"), padding: 14 }}>
+              <div style={{ color: "#07172C", fontWeight: 1000 }}>
+                Opening your question...
+              </div>
+            </section>
+          ) : communityVerificationTaskError && !communityVerificationTask ? (
+            <section style={{ ...innerCard("#FFF8E6"), padding: 14 }}>
+              <div style={{ color: "#07172C", fontSize: 18, fontWeight: 1000 }}>
+                This request is not available
+              </div>
+              <p style={{ margin: "6px 0 0", ...helperText(), fontSize: 13 }}>
+                {communityVerificationTaskError}
+              </p>
+              <SecondaryButton
+                type="button"
+                onClick={() => navigate(APP_ROUTES.NOTIFICATIONS)}
+                fullWidth
+                stableHeight={50}
+                style={{ marginTop: 12 }}
+                debugId="community-verification-task.back-to-notifications"
+              >
+                {labelWithIcon("navigation", "Back to notifications")}
+              </SecondaryButton>
+            </section>
+          ) : communityVerificationTask ? (
+            <section
+              style={{
+                ...pageCard("#FFFFFF"),
+                padding: isCompact ? 14 : 20,
+                borderRadius: isCompact ? 18 : 24,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                }}
+              >
+                <span style={{ ...sectionLabel(), fontSize: 10 }}>
+                  Community check
+                </span>
+                <span
+                  style={pillStyle(
+                    taskAnswered ? "positive" : taskExpired ? "negative" : "neutral"
+                  )}
+                >
+                  {taskAnswered ? "Answered" : taskExpired ? "Expired" : "Needs your answer"}
+                </span>
+              </div>
+
+              <h1
+                style={{
+                  margin: "12px 0 0",
+                  color: "#07172C",
+                  fontSize: isCompact ? 23 : 28,
+                  lineHeight: 1.15,
+                  fontWeight: 1000,
+                  letterSpacing: -0.35,
+                }}
+              >
+                {communityVerificationTask.question}
+              </h1>
+              <p
+                style={{
+                  margin: "8px 0 0",
+                  ...helperText(),
+                  color: "#39526C",
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                }}
+              >
+                Choose the one answer that matches what you know. GSN will not show your private contact details.
+              </p>
+
+              {taskAnswered ? (
+                <div
+                  data-gsn-community-verification-answer-recorded="true"
+                  style={{
+                    marginTop: 14,
+                    ...innerCard("#EEF9F1"),
+                    padding: 13,
+                    borderRadius: 15,
+                  }}
+                >
+                  <div style={{ color: "#166534", fontSize: 17, fontWeight: 1000 }}>
+                    {labelWithIcon("check", "Your answer was recorded", "#166534")}
+                  </div>
+                  <p style={{ margin: "6px 0 0", ...helperText(), fontSize: 13 }}>
+                    {recordedOption?.label || "Answer recorded"}. You do not need to do anything else.
+                  </p>
+                  <PrimaryButton
+                    type="button"
+                    onClick={() => navigate(APP_ROUTES.NOTIFICATIONS)}
+                    fullWidth
+                    stableHeight={50}
+                    style={{ marginTop: 12 }}
+                    debugId="community-verification-task.done"
+                  >
+                    {labelWithIcon("check", "Done", "navy")}
+                  </PrimaryButton>
+                </div>
+              ) : taskExpired ? (
+                <div style={{ marginTop: 14, ...innerCard("#FFF8E6"), padding: 13 }}>
+                  <div style={{ color: "#92400E", fontWeight: 1000 }}>
+                    This question has expired
+                  </div>
+                  <p style={{ margin: "5px 0 0", ...helperText(), fontSize: 13 }}>
+                    Nothing was recorded. A fresh request will appear in notifications if another answer is needed.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div
+                    data-gsn-community-verification-answer-options="true"
+                    style={{ marginTop: 14, display: "grid", gap: 8 }}
+                  >
+                    {communityVerificationTask.answerOptions.map((option) => {
+                      const selected = option.type === selectedCommunityVerificationAnswer;
+                      return (
+                        <label
+                          key={option.type}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "22px minmax(0, 1fr)",
+                            alignItems: "center",
+                            gap: 10,
+                            minHeight: 58,
+                            padding: "9px 11px",
+                            borderRadius: 14,
+                            border: selected
+                              ? "2px solid rgba(11,99,209,0.78)"
+                              : "1px solid rgba(37,78,119,0.16)",
+                            background: selected ? "#EEF6FF" : "#FFFFFF",
+                            boxSizing: "border-box",
+                            cursor: busyKey ? "default" : "pointer",
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name="community-verification-answer"
+                            value={option.type}
+                            checked={selected}
+                            disabled={Boolean(busyKey)}
+                            onChange={() =>
+                              setSelectedCommunityVerificationAnswer(option.type)
+                            }
+                            style={{
+                              width: 19,
+                              height: 19,
+                              margin: 0,
+                              accentColor: "#0B63D1",
+                            }}
+                          />
+                          <span style={{ minWidth: 0 }}>
+                            <span
+                              style={{
+                                display: "block",
+                                color: "#07172C",
+                                fontSize: 15,
+                                lineHeight: 1.2,
+                                fontWeight: 1000,
+                              }}
+                            >
+                              {option.label}
+                            </span>
+                            <span
+                              style={{
+                                display: "block",
+                                marginTop: 3,
+                                color: "#526579",
+                                fontSize: 11.5,
+                                lineHeight: 1.3,
+                                fontWeight: 750,
+                              }}
+                            >
+                              {option.meaning}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {communityVerificationTaskError ? (
+                    <div
+                      style={{
+                        marginTop: 10,
+                        color: "#991B1B",
+                        fontSize: 13,
+                        fontWeight: 900,
+                      }}
+                    >
+                      {communityVerificationTaskError}
+                    </div>
+                  ) : null}
+
+                  <PrimaryButton
+                    type="button"
+                    onClick={() => void recordCommunityVerificationAnswer()}
+                    disabled={!selectedOption || Boolean(busyKey)}
+                    busy={busyKey === "community-verification-answer"}
+                    busyLabel="Recording..."
+                    fullWidth
+                    stableHeight={52}
+                    style={{ marginTop: 12 }}
+                    debugId="community-verification-task.submit"
+                  >
+                    {labelWithIcon(
+                      selectedOption ? "check" : "navigation",
+                      selectedOption ? "Submit my answer" : "Choose one answer",
+                      "navy"
+                    )}
+                  </PrimaryButton>
+                </>
+              )}
+
+              <details
+                data-gsn-community-verification-answer-boundary="true"
+                style={{ marginTop: 12, ...innerCard("#F8FBFF"), padding: "8px 11px" }}
+              >
+                <StableDisclosureSummary
+                  debugId="community-verification-task.meaning"
+                  stableHeight={42}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr) auto",
+                    alignItems: "center",
+                    gap: 8,
+                    color: "#07172C",
+                    fontSize: 13,
+                    fontWeight: 1000,
+                  }}
+                >
+                  <span>What this answer means</span>
+                  <span aria-hidden="true" style={{ color: "#0B63D1" }}>+</span>
+                </StableDisclosureSummary>
+                <p style={{ margin: "7px 0 2px", ...helperText(), fontSize: 12 }}>
+                  {communityVerificationTask.boundary}
+                </p>
+              </details>
+
+              {!taskAnswered && !taskExpired && communityVerificationTask.expiresAt ? (
+                <div style={{ marginTop: 9, color: "#6B7C8F", fontSize: 11.5, fontWeight: 800 }}>
+                  Answer by {safeDateTime(communityVerificationTask.expiresAt)}
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+        </main>
+      </CommunityConfirmationNeonFrame>
+    );
+  }
+
   return (
     <CommunityConfirmationNeonFrame
       compact={isCompact}

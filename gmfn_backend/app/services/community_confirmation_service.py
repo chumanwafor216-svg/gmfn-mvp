@@ -48,6 +48,28 @@ POSITIVE_RESPONSES = {"known_here", "active_here", "good_standing"}
 CAUTION_RESPONSES = {"ask_more_evidence", "known_but_caution", "cannot_confirm_now"}
 OBJECTION_RESPONSES = {"concern", "inactive", "under_dispute", "not_known"}
 VALID_RESPONSES = POSITIVE_RESPONSES | CAUTION_RESPONSES | OBJECTION_RESPONSES
+PUBLIC_COMMUNITY_VERIFICATION_RESPONSES = {
+    "confirm",
+    "not_sure",
+    "cannot_confirm",
+}
+PUBLIC_COMMUNITY_VERIFICATION_RESPONSE_OPTIONS = [
+    {
+        "type": "confirm",
+        "label": "Yes, I can confirm",
+        "meaning": "I personally know this community is active and genuine.",
+    },
+    {
+        "type": "not_sure",
+        "label": "I'm not sure",
+        "meaning": "I do not know enough to give a clear answer right now.",
+    },
+    {
+        "type": "cannot_confirm",
+        "label": "No, I cannot confirm",
+        "meaning": "I cannot honestly confirm this community from what I know.",
+    },
+]
 COMMUNITY_CONFIRMATION_RESPONSE_WINDOW_SECONDS = 72 * 60 * 60
 INSTANT_WINDOW_SECONDS = COMMUNITY_CONFIRMATION_RESPONSE_WINDOW_SECONDS
 VALID_CONFIRMATION_DECISIONS = {
@@ -143,6 +165,24 @@ def _public_verification_level(level: Optional[str]) -> str:
 
 def _confirmation_request_action_url(request_id: int) -> str:
     return f"/app/community-confirmations?request_id={int(request_id)}"
+
+
+def _public_community_verification_task_action_url(
+    *,
+    community_id: int,
+    request_event_id: int,
+) -> str:
+    return (
+        f"/app/community-confirmations?community_id={int(community_id)}"
+        f"&community_verification_request_id={int(request_event_id)}"
+    )
+
+
+def _legacy_public_community_verification_action_url(*, community_id: int) -> str:
+    return (
+        f"/app/community-confirmations?community_id={int(community_id)}"
+        "&verification_request=1"
+    )
 
 
 def _confirmation_public_outcome_action_url(request: CommunityConfirmationRequest) -> str:
@@ -5008,34 +5048,18 @@ def request_public_community_verification_confirmation(
     label = str(requester_external_label or "").strip()[:120]
     message = (
         f"A public viewer requested controlled confirmation for {community.name}. "
-        "Respond from the community confirmation inbox. Private member contacts stay protected."
+        "Answer one question from what you personally know. Private member contacts stay protected."
     )
     if label:
         message = f"{label} requested controlled confirmation for {community.name}. " + (
-            "Respond from the community confirmation inbox. Private member contacts stay protected."
+            "Answer one question from what you personally know. Private member contacts stay protected."
         )
-
-    notification_count = 0
-    action_url = (
-        f"/app/community-confirmations?community_id={int(community.id)}"
-        "&verification_request=1"
-    )
-    for recipient_id in recipient_ids:
-        create_notification(
-            db,
-            user_id=int(recipient_id),
-            kind="community_verification.request_confirmation",
-            title="Community verification request",
-            message=message,
-            action_url=action_url,
-            action_label="Review request",
-            commit=False,
-            refresh=False,
-        )
-        notification_count += 1
 
     audit_actor_id = int(requester_user_id or recipient_ids[0])
-    log_trust_event(
+    expires_at = _now_utc() + timedelta(
+        seconds=COMMUNITY_CONFIRMATION_RESPONSE_WINDOW_SECONDS
+    )
+    request_event = log_trust_event(
         db,
         event_type="community_verification.confirmation_requested",
         clan_id=int(community.id),
@@ -5050,14 +5074,47 @@ def request_public_community_verification_confirmation(
                 "community_code": getattr(community, "community_code", None),
                 "community_name": getattr(community, "name", None),
                 "request_channel": "controlled_relay",
-                "recipient_notification_count": notification_count,
-                "private_contacts_exposed": False,
+                "request_scope": "community",
+                "requester_external_label": label or None,
                 "requester_external_label_present": bool(label),
+                "expires_at": expires_at.isoformat(),
+                "response_options": [
+                    option["type"]
+                    for option in PUBLIC_COMMUNITY_VERIFICATION_RESPONSE_OPTIONS
+                ],
+                "private_contacts_exposed": False,
             },
         ),
         commit=False,
         refresh=False,
     )
+    db.flush()
+
+    notification_count = 0
+    action_url = _public_community_verification_task_action_url(
+        community_id=int(community.id),
+        request_event_id=int(request_event.id),
+    )
+    for recipient_id in recipient_ids:
+        create_notification(
+            db,
+            user_id=int(recipient_id),
+            kind="community_verification.request_confirmation",
+            title="Community verification request",
+            message=message,
+            action_url=action_url,
+            action_label="Answer request",
+            commit=False,
+            refresh=False,
+        )
+        notification_count += 1
+
+    request_meta = request_event.meta or {}
+    request_event.meta = {
+        **request_meta,
+        "recipient_notification_count": notification_count,
+        "action_url": action_url,
+    }
     db.commit()
 
     return {
@@ -5067,9 +5124,225 @@ def request_public_community_verification_confirmation(
         "community_code": community.community_code,
         "status": "requested",
         "request_channel": "controlled_relay",
+        "request_event_id": int(request_event.id),
+        "request_reference": f"CVR-{int(request_event.id)}",
         "recipient_notification_count": notification_count,
         "private_contacts_exposed": False,
         "message": (
             "Request sent through GSN controlled relay. Private member contacts were not exposed."
         ),
     }
+
+
+def _public_community_verification_request_event(
+    db: Session,
+    *,
+    request_event_id: Optional[int] = None,
+    community_id: Optional[int] = None,
+) -> TrustEvent:
+    query = db.query(TrustEvent).filter(
+        TrustEvent.event_type == "community_verification.confirmation_requested"
+    )
+    if request_event_id is not None:
+        query = query.filter(TrustEvent.id == int(request_event_id))
+    elif community_id is not None:
+        query = query.filter(TrustEvent.clan_id == int(community_id))
+    else:
+        raise ValueError("request_event_id or community_id is required")
+
+    event = query.order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc()).first()
+    if not event:
+        raise ValueError("Community verification request was not found")
+    return event
+
+
+def _public_community_verification_request_notification(
+    db: Session,
+    *,
+    request_event: TrustEvent,
+    responder_user_id: int,
+) -> Notification:
+    community_id = int(request_event.clan_id or 0)
+    action_urls = [
+        _public_community_verification_task_action_url(
+            community_id=community_id,
+            request_event_id=int(request_event.id),
+        ),
+        _legacy_public_community_verification_action_url(
+            community_id=community_id,
+        ),
+    ]
+    notification = (
+        db.query(Notification)
+        .filter(Notification.user_id == int(responder_user_id))
+        .filter(Notification.kind == "community_verification.request_confirmation")
+        .filter(Notification.action_url.in_(action_urls))
+        .order_by(Notification.created_at.desc(), Notification.id.desc())
+        .first()
+    )
+    if not notification:
+        raise PermissionError("This community verification request was not sent to you")
+    return notification
+
+
+def _public_community_verification_response_event(
+    db: Session,
+    *,
+    request_event_id: int,
+    responder_user_id: int,
+) -> Optional[TrustEvent]:
+    return (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.dedupe_key
+            == f"cvr-response:{int(request_event_id)}:{int(responder_user_id)}"
+        )
+        .first()
+    )
+
+
+def _public_community_verification_expires_at(request_event: TrustEvent) -> datetime:
+    meta = request_event.meta or {}
+    raw = str(meta.get("expires_at") or "").strip()
+    if raw:
+        try:
+            parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            return _to_aware(parsed) or _now_utc()
+        except ValueError:
+            pass
+    created_at = _to_aware(request_event.created_at) or _now_utc()
+    return created_at + timedelta(seconds=COMMUNITY_CONFIRMATION_RESPONSE_WINDOW_SECONDS)
+
+
+def get_public_community_verification_response_task(
+    db: Session,
+    *,
+    responder_user_id: int,
+    request_event_id: Optional[int] = None,
+    community_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    request_event = _public_community_verification_request_event(
+        db,
+        request_event_id=request_event_id,
+        community_id=community_id,
+    )
+    notification = _public_community_verification_request_notification(
+        db,
+        request_event=request_event,
+        responder_user_id=int(responder_user_id),
+    )
+    response_event = _public_community_verification_response_event(
+        db,
+        request_event_id=int(request_event.id),
+        responder_user_id=int(responder_user_id),
+    )
+    response_meta = response_event.meta if response_event else {}
+    community = db.get(Clan, int(request_event.clan_id or 0))
+    expires_at = _public_community_verification_expires_at(request_event)
+    expired = expires_at <= _now_utc()
+    status = "answered" if response_event else "expired" if expired else "pending"
+    request_meta = request_event.meta or {}
+
+    return {
+        "request_event_id": int(request_event.id),
+        "community_id": int(request_event.clan_id or 0),
+        "community_name": getattr(community, "name", None)
+        or request_meta.get("community_name"),
+        "community_code": getattr(community, "community_code", None)
+        or request_meta.get("community_code"),
+        "status": status,
+        "question": (
+            f"Can you confirm {getattr(community, 'name', None) or request_meta.get('community_name') or 'this community'} "
+            "is active and genuine?"
+        ),
+        "message": notification.message,
+        "answer_options": PUBLIC_COMMUNITY_VERIFICATION_RESPONSE_OPTIONS,
+        "selected_response_type": (
+            str((response_meta or {}).get("response_type") or "").strip() or None
+        ),
+        "created_at": (
+            _to_aware(request_event.created_at).isoformat()
+            if request_event.created_at
+            else None
+        ),
+        "expires_at": expires_at.isoformat(),
+        "private_contacts_exposed": False,
+        "boundary": (
+            "This is one authorised community representative's answer. It is not a whole-community vote, "
+            "member guarantee, payment approval, credit approval, or authority to release goods or money."
+        ),
+    }
+
+
+def submit_public_community_verification_response(
+    db: Session,
+    *,
+    request_event_id: int,
+    responder_user_id: int,
+    response_type: str,
+) -> Dict[str, Any]:
+    normalized_response = str(response_type or "").strip().lower()
+    if normalized_response not in PUBLIC_COMMUNITY_VERIFICATION_RESPONSES:
+        raise ValueError("Unsupported public community verification response")
+
+    task = get_public_community_verification_response_task(
+        db,
+        responder_user_id=int(responder_user_id),
+        request_event_id=int(request_event_id),
+    )
+    if task["status"] == "expired":
+        raise ValueError("This community verification request has expired")
+    if task["status"] == "answered":
+        return task
+
+    request_event = _public_community_verification_request_event(
+        db,
+        request_event_id=int(request_event_id),
+    )
+    notification = _public_community_verification_request_notification(
+        db,
+        request_event=request_event,
+        responder_user_id=int(responder_user_id),
+    )
+    option = next(
+        item
+        for item in PUBLIC_COMMUNITY_VERIFICATION_RESPONSE_OPTIONS
+        if item["type"] == normalized_response
+    )
+    log_trust_event(
+        db,
+        event_type="community_verification.confirmation_response_recorded",
+        clan_id=int(request_event.clan_id or 0),
+        actor_user_id=int(responder_user_id),
+        subject_user_id=int(request_event.subject_user_id),
+        meta=build_trust_meta(
+            reason="public_community_verification_confirmation_response",
+            note=option["label"],
+            trust_delta="0.00",
+            system=False,
+            extra={
+                "request_event_id": int(request_event.id),
+                "community_id": int(request_event.clan_id or 0),
+                "request_scope": "community",
+                "response_type": normalized_response,
+                "response_label": option["label"],
+                "private_contacts_exposed": False,
+                "not_whole_community_vote": True,
+                "not_member_guarantee": True,
+            },
+        ),
+        dedupe_key=f"cvr-response:{int(request_event.id)}:{int(responder_user_id)}",
+        commit=False,
+        refresh=False,
+    )
+    if not notification.is_read:
+        notification.is_read = True
+        notification.read_at = _now_utc()
+        db.add(notification)
+    db.commit()
+
+    return get_public_community_verification_response_task(
+        db,
+        responder_user_id=int(responder_user_id),
+        request_event_id=int(request_event.id),
+    )

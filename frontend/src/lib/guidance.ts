@@ -489,11 +489,6 @@ function containsAny(text: string, tokens: string[]): boolean {
   return tokens.some((token) => text.includes(token));
 }
 
-function policyTargetForCommunityVerificationRequest(target: string): string {
-  const suffix = splitPathSuffix(normalizeActionTargetPath(target)).suffix;
-  return `${GUIDANCE_TARGETS.COMMUNITY_CONFIRMATION_POLICY}${suffix}`;
-}
-
 function resolveNoticeTarget(raw: any): string {
   const rawExplicit = raw?.action_url || raw?.cta_to || raw?.ctaTo || raw?.to;
   const text = [
@@ -509,12 +504,6 @@ function resolveNoticeTarget(raw: any): string {
 
   if (safeStr(rawExplicit)) {
     const explicit = normalizeActionTargetPath(rawExplicit);
-    if (
-      safeStr(raw?.kind).toLowerCase() === "community_verification.request_confirmation" &&
-      splitPathSuffix(explicit).path === GUIDANCE_TARGETS.COMMUNITY_CONFIRMATION_INBOX
-    ) {
-      return policyTargetForCommunityVerificationRequest(explicit);
-    }
     if (
       explicit === GUIDANCE_TARGETS.LOANS &&
       containsAny(text, [

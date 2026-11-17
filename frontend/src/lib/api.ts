@@ -5395,6 +5395,32 @@ export async function getCommunityConfirmationInbox(): Promise<any> {
   return httpJson("/community-confirmations/inbox", "GET");
 }
 
+export async function getPublicCommunityVerificationTask(payload: {
+  request_event_id?: number | string | null;
+  community_id?: number | string | null;
+}): Promise<any> {
+  return httpJson(
+    `/community-confirmations/community-verification-task${buildQuery({
+      request_event_id: payload.request_event_id || undefined,
+      community_id: payload.community_id || undefined,
+    })}`,
+    "GET"
+  );
+}
+
+export async function respondToPublicCommunityVerificationTask(
+  requestEventId: number | string,
+  responseType: "confirm" | "not_sure" | "cannot_confirm"
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/community-verification-task/${encodeURIComponent(
+      String(requestEventId)
+    )}/respond`,
+    "POST",
+    { response_type: responseType }
+  );
+}
+
 export async function getMyCommunityConfirmationContactSettings(
   communityId?: number | string | null
 ): Promise<any> {
