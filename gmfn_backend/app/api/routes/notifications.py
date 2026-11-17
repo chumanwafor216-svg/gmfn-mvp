@@ -11,6 +11,7 @@ from app.services.notification_service import (
     ensure_join_review_notifications,
     get_unread_count,
     list_my_notifications,
+    mark_all_notifications_read,
     mark_notification_read,
     seed_assistance_notifications,
 )
@@ -47,6 +48,17 @@ def my_unread_count(
         reviewer_user=current_user,
     )
     return get_unread_count(
+        db,
+        user_id=int(current_user.id),
+    )
+
+
+@router.post("/me/read-all")
+def read_all_notifications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return mark_all_notifications_read(
         db,
         user_id=int(current_user.id),
     )

@@ -16,6 +16,8 @@ function assert(condition, message) {
 }
 
 async function installApiMocks(page) {
+  let unreadCount = 125;
+  let clearRequests = 0;
   const notification = {
     id: 701,
     kind: "community_verification.request_confirmation",
@@ -31,6 +33,7 @@ async function installApiMocks(page) {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname.replace(/^\/api/, "");
+    const method = request.method().toUpperCase();
 
     if (path === "/auth/me" || path === "/users/me") {
       return route.fulfill(json({
@@ -53,7 +56,19 @@ async function installApiMocks(page) {
     }
 
     if (path === "/notifications/me/unread-count") {
-      return route.fulfill(json({ unread_count: 1 }));
+      return route.fulfill(json({ unread_count: unreadCount }));
+    }
+
+    if (path === "/notifications/me/read-all" && method === "POST") {
+      const markedReadCount = unreadCount;
+      unreadCount = 0;
+      clearRequests += 1;
+      notification.is_read = true;
+      return route.fulfill(json({
+        user_id: 216,
+        marked_read_count: markedReadCount,
+        unread_count: 0,
+      }));
     }
 
     if (path === "/notifications/me") {
@@ -66,6 +81,10 @@ async function installApiMocks(page) {
 
     return route.continue();
   });
+
+  return {
+    getClearRequests: () => clearRequests,
+  };
 }
 
 async function run() {
@@ -87,7 +106,7 @@ async function run() {
       deviceScaleFactor: 2,
       isMobile: true,
     });
-    await installApiMocks(page);
+    const apiState = await installApiMocks(page);
     await page.addInitScript(() => {
       localStorage.setItem("access_token", "local-action-inbox-token");
       localStorage.setItem("gmfn_selected_clan_id", "8");
@@ -116,6 +135,9 @@ async function run() {
     );
     assert(visibleDescriptionCount === 0, "Long notification description leaked onto the phone first surface.");
     assert((await page.getByText("Other items", { exact: true }).count()) === 0, "Old secondary heading is still rendered.");
+    const menuBadge = page.locator('[data-gsn-shell-notification-badge="menu"]');
+    await menuBadge.waitFor();
+    assert((await menuBadge.textContent())?.trim() === "99+", "The shell did not show the truthful capped unread backlog.");
 
     const geometry = await page.evaluate(() => {
       const focusNode = document.querySelector('[data-gsn-action-inbox-phone-focus="true"]');
@@ -134,6 +156,11 @@ async function run() {
     assert(!geometry.pageOverflows, "Action Inbox overflows horizontally on phone.");
     assert((await page.locator('[data-cta-id^="notifications.bucket."]').count()) === 0, "More groups opened from obsolete saved state.");
 
+    await more.getByRole("button", { name: "Clear badge", exact: true }).click();
+    await menuBadge.waitFor({ state: "detached" });
+    assert(apiState.getClearRequests() === 1, "Clear badge did not call the server bulk-read endpoint exactly once.");
+    assert((await more.getByRole("button", { name: "Clear badge", exact: true }).count()) === 0, "Clear badge remained after the unread total reached zero.");
+
     await more.getByRole("button", { name: "Open", exact: true }).click();
     const bucketRows = page.locator('[data-cta-id^="notifications.bucket."]');
     assert((await bucketRows.count()) === 4, "More must reveal exactly four compact groups.");
@@ -146,7 +173,7 @@ async function run() {
     }
 
     await page.close();
-    console.log("Action Inbox phone smoke passed: one short task, one plain action, closed More row, compact groups, and no stale disclosure state.");
+    console.log("Action Inbox phone smoke passed: truthful 99+ backlog, server-backed Clear badge to zero, one short task, compact groups, and no stale disclosure state.");
   } finally {
     await browser?.close();
     await server?.close();

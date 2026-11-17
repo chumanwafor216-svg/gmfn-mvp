@@ -6516,6 +6516,13 @@ export async function markNotificationRead(notificationId: number): Promise<any>
   return updated;
 }
 
+export async function markAllNotificationsRead(): Promise<any> {
+  const updated = await httpJson("/notifications/me/read-all", "POST");
+  clearStartupSectionCacheByLabel("getMyNotifications");
+  clearStartupSectionCacheByLabel("getMyUnreadNotificationCount");
+  return updated;
+}
+
 export async function seedAssistantNotifications(): Promise<any> {
   return httpJson("/notifications/me/seed-assistant", "POST");
 }

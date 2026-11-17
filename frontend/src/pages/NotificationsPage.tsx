@@ -17,6 +17,7 @@ import {
   getMyNotifications,
   getMySettings,
   getSelectedClanId,
+  markAllNotificationsRead,
   markNotificationRead,
 } from "../lib/api";
 import {
@@ -232,6 +233,20 @@ function collapseToggle(): React.CSSProperties {
     whiteSpace: "normal",
     boxShadow:
       "0 10px 22px rgba(2,12,27,0.14), inset 0 1px 0 rgba(255,255,255,0.10)",
+  };
+}
+
+function phoneUtilityButton(): React.CSSProperties {
+  return {
+    minWidth: 78,
+    minHeight: 40,
+    padding: "8px 12px",
+    borderRadius: 14,
+    border: "1px solid rgba(17,42,68,0.14)",
+    background: "#F3F7FB",
+    color: "#12304C",
+    fontSize: 13,
+    fontWeight: 900,
   };
 }
 
@@ -1006,6 +1021,27 @@ function markGuidanceSnapshotReadLocally(
   };
 }
 
+function markGuidanceSnapshotAllReadLocally(
+  snapshot: GuidanceSnapshot | null
+): GuidanceSnapshot | null {
+  if (!snapshot) return snapshot;
+
+  const patch = (rows: GuidanceNotice[]) =>
+    rows.map((item) => ({ ...item, unread: false }));
+
+  return {
+    ...snapshot,
+    actionInboxSummary: {
+      ...snapshot.actionInboxSummary,
+      actNow: patch(snapshot.actionInboxSummary.actNow || []),
+      dueSoon: patch(snapshot.actionInboxSummary.dueSoon || []),
+      watchAndWait: patch(snapshot.actionInboxSummary.watchAndWait || []),
+      generalUpdates: patch(snapshot.actionInboxSummary.generalUpdates || []),
+      unreadCount: 0,
+    },
+  };
+}
+
 function readLocalJSON<T>(key: string, fallback: T): T {
   try {
     if (typeof window === "undefined") return fallback;
@@ -1084,6 +1120,7 @@ export default function NotificationsPage() {
   const [selectedBucket, setSelectedBucket] =
     useState<GuidanceInboxBucketKey | null>(null);
   const [actionNotice, setActionNotice] = useState<ActionResponse | null>(null);
+  const [clearingUnread, setClearingUnread] = useState(false);
 
   const [collapsed, setCollapsed] = useState<CollapseState>(() =>
     normalizeCollapseState(
@@ -1308,6 +1345,31 @@ export default function NotificationsPage() {
     });
   }
 
+  async function clearUnreadNotifications() {
+    setClearingUnread(true);
+    try {
+      await markAllNotificationsRead();
+      setGuidanceSnapshot((prev) => markGuidanceSnapshotAllReadLocally(prev));
+      setRawNotifications((prev) =>
+        prev.map((item) => ({ ...item, unread: false }))
+      );
+      setSelectedNotice((prev) =>
+        prev ? { ...prev, unread: false } : prev
+      );
+      await refreshGsnAppBadge({ force: true });
+      setActionNotice({ tone: "success", text: "Notification badge cleared." });
+    } catch (err: any) {
+      setActionNotice({
+        tone: "error",
+        text:
+          safeStr(err?.message) ||
+          "GSN could not clear the badge. Check your connection and try again.",
+      });
+    } finally {
+      setClearingUnread(false);
+    }
+  }
+
   async function openNoticeDestination(notice: GuidanceNotice) {
     const normalizedNotice = normalizeGuidanceNotice(notice);
     const noticeId = safeStr(normalizedNotice.id);
@@ -1450,6 +1512,8 @@ export default function NotificationsPage() {
     });
   const selectedBucketRows = selectedBucket ? bucketRows[selectedBucket] : [];
   const bucketRowHeight = isPhone ? 58 : 86;
+  const hasUnreadNotifications =
+    unreadCount > 0 || rawNotifications.some((item) => item.unread);
 
   function showUrgentItems() {
     setCollapsed((prev) => ({ ...prev, focus: false, buckets: false }));
@@ -1993,36 +2057,36 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          <SubtleButton
-            onClick={() => toggleSection("buckets")}
-            style={
-              isPhone
-                ? {
-                    minWidth: 78,
-                    minHeight: 40,
-                    padding: "8px 12px",
-                    borderRadius: 14,
-                    border: "1px solid rgba(17,42,68,0.14)",
-                    background: "#F3F7FB",
-                    color: "#12304C",
-                    fontSize: 13,
-                    fontWeight: 900,
-                  }
-                : collapseToggle()
-            }
-            stableHeight={isPhone ? 40 : 48}
-            debugId="notifications.toggle-buckets"
-          >
-            {isPhone
-              ? collapsed.buckets
-                ? "Open"
-                : "Close"
-              : notificationIconText(
-                  collapsed.buckets ? "chevronDown" : "chevronUp",
-                  collapsed.buckets ? "Open" : "Collapse",
-                  20
-                )}
-          </SubtleButton>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {isPhone && hasUnreadNotifications ? (
+              <SubtleButton
+                onClick={() => void clearUnreadNotifications()}
+                busy={clearingUnread}
+                busyLabel="Clearing"
+                style={phoneUtilityButton()}
+                stableHeight={40}
+                debugId="notifications.clear-unread"
+              >
+                Clear badge
+              </SubtleButton>
+            ) : null}
+            <SubtleButton
+              onClick={() => toggleSection("buckets")}
+              style={isPhone ? phoneUtilityButton() : collapseToggle()}
+              stableHeight={isPhone ? 40 : 48}
+              debugId="notifications.toggle-buckets"
+            >
+              {isPhone
+                ? collapsed.buckets
+                  ? "Open"
+                  : "Close"
+                : notificationIconText(
+                    collapsed.buckets ? "chevronDown" : "chevronUp",
+                    collapsed.buckets ? "Open" : "Collapse",
+                    20
+                  )}
+            </SubtleButton>
+          </div>
         </div>
 
         {!collapsed.buckets ? (

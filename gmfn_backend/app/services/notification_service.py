@@ -704,6 +704,33 @@ def mark_notification_read(
     return row
 
 
+def mark_all_notifications_read(
+    db: Session,
+    *,
+    user_id: int,
+) -> Dict[str, Any]:
+    now = _now_utc()
+    marked_read_count = (
+        db.query(Notification)
+        .filter(Notification.user_id == int(user_id))
+        .filter(Notification.is_read == False)  # noqa: E712
+        .update(
+            {
+                Notification.is_read: True,
+                Notification.read_at: now,
+            },
+            synchronize_session=False,
+        )
+    )
+    db.commit()
+
+    return {
+        "user_id": int(user_id),
+        "marked_read_count": int(marked_read_count or 0),
+        "unread_count": 0,
+    }
+
+
 def seed_assistance_notifications(
     db: Session,
     *,

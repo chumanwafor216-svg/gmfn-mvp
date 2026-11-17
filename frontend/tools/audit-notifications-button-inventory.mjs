@@ -25,7 +25,7 @@ const expectedSourceActions = {
   SecondaryButton: 2,
   StableButton: 1,
   StableCtaLink: 5,
-  SubtleButton: 6,
+  SubtleButton: 7,
 };
 const expectedSourceActionCount = Object.values(expectedSourceActions).reduce(
   (sum, count) => sum + count,
@@ -337,8 +337,16 @@ assertContains(
   "Notifications must reset superseded saved disclosure state and keep the full waiting-item bucket list covered on phone."
 );
 assertContains(
-  /const bucketRowHeight = isPhone \? 58 : 86[\s\S]*?data-gsn-action-inbox-phone-more=\{isPhone \? "true" : undefined\}[\s\S]*?\{isPhone \? "More" : "All waiting items"\}[\s\S]*?stableHeight=\{isPhone \? 40 : 48\}/,
+  /const bucketRowHeight = isPhone \? 58 : 86[\s\S]*?data-gsn-action-inbox-phone-more=\{isPhone \? "true" : undefined\}[\s\S]*?\{isPhone \? "More" : "All waiting items"\}[\s\S]*?debugId="notifications\.clear-unread"[\s\S]*?stableHeight=\{isPhone \? 40 : 48\}/,
   "Notifications phone must keep secondary groups behind one small More row and compact opened bucket rows."
+);
+assertApiContains(
+  /export async function markAllNotificationsRead\(\): Promise<any> \{[\s\S]*?\/notifications\/me\/read-all[\s\S]*?clearStartupSectionCacheByLabel\("getMyUnreadNotificationCount"\)/,
+  "Action Inbox must clear the real server unread rows and invalidate the shell badge cache."
+);
+assertContains(
+  /async function clearUnreadNotifications\(\)[\s\S]*?markAllNotificationsRead\(\)[\s\S]*?markGuidanceSnapshotAllReadLocally[\s\S]*?refreshGsnAppBadge\(\{ force: true \}\)[\s\S]*?Notification badge cleared\./,
+  "Action Inbox Clear badge must update server truth, local rows, and the shared shell badge."
 );
 assertApiContains(
   /export async function getMyNotifications\([\s\S]*?limit: number = 20,/,
