@@ -325,7 +325,7 @@ export default function SimpleCommunityInviteCard({
       <div
         data-debug-id="simple-community-invite"
         style={{
-          marginTop: identityPresentation ? 10 : compact ? 11 : 14,
+          marginTop: identityPresentation ? 8 : compact ? 11 : 14,
           display: identityPresentation ? "grid" : "block",
           gridTemplateColumns: identityPresentation
             ? "minmax(0, 1.45fr) minmax(0, 0.8fr)"
@@ -337,7 +337,7 @@ export default function SimpleCommunityInviteCard({
         <details style={{ display: identityPresentation ? "contents" : "block" }}>
         <StableDisclosureSummary
           debugId="simple-community-invite.open"
-          stableHeight={identityPresentation ? 46 : 40}
+          stableHeight={identityPresentation ? 42 : 40}
           style={{
             width: identityPresentation ? "100%" : "fit-content",
             minWidth: 0,
@@ -347,8 +347,8 @@ export default function SimpleCommunityInviteCard({
             alignItems: "center",
             justifyContent: "center",
             gap: 7,
-            padding: identityPresentation ? "10px 11px" : "8px 13px",
-            borderRadius: identityPresentation ? 14 : 999,
+            padding: identityPresentation ? "8px 10px" : "8px 13px",
+            borderRadius: identityPresentation ? 13 : 999,
             border: identityPresentation
               ? "1px solid rgba(13,95,168,0.18)"
               : "1px solid rgba(255,255,255,0.42)",
@@ -356,7 +356,7 @@ export default function SimpleCommunityInviteCard({
               ? "linear-gradient(180deg, #1267AC 0%, #0B4F86 100%)"
               : "linear-gradient(180deg, #F8D976 0%, #E8B83D 100%)",
             color: identityPresentation ? "#FFFFFF" : "#07172C",
-            fontSize: identityPresentation ? 13.5 : 14,
+            fontSize: identityPresentation ? 13 : 14,
             fontWeight: 950,
             lineHeight: 1,
             boxShadow: identityPresentation

@@ -68,6 +68,18 @@ requirePattern(
   communityFile,
   "The identity billboard, Invite action, and immediate Bulletin order must remain intact."
 );
+requirePattern(
+  communitySource,
+  /communityHeroPhotoStyle\(selectedCommunityImageUrl\)[\s\S]*?data-debug-id="community-home\.identity\.position"[\s\S]*?brandClampLines\(1\)[\s\S]*?data-community-home-billboard-facts="true"[\s\S]*?data-debug-id="community-home\.identity\.members"[\s\S]*?data-debug-id="community-home\.identity\.membership"[\s\S]*?heroPresentation="identity"/,
+  communityFile,
+  "The phone identity must keep the approved photo, role, one-line name, member/status row, and Invite/Share order."
+);
+forbidPattern(
+  communitySource,
+  /community-home\.identity\.copy-community-id|Community ID copied\./,
+  communityFile,
+  "The compact phone identity must not restore the removed duplicate Community ID copy action."
+);
 forbidPattern(
   communitySource,
   /getPoolMeSummary/,

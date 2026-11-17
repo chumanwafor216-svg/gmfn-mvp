@@ -27,7 +27,6 @@ import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import { isCompactAppViewport } from "../lib/responsiveLayout";
 import { gsnGovernanceErrorMessage } from "../lib/structuredErrors";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
-import { copyToClipboard } from "../lib/share";
 import communityFallbackImage from "../assets/dashboard/dashboard-demand-market.jpg";
 import {
   getPoolMe,
@@ -750,7 +749,7 @@ function communityHeroStyle(isCompact: boolean): React.CSSProperties {
 function communityHeroPhotoStyle(imageUrl: string): React.CSSProperties {
   return {
     position: "relative",
-    minHeight: 174,
+    minHeight: 118,
     backgroundImage: `linear-gradient(180deg, rgba(3,17,29,0.06) 0%, rgba(3,17,29,0.40) 100%), url("${imageUrl}")`,
     backgroundPosition: "center",
     backgroundSize: "cover",
@@ -761,12 +760,8 @@ function communityHeroIdentityPanelStyle(): React.CSSProperties {
   return {
     position: "relative",
     zIndex: 2,
-    margin: "-38px 10px 10px",
-    padding: "12px 12px 11px",
-    borderRadius: 22,
-    border: "1px solid rgba(16,37,59,0.10)",
-    background: "rgba(255,255,255,0.98)",
-    boxShadow: "0 18px 34px rgba(6,24,39,0.14)",
+    padding: "8px 12px 10px",
+    background: "#FFFFFF",
   };
 }
 
@@ -4655,17 +4650,6 @@ export default function CommunityHomePage() {
     event?.stopPropagation();
   }
 
-  async function copySelectedCommunityReference(
-    event: React.SyntheticEvent<HTMLElement>
-  ) {
-    consumeCommunityButtonEvent(event);
-    const copied = await copyToClipboard(selectedCommunityReference);
-    showNotice(
-      copied ? "success" : "error",
-      copied ? "Community ID copied." : "Community ID could not be copied."
-    );
-  }
-
   function openCommunityRoute(
     event: React.SyntheticEvent<HTMLElement> | undefined,
     to: string
@@ -5029,45 +5013,67 @@ export default function CommunityHomePage() {
           {isCompact ? (
             <>
               <div style={communityHeroPhotoStyle(selectedCommunityImageUrl)} aria-hidden="true" />
-              <div style={communityHeroIdentityPanelStyle()}>
-                <div style={{ display: "grid", gridTemplateColumns: "58px minmax(0, 1fr)", gap: 11, alignItems: "center" }}>
-                  <div style={{ width: 58, height: 58, borderRadius: 17, overflow: "hidden", border: "2px solid #FFFFFF", background: "#EAF3FF", boxShadow: "0 10px 20px rgba(7,24,39,0.14)" }}>
-                    <img src={selectedCommunityImageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 7 }}>
-                      <div style={{ ...brandClampLines(2), minWidth: 0, color: "#07172C", fontSize: 22, fontWeight: 950, lineHeight: 1.08 }}>
-                        {selectedClanName || "Choose a community"}
-                      </div>
-                      <span data-debug-id="community-home.identity.position" style={{ ...badge(true), flex: "0 0 auto", minHeight: 24, padding: "4px 7px", fontSize: 10.5 }}>
-                        {selectedCommunityRoleLabel}
-                      </span>
-                    </div>
-                    <div style={{ marginTop: 7, display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", color: "#617085", fontSize: 12.5, fontWeight: 820 }}>
-                      <span data-debug-id="community-home.identity.members">{selectedCommunityMemberCountLabel}</span>
-                      <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: 999, background: "#22B56D", boxShadow: "0 0 0 3px rgba(34,181,109,0.12)" }} />
-                      <span data-debug-id="community-home.identity.membership">{selectedCommunityStatusLabel} community</span>
-                    </div>
-                  </div>
+              <div data-debug-id="community-home.identity-panel" style={communityHeroIdentityPanelStyle()}>
+                <span
+                  data-debug-id="community-home.identity.position"
+                  style={{
+                    ...badge(true),
+                    width: "fit-content",
+                    minHeight: 20,
+                    padding: "3px 8px",
+                    fontSize: 9.5,
+                  }}
+                >
+                  {selectedCommunityRoleLabel}
+                </span>
+
+                <div
+                  style={{
+                    ...brandClampLines(1),
+                    marginTop: 4,
+                    color: "#07172C",
+                    fontSize: 22,
+                    fontWeight: 950,
+                    lineHeight: 1.05,
+                  }}
+                >
+                  {selectedClanName || "Choose a community"}
                 </div>
 
                 <div
                   data-community-home-billboard-facts="true"
-                  style={{ marginTop: 11, display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 8, alignItems: "center", paddingTop: 10, borderTop: "1px solid rgba(16,37,59,0.08)" }}
+                  style={{
+                    marginTop: 7,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    color: "#617085",
+                    fontSize: 11.5,
+                    fontWeight: 850,
+                  }}
                 >
-                  <div data-debug-id="community-home.identity.community-id" style={{ minWidth: 0 }}>
-                    <div style={{ color: "#617085", fontSize: 10.5, fontWeight: 850 }}>Community ID</div>
-                    <div style={{ ...brandClampLines(1), marginTop: 3, color: "#0B2D4A", fontSize: 12.5, fontWeight: 930 }}>{selectedCommunityReference}</div>
-                  </div>
-                  <StableButton
-                    type="button"
-                    debugId="community-home.identity.copy-community-id"
-                    onClick={(event) => void copySelectedCommunityReference(event)}
-                    style={{ ...communityActionStyle("soft"), minHeight: 36, minWidth: 72, padding: "7px 9px", borderRadius: 12, fontSize: 11.5, boxShadow: "none" }}
+                  <span
+                    data-debug-id="community-home.identity.members"
+                    style={{
+                      minHeight: 28,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "4px 8px",
+                      borderRadius: 999,
+                      background: "#EAF4FF",
+                      color: "#07172C",
+                    }}
                   >
-                    <GsnLegacyIcon name="copy" size={18} />
-                    Copy
-                  </StableButton>
+                    <GsnLegacyIcon name="community" size={18} decorative />
+                    {selectedCommunityMemberCountLabel}
+                    <span aria-hidden="true" style={{ fontSize: 18, lineHeight: 1 }}>&gt;</span>
+                  </span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+                    <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 999, background: "#15C46B", boxShadow: "0 0 0 3px rgba(21,196,107,0.10)" }} />
+                    <span data-debug-id="community-home.identity.membership">{selectedCommunityStatusLabel} community</span>
+                  </span>
                 </div>
 
                 {selectedCommunityBalance ? (
@@ -5108,11 +5114,11 @@ export default function CommunityHomePage() {
                       buttonLabel="Share"
                       triggerIcon={<GsnLegacyIcon name="globe" size={19} />}
                       debugId="community-home.identity.share-community"
-                      stableHeight={46}
+                      stableHeight={42}
                       fullWidth
                       style={{
                         borderRadius: 14,
-                        fontSize: 13.5,
+                        fontSize: 13,
                         ...authenticatedStaticNeonAction("cyanViolet"),
                       }}
                       onResult={(tone, text) => showNotice(tone, text)}

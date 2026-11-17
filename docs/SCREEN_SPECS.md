@@ -182,6 +182,11 @@ Rules:
 
 ## DashboardPage
 
+### Owner-approved compact Identity Passport reference - 2026-11-17
+- On phone, the Identity Passport opens with `Welcome back`, the member name, `Your trust is the first currency.`, and the real saved portrait or initials.
+- Show `GSN ID`, `Membership`, and `Pipeline Credits` as three compact fact cells. Pipeline Credits remains non-clickable, includes a truthful zero, and is absent when its authenticated endpoint cannot be read.
+- Keep the existing `GSN ID Card` and closed `Identity & trust` actions directly below the facts. Do not add actions, alter their routes, or change Market Wisdom.
+
 ### Owner-approved Pipeline Credit balance placement - 2026-11-12
 - Dashboard Identity Passport is the single primary home for the signed-in member's global customer-service Pipeline Credit balance.
 - Show one compact, non-clickable `Your Pipeline Credits` status on phone and desktop, including a truthful zero when the authenticated endpoint reports an unopened account.
@@ -757,6 +762,11 @@ After submission:
 
 ## CommunityHomePage
 
+### Owner-approved compact photo identity reference - 2026-11-17
+- On phone, show the selected community photo first, then one flat white identity panel with role, one-line community name, member count, active status, `Invite members`, and `Share`.
+- Remove the repeated thumbnail and the exposed Community ID/Copy row from this first phone surface. The Community ID remains available on wider-screen facts and through existing community records; invite and share behavior is unchanged.
+- Preserve the selected-community data source, truthful count/status, optional positive `Available now` balance, Bulletin order, routes, permissions, and all deeper disclosures.
+
 ### Owner-approved Pipeline Credit placement correction - 2026-11-12
 - Do not surface the member's global Pipeline Credit balance on Community Home. Community Home is selected-community context and would risk implying that the balance belongs to that community.
 - Dashboard Identity Passport owns the single primary global balance status.
@@ -782,8 +792,8 @@ Canonical rule:
 Must show, in phone-first order:
 - selected community identity hero
   - community name
-  - on phone, a photo-led community cover with an overlapping white identity card; use the selected community image when available and the approved community-market fallback otherwise
-  - on phone, keep member count and membership status on one compact line, Community ID with Copy below it, role as a small badge, and Invite members plus Share as the main identity-card actions
+  - on phone, a photo-led community cover followed by one flat white identity panel; use the selected community image when available and the approved community-market fallback otherwise
+  - on phone, keep role, a one-line community name, member count, membership status, Invite members, and Share on the compact first surface; do not repeat the community thumbnail or expose Community ID/Copy there
   - on wider screens, keep the compact two-column fact grid directly after the name
   - real active-member count from the membership record; missing count data must say `Count unavailable` and must never be converted into zero
   - stable community reference / global ID labelled `Community ID`

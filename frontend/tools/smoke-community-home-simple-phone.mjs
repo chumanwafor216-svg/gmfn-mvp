@@ -309,8 +309,11 @@ async function run() {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
-    await page.waitForSelector('[data-cta-id="community-home.goto.toggle"]', { timeout: 30000 });
-    await page.waitForSelector('[data-cta-id^="community-home.bulletin.reactions."]', { timeout: 30000 });
+    await page.waitForSelector('[data-debug-id="community-home.identity-card"]', { timeout: 30000 });
+    if (!process.env.COMMUNITY_HOME_IDENTITY_SCREENSHOT_ONLY) {
+      await page.waitForSelector('[data-cta-id="community-home.goto.toggle"]', { timeout: 30000 });
+      await page.waitForSelector('[data-cta-id^="community-home.bulletin.reactions."]', { timeout: 30000 });
+    }
 
     const companionDismiss = page.getByRole("button", { name: "Dismiss", exact: true });
     if (await companionDismiss.isVisible().catch(() => false)) {
@@ -328,7 +331,7 @@ async function run() {
       return {
         hasName: identityText.includes("Homeland isa"),
         hasMemberCount: identityText.includes("7 members"),
-        hasCommunityId: identityText.includes("GMFN-C-000008"),
+        communityIdHidden: !identityText.includes("GMFN-C-000008"),
         hasPosition: identityText.includes("Member"),
         hasMembership: identityText.includes("Active"),
         hasOpenNotice: text.includes("Open notice"),
@@ -348,15 +351,38 @@ async function run() {
         phoneStatusHeight: phoneStatus instanceof globalThis.HTMLElement ? Math.round(phoneStatus.getBoundingClientRect().height) : null,
         urgencyTones,
         attentionCount: document.querySelectorAll('[data-debug-id="community-home.attention"]').length,
+        identityBox: document.querySelector('[data-debug-id="community-home.identity-card"]')?.getBoundingClientRect().toJSON() || null,
+        photoBox: document.querySelector('[data-debug-id="community-home.identity-card"] > div[aria-hidden="true"]')?.getBoundingClientRect().toJSON() || null,
+        panelBox: document.querySelector('[data-debug-id="community-home.identity-panel"]')?.getBoundingClientRect().toJSON() || null,
       };
     });
     const overflow390 = await collectOverflow(page);
     await page.screenshot({ path: join(screenshotDir, "community-home-simple-390x844.png"), fullPage: false });
 
+    if (process.env.COMMUNITY_HOME_IDENTITY_SCREENSHOT_ONLY) {
+      if (
+        !defaultState.hasName ||
+        !defaultState.hasMemberCount ||
+        !defaultState.communityIdHidden ||
+        !defaultState.hasPosition ||
+        !defaultState.hasMembership ||
+        !defaultState.heroPhotoReady ||
+        !defaultState.inviteVisible ||
+        !defaultState.shareVisible ||
+        overflow390.length > 0
+      ) {
+        console.error("Community Home identity-only phone state failed:", { defaultState, overflow390 });
+        process.exitCode = 1;
+        return;
+      }
+      console.log("Community Home identity-only phone state passed:", JSON.stringify({ defaultState, overflow390 }));
+      return;
+    }
+
     if (
       !defaultState.hasName ||
       !defaultState.hasMemberCount ||
-      !defaultState.hasCommunityId ||
+      !defaultState.communityIdHidden ||
       !defaultState.hasPosition ||
       !defaultState.hasMembership ||
       !defaultState.hasOpenNotice ||

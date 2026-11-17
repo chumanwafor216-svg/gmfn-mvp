@@ -151,12 +151,12 @@ export default function DashboardCompactIdentityHero({
     >
       <div
         style={{
-          minHeight: 132,
+          minHeight: 126,
           display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) 64px",
-          gap: 10,
+          gridTemplateColumns: "minmax(0, 1fr) 78px",
+          gap: 12,
           alignItems: "center",
-          padding: "13px 13px 11px",
+          padding: "14px 14px 10px",
         }}
       >
         <div style={{ minWidth: 0 }}>
@@ -180,7 +180,7 @@ export default function DashboardCompactIdentityHero({
             style={{
               marginTop: 3,
               color: colors.white,
-              fontSize: 27,
+              fontSize: 30,
               fontWeight: 1000,
               lineHeight: 1,
               overflow: "hidden",
@@ -196,7 +196,7 @@ export default function DashboardCompactIdentityHero({
               marginTop: 5,
               color: colors.gold300,
               fontFamily: "Georgia, 'Times New Roman', serif",
-              fontSize: 14.5,
+              fontSize: 16,
               fontStyle: "italic",
               fontWeight: 700,
               lineHeight: 1.15,
@@ -205,95 +205,11 @@ export default function DashboardCompactIdentityHero({
             Your trust is the first currency.
           </div>
 
-          <div
-            style={{
-              marginTop: 9,
-              display: "flex",
-              alignItems: "center",
-              gap: 7,
-              minWidth: 0,
-              flexWrap: "wrap",
-            }}
-          >
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                minHeight: 25,
-                maxWidth: "100%",
-                padding: "4px 8px",
-                borderRadius: 999,
-                border: "1px solid rgba(242,207,119,0.30)",
-                background: "rgba(255,255,255,0.08)",
-                color: "#FFF8DC",
-                fontSize: 10.5,
-                fontWeight: 900,
-                lineHeight: 1,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {gsnId}
-            </span>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 5,
-                minHeight: 25,
-                padding: "4px 8px",
-                borderRadius: 999,
-                background: "rgba(33,163,101,0.16)",
-                color: "#D8F8E6",
-                fontSize: 10.5,
-                fontWeight: 900,
-                lineHeight: 1,
-                whiteSpace: "nowrap",
-              }}
-            >
-              <span
-                aria-hidden="true"
-                style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: 999,
-                  background: "#55D98B",
-                  boxShadow: "0 0 0 3px rgba(85,217,139,0.12)",
-                }}
-              />
-              {membershipLabel}
-            </span>
-            {pipelineCreditBalance !== null ? (
-              <span
-                data-debug-id="dashboard.identity.pipeline-credit-balance"
-                aria-label={`Your Pipeline Credits: ${pipelineCreditBalance}`}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 5,
-                  minHeight: 25,
-                  padding: "4px 8px",
-                  borderRadius: 999,
-                  border: "1px solid rgba(242,207,119,0.30)",
-                  background: "rgba(214,170,69,0.14)",
-                  color: "#FFF8DC",
-                  fontSize: 10.5,
-                  fontWeight: 900,
-                  lineHeight: 1,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <span>Your Pipeline Credits</span>
-                <strong style={{ color: colors.gold300 }}>{pipelineCreditBalance}</strong>
-              </span>
-            ) : null}
-          </div>
         </div>
 
         <div
           style={{
-            width: 64,
+            width: 78,
             display: "grid",
             justifyItems: "center",
             gap: 4,
@@ -302,9 +218,9 @@ export default function DashboardCompactIdentityHero({
         >
           <div
             style={{
-              width: 56,
-              height: 56,
-              borderRadius: 18,
+              width: 70,
+              height: 70,
+              borderRadius: 22,
               border: "3px solid rgba(255,255,255,0.90)",
               background: "linear-gradient(180deg, #EAF3FF 0%, #D8E8F8 100%)",
               overflow: "hidden",
@@ -342,7 +258,7 @@ export default function DashboardCompactIdentityHero({
             triggerContent={<span aria-hidden="true">Edit</span>}
             onToggle={onTogglePhotoTools}
             slotStyle={{
-              width: 58,
+              width: 72,
               height: 30,
               minHeight: 30,
               maxHeight: 30,
@@ -415,6 +331,77 @@ export default function DashboardCompactIdentityHero({
             }}
           />
         </div>
+      </div>
+
+      <div
+        data-dashboard-identity-facts="true"
+        style={{
+          display: "grid",
+          gridTemplateColumns: pipelineCreditBalance !== null
+            ? "repeat(3, minmax(0, 1fr))"
+            : "repeat(2, minmax(0, 1fr))",
+          gap: 6,
+          padding: "0 10px 10px",
+        }}
+      >
+        <div
+          style={{
+            minWidth: 0,
+            minHeight: 58,
+            display: "grid",
+            alignContent: "center",
+            gap: 5,
+            padding: "7px 6px",
+            borderRadius: 12,
+            border: "1px solid rgba(52,211,255,0.52)",
+            background: "rgba(3,16,31,0.62)",
+            textAlign: "center",
+          }}
+        >
+          <span style={{ color: "rgba(255,255,255,0.72)", fontSize: 9, fontWeight: 900 }}>GSN ID</span>
+          <strong style={{ overflow: "hidden", color: "#FFF8DC", fontSize: 10.5, fontWeight: 950, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{gsnId}</strong>
+        </div>
+        <div
+          style={{
+            minWidth: 0,
+            minHeight: 58,
+            display: "grid",
+            alignContent: "center",
+            gap: 5,
+            padding: "7px 6px",
+            borderRadius: 12,
+            border: "1px solid rgba(52,211,255,0.52)",
+            background: "rgba(3,16,31,0.62)",
+            textAlign: "center",
+          }}
+        >
+          <span style={{ color: "rgba(255,255,255,0.72)", fontSize: 9, fontWeight: 900 }}>Membership</span>
+          <strong style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, color: "#D8F8E6", fontSize: 10.5, fontWeight: 950 }}>
+            <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: 999, background: "#55D98B", boxShadow: "0 0 0 3px rgba(85,217,139,0.12)" }} />
+            {membershipLabel}
+          </strong>
+        </div>
+        {pipelineCreditBalance !== null ? (
+          <div
+            data-debug-id="dashboard.identity.pipeline-credit-balance"
+            aria-label={`Your Pipeline Credits: ${pipelineCreditBalance}`}
+            style={{
+              minWidth: 0,
+              minHeight: 58,
+              display: "grid",
+              alignContent: "center",
+              gap: 3,
+              padding: "7px 6px",
+              borderRadius: 12,
+              border: "1px solid rgba(52,211,255,0.52)",
+              background: "rgba(3,16,31,0.62)",
+              textAlign: "center",
+            }}
+          >
+            <span style={{ color: "rgba(255,255,255,0.72)", fontSize: 9, fontWeight: 900 }}>Pipeline Credits</span>
+            <strong style={{ color: colors.gold300, fontSize: 20, fontWeight: 1000, lineHeight: 1 }}>{pipelineCreditBalance}</strong>
+          </div>
+        ) : null}
       </div>
 
       <div

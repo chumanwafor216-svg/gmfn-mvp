@@ -190,6 +190,14 @@ const requiredNeonAffordancePatterns = [
       "Dashboard compact identity must keep the approved three-row neon reference treatment and covered actions.",
   },
   {
+    file: dashboardCompactIdentityFile,
+    source: compactIdentitySource,
+    pattern:
+      /gridTemplateColumns: pipelineCreditBalance !== null[\s\S]*?repeat\(3, minmax\(0, 1fr\)\)[\s\S]*?>GSN ID<[\s\S]*?>Membership<[\s\S]*?data-debug-id="dashboard\.identity\.pipeline-credit-balance"[\s\S]*?>Pipeline Credits</,
+    message:
+      "Dashboard compact identity must keep the approved GSN ID, Membership, and Pipeline Credits fact row.",
+  },
+  {
     file: appLayoutFile,
     source: appLayoutSource,
     pattern:

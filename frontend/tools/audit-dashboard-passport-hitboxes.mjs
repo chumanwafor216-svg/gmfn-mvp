@@ -34,6 +34,7 @@ function isApiRequest(urlText) {
     "/marketplace",
     "/notifications",
     "/payment-instructions",
+    "/pipeline-credits",
     "/pool",
     "/protected-trades",
     "/rosca",
@@ -95,6 +96,9 @@ function payloadFor(path) {
   if (/^\/loans/.test(path) || /^\/borrowing/.test(path)) return { items: [], loans: [] };
   if (/^\/pool\//.test(path)) return { balance: 0, available_balance: 0, items: [] };
   if (/^\/payment-instructions/.test(path)) return { items: [] };
+  if (path === "/pipeline-credits/me-service-balance") {
+    return { account: { balance: "0.00" } };
+  }
   if (/^\/protected-trades/.test(path)) return { items: [], records: [] };
   if (/^\/rosca/.test(path)) return { items: [], cycles: [] };
   if (path === "/trust/me/why") {
@@ -324,6 +328,37 @@ try {
   );
   if ((await compactHero.count()) !== 1 || !(await compactHero.isVisible())) {
     throw new Error("Dashboard phone view must expose one compact identity hero.");
+  }
+
+  const compactFacts = compactHero.locator('[data-dashboard-identity-facts="true"]');
+  const compactFactsText = (await compactFacts.textContent())?.replace(/\s+/g, " ").trim() || "";
+  const compactHeroBox = await compactHero.boundingBox();
+  const compactFactsBox = await compactFacts.boundingBox();
+  if (
+    (await compactFacts.count()) !== 1 ||
+    !compactFactsText.includes("GSN ID") ||
+    !compactFactsText.includes("Membership") ||
+    !compactFactsText.includes("Pipeline Credits") ||
+    !compactHeroBox ||
+    !compactFactsBox ||
+    compactHeroBox.x < 0 ||
+    compactHeroBox.x + compactHeroBox.width > 391 ||
+    compactFactsBox.height > 72
+  ) {
+    throw new Error(
+      `Dashboard compact identity facts are not in the approved bounded three-cell row: text=${compactFactsText}, hero=${JSON.stringify(compactHeroBox)}, facts=${JSON.stringify(compactFactsBox)}.`
+    );
+  }
+  console.log("Dashboard compact identity phone state passed:", JSON.stringify({
+    text: compactFactsText,
+    hero: compactHeroBox,
+    facts: compactFactsBox,
+  }));
+
+  if (process.env.DASHBOARD_IDENTITY_SCREENSHOT_ONLY) {
+    await browser.close();
+    await server.close();
+    process.exit(0);
   }
 
   if (
