@@ -33,149 +33,141 @@ jobs:
           python tools/render_status.py --discover-api-service
 
   backup-and-restore:
-    if: ${{ github.event.inputs.confirmation == 'CREATE_PRODUCTION_EXPORT' }}
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:18
-        env:
-          POSTGRES_USER: gmfn_restore
-          POSTGRES_PASSWORD: gmfn_restore_test_only
-          POSTGRES_DB: gmfn_restore_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U gmfn_restore -d gmfn_restore_test"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     env:
       RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
       RENDER_POSTGRES_ID: dpg-d7h15li8qa3s73crpcr0-a
-      RESTORE_DATABASE_URL: postgresql://gmfn_restore:gmfn_restore_test_only@127.0.0.1:5432/gmfn_restore_test
 
     steps:
-      - name: Require Render backup access
+      - name: Require Render recovery access
         run: |
           if [ -z "$RENDER_API_KEY" ]; then
             echo "::error::RENDER_API_KEY is not configured."
             exit 1
           fi
 
-      - name: Create export and verify restoration
+      - name: Create export and verify protected Render recovery
         run: |
           set -euo pipefail
 
-          work_dir="$(mktemp -d)"
-          cleanup() {
-            rm -rf "$work_dir"
-          }
-          trap cleanup EXIT
+          api_base="https://api.render.com/v1"
+          export_api="$api_base/postgres/$RENDER_POSTGRES_ID/export"
+          auth_header="authorization: Bearer $RENDER_API_KEY"
 
-          api_url="https://api.render.com/v1/postgres/${RENDER_POSTGRES_ID}/export"
-          auth_header="authorization: Bearer ${RENDER_API_KEY}"
-          existing_exports="$(curl -fsS "$api_url" -H "accept: application/json" -H "$auth_header")"
+          existing_exports="$(curl -fsS "$export_api" -H "accept: application/json" -H "$auth_header")"
           existing_export_ids="$(printf '%s' "$existing_exports" | jq -c '[.[].id]')"
 
-          status_code="$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$api_url" \
-            -H "accept: application/json" \
-            -H "$auth_header")"
+          status_code="$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$export_api"             -H "accept: application/json"             -H "$auth_header")"
           if [ "$status_code" != "202" ]; then
-            echo "::error::Render export request failed with HTTP ${status_code}."
+            echo "::error::Render export request failed with HTTP $status_code."
             exit 1
           fi
           echo "Render accepted the production export request."
 
           export_id=""
           export_created_at=""
-          export_url=""
           for attempt in $(seq 1 90); do
-            exports_json="$(curl -fsS "$api_url" \
-              -H "accept: application/json" \
-              -H "$auth_header")"
-            export_record="$(printf '%s' "$exports_json" | jq -r \
-              --argjson existing_ids "$existing_export_ids" \
-              '[.[] | select(.id as $id | ($existing_ids | index($id) | not))] |
+            exports_json="$(curl -fsS "$export_api"               -H "accept: application/json"               -H "$auth_header")"
+            export_record="$(printf '%s' "$exports_json" | jq -r               --argjson existing_ids "$existing_export_ids"               '[.[] | select(.id as $id | ($existing_ids | index($id) | not))] |
                sort_by(.createdAt) | last |
                if . == null then ["", "", ""] else [.id, .createdAt, (.url // "")] end |
                @tsv')"
-            IFS=$'\t' read -r export_id export_created_at export_url <<< "$export_record"
+            IFS=$'	' read -r export_id export_created_at export_url <<< "$export_record"
             if [ -n "$export_id" ] && [ -n "$export_url" ]; then
               break
             fi
-            echo "Waiting for the Render export to become downloadable (${attempt}/90)."
+            echo "Waiting for the Render export to complete ($attempt/90)."
             sleep 20
           done
 
           if [ -z "$export_id" ] || [ -z "$export_url" ]; then
-            echo "::error::Render did not provide a completed export within 30 minutes."
+            echo "::error::Render did not complete the export within 30 minutes."
+            exit 1
+          fi
+          unset export_url
+          echo "Render export ready: id=$export_id; created_at=$export_created_at."
+
+          recovery_info="$(curl -fsS "$api_base/postgres/$RENDER_POSTGRES_ID/recovery"             -H "accept: application/json"             -H "$auth_header")"
+          recovery_status="$(printf '%s' "$recovery_info" | jq -r '.recoveryStatus // ""')"
+          recovery_starts_at="$(printf '%s' "$recovery_info" | jq -r '.startsAt // ""')"
+          if [ "$recovery_status" != "AVAILABLE" ] || [ -z "$recovery_starts_at" ]; then
+            echo "::error::Render PITR is not currently available for the production database."
             exit 1
           fi
 
-          echo "Render export ready: id=${export_id}; created_at=${export_created_at}."
-          curl -fsSL "$export_url" -o "$work_dir/export.dir.tar.gz"
-          test -s "$work_dir/export.dir.tar.gz"
-          tar -tzf "$work_dir/export.dir.tar.gz" > /dev/null
-          tar -xzf "$work_dir/export.dir.tar.gz" -C "$work_dir"
-
-          restore_dir="$(find "$work_dir" -type f -name toc.dat -printf '%h\n' | head -n 1)"
-          if [ -z "$restore_dir" ]; then
-            echo "::error::The Render export does not contain a PostgreSQL directory-format table of contents."
+          restore_time="$(date -u -d '15 minutes ago' +'%Y-%m-%dT%H:%M:%SZ')"
+          if [ "$(date -u -d "$restore_time" +%s)" -lt "$(date -u -d "$recovery_starts_at" +%s)" ]; then
+            echo "::error::The requested recovery point is outside Render's available PITR window."
             exit 1
           fi
-          restore_relative="${restore_dir#"$work_dir"/}"
-
-          docker run --rm --network host \
-            -v "$work_dir:/backup:ro" \
-            postgres:18 \
-            pg_restore \
-              --dbname="$RESTORE_DATABASE_URL" \
-              --exit-on-error \
-              --no-owner \
-              --no-privileges \
-              --format=directory \
-              "/backup/${restore_relative}" \
-              > /dev/null
-
-          required_tables="$(docker run --rm --network host \
-            postgres:18 \
-            psql "$RESTORE_DATABASE_URL" -Atv ON_ERROR_STOP=1 -c \
-              "SELECT count(*) FROM information_schema.tables
-               WHERE table_schema = 'public'
-                 AND table_name IN ('users', 'clans', 'clan_join_requests', 'clan_memberships');")"
-          if [ "$required_tables" != "4" ]; then
-            echo "::error::Restored database is missing one or more critical identity/community tables."
+          restore_name="gmfn-recovery-check-$(date -u +'%Y%m%d-%H%M%S')"
+          recovery_payload="$(jq -nc             --arg restoreName "$restore_name"             --arg restoreTime "$restore_time"             '{restoreName: $restoreName, restoreTime: $restoreTime}')"
+          recovery_response="$(curl -fsS -X POST "$api_base/postgres/$RENDER_POSTGRES_ID/recovery"             -H "accept: application/json"             -H "$auth_header"             -H "content-type: application/json"             --data "$recovery_payload")"
+          recovered_id="$(printf '%s' "$recovery_response" | jq -r '.id // ""')"
+          if [ -z "$recovered_id" ]; then
+            echo "::error::Render did not return a recovery database id."
             exit 1
           fi
+          echo "Render recovery started: id=$recovered_id; restore_time=$restore_time."
 
-          for table_name in users clans clan_join_requests clan_memberships; do
-            docker run --rm --network host \
-              postgres:18 \
-              psql "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -c \
-                "SELECT 1 FROM ${table_name} LIMIT 0;" \
-                > /dev/null
+          protected_response="$(curl -fsS -X PATCH "$api_base/postgres/$recovered_id"             -H "accept: application/json"             -H "$auth_header"             -H "content-type: application/json"             --data '{"ipAllowList":[]}' )"
+          protected_count="$(printf '%s' "$protected_response" | jq '.ipAllowList | length')"
+          if [ "$protected_count" != "0" ]; then
+            echo "::error::The recovery database external IP allow list was not cleared."
+            exit 1
+          fi
+          echo "Recovery database external access is disabled."
+
+          recovered_status=""
+          for attempt in $(seq 1 90); do
+            recovered_json="$(curl -fsS "$api_base/postgres/$recovered_id"               -H "accept: application/json"               -H "$auth_header")"
+            recovered_status="$(printf '%s' "$recovered_json" | jq -r '.status // ""')"
+            if [ "$recovered_status" = "available" ]; then
+              break
+            fi
+            if [ "$recovered_status" = "recovery_failed" ] || [ "$recovered_status" = "unavailable" ]; then
+              echo "::error::Render recovery ended with status $recovered_status."
+              exit 1
+            fi
+            echo "Waiting for the protected recovery database ($attempt/90; status=$recovered_status)."
+            sleep 20
           done
+          if [ "$recovered_status" != "available" ]; then
+            echo "::error::Render recovery did not become available within 30 minutes."
+            exit 1
+          fi
 
-          version_rows="$(docker run --rm --network host \
-            postgres:18 \
-            psql "$RESTORE_DATABASE_URL" -Atv ON_ERROR_STOP=1 -c \
-              "SELECT count(*) FROM alembic_version;")"
-          if [ "$version_rows" != "1" ]; then
-            echo "::error::Restored database has an unexpected Alembic version record count."
+          sizes_json="$(curl -fsS "$api_base/postgres/$recovered_id/query/sizes"             -H "accept: application/json"             -H "$auth_header")"
+          required_tables="$(printf '%s' "$sizes_json" | jq             '[.sizes[] |
+              (.Table // .table // "") |
+              select(. == "users" or . == "clans" or
+                     . == "clan_join_requests" or . == "clan_memberships")] |
+             unique | length')"
+          if [ "$required_tables" != "4" ]; then
+            echo "::error::Recovered database metadata is missing one or more critical identity/community tables."
+            exit 1
+          fi
+          echo "Recovered database contains all critical identity/community tables."
+
+          suspend_code="$(curl -sS -o /dev/null -w '%{http_code}' -X POST             "$api_base/postgres/$recovered_id/suspend"             -H "accept: application/json"             -H "$auth_header")"
+          if [ "$suspend_code" != "202" ]; then
+            echo "::error::Recovery verification passed, but suspending the recovery database failed with HTTP $suspend_code."
             exit 1
           fi
 
           {
             echo "### Production recovery preparation"
             echo
-            echo "- Render export id: ${export_id}"
-            echo "- Export timestamp: ${export_created_at}"
+            echo "- Render export id: $export_id"
+            echo "- Export timestamp: $export_created_at"
             echo "- Protected location: Render Postgres logical exports (7-day retention)"
-            echo "- Restore target: ephemeral PostgreSQL 18 service in this job"
-            echo "- Result: archive readable, restore completed, critical tables queryable, Alembic version present"
-            echo "- Retained CI artifact: none"
+            echo "- PITR recovery database id: $recovered_id"
+            echo "- PITR restore timestamp: $restore_time"
+            echo "- External access: disabled before validation"
+            echo "- Result: recovery available and critical identity/community tables present"
+            echo "- Final recovery state: suspend requested"
+            echo "- Production data downloaded to CI: no"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          echo "Recovery verification passed for export ${export_id}."
+          echo "Protected recovery verification passed; recovery id=$recovered_id."
