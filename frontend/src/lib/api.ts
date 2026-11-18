@@ -1119,6 +1119,38 @@ export async function createEntry(payload: Record<string, any>): Promise<any> {
   return out;
 }
 
+export async function establishEntryIdentity(
+  payload: Record<string, any>
+): Promise<any> {
+  return httpJson("/entry/identity/establish", "POST", payload);
+}
+
+export async function createCommunityAfterIdentity(
+  payload: Record<string, any>
+): Promise<any> {
+  return httpJson("/entry/identity/community", "POST", payload);
+}
+
+export async function searchJoinableCommunities(
+  query: string,
+  limit: number = 12
+): Promise<any> {
+  return httpJson(
+    `/clans/join-search${buildQuery({ query: String(query || "").trim(), limit })}`,
+    "GET"
+  );
+}
+
+export async function getJoinableCommunity(communityId: number): Promise<any> {
+  return httpJson(`/clans/join-search/${Number(communityId)}`, "GET");
+}
+
+export async function createSearchJoinRequest(
+  payload: Record<string, any>
+): Promise<any> {
+  return httpJson("/clans/search-join-requests", "POST", payload);
+}
+
 export async function checkEntryCommunityName(clanName: string): Promise<any> {
   return httpJson(
     `/entry/community-name/check${buildQuery({ clan_name: clanName })}`,

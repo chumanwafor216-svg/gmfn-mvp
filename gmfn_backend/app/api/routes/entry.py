@@ -19,12 +19,13 @@ from app.api.routes.auth import (
     _validate_founder_invite,
 )
 from app.core.security import create_access_token, get_password_hash
-from app.core.auth import is_user_activation_pending
+from app.core.auth import get_current_user, is_user_activation_pending
 from app.db.database import get_db
 from app.db.models import (
     Clan,
     ClanJoinRequest,
     ClanMembership,
+    AccountActivationGrant,
     EntryPhoneVerification,
     User,
     UserPayoutDestination,
@@ -512,6 +513,80 @@ class CreateEntryOut(BaseModel):
     activation_token: Optional[str] = None
     access_token: Optional[str] = None
     token_type: Optional[str] = None
+
+
+class IdentityFirstEstablishIn(BaseModel):
+    verification_id: int = Field(..., gt=0)
+    identity_request_key: str = Field(..., min_length=24, max_length=64)
+    email: Optional[EmailStr] = None
+    country: Optional[str] = Field(default=None, max_length=64)
+
+    @field_validator("verification_id", mode="before")
+    @classmethod
+    def _reject_malformed_verification_id(cls, value: Any) -> Any:
+        return _reject_bool_float_integer(value, "verification_id")
+
+    @field_validator("identity_request_key", "email", "country", mode="before")
+    @classmethod
+    def _reject_non_text_fields(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+
+class IdentityFirstEstablishOut(BaseModel):
+    ok: bool
+    user_id: int
+    gmfn_id: str
+    display_name: str
+    phone_e164: str
+    email: EmailStr
+    activation_token: str
+    next_step: str
+    resumed: bool = False
+
+
+class IdentityFirstCommunityIn(BaseModel):
+    creation_request_key: str = Field(..., min_length=24, max_length=64)
+    clan_name: str = Field(..., min_length=2, max_length=80)
+    clan_description: Optional[str] = Field(default=None, max_length=500)
+    community_type: Optional[str] = Field(default=None, max_length=64)
+    governance_weight: Optional[str] = Field(default=None, max_length=32)
+    governance_preset_key: Optional[str] = Field(default=None, max_length=96)
+    allow_public_invite_link: Optional[bool] = None
+    require_admin_approval_after_invite: Optional[bool] = None
+    enable_member_service_listings: Optional[bool] = None
+    require_admin_approval_for_listings: Optional[bool] = None
+    enable_community_records: Optional[bool] = None
+    allow_member_record_submissions: Optional[bool] = None
+    require_admin_approval_for_records: Optional[bool] = None
+    require_full_member_verification: Optional[bool] = None
+    invite_admission_mode: str = Field(default="instant_invite", max_length=32)
+    invite_admin_override: bool = False
+    search_join_enabled: bool = False
+    search_join_admission_mode: str = Field(default="community_vote", max_length=32)
+    search_join_admin_override: bool = False
+
+    @field_validator(
+        "creation_request_key",
+        "clan_name",
+        "clan_description",
+        "community_type",
+        "governance_weight",
+        "governance_preset_key",
+        "invite_admission_mode",
+        "search_join_admission_mode",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_fields(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("invite_admission_mode", "search_join_admission_mode")
+    @classmethod
+    def _validate_corrected_admission_modes(cls, value: str) -> str:
+        mode = _clean_text(value).lower()
+        if mode not in {"instant_invite", "community_vote"}:
+            raise ValueError("Choose instant join or community vote.")
+        return mode
 
 
 class EntryCommunityNameCheckOut(BaseModel):
@@ -2062,6 +2137,289 @@ def check_entry_community_name(
     }
 
 
+@router.post(
+    "/identity/establish",
+    response_model=IdentityFirstEstablishOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def establish_identity_first(
+    payload: IdentityFirstEstablishIn,
+    db: Session = Depends(get_db),
+):
+    verification = db.get(EntryPhoneVerification, int(payload.verification_id))
+    if verification is None:
+        raise HTTPException(status_code=404, detail="Verified phone session not found")
+
+    request_key = _clean_text(payload.identity_request_key)
+    if verification.consumed_at is not None:
+        if (
+            _clean_text(getattr(verification, "identity_request_key", None)) != request_key
+            or verification.owner_user_id is None
+        ):
+            raise HTTPException(status_code=409, detail="Verified phone session has already been used")
+        resumed_user = db.get(User, int(verification.owner_user_id))
+        if resumed_user is None:
+            raise HTTPException(status_code=409, detail="Identity continuation is unavailable")
+        if not is_user_activation_pending(resumed_user):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "identity_already_activated",
+                    "message": "This GSN identity is active. Sign in to continue community setup.",
+                    "login_path": "/login?force=1&next=%2Fcreate%3Fstage%3Dcommunity",
+                },
+            )
+        now = _now()
+        active_grants = (
+            db.query(AccountActivationGrant)
+            .filter(
+                AccountActivationGrant.user_id == int(resumed_user.id),
+                AccountActivationGrant.source_type == "entry_identity",
+                AccountActivationGrant.consumed_at.is_(None),
+                AccountActivationGrant.revoked_at.is_(None),
+            )
+            .all()
+        )
+        for grant in active_grants:
+            grant.revoked_at = now
+            db.add(grant)
+        activation_grant = issue_activation_grant(
+            db,
+            user_id=int(resumed_user.id),
+            source_type="entry_identity",
+            authorize_activation=True,
+        )
+        db.commit()
+        return {
+            "ok": True,
+            "user_id": int(resumed_user.id),
+            "gmfn_id": str(resumed_user.gmfn_id),
+            "display_name": _clean_text(resumed_user.display_name),
+            "phone_e164": _clean_text(resumed_user.phone_e164),
+            "email": resumed_user.email,
+            "activation_token": activation_grant.activation_token,
+            "next_step": "activate-identity",
+            "resumed": True,
+        }
+
+    if _verification_expired(verification):
+        raise HTTPException(status_code=400, detail="Verified phone session has expired")
+    registration_only = _entry_phone_registration_only_enabled()
+    if verification.verified_at is None and not registration_only:
+        raise HTTPException(status_code=400, detail="Phone verification must be completed first")
+
+    display_name = _clean_text(verification.display_name)
+    phone_e164 = _clean_text(verification.phone_e164)
+    email = _founder_email(
+        payload_email=verification.email or payload.email,
+        phone_e164=phone_e164,
+    )
+    phone_clash = _find_user_by_phone_identity(db, phone_e164)
+    if phone_clash:
+        released = _release_abandoned_pending_identity(
+            db=db,
+            user=phone_clash,
+            reason="identity_first_phone_reuse",
+        )
+        if released:
+            phone_clash = None
+    if phone_clash:
+        raise _entry_duplicate_identity_error(
+            db=db,
+            user=phone_clash,
+            field_label="phone number",
+        )
+    email_clash = db.query(User).filter(User.email == email).first()
+    if email_clash:
+        released = _release_abandoned_pending_identity(
+            db=db,
+            user=email_clash,
+            reason="identity_first_email_reuse",
+        )
+        if released:
+            email_clash = None
+    if email_clash:
+        raise _entry_duplicate_identity_error(
+            db=db,
+            user=email_clash,
+            field_label="email",
+        )
+
+    verification_checks = (
+        db.query(IdentityVerificationCheck)
+        .filter(IdentityVerificationCheck.entry_phone_verification_id == int(verification.id))
+        .order_by(IdentityVerificationCheck.created_at.asc(), IdentityVerificationCheck.id.asc())
+        .all()
+    )
+    _raise_if_entry_identity_matches_existing_user(
+        db,
+        verification=verification,
+        verification_checks=verification_checks,
+    )
+
+    user = User(
+        email=email,
+        hashed_password="PENDING_APPROVAL",
+        role="admin",
+        display_name=display_name,
+        phone_e164=phone_e164,
+        phone_verified_at=verification.verified_at,
+    )
+    db.add(user)
+    try:
+        db.flush()
+        user = _ensure_user_gmfn_id(db, user, commit=False, refresh=False)
+        for check in verification_checks:
+            check.user_id = int(user.id)
+            db.add(check)
+        verification.owner_user_id = int(user.id)
+        verification.identity_request_key = request_key
+        verification.consumed_at = _now()
+        db.add(verification)
+        activation_grant = issue_activation_grant(
+            db,
+            user_id=int(user.id),
+            source_type="entry_identity",
+            authorize_activation=True,
+        )
+        log_trust_event(
+            db,
+            event_type=(
+                "identity.phone_registered"
+                if verification.verified_at is None
+                else "identity.phone_verified"
+            ),
+            clan_id=None,
+            actor_user_id=int(user.id),
+            subject_user_id=int(user.id),
+            meta=build_trust_meta(
+                reason="identity_first_entry_established",
+                note="GSN identity was established before community setup.",
+                system=True,
+                extra={
+                    "entry_phone_verification_id": int(verification.id),
+                    "declared_country": _normalize_country_hint(payload.country) or None,
+                },
+            ),
+            dedupe_key=f"entry-identity:{int(verification.id)}:{int(user.id)}",
+            commit=False,
+            refresh=False,
+        )
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Founder identity already exists")
+    db.refresh(user)
+    return {
+        "ok": True,
+        "user_id": int(user.id),
+        "gmfn_id": str(user.gmfn_id),
+        "display_name": display_name,
+        "phone_e164": phone_e164,
+        "email": email,
+        "activation_token": activation_grant.activation_token,
+        "next_step": "activate-identity",
+        "resumed": False,
+    }
+
+
+@router.post("/identity/community", response_model=dict[str, Any], status_code=201)
+def create_community_after_identity(
+    payload: IdentityFirstCommunityIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if is_user_activation_pending(current_user):
+        raise HTTPException(status_code=403, detail="Activate your GSN identity first")
+    clan_name = _clean_text(payload.clan_name)
+    request_key = _clean_text(payload.creation_request_key)
+    existing_by_key = (
+        db.query(Clan).filter(Clan.creation_request_key == request_key).first()
+    )
+    if (
+        existing_by_key is None
+        and _find_existing_clan_by_entry_name(db, clan_name) is not None
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail=_entry_community_name_taken_detail(clan_name),
+        )
+
+    invite_mode = _clean_text(payload.invite_admission_mode).lower()
+    search_mode = _clean_text(payload.search_join_admission_mode).lower()
+    invite_override = bool(
+        payload.invite_admin_override and invite_mode == "community_vote"
+    )
+    search_override = bool(
+        payload.search_join_admin_override and search_mode == "community_vote"
+    )
+    governance_profile = _entry_governance_profile_payload(payload)
+    governance_profile["policies"]["require_admin_approval_after_invite"] = False
+    governance_profile["membership_admission"] = {
+        "invite": {
+            "admission_mode": invite_mode,
+            "admin_override": invite_override,
+        },
+        "search": {
+            "enabled": bool(payload.search_join_enabled),
+            "admission_mode": search_mode,
+            "admin_override": search_override,
+        },
+    }
+
+    clan, membership_role = _create_founder_clan(
+        db,
+        current_user=current_user,
+        clan_name=clan_name,
+        clan_description=_clean_text(payload.clan_description) or None,
+        creation_request_key=request_key,
+        admission_mode=invite_mode,
+        voting_admin_override=invite_override,
+        search_join_enabled=bool(payload.search_join_enabled),
+        search_join_admission_mode=search_mode,
+        search_join_admin_override=search_override,
+    )
+    log_trust_event(
+        db,
+        event_type="community.governance_profile_selected",
+        clan_id=int(clan.id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta=build_trust_meta(
+            reason="identity_first_community_created",
+            note=(
+                f"Founder selected {governance_profile['governance_weight_label']} governance "
+                f"for {governance_profile['community_type_label']} after securing their GSN identity."
+            ),
+            system=True,
+            extra=governance_profile,
+        ),
+        dedupe_key=f"identity-first-community:{request_key}",
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    return {
+        "ok": True,
+        "user_id": int(current_user.id),
+        "gmfn_id": str(current_user.gmfn_id),
+        "clan_id": int(clan.id),
+        "community_id": int(clan.id),
+        "clan_name": clan.name,
+        "community_name": clan.name,
+        "membership_role": membership_role,
+        "governance_profile": governance_profile,
+        "invite_admission_mode": invite_mode,
+        "invite_admin_override": invite_override,
+        "search_join_enabled": bool(payload.search_join_enabled),
+        "search_join_admission_mode": search_mode,
+        "search_join_admin_override": search_override,
+        "next_step": "build-first-circle",
+        "result_path": f"/app/community/{int(clan.id)}",
+        "idempotent": existing_by_key is not None,
+    }
+
+
 @router.post("/create", response_model=CreateEntryOut, status_code=status.HTTP_201_CREATED)
 def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
     verification = (
@@ -2189,12 +2547,27 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
     )
 
     governance_profile = _entry_governance_profile_payload(payload)
+    requested_admin_review = bool(
+        governance_profile["policies"]["require_admin_approval_after_invite"]
+    )
     clan.admission_mode = (
-        "admin_approval"
-        if governance_profile["policies"]["require_admin_approval_after_invite"]
+        "community_vote"
+        if requested_admin_review
         else "instant_invite"
     )
-    clan.voting_admin_override = False
+    clan.voting_admin_override = requested_admin_review
+    governance_profile["policies"]["require_admin_approval_after_invite"] = False
+    governance_profile["membership_admission"] = {
+        "invite": {
+            "admission_mode": clan.admission_mode,
+            "admin_override": bool(clan.voting_admin_override),
+        },
+        "search": {
+            "enabled": False,
+            "admission_mode": "community_vote",
+            "admin_override": False,
+        },
+    }
     db.add(clan)
     db.commit()
     db.refresh(clan)

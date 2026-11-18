@@ -1392,6 +1392,16 @@ def test_public_join_request_creates_pending_activation_identity(client):
         )
         assert applicant is not None
         assert applicant.hashed_password == "PENDING_APPROVAL"
+        assert applicant.gmfn_id is None
+        assert (
+            db.query(ClanMembership)
+            .filter(
+                ClanMembership.user_id == int(applicant.id),
+                ClanMembership.left_at.is_(None),
+            )
+            .count()
+            == 0
+        )
 
 
 def test_public_join_request_existing_phone_requires_gsn_id_instead_of_duplicate(client):
@@ -4687,7 +4697,7 @@ def test_instant_community_qr_is_reusable_and_routes_each_member_to_activation(
         assert link_row.is_active is True
 
 
-def test_admin_can_change_admission_policy_and_old_links_are_retired(
+def test_admin_can_change_to_vote_override_and_old_links_are_retired(
     client,
     override_clan_ctx_admin,
 ):
@@ -4710,15 +4720,15 @@ def test_admin_can_change_admission_policy_and_old_links_are_retired(
     change_res = client.patch(
         "/clans/1/admission-policy",
         json={
-            "admission_mode": "admin_approval",
+            "admission_mode": "community_vote",
             "voting_admin_override": True,
         },
         headers={"X-Clan-Id": "1"},
     )
     assert change_res.status_code == 200, change_res.text
     changed = change_res.json()
-    assert changed["admission_mode"] == "admin_approval"
-    assert changed["voting_admin_override"] is False
+    assert changed["admission_mode"] == "community_vote"
+    assert changed["voting_admin_override"] is True
     assert changed["retired_invites"] == 1
 
     policy_res = client.get(
@@ -4726,12 +4736,14 @@ def test_admin_can_change_admission_policy_and_old_links_are_retired(
         headers={"X-Clan-Id": "1"},
     )
     assert policy_res.status_code == 200, policy_res.text
-    assert policy_res.json()["admission_mode"] == "admin_approval"
+    assert policy_res.json()["admission_mode"] == "community_vote"
+    assert policy_res.json()["voting_admin_override"] is True
 
     invite_res = client.post("/clans/1/invite", headers={"X-Clan-Id": "1"})
     assert invite_res.status_code == 200, invite_res.text
     invite = invite_res.json()
-    assert invite["admission_mode"] == "admin_approval"
+    assert invite["admission_mode"] == "community_vote"
+    assert invite["voting_admin_override"] is True
     assert invite["max_uses"] is None
 
     join_res = client.post(

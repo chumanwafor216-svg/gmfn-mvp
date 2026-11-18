@@ -20,6 +20,7 @@ from app.services.notification_service import (
     retire_join_review_notifications,
 )
 from app.core.auth import get_current_user, is_user_activation_pending, oauth2_scheme
+from app.core.rate_limit import client_ip, rate_limiter
 from app.core.clan_auth import (
     _is_default_clan_name,
     ensure_membership,
@@ -103,6 +104,7 @@ COMMUNITY_ADMISSION_MODES = {
     ADMISSION_MODE_ADMIN,
     ADMISSION_MODE_VOTE,
 }
+SEARCH_JOIN_ADMISSION_MODES = {ADMISSION_MODE_INSTANT, ADMISSION_MODE_VOTE}
 LEGACY_ADMISSION_MODE = ADMISSION_MODE_VOTE
 JOIN_INVITATION_NOT_FOUND = (
     "This invitation link is no longer valid or was not copied fully. "
@@ -335,6 +337,20 @@ class CommunityAdmissionPolicyIn(BaseModel):
         return mode
 
 
+class CommunitySearchJoinSettingsIn(BaseModel):
+    enabled: bool = False
+    admission_mode: str = Field(default=ADMISSION_MODE_VOTE, max_length=32)
+    admin_override: bool = False
+
+    @field_validator("admission_mode", mode="before")
+    @classmethod
+    def _validate_admission_mode(cls, value: Any) -> str:
+        mode = _safe_str(value).lower()
+        if mode not in SEARCH_JOIN_ADMISSION_MODES:
+            raise ValueError("Choose instant join or community vote.")
+        return mode
+
+
 def _reject_non_text_body_value(value: Any, field_name: str) -> Any:
     if value is None:
         return value
@@ -514,6 +530,26 @@ class JoinApplicationIn(BaseModel):
         return value
 
 
+class SearchJoinApplicationIn(BaseModel):
+    community_id: int = Field(..., gt=0)
+    verification_id: Optional[int] = Field(default=None, gt=0)
+    first_name: Optional[str] = Field(default=None, min_length=1, max_length=80)
+    surname: Optional[str] = Field(default=None, min_length=1, max_length=80)
+    phone_e164: Optional[str] = Field(default=None, min_length=8, max_length=32)
+    country: Optional[str] = Field(default=None, min_length=2, max_length=80)
+    note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("community_id", "verification_id", mode="before")
+    @classmethod
+    def _reject_malformed_identifiers(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_body_identifier(value, info.field_name)
+
+    @field_validator("first_name", "surname", "phone_e164", "country", "note", mode="before")
+    @classmethod
+    def _reject_non_text_fields(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_body_value(value, info.field_name)
+
+
 class VoteJoinRequestIn(BaseModel):
     vote: str = Field(..., pattern="^(approve|reject|neutral)$")
     reason_code: str = Field(..., min_length=2, max_length=80)
@@ -522,6 +558,20 @@ class VoteJoinRequestIn(BaseModel):
     @field_validator("vote", "reason_code", "reason_text", mode="before")
     @classmethod
     def _reject_non_text_vote_controls(cls, value: Any, info: Any) -> Any:
+        if value is None:
+            return value
+        if not isinstance(value, str):
+            raise ValueError(f"{info.field_name} must be text.")
+        return value
+
+
+class AdminOverrideJoinRequestIn(BaseModel):
+    reason_code: str = Field(default="admin_override", min_length=2, max_length=80)
+    reason_text: Optional[str] = Field(default=None, max_length=240)
+
+    @field_validator("reason_code", "reason_text", mode="before")
+    @classmethod
+    def _reject_non_text_override_controls(cls, value: Any, info: Any) -> Any:
         if value is None:
             return value
         if not isinstance(value, str):
@@ -916,11 +966,54 @@ def _community_admission_policy(
     }
 
 
+def _community_search_join_policy(*, clan: Clan) -> dict[str, Any]:
+    mode = _safe_str(
+        getattr(clan, "search_join_admission_mode", None),
+        ADMISSION_MODE_VOTE,
+    ).lower()
+    if mode not in SEARCH_JOIN_ADMISSION_MODES:
+        mode = ADMISSION_MODE_VOTE
+    allow_override = bool(
+        getattr(clan, "search_join_admin_override", False)
+        and mode == ADMISSION_MODE_VOTE
+    )
+    return {
+        "enabled": bool(getattr(clan, "search_join_enabled", False)),
+        "admission_mode": mode,
+        "admission_mode_label": _admission_mode_label(mode),
+        "admin_override": allow_override,
+        "instant_join": mode == ADMISSION_MODE_INSTANT,
+        "requires_community_vote": mode == ADMISSION_MODE_VOTE,
+        "source": "community_search_setting",
+        "membership_truth_boundary": (
+            "Admission confirms community membership only. It does not create "
+            "identity-document verification, financial approval, endorsement, or trust."
+        ),
+    }
+
+
 def _join_request_admission_policy(
     db: Session,
     *,
     join_request: ClanJoinRequest,
 ) -> dict[str, Any]:
+    snapshot_mode = _safe_str(
+        getattr(join_request, "admission_mode_snapshot", None)
+    ).lower()
+    if snapshot_mode in COMMUNITY_ADMISSION_MODES:
+        allow_override = bool(
+            getattr(join_request, "admin_override_snapshot", False)
+            and snapshot_mode == ADMISSION_MODE_VOTE
+        )
+        return {
+            "admission_mode": snapshot_mode,
+            "admission_mode_label": _admission_mode_label(snapshot_mode),
+            "voting_admin_override": allow_override,
+            "source": "join_request_snapshot",
+            "instant_join": snapshot_mode == ADMISSION_MODE_INSTANT,
+            "requires_admin_approval": snapshot_mode == ADMISSION_MODE_ADMIN,
+            "requires_community_vote": snapshot_mode == ADMISSION_MODE_VOTE,
+        }
     clan = db.get(Clan, int(join_request.clan_id))
     if clan is None:
         return {
@@ -2623,6 +2716,13 @@ def _join_request_out(
         "applicant_email": applicant_email or None,
         "applicant_gmfn_id": (getattr(applicant, "gmfn_id", None) if applicant else None),
         "invite_id": (int(req.invite_id) if req.invite_id is not None else None),
+        "request_source": _safe_str(getattr(req, "request_source", None), "invite"),
+        "admission_mode_snapshot": (
+            _safe_str(getattr(req, "admission_mode_snapshot", None)) or None
+        ),
+        "admin_override_snapshot": bool(
+            getattr(req, "admin_override_snapshot", False)
+        ),
         "invite_code": (invite.code if invite else None),
         "qr_policy_key": (_safe_str(getattr(invite, "qr_policy_key", None)) or None),
         "qr_preapproval_match": (
@@ -3408,6 +3508,25 @@ def _approve_join_request(
     join_request: ClanJoinRequest,
     request: Request,
 ) -> dict[str, Any]:
+    join_request = (
+        db.query(ClanJoinRequest)
+        .filter(ClanJoinRequest.id == int(join_request.id))
+        .populate_existing()
+        .with_for_update()
+        .first()
+    )
+    if join_request is None:
+        raise HTTPException(status_code=404, detail="Join request not found")
+    current_status = _safe_str(join_request.status, "pending").lower()
+    if current_status != "pending":
+        return {
+            "ok": True,
+            "status": current_status,
+            "status_already_final": True,
+            "join_request_id": int(join_request.id),
+            "message": f"This request is already {current_status}.",
+        }
+
     applicant = db.get(User, int(join_request.applicant_user_id))
     if not applicant:
         raise HTTPException(status_code=404, detail="Applicant user missing")
@@ -3630,6 +3749,25 @@ def _reject_join_request(
     *,
     join_request: ClanJoinRequest,
 ) -> dict[str, Any]:
+    join_request = (
+        db.query(ClanJoinRequest)
+        .filter(ClanJoinRequest.id == int(join_request.id))
+        .populate_existing()
+        .with_for_update()
+        .first()
+    )
+    if join_request is None:
+        raise HTTPException(status_code=404, detail="Join request not found")
+    current_status = _safe_str(join_request.status, "pending").lower()
+    if current_status != "pending":
+        return {
+            "ok": True,
+            "status": current_status,
+            "status_already_final": True,
+            "join_request_id": int(join_request.id),
+            "message": f"This request is already {current_status}.",
+        }
+
     applicant = db.get(User, int(join_request.applicant_user_id))
     if not applicant:
         raise HTTPException(status_code=404, detail="Applicant user missing")
@@ -3641,8 +3779,6 @@ def _reject_join_request(
     if not _safe_str(getattr(clan, "community_code", None)):
         clan.community_code = f"GMFN-C-{int(clan.id):06d}"
         db.add(clan)
-        db.commit()
-        db.refresh(clan)
 
     inviter = (
         db.get(User, int(join_request.invited_by_user_id))
@@ -3872,6 +4008,115 @@ def list_my_clans(
     return {"items": items, "total": len(items)}
 
 
+@router.get("/join-search", response_model=dict[str, Any])
+def search_joinable_communities(
+    request: Request,
+    query: str = Query(..., min_length=2, max_length=80),
+    limit: int = Query(default=12, ge=1, le=20),
+    db: Session = Depends(get_db),
+):
+    remote_ip = client_ip(
+        dict(request.headers),
+        fallback=(request.client.host if request.client else "unknown"),
+    )
+    rate = rate_limiter.check(
+        key=f"community-join-search:{remote_ip}",
+        max_requests=30,
+        window_seconds=60,
+    )
+    if not rate.ok:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many searches. Try again in {rate.reset_in_seconds} seconds.",
+        )
+
+    safe_query = _safe_str(query)
+    pattern = f"%{safe_query}%"
+    rows = (
+        db.query(Clan)
+        .filter(
+            Clan.search_join_enabled.is_(True),
+            Clan.status == "active",
+            or_(
+                Clan.name.ilike(pattern),
+                Clan.community_code.ilike(pattern),
+            ),
+        )
+        .order_by(Clan.name.asc(), Clan.id.asc())
+        .limit(int(limit))
+        .all()
+    )
+    items: list[dict[str, Any]] = []
+    for clan in rows:
+        if _is_default_clan_name(getattr(clan, "name", None)):
+            continue
+        policy = _community_search_join_policy(clan=clan)
+        description = _safe_str(getattr(clan, "description", None))
+        items.append(
+            {
+                "community_id": int(clan.id),
+                "community_code": _community_code(clan.id, clan=clan),
+                "community_name": clan.name,
+                "description": description[:240] or None,
+                "admission_mode": policy["admission_mode"],
+                "admission_mode_label": policy["admission_mode_label"],
+                "admin_override": policy["admin_override"],
+                "admission_explanation": (
+                    "Membership begins immediately after a verified request."
+                    if policy["instant_join"]
+                    else "Community members review the request. An admin may act only when override is enabled."
+                ),
+            }
+        )
+    return {"ok": True, "query": safe_query, "items": items, "total": len(items)}
+
+
+@router.get("/join-search/{community_id}", response_model=dict[str, Any])
+def get_joinable_community(
+    community_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    remote_ip = client_ip(
+        dict(request.headers),
+        fallback=(request.client.host if request.client else "unknown"),
+    )
+    rate = rate_limiter.check(
+        key=f"community-join-detail:{remote_ip}",
+        max_requests=30,
+        window_seconds=60,
+    )
+    if not rate.ok:
+        raise HTTPException(status_code=429, detail="Too many requests. Try again shortly.")
+    clan = db.get(Clan, int(community_id))
+    if (
+        clan is None
+        or not bool(getattr(clan, "search_join_enabled", False))
+        or _safe_str(getattr(clan, "status", "active"), "active").lower() != "active"
+        or _is_default_clan_name(getattr(clan, "name", None))
+    ):
+        raise HTTPException(status_code=404, detail="Community not available for requests")
+    policy = _community_search_join_policy(clan=clan)
+    description = _safe_str(getattr(clan, "description", None))
+    return {
+        "ok": True,
+        "community": {
+            "community_id": int(clan.id),
+            "community_code": _community_code(clan.id, clan=clan),
+            "community_name": clan.name,
+            "description": description[:240] or None,
+            "admission_mode": policy["admission_mode"],
+            "admission_mode_label": policy["admission_mode_label"],
+            "admin_override": policy["admin_override"],
+            "admission_explanation": (
+                "Membership begins immediately after a verified request."
+                if policy["instant_join"]
+                else "Community members review the request. An admin may act only when override is enabled."
+            ),
+        },
+    }
+
+
 @router.get("/{clan_id}/admission-policy", response_model=dict[str, Any])
 def get_community_admission_policy(
     clan_id: int,
@@ -3905,11 +4150,22 @@ def update_community_admission_policy(
         raise HTTPException(status_code=403, detail="Not allowed")
     clan = db.get(Clan, int(clan_id)) or clan
 
+    previous = _community_admission_policy(db, clan=clan)
     mode = _normalized_admission_mode(payload.admission_mode)
+    if mode == ADMISSION_MODE_ADMIN and previous["admission_mode"] != ADMISSION_MODE_ADMIN:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "legacy_admin_approval_not_available_for_new_configuration",
+                "message": (
+                    "Standalone admin approval is retained only for legacy communities. "
+                    "Choose community vote and enable admin override instead."
+                ),
+            },
+        )
     allow_override = bool(
         payload.voting_admin_override and mode == ADMISSION_MODE_VOTE
     )
-    previous = _community_admission_policy(db, clan=clan)
     changed = (
         previous["admission_mode"] != mode
         or bool(previous["voting_admin_override"]) != allow_override
@@ -3952,6 +4208,71 @@ def update_community_admission_policy(
         "retired_invites": int(retired_invites),
         "can_manage": True,
         **policy,
+    }
+
+
+@router.get("/{clan_id}/search-join-settings", response_model=dict[str, Any])
+def get_community_search_join_settings(
+    clan_id: int,
+    db: Session = Depends(get_db),
+    clan_ctx: tuple = Depends(get_current_clan_membership),
+):
+    clan, membership, _current_user = clan_ctx
+    if int(clan.id) != int(clan_id):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    stored_clan = db.get(Clan, int(clan_id)) or clan
+    return {
+        "ok": True,
+        "community_id": int(stored_clan.id),
+        "community_code": _community_code(stored_clan.id, clan=stored_clan),
+        "community_name": stored_clan.name,
+        "can_manage": _safe_str(getattr(membership, "role", None)).lower() == "admin",
+        **_community_search_join_policy(clan=stored_clan),
+    }
+
+
+@router.patch("/{clan_id}/search-join-settings", response_model=dict[str, Any])
+def update_community_search_join_settings(
+    clan_id: int,
+    payload: CommunitySearchJoinSettingsIn,
+    db: Session = Depends(get_db),
+    clan_ctx: tuple = Depends(get_current_clan_membership),
+):
+    clan, _membership, current_user = _require_clan_admin(clan_ctx)
+    if int(clan.id) != int(clan_id):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    clan = db.get(Clan, int(clan_id)) or clan
+    previous = _community_search_join_policy(clan=clan)
+    mode = _safe_str(payload.admission_mode).lower()
+    allow_override = bool(payload.admin_override and mode == ADMISSION_MODE_VOTE)
+    clan.search_join_enabled = bool(payload.enabled)
+    clan.search_join_admission_mode = mode
+    clan.search_join_admin_override = allow_override
+    db.add(clan)
+    log_trust_event(
+        db,
+        event_type="community.search_join_policy_changed",
+        clan_id=int(clan.id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "previous": previous,
+            "enabled": bool(payload.enabled),
+            "admission_mode": mode,
+            "admin_override": allow_override,
+        },
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    db.refresh(clan)
+    return {
+        "ok": True,
+        "community_id": int(clan.id),
+        "community_code": _community_code(clan.id, clan=clan),
+        "community_name": clan.name,
+        "can_manage": True,
+        **_community_search_join_policy(clan=clan),
     }
 
 
@@ -4790,6 +5111,299 @@ Final admission depends on the community's existing approval requirements.
 """
 
 
+@router.post("/search-join-requests", response_model=dict[str, Any], status_code=201)
+def create_search_join_request(
+    payload: SearchJoinApplicationIn,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(_optional_current_user),
+):
+    remote_ip = client_ip(
+        dict(request.headers),
+        fallback=(request.client.host if request.client else "unknown"),
+    )
+    rate = rate_limiter.check(
+        key=f"community-search-join:{remote_ip}:{int(payload.community_id)}",
+        max_requests=5,
+        window_seconds=600,
+    )
+    if not rate.ok:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many join attempts. Try again in {rate.reset_in_seconds} seconds.",
+        )
+
+    clan = db.get(Clan, int(payload.community_id))
+    if (
+        clan is None
+        or _safe_str(getattr(clan, "status", "active"), "active").lower() != "active"
+        or _is_default_clan_name(getattr(clan, "name", None))
+    ):
+        raise HTTPException(status_code=404, detail="Community not available for requests")
+    admission_policy = _community_search_join_policy(clan=clan)
+    if not admission_policy["enabled"]:
+        raise HTTPException(status_code=404, detail="Community not available for requests")
+
+    existing_identity_join = bool(
+        current_user is not None and not is_user_activation_pending(current_user)
+    )
+    verification = None
+    if current_user is not None and not existing_identity_join:
+        raise HTTPException(status_code=403, detail="Active sign-in is required")
+
+    if existing_identity_join:
+        applicant_user = current_user
+    else:
+        missing_fields = [
+            label
+            for label, value in (
+                ("verification_id", payload.verification_id),
+                ("first_name", payload.first_name),
+                ("phone_e164", payload.phone_e164),
+                ("country", payload.country),
+            )
+            if value is None or not _safe_str(value)
+        ]
+        if missing_fields:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "verified_applicant_details_required",
+                    "message": "Verify your phone and provide name and country before asking to join.",
+                    "missing_fields": missing_fields,
+                },
+            )
+
+        verification = db.get(EntryPhoneVerification, int(payload.verification_id))
+        verification_expiry = _utc_aware(
+            getattr(verification, "expires_at", None) if verification is not None else None
+        )
+        if (
+            verification is None
+            or verification.verified_at is None
+            or verification.consumed_at is not None
+            or (verification_expiry is not None and verification_expiry < datetime.now(timezone.utc))
+            or _safe_str(verification.phone_e164) != _safe_str(payload.phone_e164)
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "verified_phone_session_required",
+                    "message": "This request needs a current verified-phone session.",
+                },
+            )
+
+        submitted_phone = _safe_str(payload.phone_e164)
+        existing_phone_user = (
+            db.query(User).filter(User.phone_e164 == submitted_phone).first()
+        )
+        applicant_email = _pending_applicant_email(submitted_phone)
+        existing_email_user = db.query(User).filter(User.email == applicant_email).first()
+        if existing_phone_user is not None or existing_email_user is not None:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "existing_identity_or_request_sign_in_required",
+                    "message": (
+                        "This phone already belongs to a GSN identity or an existing request. "
+                        "Sign in or continue the original request."
+                    ),
+                    "next_action": "login",
+                    "login_path": "/login?force=1",
+                },
+            )
+
+        applicant_user = User(
+            email=applicant_email,
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+            display_name=(
+                _safe_str(verification.display_name)
+                or " ".join(
+                    part
+                    for part in (_safe_str(payload.first_name), _safe_str(payload.surname))
+                    if part
+                )
+            ),
+            phone_e164=submitted_phone,
+            phone_verified_at=verification.verified_at,
+        )
+        db.add(applicant_user)
+        try:
+            db.flush()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "join_identity_conflict",
+                    "message": "This identity already has a GSN account or join request.",
+                },
+            )
+
+    existing_membership = _is_active_membership(
+        db,
+        clan_id=int(clan.id),
+        user_id=int(applicant_user.id),
+    )
+    if existing_membership is not None:
+        return _already_member_join_payload(
+            db,
+            clan=clan,
+            user=applicant_user,
+            membership=existing_membership,
+        )
+
+    existing_request = (
+        db.query(ClanJoinRequest)
+        .filter(
+            ClanJoinRequest.clan_id == int(clan.id),
+            ClanJoinRequest.applicant_user_id == int(applicant_user.id),
+        )
+        .order_by(ClanJoinRequest.created_at.desc(), ClanJoinRequest.id.desc())
+        .first()
+    )
+    if existing_request is not None:
+        raise HTTPException(
+            status_code=409,
+            detail=_existing_join_request_conflict_detail(
+                db,
+                request,
+                req=existing_request,
+                authorized_applicant=existing_identity_join,
+            ),
+        )
+
+    join_request = ClanJoinRequest(
+        clan_id=int(clan.id),
+        applicant_user_id=int(applicant_user.id),
+        invite_id=None,
+        invited_by_user_id=None,
+        request_source="search",
+        admission_mode_snapshot=admission_policy["admission_mode"],
+        admin_override_snapshot=bool(admission_policy["admin_override"]),
+        status="pending",
+        activation_delivery_status=("not_required" if existing_identity_join else None),
+        created_at=datetime.now(timezone.utc),
+    )
+    db.add(join_request)
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "join_request_already_exists",
+                "message": "A join request for this identity and community already exists.",
+            },
+        )
+
+    issued_activation_grant = None
+    if not existing_identity_join:
+        issued_activation_grant = issue_activation_grant(
+            db,
+            user_id=int(applicant_user.id),
+            source_type="search_join_request",
+            join_request_id=int(join_request.id),
+            authorize_activation=False,
+        )
+        verification.owner_user_id = int(applicant_user.id)
+        verification.activation_join_request_id = int(join_request.id)
+        verification.consumed_at = datetime.now(timezone.utc)
+        db.add(verification)
+
+    db.commit()
+    db.refresh(join_request)
+
+    if admission_policy["instant_join"]:
+        approval_result = _approve_join_request(
+            db,
+            join_request=join_request,
+            request=request,
+        )
+        db.refresh(join_request)
+        status_payload = _join_request_status_payload(db, request, join_request)
+        log_trust_event(
+            db,
+            event_type="community.search_join_approved",
+            clan_id=int(clan.id),
+            actor_user_id=int(applicant_user.id),
+            subject_user_id=int(applicant_user.id),
+            meta={
+                "join_request_id": int(join_request.id),
+                "request_source": "search",
+                "admission_mode_snapshot": admission_policy["admission_mode"],
+            },
+            dedupe_key=f"search-join-approved:{int(join_request.id)}",
+        )
+        return {
+            "ok": True,
+            "result_status": "instant_search_join_accepted",
+            "message": (
+                "You are now a member. Finish secure account setup to continue."
+                if status_payload.get("activation_required")
+                else "You are now a member of this community."
+            ),
+            **status_payload,
+            "status_token": issued_activation_grant.status_token if issued_activation_grant else None,
+            "activation_token": issued_activation_grant.activation_token if issued_activation_grant else None,
+            "request": _join_request_out(db, join_request),
+            "approval_result": approval_result,
+            "request_source": "search",
+        }
+
+    reviewers = _active_reviewer_memberships(db, clan_id=int(clan.id))
+    applicant_label = _member_display(applicant_user)
+    notified_user_ids: set[int] = set()
+    for reviewer, _reviewer_user in reviewers:
+        reviewer_user_id = int(reviewer.user_id)
+        if reviewer_user_id in notified_user_ids:
+            continue
+        notified_user_ids.add(reviewer_user_id)
+        create_notification(
+            db,
+            user_id=reviewer_user_id,
+            kind="approval_request",
+            title="New search join request",
+            message=f"{applicant_label} found {clan.name} and asked to join.",
+            action_url=(
+                f"/app/community/{int(clan.id)}/join-requests"
+                f"?request_id={int(join_request.id)}"
+            ),
+            action_label="Review",
+        )
+
+    log_trust_event(
+        db,
+        event_type="community.search_join_requested",
+        clan_id=int(clan.id),
+        actor_user_id=int(applicant_user.id),
+        subject_user_id=int(applicant_user.id),
+        meta={
+            "join_request_id": int(join_request.id),
+            "request_source": "search",
+            "admission_mode_snapshot": admission_policy["admission_mode"],
+            "admin_override_snapshot": bool(admission_policy["admin_override"]),
+            "identity_reused": existing_identity_join,
+            "country": _safe_str(payload.country) or None,
+            "note": _safe_str(payload.note) or None,
+        },
+        dedupe_key=f"search-join-requested:{int(join_request.id)}",
+    )
+    status_payload = _join_request_status_payload(db, request, join_request)
+    return {
+        "ok": True,
+        "result_status": "pending_search_request_created",
+        "message": "Request sent. This community reviews membership requests.",
+        **status_payload,
+        "status_token": issued_activation_grant.status_token if issued_activation_grant else None,
+        "activation_token": issued_activation_grant.activation_token if issued_activation_grant else None,
+        "request": _join_request_out(db, join_request),
+        "request_source": "search",
+    }
+
+
 @router.post("/join-requests", response_model=dict[str, Any], status_code=201)
 def create_join_request(
     payload: JoinApplicationIn,
@@ -5111,6 +5725,9 @@ def create_join_request(
         applicant_user_id=int(applicant_user.id),
         invite_id=(int(invite_row.id) if invite_row else None),
         invited_by_user_id=invited_by_user_id,
+        request_source="invite",
+        admission_mode_snapshot=admission_policy["admission_mode"],
+        admin_override_snapshot=bool(admission_policy["voting_admin_override"]),
         status="pending",
         activation_delivery_status=(
             "not_required" if existing_identity_join else None
@@ -5912,7 +6529,10 @@ def vote_join_request(
             join_request=req,
             request=request,
         )
-        approved_now = True
+        approved_now = bool(
+            approval_result.get("status") == "approved"
+            and not approval_result.get("status_already_final")
+        )
         req = (
             db.query(ClanJoinRequest)
             .filter(ClanJoinRequest.id == int(join_request_id))
@@ -5923,7 +6543,10 @@ def vote_join_request(
             db,
             join_request=req,
         )
-        rejected_now = True
+        rejected_now = bool(
+            rejection_result.get("status") == "rejected"
+            and not rejection_result.get("status_already_final")
+        )
         req = (
             db.query(ClanJoinRequest)
             .filter(ClanJoinRequest.id == int(join_request_id))
@@ -5954,6 +6577,7 @@ def pilot_approve_join_request(
     clan_id: int,
     join_request_id: int,
     request: Request,
+    payload: Optional[AdminOverrideJoinRequestIn] = Body(default=None),
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
@@ -6091,6 +6715,51 @@ def pilot_approve_join_request(
         .filter(ClanJoinRequest.id == int(join_request_id))
         .first()
     )
+    if approval_result.get("status_already_final"):
+        final_status = _safe_str(approval_result.get("status"), "completed").lower()
+        return {
+            "ok": True,
+            "admin_approval": True,
+            "admin_approval_basis": admin_authority["basis"],
+            "pilot_override": bool(is_legacy_override),
+            "status_already_final": True,
+            "approved_now": False,
+            "rejected_now": False,
+            "approval_result": approval_result,
+            "rejection_result": None,
+            "message": (
+                f"This request is already {final_status}. "
+                "Admin override was not applied."
+            ),
+            "community_id": int(clan_id),
+            "community_code": _community_code(clan_id),
+            "request": _join_request_out(db, req),
+        }
+    decided_at = datetime.now(timezone.utc)
+    reason_code = _safe_str(
+        getattr(payload, "reason_code", None),
+        "admin_override",
+    )
+    reason_text = _safe_str(getattr(payload, "reason_text", None)) or (
+        "Administrator used the configured community-vote override."
+    )
+    log_trust_event(
+        db,
+        event_type="community.join_request.admin_override_applied",
+        clan_id=int(clan_id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(req.applicant_user_id),
+        meta={
+            "join_request_id": int(req.id),
+            "decision": "approve",
+            "reason_code": reason_code,
+            "reason_text": reason_text,
+            "decided_at": decided_at.isoformat(),
+            "admission_mode": admission_policy["admission_mode"],
+            "admin_approval_basis": admin_authority["basis"],
+        },
+        dedupe_key=f"join-request-admin-override:{int(req.id)}",
+    )
 
     return {
         "ok": True,
@@ -6098,6 +6767,9 @@ def pilot_approve_join_request(
         "admin_approval_basis": admin_authority["basis"],
         "pilot_override": bool(is_legacy_override),
         "approved_now": True,
+        "override_reason_code": reason_code,
+        "override_reason_text": reason_text,
+        "override_decided_at": decided_at.isoformat(),
         "message": "Admin review approved this join request.",
         "community_id": int(clan_id),
         "community_code": _community_code(clan_id),

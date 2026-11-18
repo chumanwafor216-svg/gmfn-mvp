@@ -212,6 +212,7 @@
     "smoke:marketplace-hero": "node tools/smoke-marketplace-hero.mjs",
     "smoke:live-marketplace-join-form": "node tools/smoke-live-marketplace-join-form.mjs",
     "smoke:invitation-journey-review": "node tools/smoke-invitation-journey-review.mjs",
+    "smoke:corrected-community-entry-pixel": "node tools/smoke-corrected-community-entry-pixel.mjs",
     "smoke:pwa-boot-recovery": "node tools/smoke-pwa-boot-recovery.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

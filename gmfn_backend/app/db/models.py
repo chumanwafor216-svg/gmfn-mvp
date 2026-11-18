@@ -156,6 +156,20 @@ class Clan(Base):
     # community-vote behaviour so old links never become instant-entry links.
     admission_mode = Column(String(32), nullable=True, index=True)
     voting_admin_override = Column(Boolean, nullable=False, default=False, server_default="0")
+    search_join_enabled = Column(Boolean, nullable=False, default=False, server_default="0")
+    search_join_admission_mode = Column(
+        String(32),
+        nullable=False,
+        default="community_vote",
+        server_default="community_vote",
+    )
+    search_join_admin_override = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
+    creation_request_key = Column(String(64), nullable=True, unique=True, index=True)
 
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
@@ -1812,6 +1826,23 @@ class ClanJoinRequest(Base):
         nullable=True,
         index=True,
     )
+    request_source: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="invite",
+        server_default="invite",
+        index=True,
+    )
+    admission_mode_snapshot: Mapped[Optional[str]] = mapped_column(
+        String(32),
+        nullable=True,
+    )
+    admin_override_snapshot: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
 
     status: Mapped[str] = mapped_column(
         String(20),
@@ -2538,6 +2569,12 @@ class EntryPhoneVerification(Base):
     provider_response_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     provider_error_code: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     owner_user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    identity_request_key: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
     activation_join_request_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("clan_join_requests.id", ondelete="CASCADE"),
         nullable=True,

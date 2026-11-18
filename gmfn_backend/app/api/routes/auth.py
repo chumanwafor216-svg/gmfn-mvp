@@ -440,7 +440,31 @@ def _create_founder_clan(
     current_user: User,
     clan_name: str,
     clan_description: Optional[str],
+    creation_request_key: Optional[str] = None,
+    admission_mode: str = "instant_invite",
+    voting_admin_override: bool = False,
+    search_join_enabled: bool = False,
+    search_join_admission_mode: str = "community_vote",
+    search_join_admin_override: bool = False,
 ) -> tuple[Clan, str]:
+    safe_request_key = str(creation_request_key or "").strip() or None
+    if safe_request_key:
+        existing_by_key = (
+            db.query(Clan)
+            .filter(Clan.creation_request_key == safe_request_key)
+            .first()
+        )
+        if existing_by_key is not None:
+            if int(existing_by_key.created_by_user_id or 0) != int(current_user.id):
+                raise HTTPException(status_code=409, detail="Community creation key already used")
+            membership = ensure_membership(
+                db=db,
+                clan=existing_by_key,
+                user=current_user,
+                role="admin",
+            )
+            return existing_by_key, membership.role
+
     existing = db.query(Clan).filter(Clan.name == clan_name).first()
     if existing:
         raise HTTPException(status_code=400, detail="Community name already exists")
@@ -458,14 +482,48 @@ def _create_founder_clan(
         invite_expires_at=now + timedelta(days=7),
         invite_max_uses=None,
         invite_uses=0,
-        admission_mode="instant_invite",
-        voting_admin_override=False,
+        admission_mode=admission_mode,
+        voting_admin_override=bool(voting_admin_override),
+        search_join_enabled=bool(search_join_enabled),
+        search_join_admission_mode=search_join_admission_mode,
+        search_join_admin_override=bool(search_join_admin_override),
+        creation_request_key=safe_request_key,
+        created_by_user_id=int(current_user.id),
     )
     db.add(clan)
-    db.commit()
+    try:
+        db.flush()
+        membership = ensure_membership(
+            db=db,
+            clan=clan,
+            user=current_user,
+            role="admin",
+            commit=False,
+            refresh=False,
+        )
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        if safe_request_key:
+            existing_by_key = (
+                db.query(Clan)
+                .filter(Clan.creation_request_key == safe_request_key)
+                .first()
+            )
+            if (
+                existing_by_key is not None
+                and int(existing_by_key.created_by_user_id or 0) == int(current_user.id)
+            ):
+                membership = ensure_membership(
+                    db=db,
+                    clan=existing_by_key,
+                    user=current_user,
+                    role="admin",
+                )
+                return existing_by_key, membership.role
+        raise HTTPException(status_code=409, detail="Community name already exists")
     db.refresh(clan)
-
-    membership = ensure_membership(db=db, clan=clan, user=current_user, role="admin")
+    db.refresh(membership)
     return clan, membership.role
 
 
@@ -888,7 +946,8 @@ def _complete_account_activation(
         if not safe_request_id.isdigit() or grant.join_request_id != int(safe_request_id):
             raise HTTPException(status_code=404, detail="Approved join request not found")
 
-    if not _is_user_approved_somewhere(db, user):
+    identity_first_activation = str(grant.source_type or "").strip() == "entry_identity"
+    if not identity_first_activation and not _is_user_approved_somewhere(db, user):
         raise HTTPException(
             status_code=403,
             detail="This identity has not been admitted to an active community",

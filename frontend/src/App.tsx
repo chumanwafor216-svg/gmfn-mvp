@@ -24,7 +24,9 @@ import { gmfnBrand } from "./styles/gmfnBrand";
 import BackgroundSessionGuard from "./components/BackgroundSessionGuard";
 
 const CoverPage = React.lazy(() => import("./pages/CoverPage"));
-const CreateEntryPage = React.lazy(() => import("./pages/CreateEntryPage"));
+const IdentityFirstCreateCommunityPage = React.lazy(
+  () => import("./pages/IdentityFirstCreateCommunityPage")
+);
 const CommunityDomainPurchasePage = React.lazy(
   () => import("./pages/CommunityDomainPurchasePage")
 );
@@ -46,6 +48,9 @@ const CommunityNoticePage = React.lazy(
 const WelcomePage = React.lazy(() => import("./pages/WelcomePage"));
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
 const JoinEntryPage = React.lazy(() => import("./pages/JoinEntryPage"));
+const FindCommunityJoinPage = React.lazy(
+  () => import("./pages/FindCommunityJoinPage")
+);
 const DashboardPage = React.lazy(() => import("./pages/DashboardPage"));
 const CommitmentsPage = React.lazy(() => import("./pages/CommitmentsPage"));
 const CommunityHomePage = React.lazy(() => import("./pages/CommunityHomePage"));
@@ -895,7 +900,7 @@ export default function App() {
       <Route path="/start/member" element={<RedirectToCover entry="existing" />} />
       <Route path="/start/login" element={<RedirectToCover entry="existing" />} />
 
-      <Route path="/create" element={<CreateEntryPage />} />
+          <Route path="/create" element={<IdentityFirstCreateCommunityPage />} />
       <Route path="/register" element={<PreserveRedirect to="/create" />} />
       <Route path="/founder" element={<RedirectToCover entry="create" />} />
       <Route path="/public-create" element={<RedirectToCover entry="create" />} />
@@ -931,9 +936,9 @@ export default function App() {
         element={<PreserveRedirect to="/community-domain/purchase" />}
       />
 
-      <Route path="/join" element={<JoinEntryPage />} />
-      <Route path="/join/:code" element={<JoinEntryPage />} />
-      <Route path="/join/community/:clanId" element={<JoinEntryPage />} />
+          <Route path="/join" element={<FindCommunityJoinPage />} />
+          <Route path="/join/:code" element={<JoinEntryPage />} />
+          <Route path="/join/community/:clanId" element={<FindCommunityJoinPage />} />
       <Route path="/invite-composer-preview" element={<Navigate to="/cover" replace />} />
       <Route
         path="/start/join/:code"

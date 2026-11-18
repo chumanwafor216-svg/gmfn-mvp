@@ -63,7 +63,8 @@ const entryPages = [
   "src/pages/CoverPage.tsx",
   "src/pages/WelcomePage.tsx",
   "src/pages/LoginPage.tsx",
-  "src/pages/CreateEntryPage.tsx",
+  "src/pages/IdentityFirstCreateCommunityPage.tsx",
+  "src/pages/FindCommunityJoinPage.tsx",
   "src/pages/JoinEntryPage.tsx",
   "src/pages/JoinRequestPendingPage.tsx",
   "src/pages/JoinApprovalPage.tsx",
@@ -78,8 +79,11 @@ assertContains(
 
 [
   ['<Route path="/login" element={<LoginPage />} />', "Sign In"],
-  ['<Route path="/create" element={<CreateEntryPage />} />', "Create Community"],
-  ['<Route path="/join" element={<JoinEntryPage />} />', "Join Community"],
+  [
+    '<Route path="/create" element={<IdentityFirstCreateCommunityPage />} />',
+    "Create Community",
+  ],
+  ['<Route path="/join" element={<FindCommunityJoinPage />} />', "Join Community"],
   [
     '<Route path="/pending-approval" element={<JoinRequestPendingPage />} />',
     "Pending Approval",
@@ -131,7 +135,7 @@ entryPages.forEach((file) => {
 [
   ["src/pages/WelcomePage.tsx", /<EntryBackLink to="\/cover" \/>/],
   ["src/pages/LoginPage.tsx", /<EntryBackLink to="\/welcome" \/>/],
-  ["src/pages/CreateEntryPage.tsx", /<EntryBackLink to="\/welcome" \/>/],
+  ["src/components/CommunityEntryShell.tsx", /<Link to="\/cover"/],
   ["src/pages/JoinEntryPage.tsx", /<EntryBackLink to="\/welcome" \/>/],
   ["src/pages/JoinApprovalPage.tsx", /debugId="join-approval\.back"[\s\S]*?debugId=\{welcomeCta\.debugId\}/],
   ["src/pages/MemberActivationPage.tsx", /debugId="member-activation\.back"[\s\S]*?aria-label="Back to welcome"/],
@@ -156,15 +160,15 @@ assertContains(
 );
 
 assertContains(
-  "src/pages/CreateEntryPage.tsx",
-  /right: 8,[\s\S]*?top: 210,[\s\S]*?transform: "rotate\(45deg\)"/,
-  "Create Community must keep its rotated details decoration inside the compact phone canvas."
+  "src/pages/IdentityFirstCreateCommunityPage.tsx",
+  /establishEntryIdentity[\s\S]*?createCommunityAfterIdentity[\s\S]*?data-gsn-identity-first-create="true"/,
+  "Create Community must establish and secure identity before final community creation."
 );
 
 assertContains(
-  "src/pages/CreateEntryPage.tsx",
-  /\{guideDone && openPanel === "details" \? \([\s\S]*?Name, birth details, residence, phone, email\.[\s\S]*?\{guideDone && openPanel === "details" \? \([\s\S]*?Display name or nickname/,
-  "Create Community must render the full founder-details form only when Step 1 is the active panel."
+  "src/pages/FindCommunityJoinPage.tsx",
+  /createSearchJoinRequest[\s\S]*?searchJoinableCommunities[\s\S]*?data-gsn-search-join="true"/,
+  "Join Community must keep public discovery and search-based requests distinct from invite entry."
 );
 
 if (findings.length > 0) {

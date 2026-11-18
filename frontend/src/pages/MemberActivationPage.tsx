@@ -714,7 +714,16 @@ export default function MemberActivationPage() {
       status_token?: string;
       community_id?: string | number;
       community_name?: string;
+      next_path?: string;
+      next_label?: string;
     }) || {};
+  const requestedNextPath = safeStr(state.next_path || searchParams.get("next"));
+  const identityContinuationPath =
+    requestedNextPath.startsWith("/") && !requestedNextPath.startsWith("//")
+      ? requestedNextPath
+      : "";
+  const identityContinuationLabel =
+    safeStr(state.next_label) || "Continue community setup";
   const intendedCommunityId = Number(
     state.community_id || searchParams.get("community_id") || getSelectedClanId() || 0
   );
@@ -1219,9 +1228,11 @@ export default function MemberActivationPage() {
       const destinationCommunityName = safeStr(
         activationResult?.community_name || intendedCommunityName
       );
-      const nextMessage = destinationCommunityName
-        ? `Membership active in ${destinationCommunityName}. Open the community to continue.`
-        : "Membership active. Open your community to continue.";
+      const nextMessage = identityContinuationPath
+        ? "Your GSN identity is secure. Continue with the saved community setup."
+        : destinationCommunityName
+          ? `Membership active in ${destinationCommunityName}. Open the community to continue.`
+          : "Membership active. Open your community to continue.";
 
       setActivatedCommunityId(
         Number.isFinite(destinationCommunityId) ? destinationCommunityId : 0
@@ -1832,27 +1843,31 @@ export default function MemberActivationPage() {
           <div style={{ display: "grid", gap: 12 }} data-gsn-activation-complete="true">
           <CardActionRow style={postActivationRow(isCompact)} align="center">
             <StableCtaLink
-              to={routes.community}
+              to={identityContinuationPath || routes.community}
               kind="primary"
               debugId="member-activation.open-community"
               style={postActivationLink(true)}
             >
-              {activatedCommunityName
+              {identityContinuationPath
+                ? identityContinuationLabel
+                : activatedCommunityName
                 ? `Open ${activatedCommunityName}`
                 : "Open community"}
             </StableCtaLink>
-            <StableCtaLink
-              to={phoneVerificationRequired ? routes.identityPhone : routes.identityRecovery}
-              kind="secondary"
-              debugId={
-                phoneVerificationRequired
-                  ? "member-activation.verify-phone"
-                  : "member-activation.set-recovery"
-              }
-              style={postActivationLink(false)}
-            >
-              {phoneVerificationRequired ? "Verify phone" : "Set recovery"}
-            </StableCtaLink>
+            {!identityContinuationPath ? (
+              <StableCtaLink
+                to={phoneVerificationRequired ? routes.identityPhone : routes.identityRecovery}
+                kind="secondary"
+                debugId={
+                  phoneVerificationRequired
+                    ? "member-activation.verify-phone"
+                    : "member-activation.set-recovery"
+                }
+                style={postActivationLink(false)}
+              >
+                {phoneVerificationRequired ? "Verify phone" : "Set recovery"}
+              </StableCtaLink>
+            ) : null}
           </CardActionRow>
           <details>
             <StableDisclosureSummary
