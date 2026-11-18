@@ -58,11 +58,9 @@ def clean_postgres(postgres_engine):
         if name in available_tables
     ]
     if tables:
-        quoted = ", ".join(f'"{name}"' for name in tables)
         with postgres_engine.begin() as connection:
-            connection.exec_driver_sql(
-                f"TRUNCATE TABLE {quoted} RESTART IDENTITY CASCADE"
-            )
+            for table_name in tables:
+                connection.exec_driver_sql(f'DELETE FROM "{table_name}"')
 
 
 def _request() -> Request:
