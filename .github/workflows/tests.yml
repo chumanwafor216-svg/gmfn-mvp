@@ -64,7 +64,8 @@ jobs:
         working-directory: gmfn_backend
 
     env:
-      SPOTLIGHT_POSTGRES_TEST_DATABASE_URL: postgresql+psycopg://gmfn_test:gmfn_test_only@127.0.0.1:5432/gmfn_disposable_test
+      POSTGRES_ADMIN_TEST_DATABASE_URL: postgresql://gmfn_test:gmfn_test_only@127.0.0.1:5432/gmfn_disposable_test
+      SPOTLIGHT_POSTGRES_TEST_DATABASE_URL: postgresql+psycopg://gsn_migrator:gsn_migrator_test_only@127.0.0.1:5432/gmfn_disposable_test
       GSN_ALLOW_DESTRUCTIVE_DISPOSABLE_DB_TESTS: "1"
 
     steps:
@@ -81,6 +82,61 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
+
+      - name: Prepare PostgreSQL authority roles
+        run: |
+          python - <<'PY'
+          import os
+
+          import psycopg
+          from psycopg import sql
+
+          database_name = "gmfn_disposable_test"
+          role_passwords = {
+              "gsn_migrator": "gsn_migrator_test_only",
+              "gsn_runtime": "gsn_runtime_test_only",
+              "gsn_taxonomy_authority": "gsn_taxonomy_authority_test_only",
+          }
+          with psycopg.connect(
+              os.environ["POSTGRES_ADMIN_TEST_DATABASE_URL"],
+              autocommit=True,
+          ) as connection:
+              connection.execute("CREATE ROLE gsn_taxonomy_owner NOLOGIN NOINHERIT")
+              for role_name, password in role_passwords.items():
+                  connection.execute(
+                      sql.SQL(
+                          "CREATE ROLE {} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE "
+                          "NOREPLICATION NOBYPASSRLS NOINHERIT PASSWORD {}"
+                      ).format(sql.Identifier(role_name), sql.Literal(password))
+                  )
+              connection.execute("GRANT gsn_taxonomy_owner TO gsn_migrator")
+              for role_name in role_passwords:
+                  connection.execute(
+                      sql.SQL("GRANT CONNECT ON DATABASE {} TO {}").format(
+                          sql.Identifier(database_name),
+                          sql.Identifier(role_name),
+                      )
+                  )
+              connection.execute(
+                  sql.SQL(
+                      "GRANT CREATE, TEMPORARY ON DATABASE {} TO gsn_migrator"
+                  ).format(sql.Identifier(database_name))
+              )
+              connection.execute(
+                  sql.SQL(
+                      "GRANT CREATE ON DATABASE {} TO gsn_taxonomy_owner"
+                  ).format(sql.Identifier(database_name))
+              )
+              connection.execute("ALTER SCHEMA public OWNER TO gsn_migrator")
+              connection.execute(
+                  "GRANT USAGE, CREATE ON SCHEMA public TO gsn_migrator"
+              )
+              connection.execute(
+                  "GRANT USAGE ON SCHEMA public "
+                  "TO gsn_runtime, gsn_taxonomy_authority"
+              )
+          print("Disposable PostgreSQL authority-role contract prepared")
+          PY
 
       - name: Run PostgreSQL concurrency tests
         run: |

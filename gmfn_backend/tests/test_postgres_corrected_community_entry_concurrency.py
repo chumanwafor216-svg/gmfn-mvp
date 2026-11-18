@@ -51,10 +51,11 @@ def postgres_engine():
 
 @pytest.fixture(autouse=True)
 def clean_postgres(postgres_engine):
+    available_tables = set(inspect(postgres_engine).get_table_names())
     tables = [
         name
-        for name in inspect(postgres_engine).get_table_names()
-        if name != "alembic_version"
+        for name in ("clan_join_requests", "clan_memberships", "clans", "users")
+        if name in available_tables
     ]
     if tables:
         quoted = ", ".join(f'"{name}"' for name in tables)
