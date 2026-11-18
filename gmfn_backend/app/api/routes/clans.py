@@ -3527,7 +3527,13 @@ def _approve_join_request(
             "message": f"This request is already {current_status}.",
         }
 
-    applicant = db.get(User, int(join_request.applicant_user_id))
+    applicant = (
+        db.query(User)
+        .filter(User.id == int(join_request.applicant_user_id))
+        .populate_existing()
+        .with_for_update()
+        .first()
+    )
     if not applicant:
         raise HTTPException(status_code=404, detail="Applicant user missing")
 
