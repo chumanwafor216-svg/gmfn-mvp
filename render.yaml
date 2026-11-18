@@ -90,5 +90,5 @@ databases:
   - name: gmfn-postgres
     region: frankfurt
     plan: basic-1gb
-    postgresMajorVersion: "16"
+    postgresMajorVersion: "18"
     ipAllowList: []
