@@ -142,3 +142,52 @@ Operational preparation truth:
 3. Resolve any exposed session by expiry or signing-secret rotation and record the action.
 4. Promote the verified commit to main and manually deploy the exact backend and frontend commit.
 5. Complete the live invitation, search-pilot, and identity-first resumption checks listed in the completion report.
+
+## 7. Operational preparation completion
+
+### PostgreSQL concurrency
+
+Status: completed in clean GitHub Actions checkout.
+
+- Backend Tests run 44393077707 used a disposable PostgreSQL 18 service and the explicit destructive-test opt-in.
+- The dedicated job completed with 3 passed and 0 skipped.
+- Competing final decisions returned one stored final outcome and handled the repeated decision as already final.
+- Concurrent approvals for separate requests initially exposed two returned GSN IDs for one new person. The production fix now locks and refreshes the shared applicant row before first identity issuance, so both approvals return the one stored GSN ID and both memberships remain valid.
+- Duplicate community-creation submissions returned the same community and membership, with one stored request key.
+- The workflow verifies the JUnit totals and fails unless exactly three tests pass with zero skips, failures, or errors.
+
+### Exposed ChatGPT session
+
+Status: blocked; not invalidated.
+
+- The exposed credential is a ChatGPT web access JWT issued by auth.openai.com, not a GSN application token, Render key, GitHub token, or OpenAI API key.
+- Its embedded validity window ends at 2026-11-26 11:06:10 UTC.
+- The supplied material contains the access JWT and session metadata but no refresh token or reusable browser cookie value.
+- OpenAI supports individual-session or all-session logout through ChatGPT Security settings. This environment has no authenticated ChatGPT browser session, no supported session-revocation API, and no connected browser surface, so targeted revocation could not be completed or verified.
+- Expiry is not accepted as completed invalidation while the access JWT remains within its validity window. The account owner must revoke the matching active session or log out all sessions, wait up to 30 minutes for propagation, and then confirm the exposed token is rejected.
+
+### Production backup and recovery
+
+Status: completed without downloading production rows into CI.
+
+- Render logical export id: dpg-d7h15li8qa3s73crpcr0-a/2026-11-18T20:36Z.
+- Export timestamp: 2026-11-18 20:36:00 UTC.
+- Protected location: Render Postgres logical exports, with Render's documented seven-day retention.
+- Protected PITR recovery id: dpg-dbv0p7psrm7s73b2hfmg-a.
+- Restored point: 2026-11-18 20:22:49 UTC.
+- External access was cleared before validation. Render metadata then confirmed users, clans, clan_join_requests, and clan_memberships on the recovered PostgreSQL 18 instance.
+- The recovery instance was suspended after validation and remains protected with an empty external IP allow list.
+- GitHub Actions run 44392776302 completed successfully. No database dump or production row data was retained as a CI artifact.
+
+Recovery consequences remain unchanged:
+
+- Prefer application rollback while retaining the upgraded schema; this preserves valid post-release identities, requests, memberships, votes, and communities.
+- A schema downgrade removes corrected-entry provenance and idempotency columns and can lose evidence required to reconcile valid post-release actions.
+- Restoring the export or PITR point replaces later state and loses every valid production write after the selected backup timestamp.
+
+### Deployment safeguards
+
+- Render automatic deploy remains off for gmfn-api and gmfn-frontend; branch pushes run CI but do not deploy.
+- Identity-first endpoints remain generally available when deployed and are protected by verified-session or authenticated access, idempotency keys, and database uniqueness.
+- The public limiter remains process-local. The documented one-instance, one-worker topology is required until shared enforcement is implemented before adding workers or instances.
+- Search remains a separate per-community opt-in. The first search pilot retains community voting with admin override disabled.

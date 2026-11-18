@@ -2,6 +2,19 @@ name: Render Status
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "Choose a read-only status check or protected recovery preparation"
+        required: true
+        default: "status"
+        type: choice
+        options:
+          - "status"
+          - "recovery"
+      confirmation:
+        description: "For recovery mode, type CREATE_PRODUCTION_EXPORT"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -12,6 +25,7 @@ concurrency:
 
 jobs:
   render-status:
+    if: ${{ github.event.inputs.mode != 'recovery' }}
     name: Render read-only status
     runs-on: ubuntu-latest
     env:
@@ -33,6 +47,7 @@ jobs:
           python tools/render_status.py --discover-api-service
 
   backup-and-restore:
+    if: ${{ github.event.inputs.mode == 'recovery' && github.event.inputs.confirmation == 'CREATE_PRODUCTION_EXPORT' }}
     runs-on: ubuntu-latest
 
     env:
