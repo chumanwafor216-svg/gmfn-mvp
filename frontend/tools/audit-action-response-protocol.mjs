@@ -149,8 +149,14 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityJoinRequestsPage.tsx",
-  /buildActionSuccessMessage[\s\S]*?Approval successful\.[\s\S]*?Saved successfully\.[\s\S]*?emitWorkspaceDataChanged[\s\S]*?role="status"[\s\S]*?aria-live="polite"/,
+  /function approvalSuccessText[\s\S]*?buildActionSuccessMessage[\s\S]*?Already decided\.[\s\S]*?Person accepted\.[\s\S]*?Person not accepted\.[\s\S]*?Answer saved\./,
   "Join-request review actions must keep a visible shared success response and refresh workspace guidance after the reviewer finishes."
+);
+
+assertContains(
+  "src/pages/CommunityJoinRequestsPage.tsx",
+  /async function handleVote[\s\S]*?setSuccess\(approvalSuccessText[\s\S]*?emitWorkspaceDataChanged[\s\S]*?reviewerActionCompleted: true[\s\S]*?role="status"[\s\S]*?aria-live="polite"/,
+  "Join-request review actions must publish completed reviewer work and render the result in a polite status region."
 );
 
 assertContains(
@@ -197,8 +203,8 @@ assertContains(
 
 assertContains(
   "src/pages/VaultControlPage.tsx",
-  /async function copyVaultPaymentInstruction[\s\S]*?const copied = await safeCopy\(text\)[\s\S]*?Clipboard copy was blocked[\s\S]*?const copiedReference = reference \? await safeCopy\(reference\)[\s\S]*?async function createViewingLink[\s\S]*?const copied = url \? await safeCopy\(buildVaultInvitePackage\(url, link\)\)[\s\S]*?async function copySelectedBlockLink[\s\S]*?Create this block link before copying it\.[\s\S]*?const copied = await safeCopy\(buildVaultInvitePackage\(selectedBlockLinkUrl, selectedBlockPrimaryLink\)\)[\s\S]*?function openSelectedBlockLink[\s\S]*?Create this block link before opening the private view\.[\s\S]*?const opened = window\.open[\s\S]*?browser blocked the private view window/,
-  "Vault Control inner buttons must answer missing links, blocked copy, generated-code copy, branded Vault invite copies, and blocked private-view windows."
+  /async function copyVaultPaymentInstruction[\s\S]*?const copied = await safeCopy\(text\)[\s\S]*?Clipboard copy was blocked[\s\S]*?async function createViewingLink[\s\S]*?Add content to this Vault block before creating its private link\.[\s\S]*?const copied = url \? await safeCopy\(buildVaultInvitePackage\(url, link\)\)[\s\S]*?Copy was blocked, so use the link panel below\.[\s\S]*?async function copySelectedBlockLink[\s\S]*?Create this block link before copying it\.[\s\S]*?const copied = await safeCopy\(buildVaultInvitePackage\(selectedBlockLinkUrl, selectedBlockPrimaryLink\)\)[\s\S]*?function openSelectedBlockLink[\s\S]*?Create this block link before opening the private view\.[\s\S]*?const opened = window\.open[\s\S]*?browser blocked the private view window/,
+  "Vault Control inner buttons must answer missing content or links, blocked copies, branded Vault invite copies, and blocked private-view windows without restoring retired direct-payment generation."
 );
 
 [
@@ -216,8 +222,14 @@ assertContains(
 
 assertContains(
   "src/pages/NotificationsPage.tsx",
-  /actionNotice[\s\S]*?setActionNotice[\s\S]*?Notice marked as read\.[\s\S]*?settings\.openActionsDirectly[\s\S]*?navigateWithOrigin\(navigate, normalizedNotice\.ctaTo, location\)[\s\S]*?Notice opened here first\. Review it, then choose the next action\.[\s\S]*?actionNoticeCard\(actionNotice\.tone\)/,
+  /async function markAsRead[\s\S]*?setActionNotice[\s\S]*?Notice marked as read\./,
   "Notifications actions must answer when marking read or reviewing, while direct-open mode must navigate to the next route without an extra confirmation step."
+);
+
+assertContains(
+  "src/pages/NotificationsPage.tsx",
+  /async function openNoticeDestination[\s\S]*?await markAsRead\(noticeId\)[\s\S]*?navigateWithOrigin\(navigate, normalizedNotice\.ctaTo, location\)[\s\S]*?async function handlePrimaryNoticeAction[\s\S]*?settings\.openActionsDirectly[\s\S]*?await openNoticeDestination\(normalizedNotice\)[\s\S]*?Notice opened here first\. Review it, then choose the next action\.[\s\S]*?actionNoticeCard\(actionNotice\.tone\)/,
+  "Notifications direct-open mode must use the shared destination helper, while review-first mode must keep its visible response card."
 );
 
 if (findings.length > 0) {

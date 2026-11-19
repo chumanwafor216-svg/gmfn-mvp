@@ -595,7 +595,7 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
-  /const \[privateEvidenceRecord, setPrivateEvidenceRecord\][\s\S]*?const applyAppContext[\s\S]*?const mySlipCode = firstTruthy\([\s\S]*?mySlip\?\.code[\s\S]*?mySlip\?\.verification_code[\s\S]*?setPrivateEvidenceRecord\([\s\S]*?isAppRoute && mySlipCode && mySlipCode === codeToUse[\s\S]*?normalizeTrustSlipVerification\(mySlip, codeToUse\)[\s\S]*?appContextPromise\.then[\s\S]*?const ownsVisibleTrustSlip =[\s\S]*?privateEvidenceCode === visibleRecordCode[\s\S]*?const canShowPrivateEvidence = ownsVisibleTrustSlip[\s\S]*?\{canShowPrivateEvidence \? \(/,
+  /const \[privateEvidenceRecord, setPrivateEvidenceRecord\][\s\S]*?const applyAppContext[\s\S]*?const mySlipCode = firstTruthy\([\s\S]*?mySlip\?\.code[\s\S]*?mySlip\?\.verification_code[\s\S]*?setPrivateEvidenceRecord\([\s\S]*?isAppRoute && mySlipCode && mySlipCode === codeToUse[\s\S]*?normalizeTrustSlipVerification\(mySlip, codeToUse\)[\s\S]*?appContextPromise\.then[\s\S]*?const ownsVisibleTrustSlip =[\s\S]*?privateEvidenceCode === visibleRecordCode[\s\S]*?const canShowPrivateEvidence =[\s\S]*?ownsVisibleTrustSlip && !isCardRoute && !isProfileRoute && !isPublicReceiverDelivery[\s\S]*?\{canShowPrivateEvidence \? \(/,
   "Signed-in TrustSlip Verify private evidence must hydrate from the authenticated member TrustSlip and only render when the visible code matches the signed-in member's own current TrustSlip."
 );
 assertContains(
@@ -1255,7 +1255,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /Sign in to follow this shop and keep it in your GSN updates[\s\S]*?aria-label="Shop follow controls"[\s\S]*?debugId="shop-gallery\.public-shop\.sign-in-follow"[\s\S]*?debugId="shop-gallery\.public-shop\.follow"/,
+  /aria-label="Shop follow controls"[\s\S]*?Sign in to follow this shop and keep it in your GSN updates[\s\S]*?debugId="shop-gallery\.public-shop\.sign-in-follow"[\s\S]*?debugId="shop-gallery\.public-shop\.follow"/,
   "Public Shop follow controls must tell signed-out users that following keeps the shop in their GSN updates."
 );
 
@@ -1495,13 +1495,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationPolicyPage.tsx",
-  /function WitnessCodePackage[\s\S]*?data-gsn-witness-code-package="one-time-code-for-member"[\s\S]*?One-time code for member[\s\S]*?Share code and link[\s\S]*?Copy response link[\s\S]*?const canShareMemberWitnessRequest = Boolean\(memberWitnessRequest\?\.oneTimeCode\);[\s\S]*?memberWitnessFocus && memberWitnessRequest && canShareMemberWitnessRequest/,
+  /function WitnessCodePackage[\s\S]*?data-gsn-witness-code-package="one-time-code-for-member"[\s\S]*?One-time code for member[\s\S]*?Share code and link[\s\S]*?Copy response link[\s\S]*?const canShareMemberWitnessRequest = Boolean\(memberWitnessRequest\?\.oneTimeCode\);[\s\S]*?memberWitnessRequestFocus && memberWitnessRequest && canShareMemberWitnessRequest/,
   "Community confirmation policy must only show the focused requester-side witness code package when the backend returned a one-time code."
 );
 
 assertContains(
   "src/pages/CommunityConfirmationPolicyPage.tsx",
-  /sectionLabel=\{memberWitnessFocus \|\| verificationRequestFocus \? "GSN evidence" : "Community confirmation"\}[\s\S]*?title=\{memberWitnessFocus \? "Member Witness" : verificationRequestFocus \? "Verification Request" : "Instant Confirmation Policy"\}[\s\S]*?memberWitnessFocus && memberWitnessRequest && canShareMemberWitnessRequest[\s\S]*?<WitnessCodePackage[\s\S]*?memberWitnessFocus \? \([\s\S]*?<WitnessAfterResponseCard[\s\S]*?: \([\s\S]*?Current witness strength/,
+  /sectionLabel=\{memberWitnessFocus \|\| verificationRequestFocus \? "GSN evidence" : "Community confirmation"\}[\s\S]*?memberWitnessRequestFocus[\s\S]*?"Member Witness"[\s\S]*?memberWitnessRequestFocus && memberWitnessRequest && canShareMemberWitnessRequest[\s\S]*?<WitnessCodePackage[\s\S]*?memberWitnessRequestFocus \? \([\s\S]*?<WitnessAfterResponseCard[\s\S]*?: \([\s\S]*?Current witness strength/,
   "Community confirmation policy focused Member Witness page must use the compact code package plus after-response card instead of exposing the witness-strength workbench first."
 );
 
@@ -1513,7 +1513,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationPolicyPage.tsx",
-  /display: memberWitnessFocus \? "none" : undefined,[\s\S]*?Eligible response pool[\s\S]*?display: memberWitnessFocus \? "none" : undefined,[\s\S]*?Privacy rule/,
+  /id="community-confirmation-eligible-response-pool"[\s\S]*?display: memberWitnessFocus \? "none" : undefined,[\s\S]*?Eligible response pool[\s\S]*?id="community-confirmation-privacy-rule"[\s\S]*?memberWitnessFocus \|\| compactVerificationRequestFocus \? "none" : undefined[\s\S]*?Privacy rule/,
   "Community confirmation policy must keep Eligible response pool and Privacy rule outside the focused member-witness page."
 );
 
@@ -1567,7 +1567,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityConfirmationInboxPage.tsx",
-  /Your answer records what you personally know; it is not parent community certification or a whole-community vote\./,
+  /Your answer is personal evidence, not parent community certification or a whole-community vote\./,
   "Community confirmation inbox responder lane must scope individual answers as personal knowledge, not certification."
 );
 assertContains(
@@ -1914,7 +1914,7 @@ assertContains(
 
 assertContains(
   "src/pages/VaultControlPage.tsx",
-  /quote\.charge_mode === "pilot_waived"[\s\S]*?completeVaultActivation\(quote, true\)[\s\S]*?No Pipeline Credits were taken during pilot testing/,
+  /async function completeVaultActivation[\s\S]*?spendPipelineCreditServiceQuote[\s\S]*?No Pipeline Credits were taken during pilot testing[\s\S]*?quote\.charge_mode === "pilot_waived"[\s\S]*?completeVaultActivation\(quote, true\)/,
   "Vault Control pilot activation must pass through the connected service order while stating that no credits were taken."
 );
 
@@ -2348,7 +2348,7 @@ assertContains(
 
 assertContains(
   "../gmfn_backend/app/api/routes/trust_slips.py",
-  /_public_community_confirmation_options\([\s\S]*?build_community_confirmation_summary\([\s\S]*?active_member_count[\s\S]*?contactable_reference_count[\s\S]*?relay_available[\s\S]*?instant_pulse_available/,
+  /community_confirmation = build_community_confirmation_summary\([\s\S]*?community_confirmation_options = \([\s\S]*?active_member_count[\s\S]*?contactable_reference_count[\s\S]*?relay_available[\s\S]*?instant_pulse_available/,
   "TrustSlip public verify payload must expose selected-community confirmation readiness without private contacts."
 );
 assertContains(

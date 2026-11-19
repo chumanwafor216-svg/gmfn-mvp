@@ -1651,7 +1651,17 @@ def test_public_trustslip_verify_does_not_upgrade_or_leak_private_payload(
     assert "+234800000002" not in payload_text
     assert "Private Secondary Community" not in response.text
     assert len(data["community_confirmation_options"]) == 1
-    assert data["community_confirmation_options"][0]["community_id"] == 1
+    confirmation_option = data["community_confirmation_options"][0]
+    assert confirmation_option["community_id"] == 1
+    assert "active_member_count" in confirmation_option
+    assert "contactable_reference_count" in confirmation_option
+    assert "relay_available" in confirmation_option
+    assert "instant_pulse_available" in confirmation_option
+    confirmation_option_text = json.dumps(confirmation_option, default=str).lower()
+    assert "phone_e164" not in confirmation_option_text
+    assert "email" not in confirmation_option_text
+    assert "contact_user_id" not in confirmation_option_text
+    assert "contact_masked" not in confirmation_option_text
     assert data["identity_verified"] is False
     assert data["active_community_count"] is None
     assert data["sponsor_count"] is None

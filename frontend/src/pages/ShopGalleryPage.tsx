@@ -5848,6 +5848,8 @@ export default function ShopGalleryPage() {
                 {!shopOptionsOwner ? (
                   <div
                     className="public-shop-follow-actions"
+                    role="group"
+                    aria-label="Shop follow controls"
                     style={{
                       display: "grid",
                       gridTemplateColumns:

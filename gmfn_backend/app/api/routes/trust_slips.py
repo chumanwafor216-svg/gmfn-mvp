@@ -2291,6 +2291,23 @@ def verify_trust_slip_public(
                 "holder_role": community_context.get("holder_role"),
                 "role": community_context.get("holder_role"),
                 "is_primary_anchor": True,
+                "community_status": community_confirmation.get("community_status"),
+                "active_member_count": community_confirmation.get("active_member_count"),
+                "contactable_reference_count": community_confirmation.get(
+                    "contactable_reference_count"
+                ),
+                "sponsor_signal_count": community_confirmation.get("sponsor_signal_count"),
+                "last_community_confirmation": community_confirmation.get(
+                    "last_community_confirmation"
+                ),
+                "relay_available": bool(community_confirmation.get("relay_available")),
+                "instant_pulse_available": bool(
+                    community_confirmation.get("instant_pulse_available")
+                ),
+                "plain_language": community_confirmation.get("plain_language"),
+                "confirmation_scope_note": (
+                    "Request responses from people connected to this community only."
+                ),
             }
         ]
     )

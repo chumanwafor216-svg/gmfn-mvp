@@ -2712,7 +2712,7 @@ export default function TrustSlipVerifyPublicPaper({
               )}
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ color: "#F2C766", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase", letterSpacing: 0.6 }}>
+              <div style={{ color: "#F2C766", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
                 Public professional profile
               </div>
               <h1 style={{ margin: "5px 0 0", color: "#FFFFFF", fontSize: compact ? 25 : 34, lineHeight: 1.04, overflowWrap: "break-word" }}>
