@@ -198,6 +198,14 @@ const requiredNeonAffordancePatterns = [
       "Dashboard compact identity must keep the approved GSN ID, Membership, and Pipeline Credits fact row.",
   },
   {
+    file: dashboardCompactIdentityFile,
+    source: compactIdentitySource,
+    pattern:
+      /data-dashboard-reading-open-symbol="true"[\s\S]*?&rsaquo;/,
+    message:
+      "Dashboard identity reading rows must end with a consistent action chevron instead of unrelated decorative objects.",
+  },
+  {
     file: appLayoutFile,
     source: appLayoutSource,
     pattern:
@@ -214,6 +222,16 @@ for (const check of requiredNeonAffordancePatterns) {
     line: 1,
     message: check.message,
     text: "Expected approved dashboard neon affordance pattern was not found.",
+  });
+}
+
+if (/endIcon|presentation\.endIcon/.test(compactIdentitySource)) {
+  findings.push({
+    file: dashboardCompactIdentityFile,
+    line: 1,
+    message:
+      "Dashboard identity reading rows must not restore duplicate decorative end icons.",
+    text: "Found a retired identity-reading endIcon contract.",
   });
 }
 

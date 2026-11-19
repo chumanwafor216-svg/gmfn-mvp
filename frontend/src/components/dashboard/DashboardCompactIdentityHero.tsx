@@ -7,7 +7,6 @@ import { StableButton, StableDisclosureSummary } from "../StableButton";
 import { colors, radius } from "../../design/tokens";
 import dashboardNetworkGlobe from "../../assets/dashboard/dashboard-network-globe.jpg";
 import {
-  authenticatedStaticNeonAction,
   authenticatedStaticNeonFrame,
 } from "../../design/authenticatedNeon";
 
@@ -55,7 +54,6 @@ const compactActionFrame: React.CSSProperties = {
 
 type IdentityReadingPresentation = {
   icon: Gsn3DIconKey;
-  endIcon: Gsn3DIconKey;
   description: string;
   background: string;
   borderColor: string;
@@ -68,7 +66,6 @@ function identityReadingPresentation(label: string): IdentityReadingPresentation
     case "wider":
       return {
         icon: "community-building",
-        endIcon: "public-globe",
         description: "Grow your trust across more communities.",
         background:
           "linear-gradient(102deg, rgba(4,35,92,0.98) 0%, rgba(11,24,68,0.98) 47%, rgba(88,31,150,0.96) 100%)",
@@ -79,7 +76,6 @@ function identityReadingPresentation(label: string): IdentityReadingPresentation
     case "trustslip":
       return {
         icon: "trust-shield",
-        endIcon: "certificate-seal",
         description: "Your Trust Record on GSN (for people, shops and trades).",
         background:
           "linear-gradient(102deg, rgba(3,53,91,0.98) 0%, rgba(5,34,65,0.98) 54%, rgba(72,59,18,0.96) 100%)",
@@ -90,7 +86,6 @@ function identityReadingPresentation(label: string): IdentityReadingPresentation
     default:
       return {
         icon: "identity-card",
-        endIcon: "trust-shield",
         description: "You’re getting known and trusted on GSN.",
         background:
           "linear-gradient(102deg, rgba(3,54,118,0.98) 0%, rgba(5,35,83,0.98) 52%, rgba(5,104,62,0.96) 100%)",
@@ -660,6 +655,7 @@ export default function DashboardCompactIdentityHero({
 
                   <span
                     aria-hidden="true"
+                    data-dashboard-reading-open-symbol="true"
                     style={{
                       display: "grid",
                       placeItems: "center",
@@ -667,17 +663,25 @@ export default function DashboardCompactIdentityHero({
                       overflow: "hidden",
                     }}
                   >
-                    <GsnRealisticIcon
-                      name={presentation.endIcon}
-                      size={48}
-                      decorative
-                      loading="eager"
+                    <span
                       style={{
-                        borderRadius: 14,
-                        filter: `drop-shadow(0 0 8px ${presentation.glow})`,
+                        width: 30,
+                        height: 30,
+                        display: "grid",
+                        placeItems: "center",
+                        borderRadius: 999,
+                        border: "1px solid rgba(255,255,255,0.78)",
+                        background: "rgba(3,16,31,0.34)",
+                        color: "#FFF3C4",
+                        fontSize: 27,
+                        fontWeight: 900,
+                        lineHeight: 1,
+                        boxShadow: `0 0 10px ${presentation.glow}, inset 0 1px 0 rgba(255,255,255,0.18)`,
+                        textShadow: `0 0 7px ${presentation.glow}`,
                       }}
-                      imageStyle={{ transform: "scale(1.06)" }}
-                    />
+                    >
+                      &rsaquo;
+                    </span>
                   </span>
                 </StableButton>
               );

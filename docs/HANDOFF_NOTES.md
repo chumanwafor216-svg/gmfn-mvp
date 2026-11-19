@@ -6918,3 +6918,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Recognised invitation intent now bypasses Welcome and opens the dedicated `/join/:code` invitation route directly. QR policy and other non-lane query context remain preserved; stale entry markers and code aliases are removed from the forwarded URL.
 - Voluntary discovery and invitation entry remain separate contracts. A no-code Join choice still opens `/join`; a recognised code opens `/join/:code`. No search API, invitation API, admission rule, permission, schema, create-community route, or authenticated navigation changed.
 - Verification passed: focused ESLint, entry-flow polish audit, entry copy/response audit, TypeScript and the 328-module production build, the complete Pixel 5 corrected-community-entry smoke covering direct invitation forwarding, search results, join request submission, gateway switching, identity creation, activation and community creation, and the broad protected-button freeze suite. The protected browser sweep still logs its unrelated pre-existing duplicate React-key warning while passing.
+
+# Dashboard identity-reading action symbols - 2026-11-19
+
+- Owner phone review marked the three unrelated decorative objects on the right edge of the expanded Dashboard `Identity & trust` reading rows.
+- The duplicate shield, globe and certificate artwork is replaced with one consistent gold-white right chevron. The chevron now communicates the real behavior: each complete row opens its corresponding Trust, wider-identity or TrustSlip destination.
+- The meaningful realistic 3D object on the left of each row remains unchanged. Row labels, values, descriptions, routes, pointer guards, hit areas, grid dimensions, neon frame and the frozen Market Wisdom section are unchanged.
+- The Dashboard phone audit now requires the shared chevron and rejects restoration of the retired `endIcon` contract.
+- Verification passed: focused ESLint, Dashboard phone-button, Dashboard action and Dashboard button-inventory audits, the Dashboard passport/hitbox browser audit at phone width, TypeScript and the 328-module production build, and the broad protected-button freeze suite. The protected browser sweep still logs its unrelated pre-existing duplicate React-key warning while passing.
