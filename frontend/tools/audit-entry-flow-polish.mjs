@@ -216,8 +216,8 @@ assertContains(
 
 assertContains(
   "src/pages/IdentityFirstCreateCommunityPage.tsx",
-  /invite_admission_mode: "instant_invite"[\s\S]*?invite_admin_override: false[\s\S]*?search_join_enabled: false[\s\S]*?search_join_admission_mode: "community_vote"[\s\S]*?search_join_admin_override: false/,
-  "Create Community must use safe admission defaults without exposing join-policy work before creation."
+  /invite_admission_mode: "instant_invite"[\s\S]*?invite_admin_override: false[\s\S]*?search_join_admission_mode: "community_vote"[\s\S]*?search_join_admin_override: false/,
+  "Create Community must use safe admission defaults while universal active-community discovery remains system-owned."
 );
 
 assertNotContains(

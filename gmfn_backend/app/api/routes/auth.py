@@ -443,7 +443,7 @@ def _create_founder_clan(
     creation_request_key: Optional[str] = None,
     admission_mode: str = "instant_invite",
     voting_admin_override: bool = False,
-    search_join_enabled: bool = False,
+    search_join_enabled: bool = True,
     search_join_admission_mode: str = "community_vote",
     search_join_admin_override: bool = False,
 ) -> tuple[Clan, str]:
@@ -484,7 +484,7 @@ def _create_founder_clan(
         invite_uses=0,
         admission_mode=admission_mode,
         voting_admin_override=bool(voting_admin_override),
-        search_join_enabled=bool(search_join_enabled),
+        search_join_enabled=True,
         search_join_admission_mode=search_join_admission_mode,
         search_join_admin_override=bool(search_join_admin_override),
         creation_request_key=safe_request_key,

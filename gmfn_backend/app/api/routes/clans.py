@@ -338,7 +338,7 @@ class CommunityAdmissionPolicyIn(BaseModel):
 
 
 class CommunitySearchJoinSettingsIn(BaseModel):
-    enabled: bool = False
+    enabled: bool = True
     admission_mode: str = Field(default=ADMISSION_MODE_VOTE, max_length=32)
     admin_override: bool = False
 
@@ -978,13 +978,13 @@ def _community_search_join_policy(*, clan: Clan) -> dict[str, Any]:
         and mode == ADMISSION_MODE_VOTE
     )
     return {
-        "enabled": bool(getattr(clan, "search_join_enabled", False)),
+        "enabled": True,
         "admission_mode": mode,
         "admission_mode_label": _admission_mode_label(mode),
         "admin_override": allow_override,
         "instant_join": mode == ADMISSION_MODE_INSTANT,
         "requires_community_vote": mode == ADMISSION_MODE_VOTE,
-        "source": "community_search_setting",
+        "source": "all_active_communities",
         "membership_truth_boundary": (
             "Admission confirms community membership only. It does not create "
             "identity-document verification, financial approval, endorsement, or trust."
@@ -4041,7 +4041,6 @@ def search_joinable_communities(
     rows = (
         db.query(Clan)
         .filter(
-            Clan.search_join_enabled.is_(True),
             Clan.status == "active",
             or_(
                 Clan.name.ilike(pattern),
@@ -4097,7 +4096,6 @@ def get_joinable_community(
     clan = db.get(Clan, int(community_id))
     if (
         clan is None
-        or not bool(getattr(clan, "search_join_enabled", False))
         or _safe_str(getattr(clan, "status", "active"), "active").lower() != "active"
         or _is_default_clan_name(getattr(clan, "name", None))
     ):
@@ -4251,7 +4249,7 @@ def update_community_search_join_settings(
     previous = _community_search_join_policy(clan=clan)
     mode = _safe_str(payload.admission_mode).lower()
     allow_override = bool(payload.admin_override and mode == ADMISSION_MODE_VOTE)
-    clan.search_join_enabled = bool(payload.enabled)
+    clan.search_join_enabled = True
     clan.search_join_admission_mode = mode
     clan.search_join_admin_override = allow_override
     db.add(clan)
@@ -4263,7 +4261,7 @@ def update_community_search_join_settings(
         subject_user_id=int(current_user.id),
         meta={
             "previous": previous,
-            "enabled": bool(payload.enabled),
+            "enabled": True,
             "admission_mode": mode,
             "admin_override": allow_override,
         },
@@ -5147,8 +5145,6 @@ def create_search_join_request(
     ):
         raise HTTPException(status_code=404, detail="Community not available for requests")
     admission_policy = _community_search_join_policy(clan=clan)
-    if not admission_policy["enabled"]:
-        raise HTTPException(status_code=404, detail="Community not available for requests")
 
     existing_identity_join = bool(
         current_user is not None and not is_user_activation_pending(current_user)

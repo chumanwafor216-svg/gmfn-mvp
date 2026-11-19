@@ -561,7 +561,7 @@ class IdentityFirstCommunityIn(BaseModel):
     require_full_member_verification: Optional[bool] = None
     invite_admission_mode: str = Field(default="instant_invite", max_length=32)
     invite_admin_override: bool = False
-    search_join_enabled: bool = False
+    search_join_enabled: bool = True
     search_join_admission_mode: str = Field(default="community_vote", max_length=32)
     search_join_admin_override: bool = False
 
@@ -2361,7 +2361,7 @@ def create_community_after_identity(
             "admin_override": invite_override,
         },
         "search": {
-            "enabled": bool(payload.search_join_enabled),
+            "enabled": True,
             "admission_mode": search_mode,
             "admin_override": search_override,
         },
@@ -2375,7 +2375,7 @@ def create_community_after_identity(
         creation_request_key=request_key,
         admission_mode=invite_mode,
         voting_admin_override=invite_override,
-        search_join_enabled=bool(payload.search_join_enabled),
+        search_join_enabled=True,
         search_join_admission_mode=search_mode,
         search_join_admin_override=search_override,
     )
@@ -2411,7 +2411,7 @@ def create_community_after_identity(
         "governance_profile": governance_profile,
         "invite_admission_mode": invite_mode,
         "invite_admin_override": invite_override,
-        "search_join_enabled": bool(payload.search_join_enabled),
+        "search_join_enabled": True,
         "search_join_admission_mode": search_mode,
         "search_join_admin_override": search_override,
         "next_step": "build-first-circle",

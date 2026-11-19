@@ -138,8 +138,13 @@ assertContains(
 );
 
 assertContains(
-  /getCommunitySearchJoinSettings[\s\S]*?updateCommunitySearchJoinSettings[\s\S]*?data-gsn-search-join-settings="true"[\s\S]*?Allow people to search for this community and ask to join[\s\S]*?save-search-join-settings/,
-  "Join Requests owners must be able to opt a community into public search without changing invitation behavior."
+  /getCommunitySearchJoinSettings[\s\S]*?updateCommunitySearchJoinSettings[\s\S]*?data-gsn-search-join-settings="true"[\s\S]*?Every active community is searchable[\s\S]*?What happens after someone asks\?[\s\S]*?save-search-join-settings/,
+  "Join Requests must keep universal discovery separate from the community's search-request admission rule."
+);
+
+assertNotContains(
+  /Allow people to search for this community and ask to join|hidden from public search|searchJoinEnabled|setSearchJoinEnabled/,
+  "Join Requests must not restore an owner-controlled search visibility permission."
 );
 
 assertContains(

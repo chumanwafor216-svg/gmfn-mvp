@@ -18,6 +18,12 @@ function requirePattern(relativePath, pattern, message) {
   }
 }
 
+function rejectPattern(relativePath, pattern, message) {
+  if (pattern.test(source(relativePath))) {
+    findings.push(relativePath + ": " + message);
+  }
+}
+
 requirePattern(
   "gmfn_backend/app/db/models.py",
   /class Clan\b[\s\S]*?admission_mode[\s\S]*?voting_admin_override[\s\S]*?class ClanInvite\b[\s\S]*?admission_mode[\s\S]*?voting_admin_override/,
@@ -65,8 +71,23 @@ requirePattern(
 );
 requirePattern(
   "frontend/src/pages/CommunityJoinRequestsPage.tsx",
-  /getCommunitySearchJoinSettings[\s\S]*?updateCommunitySearchJoinSettings[\s\S]*?Let people find this community[\s\S]*?invitation links still work[\s\S]*?Save community search/,
-  "Community owners must have an explicit public-search opt-in that stays separate from invitation admission."
+  /getCommunitySearchJoinSettings[\s\S]*?updateCommunitySearchJoinSettings[\s\S]*?Every active community is searchable[\s\S]*?What happens after someone asks\?[\s\S]*?Save community search/,
+  "Every active community must stay searchable while owners control only the admission response."
+);
+rejectPattern(
+  "frontend/src/pages/CommunityJoinRequestsPage.tsx",
+  /Let people find this community|Allow people to search for this community|searchJoinEnabled|setSearchJoinEnabled/,
+  "The removed community-search visibility permission must not return."
+);
+rejectPattern(
+  "gmfn_backend/app/api/routes/clans.py",
+  /Clan\.search_join_enabled\.is_\(True\)|if not admission_policy\["enabled"\]/,
+  "Active-community search and requests must not depend on the legacy visibility flag."
+);
+requirePattern(
+  "gmfn_backend/alembic/versions/20261119_all_active_communities_searchable.py",
+  /revision = "20261119_universal_clan_search"[\s\S]*?UPDATE clans[\s\S]*?SET search_join_enabled = TRUE[\s\S]*?server_default=sa\.true\(\)/,
+  "The compatibility migration must publish active communities and default new communities to searchable."
 );
 requirePattern(
   "frontend/src/pages/CommunityJoinRequestsPage.tsx",
@@ -91,5 +112,5 @@ if (findings.length) {
 }
 
 console.log(
-  "Membership admission policy audit passed: three saved modes, invite snapshots, instant membership, explicit vote override, truth boundary, and Community Home activation remain connected."
+  "Membership admission policy audit passed: universal active-community search, three saved modes, invite snapshots, instant membership, explicit vote override, truth boundary, and Community Home activation remain connected."
 );

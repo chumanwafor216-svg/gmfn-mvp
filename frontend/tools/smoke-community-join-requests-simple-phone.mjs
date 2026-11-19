@@ -73,7 +73,6 @@ const requests = [
   },
 ];
 let mockedAdmissionMode = "community_vote";
-let mockedSearchJoinEnabled = false;
 let savedSearchJoinPayload = null;
 
 async function installApiMocks(page) {
@@ -145,13 +144,12 @@ async function installApiMocks(page) {
     if (path === "/clans/8/search-join-settings") {
       if (route.request().method() === "PATCH") {
         savedSearchJoinPayload = route.request().postDataJSON();
-        mockedSearchJoinEnabled = Boolean(savedSearchJoinPayload?.enabled);
       }
       return route.fulfill(
         json({
           community_id: 8,
           community_name: "Homeland Isa",
-          enabled: mockedSearchJoinEnabled,
+          enabled: true,
           admission_mode: savedSearchJoinPayload?.admission_mode || "community_vote",
           admin_override: Boolean(savedSearchJoinPayload?.admin_override),
           can_manage: true,
@@ -272,24 +270,27 @@ async function run() {
     );
 
     await settings.locator("summary").click();
+    const instantJoinLabels = settings.getByText("Instant Join", { exact: true });
+    const committeeVotingLabels = settings.getByText("Committee Voting", { exact: true });
     assert(
-      await settings.getByText("Instant Join", { exact: true }).isVisible() &&
+      (await instantJoinLabels.count()) >= 1 &&
+        await instantJoinLabels.first().isVisible() &&
         await settings.getByText("Admin Approval", { exact: true }).isVisible() &&
-        await settings.getByText("Committee Voting", { exact: true }).isVisible(),
+        (await committeeVotingLabels.count()) >= 1 &&
+        await committeeVotingLabels.first().isVisible(),
       "Joining settings must use the restored owner-approved names."
     );
-    const searchJoinToggle = settings.getByLabel(
-      "Allow people to search for this community and ask to join.",
-      { exact: true }
+    assert(
+      await settings.getByText("Every active community is searchable", { exact: true }).isVisible(),
+      "Community search settings must explain universal discovery."
     );
-    await searchJoinToggle.check();
     await settings
       .getByRole("button", { name: "Save community search", exact: true })
       .click();
     assert(
-      savedSearchJoinPayload?.enabled === true &&
+      !Object.hasOwn(savedSearchJoinPayload || {}, "enabled") &&
         savedSearchJoinPayload?.admission_mode === "community_vote",
-      "The owner search opt-in must save independently through the search-join settings contract."
+      "The search-request joining rule must save without a visibility permission."
     );
 
     if (screenshotDir) {
@@ -323,7 +324,7 @@ async function run() {
     }
 
     console.log(
-      "Community Join Requests simple-phone smoke passed: exact notification focus, text-only status, three decisions, truthful Instant Join no-vote state, closed secondary tools, restored setting names, saved public-search opt-in, alternate-request opening, and 390px containment."
+      "Community Join Requests simple-phone smoke passed: exact notification focus, text-only status, three decisions, truthful Instant Join no-vote state, closed secondary tools, universal community search, saved admission rules, alternate-request opening, and 390px containment."
     );
   } finally {
     if (browser) await browser.close();

@@ -9,7 +9,7 @@ from sqlalchemy import create_engine, inspect, text
 
 
 PREVIOUS = "20261112_pipeline_credit_control_plane"
-HEAD = "20261118_corrected_community_entry"
+HEAD = "20261119_universal_clan_search"
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -103,8 +103,8 @@ def test_corrected_entry_migration_preserves_legacy_admission_and_pending_rows(
             )
         ).all()
         assert [tuple(row) for row in communities] == [
-            (1, False, "community_vote", False, None),
-            (2, False, "community_vote", False, None),
+            (1, True, "community_vote", False, None),
+            (2, True, "community_vote", False, None),
         ]
         request_row = connection.execute(
             text(

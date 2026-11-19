@@ -9731,7 +9731,6 @@ export async function getCommunitySearchJoinSettings(clanId: number): Promise<an
 export async function updateCommunitySearchJoinSettings(
   clanId: number,
   payload: {
-    enabled: boolean;
     admission_mode: CommunitySearchJoinMode;
     admin_override?: boolean;
   }

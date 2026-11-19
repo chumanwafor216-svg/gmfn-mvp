@@ -156,7 +156,7 @@ class Clan(Base):
     # community-vote behaviour so old links never become instant-entry links.
     admission_mode = Column(String(32), nullable=True, index=True)
     voting_admin_override = Column(Boolean, nullable=False, default=False, server_default="0")
-    search_join_enabled = Column(Boolean, nullable=False, default=False, server_default="0")
+    search_join_enabled = Column(Boolean, nullable=False, default=True, server_default="1")
     search_join_admission_mode = Column(
         String(32),
         nullable=False,

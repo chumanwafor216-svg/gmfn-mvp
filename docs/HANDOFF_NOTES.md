@@ -6935,3 +6935,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Create-community, voluntary community discovery, existing-member sign-in and signed-in continuation routes are unchanged. No backend endpoint, admission rule, permission, schema, authenticated navigation or frozen Market Wisdom surface changed.
 - Verification passed: entry-flow polish and entry copy/response audits, the complete Pixel 5 corrected-community-entry journey, TypeScript and the 328-module production build, and the broad protected-button freeze suite.
 - Honest residuals: the separate broad link-contract audit remains red on six unrelated pre-existing PWA and Shop assertions. The protected suite passes but still logs the existing duplicate React-key warning.
+
+# Universal active-community search - 2026-11-19
+
+- Owner production review confirmed the Find Community screen still returned no results. Live API and Render Postgres checks proved the endpoint was healthy, but all 15 active non-default communities retained the earlier search_join_enabled=false rollout default.
+- The product owner explicitly removed the discovery permission: every active, non-system community is now searchable by name or GSN community ID. Inactive, dormant, closed and internal default communities remain excluded.
+- Search visibility no longer grants admission. Each community's separate search-request rule remains authoritative: verified requests either use Instant Join or Committee Voting, including the existing bounded admin override where configured.
+- The owner-facing search visibility checkbox and hidden-state copy are removed. Owners still control what happens after a person asks to join.
+- The legacy search_join_enabled field remains temporarily for backwards compatibility, always resolves true for active-community search contracts, and is normalised true for active production communities by migration 20261119_universal_clan_search.
+- Verification passed: 14 corrected-entry backend/migration tests, both focused phone smokes, the production frontend build, and the full protected-button-freeze audit.

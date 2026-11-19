@@ -88,7 +88,7 @@ export default function FindCommunityJoinPage() {
       if (!out?.items?.length) {
         setNotice({
           tone: "info",
-          text: "No community is available under that name yet. Check the spelling or GSN community ID. The community owner may also need to turn on public join requests.",
+          text: "No community matched that search. Check the spelling or enter the exact GSN community ID.",
         });
       }
     } catch (error) {

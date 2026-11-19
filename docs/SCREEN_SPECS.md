@@ -605,6 +605,10 @@ Rules:
   existing-member login.
 - Keep phone installation guidance off the Welcome intent gateway. It remains
   available later in the established login and activation surfaces.
+- Find a community searches every active, non-system community. Community
+  owners do not control search visibility. Search visibility does not grant
+  membership: each community's saved search-request rule still decides whether
+  a verified request joins immediately or requires Committee Voting.
 - Do not insert a second founder-path card or a multi-screen member/new-member
   chooser before these three intents. After selection, each journey owns its
   screen and must not expose the other journeys.

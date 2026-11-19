@@ -203,7 +203,6 @@ export default function IdentityFirstCreateCommunityPage() {
         governance_weight: "light",
         invite_admission_mode: "instant_invite",
         invite_admin_override: false,
-        search_join_enabled: false,
         search_join_admission_mode: "community_vote",
         search_join_admin_override: false,
       });

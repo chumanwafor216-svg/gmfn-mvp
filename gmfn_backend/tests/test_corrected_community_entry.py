@@ -65,7 +65,8 @@ def _verified_phone(*, phone: str, display_name: str = "Ada Applicant") -> int:
         return int(row.id)
 
 
-def test_public_search_only_returns_opted_in_communities(client):
+def test_public_search_returns_every_active_non_default_community(client, monkeypatch):
+    monkeypatch.setenv("GMFN_SECRET_KEY", "corrected-entry-test-secret")
     _seed_community(enabled=True)
     with SessionLocal() as db:
         db.add(
@@ -79,26 +80,52 @@ def test_public_search_only_returns_opted_in_communities(client):
                 search_join_admission_mode="community_vote",
             )
         )
+        db.add_all(
+            [
+                Clan(
+                    id=3,
+                    name="Inactive Support Circle",
+                    community_code="GMFN-C-000003",
+                    status="dormant",
+                    invite_code="inactive-support-invite",
+                    search_join_enabled=True,
+                    search_join_admission_mode="community_vote",
+                ),
+                Clan(
+                    id=4,
+                    name="Default Clan",
+                    community_code="GMFN-C-000004",
+                    status="active",
+                    invite_code="default-clan-invite",
+                    search_join_enabled=True,
+                    search_join_admission_mode="community_vote",
+                ),
+            ]
+        )
         db.commit()
 
     visible = client.get("/clans/join-search", params={"query": "Support"})
     assert visible.status_code == 200, visible.text
-    assert [item["community_id"] for item in visible.json()["items"]] == [1]
+    assert [item["community_id"] for item in visible.json()["items"]] == [2, 1]
     assert "created_by_user_id" not in visible.text
     assert "owner@example.com" not in visible.text
 
-    hidden = client.get("/clans/join-search/2")
-    assert hidden.status_code == 404
+    formerly_hidden = client.get("/clans/join-search/2")
+    assert formerly_hidden.status_code == 200
+    assert formerly_hidden.json()["community"]["community_id"] == 2
+    owner_token = create_access_token({"sub": "owner@example.com"})
     direct_request = client.post(
         "/clans/search-join-requests",
         json={"community_id": 2},
+        headers={"Authorization": f"Bearer {owner_token}"},
     )
-    assert direct_request.status_code == 404
-    with SessionLocal() as db:
-        assert db.query(ClanJoinRequest).count() == 0
+    assert direct_request.status_code == 201, direct_request.text
+    assert direct_request.json()["community_id"] == 2
+    assert client.get("/clans/join-search/3").status_code == 404
+    assert client.get("/clans/join-search/4").status_code == 404
 
 
-def test_owner_can_enable_search_without_changing_invitation_policy(
+def test_owner_can_change_search_admission_without_changing_visibility_or_invitation_policy(
     client,
     override_clan_ctx_admin,
 ):
@@ -106,12 +133,12 @@ def test_owner_can_enable_search_without_changing_invitation_policy(
 
     before = client.get("/clans/1/search-join-settings")
     assert before.status_code == 200, before.text
-    assert before.json()["enabled"] is False
+    assert before.json()["enabled"] is True
 
     updated = client.patch(
         "/clans/1/search-join-settings",
         json={
-            "enabled": True,
+            "enabled": False,
             "admission_mode": "community_vote",
             "admin_override": True,
         },
