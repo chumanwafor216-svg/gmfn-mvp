@@ -82,6 +82,7 @@ import {
 import {
   classifyDashboardTrustEvidence,
   dashboardNotificationRequiresAttention,
+  reconcileDashboardGuidanceNotification,
 } from "../lib/dashboardTrustSemantics";
 import { prepareSpotlightImageFile as prepareDashboardAvatarImageFile } from "../lib/spotlightMediaPrep";
 
@@ -4388,14 +4389,7 @@ export default function DashboardPage() {
       const currentNotification = notificationId
         ? currentNotificationsById.get(notificationId)
         : undefined;
-      if (!currentNotification) return item;
-
-      return {
-        ...item,
-        unread: !currentNotification.is_read,
-        is_read: Boolean(currentNotification.is_read),
-        attention_actionable: currentNotification.attention_actionable,
-      };
+      return reconcileDashboardGuidanceNotification(item, currentNotification);
     }
 
     for (const guidanceItem of actionInbox?.actNow || []) {
@@ -4469,6 +4463,13 @@ export default function DashboardPage() {
     }
 
     for (const item of notices) {
+      if (
+        safeStr(item.kind).toLowerCase() === "approval_request" &&
+        item.attention_actionable === false
+      ) {
+        continue;
+      }
+
       const title = safeStr(item.title || item.kind || "Update");
       const detail = safeStr(
         item.message || "Review this update and continue from the right page."
@@ -4551,8 +4552,9 @@ export default function DashboardPage() {
             "dashboard.notice.join-requests"
           ),
           source: "Join Links",
-          bucket: "actNow",
-          scoreBoost: 18,
+          bucket: "watch",
+          scoreBoost: 2,
+          attentionActionable: false,
         })
       );
     }
@@ -5054,6 +5056,13 @@ export default function DashboardPage() {
   );
   const dashboardAttentionLeadItem =
     dashboardAttentionActionableRows[0] || null;
+  const pendingJoinReviewActionCount = useMemo(
+    () =>
+      dashboardAttentionActionableRows.filter(
+        (item) => safeStr(item.kind).toLowerCase() === "approval_request"
+      ).length,
+    [dashboardAttentionActionableRows]
+  );
 
   const targetedDemandAttentionItem = useMemo(
     () =>
@@ -5965,7 +5974,7 @@ export default function DashboardPage() {
         openTrustTone: openTrust.tone,
         cciTone: cci.tone,
         trustSlipCode,
-        pendingRequestsCount: pendingRequests.length,
+        pendingRequestsCount: pendingJoinReviewActionCount,
         demandItems,
       gmfnId,
         dashboardNoticeSummary,
@@ -5974,7 +5983,7 @@ export default function DashboardPage() {
       openTrust.tone,
       cci.tone,
       trustSlipCode,
-      pendingRequests.length,
+      pendingJoinReviewActionCount,
       demandItems,
       gmfnId,
       dashboardNoticeSummary,
@@ -5988,7 +5997,7 @@ export default function DashboardPage() {
         selectedClanId,
         myShopLink,
         openTrustTone: openTrust.tone,
-        pendingRequestsCount: pendingRequests.length,
+        pendingRequestsCount: pendingJoinReviewActionCount,
         demandItems,
         dashboardNoticeSummary,
         trustSlipCode,
@@ -5998,7 +6007,7 @@ export default function DashboardPage() {
       selectedClanId,
       myShopLink,
       openTrust.tone,
-      pendingRequests.length,
+      pendingJoinReviewActionCount,
       demandItems,
       dashboardNoticeSummary,
       trustSlipCode,
@@ -6018,7 +6027,7 @@ export default function DashboardPage() {
     () =>
       buildNextRouteCopy({
         userClass: userOperationalClass,
-        pendingRequestsCount: pendingRequests.length,
+        pendingRequestsCount: pendingJoinReviewActionCount,
         urgentDemandCount,
         actNowCount: dashboardNoticeSummary.counts.actNow,
         openTrust,
@@ -6029,7 +6038,7 @@ export default function DashboardPage() {
       }),
     [
       userOperationalClass,
-      pendingRequests.length,
+      pendingJoinReviewActionCount,
       urgentDemandCount,
       dashboardNoticeSummary.counts.actNow,
       openTrust,
@@ -6141,7 +6150,7 @@ export default function DashboardPage() {
         cci,
         trustSlipCode,
         trustExplainer,
-        pendingRequestsCount: pendingRequests.length,
+        pendingRequestsCount: pendingJoinReviewActionCount,
         unreadCount: dashboardNoticeSummary.counts.unread,
         actNowCount: dashboardNoticeSummary.counts.actNow,
         urgentDemandCount,
@@ -6156,7 +6165,7 @@ export default function DashboardPage() {
       cci,
       trustSlipCode,
       trustExplainer,
-      pendingRequests.length,
+      pendingJoinReviewActionCount,
       dashboardNoticeSummary.counts.unread,
       dashboardNoticeSummary.counts.actNow,
       urgentDemandCount,

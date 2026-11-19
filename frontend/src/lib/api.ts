@@ -9680,6 +9680,12 @@ export async function getCommunityJoinRequests(clanId: number): Promise<any> {
   );
 }
 
+function clearJoinReviewReadCaches(): void {
+  clearStartupSectionCacheByLabel("getCommunityJoinRequests");
+  clearStartupSectionCacheByLabel("getMyNotifications");
+  clearStartupSectionCacheByLabel("getMyUnreadNotificationCount");
+}
+
 export type CommunityAdmissionMode =
   | "instant_invite"
   | "admin_approval"
@@ -9720,7 +9726,7 @@ export async function voteOnJoinRequest(
     throw new Error("No selected community");
   }
 
-  return httpJson(
+  const updated = await httpJson(
     `/clans/${encodeURIComponent(String(clanId))}/join-requests/${encodeURIComponent(
       String(id)
     )}/vote`,
@@ -9732,6 +9738,8 @@ export async function voteOnJoinRequest(
     },
     { header_clan_id: clanId }
   );
+  clearJoinReviewReadCaches();
+  return updated;
 }
 
 export async function pilotApproveJoinRequest(id: number): Promise<any> {
@@ -9741,7 +9749,7 @@ export async function pilotApproveJoinRequest(id: number): Promise<any> {
     throw new Error("No selected community");
   }
 
-  return httpJson(
+  const updated = await httpJson(
     `/clans/${encodeURIComponent(String(clanId))}/join-requests/${encodeURIComponent(
       String(id)
     )}/pilot-approve`,
@@ -9749,6 +9757,8 @@ export async function pilotApproveJoinRequest(id: number): Promise<any> {
     undefined,
     { header_clan_id: clanId }
   );
+  clearJoinReviewReadCaches();
+  return updated;
 }
 
 export async function adminApproveJoinRequest(id: number): Promise<any> {
@@ -9758,7 +9768,7 @@ export async function adminApproveJoinRequest(id: number): Promise<any> {
     throw new Error("No selected community");
   }
 
-  return httpJson(
+  const updated = await httpJson(
     `/clans/${encodeURIComponent(String(clanId))}/join-requests/${encodeURIComponent(
       String(id)
     )}/admin-approve`,
@@ -9766,6 +9776,8 @@ export async function adminApproveJoinRequest(id: number): Promise<any> {
     undefined,
     { header_clan_id: clanId }
   );
+  clearJoinReviewReadCaches();
+  return updated;
 }
 
 export type MarketplaceRequestItem = {

@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pageFile = "src/pages/CommunityJoinRequestsPage.tsx";
+const apiFile = "src/lib/api.ts";
 const source = readFileSync(join(frontendRoot, pageFile), "utf8");
+const apiSource = readFileSync(join(frontendRoot, apiFile), "utf8");
 const findings = [];
 
 function lineAt(index) {
@@ -193,6 +195,46 @@ assertNotContains(
   /item\.applicant_name \|\|[\s\S]{0,180}item\.applicant_email \|\|/g,
   "Join Requests must not fall back directly from a missing name to the internal pending-email identifier."
 );
+for (const cacheLabel of [
+  "getCommunityJoinRequests",
+  "getMyNotifications",
+  "getMyUnreadNotificationCount",
+]) {
+  if (!apiSource.includes(`clearStartupSectionCacheByLabel("${cacheLabel}")`)) {
+    findings.push({
+      file: apiFile,
+      line: 1,
+      message: "Join-review answers must clear every Dashboard read cache.",
+      text: `Missing cache invalidation for ${cacheLabel}.`,
+    });
+  }
+}
+
+for (const functionName of [
+  "voteOnJoinRequest",
+  "pilotApproveJoinRequest",
+  "adminApproveJoinRequest",
+]) {
+  const functionStart = apiSource.indexOf(`export async function ${functionName}`);
+  const functionEnd = apiSource.indexOf("\nexport ", functionStart + 1);
+  const functionSource = apiSource.slice(
+    functionStart,
+    functionEnd === -1 ? apiSource.length : functionEnd
+  );
+
+  if (
+    functionStart === -1 ||
+    !functionSource.includes("clearJoinReviewReadCaches();")
+  ) {
+    findings.push({
+      file: apiFile,
+      line: 1,
+      message: "Every successful join-review answer must invalidate stale Dashboard data.",
+      text: `${functionName} does not clear join-review read caches.`,
+    });
+  }
+}
+
 if (findings.length > 0) {
   console.error("Community Join Requests layout audit failed:");
   for (const finding of findings) {

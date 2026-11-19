@@ -107,6 +107,36 @@ try {
     ),
     true
   );
+  assert.deepEqual(
+    semantics.reconcileDashboardGuidanceNotification(
+      {
+        id: 41,
+        kind: "approval_request",
+        unread: true,
+        attention_actionable: true,
+      }
+    ),
+    {
+      id: 41,
+      kind: "approval_request",
+      unread: true,
+      attention_actionable: true,
+    },
+    "A failed notification refresh must not hide a genuine join-review task"
+  );
+  assert.equal(
+    semantics.reconcileDashboardGuidanceNotification(
+      { id: 41, kind: "approval_request", unread: true },
+      {
+        id: 41,
+        kind: "approval_request",
+        is_read: true,
+        attention_actionable: false,
+      }
+    ).attention_actionable,
+    false,
+    "A saved join answer must retire the Dashboard guidance copy"
+  );
   assert.equal(
     semantics.dashboardNotificationRequiresAttention(
       { kind: "support_case.admin_reply", unread: false },

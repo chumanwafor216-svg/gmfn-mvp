@@ -272,8 +272,18 @@ assertEngineContains(
 );
 
 assertContains(
-  /const currentNotificationsById = new Map<number, NoticeItem>\(\);[\s\S]*?function currentGuidanceNotice\(item: any\)[\s\S]*?unread: !currentNotification\.is_read,[\s\S]*?attention_actionable: currentNotification\.attention_actionable,[\s\S]*?for \(const guidanceItem of actionInbox\?\.actNow \|\| \[\]\)[\s\S]*?attentionActionable: dashboardNotificationRequiresAttention\([\s\S]*?item,[\s\S]*?"actNow"/,
+  /const currentNotificationsById = new Map<number, NoticeItem>\(\);[\s\S]*?function currentGuidanceNotice\(item: any\)[\s\S]*?reconcileDashboardGuidanceNotification\(item, currentNotification\)[\s\S]*?for \(const guidanceItem of actionInbox\?\.actNow \|\| \[\]\)[\s\S]*?attentionActionable: dashboardNotificationRequiresAttention\([\s\S]*?item,[\s\S]*?"actNow"/,
   "Dashboard must reconcile stale guidance copies against the current notification read state before opening Attention Guide."
+);
+
+assertContains(
+  /item\.kind\)\.toLowerCase\(\) === "approval_request"[\s\S]*?item\.attention_actionable === false[\s\S]*?continue;[\s\S]*?id: `synthetic-join-\$\{selectedClanId\}`[\s\S]*?bucket: "watch"[\s\S]*?attentionActionable: false/,
+  "Answered join reviews and globally pending committee decisions must not become personal Attention Guide work."
+);
+
+assertContains(
+  /const pendingJoinReviewActionCount = useMemo\([\s\S]*?item\.kind\)\.toLowerCase\(\) === "approval_request"[\s\S]*?pendingRequestsCount: pendingJoinReviewActionCount/,
+  "Dashboard approval guidance must count only join reviews still waiting on the signed-in reviewer."
 );
 
 assertContains(

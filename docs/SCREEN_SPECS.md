@@ -845,7 +845,7 @@ Must show, in phone-first order:
   - join requests
     - phone entry leads with the exact person named by the notification `request_id`, followed by the person's name, phone, inviter, one progress line when voting applies, and the decision
     - use `Waiting`, `Accepted`, and `Not accepted`; the focused phone decisions are `Approve`, `Ignore for now`, and `Disapprove`
-    - `Ignore for now` records the existing neutral answer, closes that member's attention item, and remains changeable while the request is still open
+    - `Ignore for now` records the existing neutral answer, closes that member's attention item, and remains changeable while the request is still open; after any saved answer, the still-pending committee request must not reappear as that reviewer's Dashboard Attention Guide task
     - joining-setting names are `Instant Join`, `Admin Approval`, and `Committee Voting`; do not replace them with indirect descriptions
     - do not expose request numbers, invite codes, Community IDs, GSN IDs, QR policy names, approval jargon, or internal role labels on the default surface
     - keep joining settings, completed decisions, refresh/navigation, and the full legacy workspace closed after the active decision; the full workspace remains reachable through `Advanced view`

@@ -9,6 +9,14 @@ type TrustEvidenceSemanticInput = {
   trustExplanation: any;
 };
 
+type DashboardNotificationState = {
+  kind?: unknown;
+  unread?: unknown;
+  is_read?: unknown;
+  attention_actionable?: unknown;
+  [key: string]: unknown;
+};
+
 const INFORMATIONAL_NOTIFICATION_KINDS = new Set([
   "marketplace.shop.broadcast_created",
   "marketplace.shop.product_created",
@@ -99,6 +107,24 @@ export function isInformationalDashboardNotification(kind: unknown): boolean {
   return INFORMATIONAL_NOTIFICATION_KINDS.has(
     String(kind || "").trim().toLowerCase()
   );
+}
+
+export function reconcileDashboardGuidanceNotification<
+  T extends DashboardNotificationState,
+>(
+  guidanceNotification: T,
+  currentNotification?: DashboardNotificationState
+): T & DashboardNotificationState {
+  if (!currentNotification) {
+    return { ...guidanceNotification };
+  }
+
+  return {
+    ...guidanceNotification,
+    unread: !Boolean(currentNotification.is_read),
+    is_read: Boolean(currentNotification.is_read),
+    attention_actionable: currentNotification.attention_actionable,
+  };
 }
 
 export function dashboardNotificationRequiresAttention(
