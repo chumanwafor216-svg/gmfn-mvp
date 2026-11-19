@@ -17,6 +17,7 @@ type IdentityOpportunityGatewayProps = {
   title: string;
   description: string;
   actions: IdentityOpportunityAction[];
+  collapseAll?: boolean;
   collapseSecondary?: boolean;
   secondaryLabel?: string;
   emptyMessage?: string;
@@ -62,12 +63,14 @@ export default function IdentityOpportunityGateway({
   title,
   description,
   actions,
+  collapseAll = false,
   collapseSecondary = false,
   secondaryLabel = "More ways to use this GSN ID",
   emptyMessage = "No additional public opportunity is available from this card yet.",
 }: IdentityOpportunityGatewayProps) {
-  const primaryAction = actions[0] || null;
-  const secondaryActions = actions.slice(1);
+  const primaryAction = collapseAll ? null : actions[0] || null;
+  const secondaryActions = collapseAll ? actions : actions.slice(1);
+  const coverActions = collapseAll || collapseSecondary;
 
   return (
     <section
@@ -134,7 +137,7 @@ export default function IdentityOpportunityGateway({
         {description}
       </p>
 
-      {primaryAction ? <OpportunityAction action={primaryAction} compact={compact} /> : (
+      {primaryAction ? <OpportunityAction action={primaryAction} compact={compact} /> : actions.length === 0 ? (
         <div
           style={{
             borderRadius: 14,
@@ -149,16 +152,39 @@ export default function IdentityOpportunityGateway({
         >
           {emptyMessage}
         </div>
-      )}
+      ) : null}
 
-      {secondaryActions.length > 0 && collapseSecondary ? (
-        <details data-gsn-identity-opportunity-secondary="covered">
+      {secondaryActions.length > 0 && coverActions ? (
+        <details
+          data-gsn-identity-opportunity-secondary="covered"
+          data-gsn-identity-opportunity-all={collapseAll ? "covered" : undefined}
+        >
           <StableDisclosureSummary
-            stableHeight={48}
+            stableHeight={compact ? 52 : 56}
             debugId={`identity-opportunity-gateway.${audience}.more`}
-            style={{ borderRadius: 14, fontWeight: 950 }}
+            style={{
+              borderRadius: 15,
+              border: "1px solid rgba(154,106,18,0.52)",
+              background: "linear-gradient(135deg, #F8D978 0%, #D6AA45 100%)",
+              boxShadow: "0 10px 22px rgba(154,106,18,0.22)",
+              color: "#07172C",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              gap: 10,
+              padding: compact ? "8px 12px" : "9px 14px",
+              fontSize: compact ? 12.5 : 14,
+              fontWeight: 1000,
+              lineHeight: 1.15,
+            }}
           >
-            {secondaryLabel}
+            <GsnRealisticIcon
+              name="public-globe"
+              size={compact ? 34 : 38}
+              decorative
+              style={{ background: "rgba(255,255,255,0.9)" }}
+            />
+            <span>{secondaryLabel}</span>
           </StableDisclosureSummary>
           <div
             style={{

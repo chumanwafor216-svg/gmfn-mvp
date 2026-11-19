@@ -1946,6 +1946,13 @@ Rules:
   public profile route exists. If the holder has not opted in, that route must
   show the privacy-safe `No public profile published` state rather than hiding
   the profile opportunity or exposing unpublished details.
+- Owner-approved destination correction (2026-11-19): on `/id/:gmfnId`, one
+  full-width gold button labelled `Open TrustSlip, shop & owner links` is the
+  only initially exposed opportunity action. Tapping it reveals `Check this
+  TrustSlip` first, `Owner services & products` only when the backend confirms
+  a public Shop, the public GSN profile, the official GSN website, and confirmed
+  official GSN LinkedIn, Facebook, and Instagram channels. Unpublished profiles
+  must still fail closed, and personal social handles must not be inferred.
 - `/id/:gmfnId/profile` is the stable minimal public professional-profile
   variant. It may show only the holder's public name/photo, GSN ID, opted-in
   professional headline and short summary. It must not show phone, email,

@@ -39,6 +39,29 @@ import {
 } from "../../components/TrustDocumentLanguage";
 
 const GSN_PUBLIC_WEBSITE_URL = "https://globalsupportnetwork.org";
+const GSN_PUBLIC_SOCIAL_ACTIONS: IdentityOpportunityAction[] = [
+  {
+    key: "gsn-linkedin",
+    label: "GSN LinkedIn",
+    to: "https://www.linkedin.com/company/global-support-network",
+    debugId: "trust-slip-verify.card.opportunity.gsn-linkedin",
+    icon: "public-globe",
+  },
+  {
+    key: "gsn-facebook",
+    label: "GSN Facebook",
+    to: "https://www.facebook.com/people/GSN-Global-Support-Network/61594363752798/",
+    debugId: "trust-slip-verify.card.opportunity.gsn-facebook",
+    icon: "public-globe",
+  },
+  {
+    key: "gsn-instagram",
+    label: "GSN Instagram",
+    to: "https://www.instagram.com/globalsupportnetwork/",
+    debugId: "trust-slip-verify.card.opportunity.gsn-instagram",
+    icon: "public-globe",
+  },
+];
 
 export type TrustSlipVerifyQuickAnswer = [Gsn3DIconKey, string, string];
 
@@ -2784,10 +2807,21 @@ export default function TrustSlipVerifyPublicPaper({
         ? [
             {
               key: "public-shop",
-              label: "Shop & verification",
+              label: "Owner services & products",
               to: publicOpportunityShopPath,
               debugId: "trust-slip-verify.card.opportunity.public-shop",
               icon: "shop-storefront" as const,
+            },
+          ]
+        : []),
+      ...(publicProfilePath
+        ? [
+            {
+              key: "public-profile",
+              label: publicOpportunityShopPath ? "GSN owner profile" : "Public GSN profile",
+              to: publicProfilePath,
+              debugId: "trust-slip-verify.card.opportunity.public-profile",
+              icon: "identity-card" as const,
             },
           ]
         : []),
@@ -2798,17 +2832,7 @@ export default function TrustSlipVerifyPublicPaper({
         debugId: "trust-slip-verify.card.opportunity.gsn-website",
         icon: "public-globe" as const,
       },
-      ...(publicProfilePath
-        ? [
-            {
-              key: "public-profile",
-              label: "Personal profile",
-              to: publicProfilePath,
-              debugId: "trust-slip-verify.card.opportunity.public-profile",
-              icon: "identity-card" as const,
-            },
-          ]
-        : []),
+      ...GSN_PUBLIC_SOCIAL_ACTIONS,
     ];
 
     return (
@@ -3016,10 +3040,10 @@ export default function TrustSlipVerifyPublicPaper({
             audience="public"
             compact={compact}
             title="Use this GSN ID"
-            description="Verify identity evidence, view public professional details, or open a published shop with its current verification path."
+            description="Open this member's TrustSlip, published services and products, public GSN profile, and official GSN channels."
             actions={publicOpportunityActions}
-            collapseSecondary
-            secondaryLabel="Shop, profile & GSN website"
+            collapseAll
+            secondaryLabel="Open TrustSlip, shop & owner links"
             emptyMessage="No public opportunity is available from this card yet."
           />
         </div>

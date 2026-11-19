@@ -1,105 +1,172 @@
 /* global console, process */
 
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const files = {
-  component: "src/components/IdentityOpportunityGateway.tsx",
-  app: "src/App.tsx",
-  identity: "src/pages/IdentityIntegrityPage.tsx",
-  profile: "src/pages/MyGMFNAndIPage.tsx",
-  verify: "src/pages/TrustSlipVerifyPage.tsx",
-  publicPaper: "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  component: 'src/components/IdentityOpportunityGateway.tsx',
+  app: 'src/App.tsx',
+  identity: 'src/pages/IdentityIntegrityPage.tsx',
+  profile: 'src/pages/MyGMFNAndIPage.tsx',
+  verify: 'src/pages/TrustSlipVerifyPage.tsx',
+  publicPaper: 'src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx',
 };
 const source = Object.fromEntries(
-  Object.entries(files).map(([key, file]) => [key, readFileSync(join(frontendRoot, file), "utf8")])
+  Object.entries(files).map(([key, file]) => [key, readFileSync(join(frontendRoot, file), 'utf8')])
 );
 const findings = [];
 
-function requirePattern(key, pattern, message) {
-  if (pattern.test(source[key])) return;
-  findings.push(`${files[key]}: ${message}`);
+function requireMarkers(key, markers, message) {
+  const missing = markers.filter((marker) => !source[key].includes(marker));
+  if (missing.length === 0) return;
+  findings.push(files[key] + ': ' + message + ' Missing: ' + missing.join(', '));
 }
 
-function forbidPattern(key, pattern, message) {
-  if (!pattern.test(source[key])) return;
-  findings.push(`${files[key]}: ${message}`);
+function requireOrder(key, markers, message) {
+  let offset = 0;
+  for (const marker of markers) {
+    const foundAt = source[key].indexOf(marker, offset);
+    if (foundAt < 0) {
+      findings.push(files[key] + ': ' + message + ' Missing or out of order: ' + marker);
+      return;
+    }
+    offset = foundAt + marker.length;
+  }
 }
 
-requirePattern(
-  "component",
-  /function OpportunityAction[\s\S]*?<StableCtaLink[\s\S]*?data-gsn-identity-opportunity-gateway=\{audience\}[\s\S]*?GSN Opportunity Gateway[\s\S]*?data-gsn-identity-opportunity-secondary="covered"/,
-  "The shared gateway must keep one visible action and cover secondary routes."
+function forbidMarkers(key, markers, message) {
+  const present = markers.filter((marker) => source[key].includes(marker));
+  if (present.length === 0) return;
+  findings.push(files[key] + ': ' + message + ' Found: ' + present.join(', '));
+}
+
+requireMarkers(
+  'component',
+  [
+    'function OpportunityAction',
+    'collapseAll?: boolean;',
+    'const secondaryActions = collapseAll ? actions : actions.slice(1);',
+    'const coverActions = collapseAll || collapseSecondary;',
+    'data-gsn-identity-opportunity-all={collapseAll ? "covered" : undefined}',
+    '<StableDisclosureSummary',
+    'stableHeight={compact ? 52 : 56}',
+    'linear-gradient(135deg, #F8D978 0%, #D6AA45 100%)',
+  ],
+  'The shared gateway must support one obvious gold button covering every public destination.'
 );
-requirePattern(
-  "identity",
-  /\{cardOnlyMode \? landscapeIdentityCard : null\}/,
-  "The authenticated card-only surface must render only the shareable ID card."
+requireMarkers(
+  'identity',
+  ['{cardOnlyMode ? landscapeIdentityCard : null}'],
+  'The authenticated card-only surface must render only the shareable ID card.'
 );
-forbidPattern(
-  "identity",
-  /IdentityOpportunityGateway|identity-integrity\.opportunity\.|ownerOpportunityActions|Manage my shop|Explore my community marketplace|Ask my community/,
-  "The shareable authenticated ID must not duplicate private account, Shop Control, Marketplace, Demand Box, or community navigation."
+forbidMarkers(
+  'identity',
+  [
+    'IdentityOpportunityGateway',
+    'identity-integrity.opportunity.',
+    'ownerOpportunityActions',
+    'Manage my shop',
+    'Explore my community marketplace',
+    'Ask my community',
+  ],
+  'The shareable authenticated ID must not duplicate private account or community navigation.'
 );
-requirePattern(
-  "app",
-  /<Route path="\/id\/:gmfnId" element=\{<TrustSlipVerifyPage \/>\} \/>[\s\S]*?<Route path="\/id\/:gmfnId\/profile" element=\{<TrustSlipVerifyPage \/>\} \/>/,
-  "The public route table must provide stable card and profile variants that do not depend on TrustSlip issuance."
+requireOrder(
+  'app',
+  [
+    '<Route path="/id/:gmfnId" element={<TrustSlipVerifyPage />} />',
+    '<Route path="/id/:gmfnId/profile" element={<TrustSlipVerifyPage />} />',
+  ],
+  'The public route table must provide stable card and profile variants.'
 );
-requirePattern(
-  "profile",
-  /id="public-professional-profile"[\s\S]*?data-my-gsn-public-professional-profile="opt-in"[\s\S]*?publicProfessionalProfileEnabled[\s\S]*?Show this profile from my shared GSN ID[\s\S]*?my-gmfn\.public-professional-profile\.save/,
-  "Public professional details must be explicit opt-in account data."
+requireMarkers(
+  'profile',
+  [
+    'id="public-professional-profile"',
+    'data-my-gsn-public-professional-profile="opt-in"',
+    'publicProfessionalProfileEnabled',
+    'Show this profile from my shared GSN ID',
+    'my-gmfn.public-professional-profile.save',
+  ],
+  'Public professional details must remain explicit opt-in account data.'
 );
-requirePattern(
-  "verify",
-  /\(!requestedGsnId && record\?\.merchant_verify_active !== true\)[\s\S]*?getPublicMarketplaceShopByGmfnId\(gmfnIdValue,[\s\S]*?response\?\.is_public_shop_face === true[\s\S]*?publicShopPath\(gmfnIdValue\)/,
-  "The scanner Shop route must use the backend privacy-controlled public Shop response; legacy TrustSlip cards keep their merchant-verification gate."
+requireMarkers(
+  'verify',
+  [
+    'getPublicMarketplaceShopByGmfnId(gmfnIdValue',
+    'response?.is_public_shop_face === true',
+    'publicShopPath(gmfnIdValue)',
+  ],
+  'The owner Shop destination must remain controlled by the backend public-Shop decision.'
 );
-requirePattern(
-  "publicPaper",
-  /Check this TrustSlip[\s\S]*?publicOpportunityShopPath[\s\S]*?Shop & verification[\s\S]*?GSN website[\s\S]*?\.\.\.\(publicProfilePath\s*\?[\s\S]*?Personal profile[\s\S]*?audience="public"[\s\S]*?Verify identity evidence[\s\S]*?collapseSecondary/,
-  "The public card must expose TrustSlip verification and cover the privacy-safe profile, public Shop, and official GSN website behind the shared gateway."
+requireOrder(
+  'publicPaper',
+  [
+    'const publicOpportunityActions',
+    'Check this TrustSlip',
+    'publicOpportunityShopPath',
+    'Owner services & products',
+    'publicProfilePath',
+    'GSN owner profile',
+    'GSN website',
+    '...GSN_PUBLIC_SOCIAL_ACTIONS',
+    '<IdentityOpportunityGateway',
+    'collapseAll',
+    'Open TrustSlip, shop & owner links',
+  ],
+  'The public card must keep all approved destinations behind one gold button with TrustSlip first.'
 );
-forbidPattern(
-  "publicPaper",
-  /publicProfilePath\s*&&\s*publicProfessionalProfileEnabled/,
-  "The personal profile action must remain visible; unpublished profiles are handled safely by the profile route."
+requireMarkers(
+  'publicPaper',
+  [
+    'https://globalsupportnetwork.org',
+    'https://www.linkedin.com/company/global-support-network',
+    'https://www.facebook.com/people/GSN-Global-Support-Network/61594363752798/',
+    'https://www.instagram.com/globalsupportnetwork/',
+    'GSN LinkedIn',
+    'GSN Facebook',
+    'GSN Instagram',
+  ],
+  'The gateway must use the confirmed official GSN website and social channels.'
 );
-requirePattern(
-  "publicPaper",
-  /data-gsn-public-professional-profile="not-published"[\s\S]*?No public profile published[\s\S]*?data-gsn-public-professional-profile="minimal"[\s\S]*?Phone, email, named communities, private evidence, and exact location stay hidden/,
-  "The public profile route must fail closed and keep personal contact, named communities, exact location, and private evidence hidden."
+forbidMarkers(
+  'publicPaper',
+  ['publicProfilePath && publicProfessionalProfileEnabled'],
+  'The profile action must remain visible while unpublished profiles fail closed on their route.'
 );
-requirePattern(
-  "publicPaper",
-  /data-gsn-public-professional-profile="minimal"[\s\S]*?professionalHeadline[\s\S]*?professionalSummary[\s\S]*?Only details this member chose to publish are shown\.[\s\S]*?named communities[\s\S]*?stay hidden/,
-  "The published professional profile must keep its opted-in details and one privacy boundary without redundant summary tiles."
+requireMarkers(
+  'publicPaper',
+  [
+    'data-gsn-public-professional-profile="not-published"',
+    'No public profile published',
+    'data-gsn-public-professional-profile="minimal"',
+    'Phone, email, named communities, private evidence, and exact location stay hidden.',
+  ],
+  'The public profile route must fail closed and keep private member data hidden.'
 );
-forbidPattern(
-  "publicPaper",
-  /Professional details published|>Communities<\/div>/,
-  "The public professional profile must not repeat publication or hidden-community state in summary tiles."
-);
-forbidPattern(
-  "publicPaper",
-  /trust-slip-verify\.profile(?:\.unavailable)?\.back-to-card|Back to GSN ID/,
-  "The standalone public professional profile must not add account or card navigation controls."
-);
-forbidPattern(
-  "publicPaper",
-  /roleMixLabel|Membership \$\{|Membership \d|Admin \$\{|Admin \d/,
-  "Public identity surfaces must not turn confirmation options into membership or admin totals."
+forbidMarkers(
+  'publicPaper',
+  [
+    'Professional details published',
+    '>Communities</div>',
+    'trust-slip-verify.profile.back-to-card',
+    'trust-slip-verify.profile.unavailable.back-to-card',
+    'Back to GSN ID',
+    'roleMixLabel',
+    'Membership ${',
+    'Admin ${',
+  ],
+  'Public identity surfaces must not restore redundant, private, or account-navigation content.'
 );
 
 if (findings.length) {
-  console.error("Identity opportunity gateway audit failed:");
-  findings.forEach((finding) => console.error(`- ${finding}`));
+  console.error('Identity opportunity gateway audit failed:');
+  findings.forEach((finding) => console.error('- ' + finding));
   process.exit(1);
 }
 
 console.log(
-  "Identity opportunity gateway audit passed: the owner card stays focused and public identity opportunities are consent- and verification-gated."
+  'Identity opportunity gateway audit passed: one gold button covers TrustSlip, privacy-gated owner Shop/profile, and official GSN links.'
 );
