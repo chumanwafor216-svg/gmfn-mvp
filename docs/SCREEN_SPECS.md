@@ -843,10 +843,12 @@ Must show, in phone-first order:
 - one collapsed Admin area only for verified authority
   - Bulletin posting/settings/review
   - join requests
-    - default review view leads with the person's name, phone, simple status, and one clear decision
-    - use `Waiting`, `Accepted`, and `Not accepted`; decision actions use `Let this person join`, `Not sure`, and `Do not let them join`
+    - phone entry leads with the exact person named by the notification `request_id`, followed by the person's name, phone, inviter, one progress line when voting applies, and the decision
+    - use `Waiting`, `Accepted`, and `Not accepted`; the focused phone decisions are `Approve`, `Ignore for now`, and `Disapprove`
+    - `Ignore for now` records the existing neutral answer, closes that member's attention item, and remains changeable while the request is still open
+    - joining-setting names are `Instant Join`, `Admin Approval`, and `Committee Voting`; do not replace them with indirect descriptions
     - do not expose request numbers, invite codes, Community IDs, GSN IDs, QR policy names, approval jargon, or internal role labels on the default surface
-    - keep joining-rule controls closed behind `Change how people join`; keep completed decisions behind `Show past decisions`
+    - keep joining settings, completed decisions, refresh/navigation, and the full legacy workspace closed after the active decision; the full workspace remains reachable through `Advanced view`
     - preserve all backend authority, multi-person agreement, safety checks, and private password-setup controls beneath the plain language
   - Community Domain controls only when `/community-domains/my` reports `viewer.can_admin` or equivalent for the selected community/domain
 
