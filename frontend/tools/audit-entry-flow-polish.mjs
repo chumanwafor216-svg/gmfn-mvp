@@ -97,6 +97,24 @@ assertNotContains(
 
 assertContains(
   "src/pages/WelcomePage.tsx",
+  /routeForInvitation[\s\S]*?if \(entryMode === "invite"\)[\s\S]*?<Navigate to=\{invitationTo \|\| joinTo\}/,
+  "Recognised invitations must bypass the redundant Welcome explanation screen and open their dedicated join route directly."
+);
+
+assertNotContains(
+  "src/pages/WelcomePage.tsx",
+  /Open your invitation path|welcome\.invite\.open-join|Open join path/,
+  "Welcome must not restore a redundant invitation gateway before the dedicated invite journey."
+);
+
+assertContains(
+  "src/lib/entryFlow.ts",
+  /function routeForInvitation[\s\S]*?encodeURIComponent\(inviteCode\)/,
+  "Invitation forwarding must place the recognised code on the dedicated invite route safely."
+);
+
+assertContains(
+  "src/pages/WelcomePage.tsx",
   /function intentNeutralSearch[\s\S]*?\["entry", "entry_from", "flow", "mode", "intent"\][\s\S]*?routeForCreate\(neutralSearch\)[\s\S]*?routeForJoin\(neutralSearch\)/,
   "Switching gateway intent must clear stale lane markers before opening Create or Join."
 );

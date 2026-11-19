@@ -213,30 +213,31 @@ export default function FindCommunityJoinPage() {
 
   return (
     <CommunityEntryShell
-      eyebrow="Join an existing community"
-      title="Find your community"
-      summary="Search communities that chose to be discoverable, select the right one, then ask to join. Invite links still work separately."
+      eyebrow="Join a community"
+      title="Find a community"
+      summary="Search by community name or GSN ID."
       backTo="/welcome"
       backLabel="Back to welcome"
-      exitLabel="Leave join journey"
+      exitLabel={null}
+      compactHeader
     >
       <div style={{ display: "grid", gap: 16 }} data-gsn-search-join="true">
         {notice ? <EntryNotice tone={notice.tone}>{notice.text}</EntryNotice> : null}
         {!selected ? (
           <>
             <label style={entryLabelStyle}>
-              Community name or GSN community ID
+              Community name or GSN ID
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={(event) => event.key === "Enter" && void runSearch()}
-                placeholder="Example: Enugu Support Circle"
+                placeholder="Enter a name or GSN ID"
                 style={entryFieldStyle}
                 autoComplete="off"
               />
             </label>
             <StableButton debugId="find-community.search" onClick={() => void runSearch()} disabled={busy} style={entryPrimaryButtonStyle}>
-              {busy ? "Searching…" : "Find communities"}
+              {busy ? "Searching…" : "Search"}
             </StableButton>
             <div style={{ display: "grid", gap: 10 }}>
               {results.map((community) => (

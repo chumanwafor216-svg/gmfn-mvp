@@ -77,13 +77,13 @@ async function runJoinJourney(browser, baseUrl) {
   const { context, page } = await newPixel(browser);
   await installJoinMocks(page);
   await page.goto(`${baseUrl}/join`, { waitUntil: "networkidle" });
-  await expect(page.getByRole("heading", { name: "Find your community" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Find a community" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Back to welcome" })).toHaveAttribute(
     "href",
     "/welcome"
   );
-  await page.getByLabel("Community name or GSN community ID").fill("Blessed");
-  await page.getByRole("button", { name: "Find communities" }).click();
+  await page.getByLabel("Community name or GSN ID").fill("Blessed");
+  await page.getByRole("button", { name: "Search" }).click();
   const searchResult = page.getByRole("button", { name: /Blessed Satch Family/ });
   await expect(searchResult).toBeVisible();
   await page.screenshot({ path: resolve(screenshotDir, "00-find-community-results.png"), fullPage: true });
@@ -262,6 +262,21 @@ async function runCreateJourney(browser, baseUrl) {
   await context.close();
 }
 
+async function runInvitationBypass(browser, baseUrl) {
+  const { context, page } = await newPixel(browser);
+  await installJoinMocks(page);
+  await page.addInitScript(() => {
+    sessionStorage.setItem("gmfn_cover_welcome_session", "active");
+  });
+  await page.goto(
+    `${baseUrl}/welcome?entry=invite&entry_from=cover&code=review-invite&qr_policy=card-share`,
+    { waitUntil: "domcontentloaded" }
+  );
+  await expect(page).toHaveURL(/\/join\/review-invite\?qr_policy=card-share$/);
+  await expect(page.getByText("Open your invitation path.", { exact: true })).toHaveCount(0);
+  await context.close();
+}
+
 async function main() {
   const server = await createServer({
     root: frontendRoot,
@@ -273,6 +288,7 @@ async function main() {
   if (!baseUrl) throw new Error("Vite smoke URL was not available.");
   const browser = await chromium.launch();
   try {
+    await runInvitationBypass(browser, baseUrl);
     await runJoinJourney(browser, baseUrl);
     await runCreateJourney(browser, baseUrl);
   } finally {

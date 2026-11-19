@@ -10,9 +10,10 @@ import { getAccessToken } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
 import {
   detectEntryMode,
-  isKnownSingleLane,
+  readStorage,
   routeForActivation,
   routeForCreate,
+  routeForInvitation,
   routeForJoin,
   writeStorage,
   ENTRY_CREATE_CODE_KEY,
@@ -180,6 +181,14 @@ export default function WelcomePage() {
   );
   const createTo = useMemo(() => routeForCreate(neutralSearch), [neutralSearch]);
   const joinTo = useMemo(() => routeForJoin(neutralSearch), [neutralSearch]);
+  const invitationTo = useMemo(
+    () =>
+      routeForInvitation(
+        location.search,
+        readStorage(ENTRY_INVITE_CODE_KEY)
+      ),
+    [location.search]
+  );
   const activationTo = useMemo(
     () => routeForActivation(neutralSearch),
     [neutralSearch]
@@ -195,6 +204,10 @@ export default function WelcomePage() {
 
   if (entryMode === "existing") {
     return <Navigate to={loginTo} replace state={location.state} />;
+  }
+
+  if (entryMode === "invite") {
+    return <Navigate to={invitationTo || joinTo} replace state={location.state} />;
   }
 
   function openCreate() {
@@ -225,18 +238,14 @@ export default function WelcomePage() {
 
   const isIntentGateway = entryMode === "general" || entryMode === "create";
   const headline =
-    entryMode === "invite"
-      ? "Open your invitation path."
-      : isIntentGateway
+    isIntentGateway
       ? "Create community"
       : entryMode === "approved"
       ? "Open your activation path."
       : "Welcome";
 
   const subtext =
-    entryMode === "invite"
-      ? "Your invitation has already been recognised. Open the guided join path below."
-      : isIntentGateway
+    isIntentGateway
       ? ""
       : entryMode === "approved"
       ? "Your approval has already been confirmed. Open activation below."
@@ -450,29 +459,7 @@ export default function WelcomePage() {
             </div>
           ) : null}
 
-          {entryMode === "invite" && isKnownSingleLane(entryMode) ? (
-            <div style={routeCard()}>
-              <div style={labelText()}>Invitation</div>
-              <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.1 }}>
-                Join an existing community
-              </div>
-              <div style={supportText()}>
-                Continue your join request through the guided invitation path.
-              </div>
-
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <EntryActionButton
-                  type="button"
-                  onClick={openJoin}
-                  debugId="welcome.invite.open-join"
-                >
-                  Open join path
-                </EntryActionButton>
-              </div>
-            </div>
-          ) : null}
-
-          {entryMode === "approved" && isKnownSingleLane(entryMode) ? (
+          {entryMode === "approved" ? (
             <div style={routeCard()}>
               <div style={labelText()}>Activation</div>
               <div style={supportText()}>

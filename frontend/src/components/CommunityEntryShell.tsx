@@ -49,6 +49,7 @@ export function CommunityEntryShell({
   backLabel = "Back to welcome",
   exitLabel = "Back to GSN entry",
   exitTo = "/cover",
+  compactHeader = false,
   children,
 }: {
   eyebrow: string;
@@ -56,8 +57,9 @@ export function CommunityEntryShell({
   summary: string;
   backTo?: string;
   backLabel?: string;
-  exitLabel?: string;
+  exitLabel?: string | null;
   exitTo?: string;
+  compactHeader?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -79,7 +81,7 @@ export function CommunityEntryShell({
         <header
           style={{
             borderRadius: 26,
-            padding: "22px 20px",
+            padding: compactHeader ? "17px 18px" : "22px 20px",
             background: gmfnBrand.gradients.hero,
             color: gmfnBrand.colors.darkText,
             boxShadow: gmfnBrand.shadows.hero,
@@ -93,24 +95,40 @@ export function CommunityEntryShell({
               fontSize: 12,
               letterSpacing: 0.8,
               textTransform: "uppercase",
-              marginBottom: 10,
+              marginBottom: compactHeader ? 7 : 10,
             }}
           >
             {eyebrow}
           </div>
-          <h1 style={{ margin: 0, fontSize: "clamp(27px, 8vw, 38px)", lineHeight: 1.08 }}>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: compactHeader
+                ? "clamp(26px, 7vw, 34px)"
+                : "clamp(27px, 8vw, 38px)",
+              lineHeight: 1.08,
+            }}
+          >
             {title}
           </h1>
-          <p style={{ margin: "12px 0 0", color: gmfnBrand.colors.darkMuted, lineHeight: 1.6 }}>
+          <p
+            style={{
+              margin: compactHeader ? "8px 0 0" : "12px 0 0",
+              color: gmfnBrand.colors.darkMuted,
+              lineHeight: compactHeader ? 1.45 : 1.6,
+            }}
+          >
             {summary}
           </p>
         </header>
         <section style={{ ...brandPageCard(), padding: 18 }}>{children}</section>
-        <footer style={{ ...brandHelperText(), textAlign: "center", marginTop: 18 }}>
-          <OriginLink to={exitTo} style={{ color: gmfnBrand.colors.accent, fontWeight: 800 }}>
-            {exitLabel}
-          </OriginLink>
-        </footer>
+        {exitLabel ? (
+          <footer style={{ ...brandHelperText(), textAlign: "center", marginTop: 18 }}>
+            <OriginLink to={exitTo} style={{ color: gmfnBrand.colors.accent, fontWeight: 800 }}>
+              {exitLabel}
+            </OriginLink>
+          </footer>
+        ) : null}
       </div>
     </main>
   );

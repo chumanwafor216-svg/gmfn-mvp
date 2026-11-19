@@ -200,6 +200,40 @@ export function routeForJoin(currentSearch: string): string {
   return mergeSearchIntoPath("/join", currentSearch);
 }
 
+export function routeForInvitation(
+  currentSearch: string,
+  fallbackInviteCode: string | null = null
+): string | null {
+  const params = new URLSearchParams(currentSearch);
+  const inviteCode = String(
+    params.get("invite_code") ||
+      params.get("invite") ||
+      params.get("join_code") ||
+      params.get("code") ||
+      fallbackInviteCode ||
+      ""
+  ).trim();
+
+  if (!inviteCode) return null;
+
+  for (const key of [
+    "invite_code",
+    "invite",
+    "join_code",
+    "code",
+    "entry",
+    "entry_from",
+    "flow",
+    "mode",
+    "intent",
+  ]) {
+    params.delete(key);
+  }
+
+  const query = params.toString();
+  return `/join/${encodeURIComponent(inviteCode)}${query ? `?${query}` : ""}`;
+}
+
 export function routeForLogin(currentSearch: string): string {
   return mergeSearchIntoPath("/login", currentSearch);
 }
