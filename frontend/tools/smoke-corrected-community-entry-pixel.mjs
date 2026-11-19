@@ -178,11 +178,8 @@ async function runCreateJourney(browser, baseUrl) {
     '[data-welcome-intent-gateway="true"]'
   );
   await expect(intentGateway).toBeVisible();
-  await expect(
-    page.getByText("No invitation needed. Find one and ask to join.", {
-      exact: true,
-    })
-  ).toBeVisible();
+  await expect(page.getByText("No invitation needed.", { exact: false })).toHaveCount(0);
+  await expect(page.getByText("Keep GSN nearby", { exact: true })).toHaveCount(0);
   const createButton = intentGateway.locator(
     '[data-cta-id="welcome.gateway.create-community"]'
   );
@@ -192,6 +189,8 @@ async function runCreateJourney(browser, baseUrl) {
   const signInButton = intentGateway.locator(
     '[data-cta-id="welcome.gateway.sign-in"]'
   );
+  await expect(createButton).toContainText("Start");
+  await expect(joinButton).toContainText("Find a community");
   const createButtonBox = await createButton.boundingBox();
   const joinButtonBox = await joinButton.boundingBox();
   const signInButtonBox = await signInButton.boundingBox();

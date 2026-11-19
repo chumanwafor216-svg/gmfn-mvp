@@ -225,8 +225,14 @@ assertWholeFileNotContains(
 
 assertContains(
   "src/pages/WelcomePage.tsx",
-  /import GsnInstallPrompt[\s\S]*?import \{ getAccessToken \}[\s\S]*?import \{ APP_ROUTES \}[\s\S]*?isSignedIn[\s\S]*?<GsnInstallPrompt[\s\S]*?surface="welcome"[\s\S]*?Continue to my GSN/,
-  "Welcome must expose the GSN phone-screen install prompt and a signed-in continue action for users arriving from public links."
+  /import \{ getAccessToken \}[\s\S]*?import \{ APP_ROUTES \}[\s\S]*?isSignedIn[\s\S]*?Continue to my GSN/,
+  "Welcome must preserve the signed-in continue action for users arriving from public links."
+);
+
+assertWholeFileNotContains(
+  "src/pages/WelcomePage.tsx",
+  /GsnInstallPrompt|surface="welcome"/,
+  "Welcome must keep phone installation outside the create, find-community, and sign-in decision."
 );
 
 assertContains(

@@ -599,10 +599,12 @@ Primary action:
 Rules:
 - Create community goes to StartCommunityPage.
 - The ordinary Welcome surface is a compact intent gateway. `Create community`
-  remains the dominant primary action; `Join an existing community` remains a
-  smaller secondary action for people who have no invitation and want to find
-  a community and ask to join; `Already a member? Sign in` remains a slim
-  direct path to the separate existing-member login.
+  remains the dominant heading with one `Start` action; `Find a community`
+  remains the smaller secondary action for people who have no invitation;
+  `Already a member? Sign in` remains a slim direct path to the separate
+  existing-member login.
+- Keep phone installation guidance off the Welcome intent gateway. It remains
+  available later in the established login and activation surfaces.
 - Do not insert a second founder-path card or a multi-screen member/new-member
   chooser before these three intents. After selection, each journey owns its
   screen and must not expose the other journeys.

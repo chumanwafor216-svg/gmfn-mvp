@@ -78,8 +78,8 @@ assertContains(
 
 assertContains(
   "src/pages/WelcomePage.tsx",
-  /Create community[\s\S]*?debugId="welcome\.gateway\.create-community"[\s\S]*?debugId="welcome\.gateway\.join-community"[\s\S]*?Join an existing community[\s\S]*?No invitation needed\. Find one and ask to join\.[\s\S]*?Already a member\?[\s\S]*?debugId="welcome\.gateway\.sign-in"[\s\S]*?Sign in/,
-  "Welcome must keep Create Community centre stage while making no-invite Join and separate existing-member Sign In immediately reachable."
+  /Create community[\s\S]*?debugId="welcome\.gateway\.create-community"[\s\S]*?Start[\s\S]*?debugId="welcome\.gateway\.join-community"[\s\S]*?Find a community[\s\S]*?Already a member\?[\s\S]*?debugId="welcome\.gateway\.sign-in"[\s\S]*?Sign in/,
+  "Welcome must keep Create Community centre stage with concise Start, Find a community, and Sign In choices."
 );
 
 assertContains(

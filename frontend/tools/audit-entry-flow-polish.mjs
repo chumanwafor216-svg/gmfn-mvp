@@ -85,8 +85,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/WelcomePage.tsx",
-  /isIntentGateway[\s\S]*?data-welcome-intent-gateway="true"[\s\S]*?debugId="welcome\.gateway\.create-community"[\s\S]*?Create community[\s\S]*?debugId="welcome\.gateway\.join-community"[\s\S]*?Join an existing community[\s\S]*?No invitation needed[\s\S]*?Already a member\?[\s\S]*?debugId="welcome\.gateway\.sign-in"[\s\S]*?Sign in/,
-  "Welcome must keep Create Community dominant while exposing compact no-invite Join and existing-member Sign In paths."
+  /isIntentGateway[\s\S]*?data-welcome-intent-gateway="true"[\s\S]*?debugId="welcome\.gateway\.create-community"[\s\S]*?Start[\s\S]*?debugId="welcome\.gateway\.join-community"[\s\S]*?Find a community[\s\S]*?Already a member\?[\s\S]*?debugId="welcome\.gateway\.sign-in"[\s\S]*?Sign in/,
+  "Welcome must keep Create Community dominant while exposing only compact Start, Find a community, and Sign In choices."
+);
+
+assertNotContains(
+  "src/pages/WelcomePage.tsx",
+  /GsnInstallPrompt|No invitation needed|surface="welcome"/,
+  "Welcome must not mix phone installation or repeated join explanation into the intent decision."
 );
 
 assertNotContains(

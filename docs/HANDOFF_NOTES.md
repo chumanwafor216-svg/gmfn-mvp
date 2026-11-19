@@ -6926,3 +6926,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The meaningful realistic 3D object on the left of each row remains unchanged. Row labels, values, descriptions, routes, pointer guards, hit areas, grid dimensions, neon frame and the frozen Market Wisdom section are unchanged.
 - The Dashboard phone audit now requires the shared chevron and rejects restoration of the retired `endIcon` contract.
 - Verification passed: focused ESLint, Dashboard phone-button, Dashboard action and Dashboard button-inventory audits, the Dashboard passport/hitbox browser audit at phone width, TypeScript and the 328-module production build, and the broad protected-button freeze suite. The protected browser sweep still logs its unrelated pre-existing duplicate React-key warning while passing.
+
+# Simplified Welcome intent gateway - 2026-11-19
+
+- Owner phone review showed the Welcome gateway repeated each choice and mixed a phone-install promotion into the decision between creating, finding and signing in.
+- The screen now presents three concise choices only: `Create community` with the primary `Start` action, `Find a community`, and `Already a member? Sign in`.
+- The repeated `No invitation needed` helper and the `Keep GSN nearby` installation card are removed from Welcome only. Installation guidance remains available on the established login and activation surfaces.
+- Create-community, voluntary community discovery, existing-member sign-in and signed-in continuation routes are unchanged. No backend endpoint, admission rule, permission, schema, authenticated navigation or frozen Market Wisdom surface changed.
+- Verification passed: entry-flow polish and entry copy/response audits, the complete Pixel 5 corrected-community-entry journey, TypeScript and the 328-module production build, and the broad protected-button freeze suite.
+- Honest residuals: the separate broad link-contract audit remains red on six unrelated pre-existing PWA and Shop assertions. The protected suite passes but still logs the existing duplicate React-key warning.

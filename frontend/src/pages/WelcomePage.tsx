@@ -4,7 +4,6 @@ import {
   EntryActionButton,
   EntryBackLink,
 } from "../components/EntryControls";
-import GsnInstallPrompt from "../components/GsnInstallPrompt";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import { getAccessToken } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
@@ -325,42 +324,23 @@ export default function WelcomePage() {
                 debugId="welcome.gateway.create-community"
                 style={{ width: "100%", fontSize: 16 }}
               >
-                Create community
+                Start
               </EntryActionButton>
 
-              <div
+              <EntryActionButton
+                type="button"
+                onClick={openJoin}
+                variant="secondary"
+                debugId="welcome.gateway.join-community"
                 style={{
                   width: "100%",
-                  display: "grid",
-                  justifyItems: "center",
-                  gap: 5,
+                  minHeight: 48,
+                  background: "rgba(255,255,255,0.075)",
+                  boxShadow: "none",
                 }}
               >
-                <EntryActionButton
-                  type="button"
-                  onClick={openJoin}
-                  variant="secondary"
-                  debugId="welcome.gateway.join-community"
-                  style={{
-                    width: "100%",
-                    minHeight: 48,
-                    background: "rgba(255,255,255,0.075)",
-                    boxShadow: "none",
-                  }}
-                >
-                  Join an existing community
-                </EntryActionButton>
-                <span
-                  style={{
-                    color: "rgba(255,255,255,0.64)",
-                    fontSize: 11.5,
-                    lineHeight: 1.35,
-                    textAlign: "center",
-                  }}
-                >
-                  No invitation needed. Find one and ask to join.
-                </span>
-              </div>
+                Find a community
+              </EntryActionButton>
 
               <div
                 style={{
@@ -396,14 +376,6 @@ export default function WelcomePage() {
               </div>
             </div>
           ) : null}
-
-          <div style={{ width: "min(100%, 680px)", justifySelf: "center" }}>
-            <GsnInstallPrompt
-              tone="dark"
-              compact={isCompact}
-              surface="welcome"
-            />
-          </div>
 
           {entryMode === "general" && isSignedIn ? (
             <div
