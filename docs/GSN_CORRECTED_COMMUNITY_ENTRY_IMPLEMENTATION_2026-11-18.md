@@ -50,6 +50,11 @@ The historical standalone `admin_approval` value remains readable and executable
 - `/join/community/:clanId` resolves the opted-in community by stable ID.
 - `/join/:code`, `/start/join/:code`, `/start/invite/:code`, `/invite/:code`, and `/get-invite/:code` still use the existing invitation journey.
 - `/create` uses identity first, secure account activation second, and community setup third.
+- The pre-creation community step contains only the community name and short
+  description. Invitation and search-admission settings are not shown in the
+  Create Community journey; creation uses the safe defaults of instant valid
+  invitation entry, search discovery off, and community vote as the stored
+  search policy for later opt-in.
 - `/activate-membership` accepts a protected `next_path` state value and returns identity-first founders to `/create?stage=community` after activation.
 
 ## Data migration

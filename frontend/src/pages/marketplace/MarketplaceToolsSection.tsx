@@ -52,6 +52,7 @@ type MarketplaceChoiceOption = {
 };
 
 type MarketplaceAppRoute = (typeof APP_ROUTES)[keyof typeof APP_ROUTES];
+type MarketplaceRoute = MarketplaceAppRoute | "/create?stage=community";
 
 type MarketplaceLinkRowStatus = "ready" | "warn" | "idle";
 
@@ -191,7 +192,7 @@ export type MarketplaceToolsSectionData = {
   openMarketplaceExternalLink: (url: string, missingText: string) => void;
   openMarketplaceRoute: (
     event: SyntheticEvent<HTMLElement> | undefined,
-    to: MarketplaceAppRoute
+    to: MarketplaceRoute
   ) => void;
   openMarketplaceSection: (
     event: SyntheticEvent<HTMLElement> | undefined,
@@ -616,7 +617,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                   onClick={(event) => {
                     cancelMarketplaceSectionScroll();
                     pendingMarketplaceSectionRef.current = "";
-                    openMarketplaceRoute(event, APP_ROUTES.CLANS);
+                    openMarketplaceRoute(event, "/create?stage=community");
                   }}
                   stableHeight={isCompact ? 68 : 88}
                   style={marketplaceLinkChooserButtonStyle(isCompact)}

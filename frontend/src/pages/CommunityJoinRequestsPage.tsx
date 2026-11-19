@@ -194,6 +194,90 @@ function whitePanel(padding = 18): React.CSSProperties {
   };
 }
 
+function focusedContextPanel(): React.CSSProperties {
+  return {
+    width: "100%",
+    minWidth: 0,
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    gap: 14,
+    alignItems: "center",
+    padding: "13px 16px",
+    borderRadius: 18,
+    border: "1px solid rgba(224,190,99,0.28)",
+    background:
+      "linear-gradient(135deg, rgba(12,42,68,0.98) 0%, rgba(5,27,47,0.99) 100%)",
+    boxShadow:
+      "0 16px 34px rgba(0,8,18,0.22), inset 0 1px 0 rgba(255,255,255,0.08)",
+    boxSizing: "border-box",
+  };
+}
+
+function focusedDecisionPanel(): React.CSSProperties {
+  return {
+    width: "100%",
+    minWidth: 0,
+    overflow: "hidden",
+    padding: "20px 18px 18px",
+    borderRadius: 24,
+    border: "1px solid rgba(201,161,54,0.24)",
+    background:
+      "linear-gradient(180deg, #FFFFFF 0%, #FCFDFE 68%, #F7FAFD 100%)",
+    boxShadow:
+      "0 24px 54px rgba(0,8,18,0.24), inset 0 1px 0 rgba(255,255,255,0.98)",
+    boxSizing: "border-box",
+  };
+}
+
+function focusedIdentityRows(): React.CSSProperties {
+  return {
+    marginTop: 15,
+    borderTop: "1px solid rgba(15,42,67,0.10)",
+    borderBottom: "1px solid rgba(15,42,67,0.10)",
+  };
+}
+
+function focusedIdentityRow(hasDivider = false): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "74px minmax(0, 1fr)",
+    gap: 12,
+    alignItems: "start",
+    padding: "10px 0",
+    borderTop: hasDivider ? "1px solid rgba(15,42,67,0.08)" : "none",
+  };
+}
+
+function compactDisclosurePanel(): React.CSSProperties {
+  return {
+    width: "100%",
+    minWidth: 0,
+    overflow: "hidden",
+    padding: "0 16px",
+    borderRadius: 18,
+    border: "1px solid rgba(213,224,235,0.92)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,251,254,0.99) 100%)",
+    boxShadow:
+      "0 12px 26px rgba(0,8,18,0.12), inset 0 1px 0 rgba(255,255,255,0.98)",
+    boxSizing: "border-box",
+  };
+}
+
+function compactDisclosureSummary(): React.CSSProperties {
+  return {
+    minHeight: 62,
+    display: "flex",
+    alignItems: "center",
+    cursor: "pointer",
+    color: "#0B1F33",
+    fontSize: 15,
+    fontWeight: 950,
+    lineHeight: 1.25,
+    padding: "0 2px",
+  };
+}
+
 function sectionLabel(color = "#D6AA45"): React.CSSProperties {
   return {
     fontSize: 12,
@@ -1173,42 +1257,64 @@ export default function CommunityJoinRequestsPage() {
       activeAdmissionMode === "community_vote" ||
       (activeAdmissionMode === "admin_approval" && reviewerIsAdmin);
     const activeIsBusy = activeItem ? busyId === activeItem.id : false;
+    const passiveDecisionTitle =
+      activeAdmissionMode === "admin_approval"
+        ? "Admin decision required"
+        : "No vote needed";
+    const passiveDecisionText =
+      activeAdmissionMode === "admin_approval"
+        ? "A community admin will approve or disapprove this request."
+        : "This community uses Instant Join, so this request does not need your vote.";
 
     return (
       <div style={pageShell()} data-gsn-join-requests-phone="focused-decision">
         <PageTopNav
           sectionLabel="New members"
-          title="Join Request"
+          title="Join Requests"
           subtitle=""
         />
 
         <div style={contentRail()}>
-          <section
-            style={{
-              ...darkPanel(14),
-              display: "grid",
-              gridTemplateColumns: "minmax(0, 1fr) auto",
-              gap: 10,
-              alignItems: "center",
-            }}
-          >
+          <section style={focusedContextPanel()}>
             <div style={{ minWidth: 0 }}>
-              <div style={sectionLabel()}>For {selectedCommunityName}</div>
+              <div style={{ ...sectionLabel(), fontSize: 10 }}>Community</div>
               <div
                 style={{
-                  marginTop: 5,
+                  marginTop: 3,
                   color: "#FFFFFF",
-                  fontSize: 18,
-                  fontWeight: 1000,
-                  lineHeight: 1.25,
+                  fontSize: 16,
+                  fontWeight: 950,
+                  lineHeight: 1.2,
+                  overflowWrap: "break-word",
+                }}
+              >
+                {selectedCommunityName}
+              </div>
+            </div>
+            <div style={{ minWidth: 0, textAlign: "right" }}>
+              <div
+                style={{
+                  color: "rgba(224,235,246,0.68)",
+                  fontSize: 9.5,
+                  fontWeight: 900,
+                  letterSpacing: 0.45,
+                  textTransform: "uppercase",
+                }}
+              >
+                Joining setting
+              </div>
+              <div
+                style={{
+                  marginTop: 3,
+                  color: "#F3D06A",
+                  fontSize: 12,
+                  fontWeight: 950,
+                  lineHeight: 1.2,
                 }}
               >
                 {admissionModeLabel(admissionMode)}
               </div>
             </div>
-            <span style={iconTile("person", "gold")}>
-              <JoinRequestIcon name="person" size={26} />
-            </span>
           </section>
 
           {error ? (
@@ -1216,12 +1322,16 @@ export default function CommunityJoinRequestsPage() {
               role="alert"
               style={{
                 ...whitePanel(14),
-                border: "1px solid #FECACA",
+                border: "1px solid rgba(239,68,68,0.24)",
+                borderLeft: "4px solid #DC2626",
+                background: "linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%)",
                 color: "#991B1B",
-                fontWeight: 900,
+                fontSize: 14,
+                fontWeight: 850,
+                lineHeight: 1.45,
               }}
             >
-              {iconText("reject", error)}
+              {error}
             </div>
           ) : null}
 
@@ -1231,12 +1341,16 @@ export default function CommunityJoinRequestsPage() {
               aria-live="polite"
               style={{
                 ...whitePanel(14),
-                border: "1px solid #A7F3D0",
+                border: "1px solid rgba(16,185,129,0.24)",
+                borderLeft: "4px solid #0F9F6E",
+                background: "linear-gradient(180deg, #FFFFFF 0%, #F3FBF8 100%)",
                 color: "#065F46",
-                fontWeight: 900,
+                fontSize: 14,
+                fontWeight: 850,
+                lineHeight: 1.45,
               }}
             >
-              {iconText("approve", success)}
+              {success}
             </div>
           ) : null}
 
@@ -1376,69 +1490,90 @@ export default function CommunityJoinRequestsPage() {
 
           {!loading && !error && activeItem ? (
             <article
-              style={{
-                ...whitePanel(16),
-                border: "1px solid rgba(34,120,242,0.34)",
-              }}
+              style={focusedDecisionPanel()}
               data-gsn-join-request-active={String(activeItem.id)}
             >
               <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 10,
-                }}
+                data-gsn-join-request-status="text-only"
+                style={{ ...sectionLabel("#8A5A08"), fontSize: 10.5 }}
               >
-                <div style={sectionLabel("#8A5A08")}>Waiting for an answer</div>
-                <span style={statusPill("pending")}>
-                  <StatusMark status="pending" />
-                  Waiting
-                </span>
+                {activeCanAnswer ? "Waiting for your answer" : passiveDecisionTitle}
               </div>
 
               <h1
                 style={{
-                  margin: "10px 0 0",
+                  margin: "11px 0 0",
                   color: "#0B1F33",
-                  fontSize: 28,
+                  fontSize: "clamp(24px, 7vw, 30px)",
                   fontWeight: 1000,
-                  lineHeight: 1.08,
-                  overflowWrap: "break-word",
+                  lineHeight: 1.04,
+                  letterSpacing: -0.65,
+                  overflowWrap: "anywhere",
                 }}
               >
                 {activeApplicantLabel}
               </h1>
 
-              {activeApplicantPhone &&
-              activeApplicantPhone !== activeApplicantLabel ? (
+              <div style={focusedIdentityRows()}>
+                {activeApplicantPhone &&
+                activeApplicantPhone !== activeApplicantLabel ? (
+                  <div style={focusedIdentityRow()}>
+                    <span
+                      style={{
+                        color: "#64748B",
+                        fontSize: 11,
+                        fontWeight: 900,
+                        letterSpacing: 0.35,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Phone
+                    </span>
+                    <span
+                      style={{
+                        color: "#1D4ED8",
+                        fontSize: 14,
+                        fontWeight: 900,
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {activeApplicantPhone}
+                    </span>
+                  </div>
+                ) : null}
                 <div
-                  style={{
-                    marginTop: 5,
-                    color: "#1D4ED8",
-                    fontSize: 15,
-                    fontWeight: 900,
-                  }}
-                >
-                  {activeApplicantPhone}
-                </div>
-              ) : null}
-
-              <div
-                style={{
-                  marginTop: 9,
-                  color: "#334155",
-                  fontSize: 14,
-                  fontWeight: 750,
-                  lineHeight: 1.45,
-                }}
-              >
-                Invited by{" "}
-                <strong>
-                  {safeStr(
-                    activeItem.invited_by_display || "a community member"
+                  style={focusedIdentityRow(
+                    Boolean(
+                      activeApplicantPhone &&
+                        activeApplicantPhone !== activeApplicantLabel
+                    )
                   )}
-                </strong>
+                >
+                  <span
+                    style={{
+                      color: "#64748B",
+                      fontSize: 11,
+                      fontWeight: 900,
+                      letterSpacing: 0.35,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Invited by
+                  </span>
+                  <strong
+                    style={{
+                      minWidth: 0,
+                      color: "#334155",
+                      fontSize: 14,
+                      lineHeight: 1.35,
+                      overflowWrap: "break-word",
+                    }}
+                  >
+                    {safeStr(
+                      activeItem.invited_by_display || "a community member"
+                    )}
+                  </strong>
+                </div>
               </div>
 
               {activeAdmissionMode === "community_vote" ? (
@@ -1458,92 +1593,101 @@ export default function CommunityJoinRequestsPage() {
                 </div>
               ) : null}
 
-              <div
-                style={{
-                  marginTop: 16,
-                  color: "#0B1F33",
-                  fontSize: 18,
-                  fontWeight: 1000,
-                }}
-              >
-                Should this person join?
-              </div>
-
               {activeCanAnswer ? (
-                <CardActionRow
-                  align="stretch"
-                  style={{
-                    marginTop: 12,
-                    display: "grid",
-                    gridTemplateColumns: "minmax(0, 1fr)",
-                    gap: 10,
-                    minHeight: 0,
-                    width: "100%",
-                  }}
-                >
-                  <PrimaryButton
-                    type="button"
-                    onClick={() =>
-                      activeCanAdminApproveNow
-                        ? handlePilotApprove(activeItem.id)
-                        : handleVote(activeItem.id, "approve")
-                    }
-                    disabled={activeIsBusy}
-                    busy={activeIsBusy}
-                    busyLabel="Working..."
-                    stableHeight={58}
-                    fullWidth
-                    debugId="community-join-requests.approve"
-                    style={decisionButtonStyle("approve")}
+                <>
+                  <div
+                    style={{
+                      marginTop: 18,
+                      color: "#0B1F33",
+                      fontSize: 18,
+                      fontWeight: 1000,
+                      letterSpacing: -0.2,
+                    }}
                   >
-                    {iconText("approve", "Approve")}
-                  </PrimaryButton>
+                    Should this person join?
+                  </div>
 
-                  {activeAdmissionMode === "community_vote" ? (
-                    <SecondaryButton
+                  <CardActionRow
+                    align="stretch"
+                    style={{
+                      marginTop: 12,
+                      display: "grid",
+                      gridTemplateColumns: "minmax(0, 1fr)",
+                      gap: 10,
+                      minHeight: 0,
+                      width: "100%",
+                    }}
+                  >
+                    <PrimaryButton
                       type="button"
-                      onClick={() => handleVote(activeItem.id, "neutral")}
+                      onClick={() =>
+                        activeCanAdminApproveNow
+                          ? handlePilotApprove(activeItem.id)
+                          : handleVote(activeItem.id, "approve")
+                      }
                       disabled={activeIsBusy}
                       busy={activeIsBusy}
                       busyLabel="Working..."
                       stableHeight={58}
                       fullWidth
-                      debugId="community-join-requests.neutral"
-                      style={decisionButtonStyle("neutral")}
+                      debugId="community-join-requests.approve"
+                      style={decisionButtonStyle("approve")}
                     >
-                      {iconText("neutral", "Ignore for now")}
-                    </SecondaryButton>
-                  ) : null}
+                      {iconText("approve", "Approve")}
+                    </PrimaryButton>
 
-                  <SecondaryButton
-                    type="button"
-                    onClick={() => handleVote(activeItem.id, "reject")}
-                    disabled={activeIsBusy}
-                    busy={activeIsBusy}
-                    busyLabel="Working..."
-                    stableHeight={58}
-                    fullWidth
-                    debugId="community-join-requests.reject"
-                    style={decisionButtonStyle("reject")}
-                  >
-                    {iconText("reject", "Disapprove")}
-                  </SecondaryButton>
-                </CardActionRow>
+                    {activeAdmissionMode === "community_vote" ? (
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => handleVote(activeItem.id, "neutral")}
+                        disabled={activeIsBusy}
+                        busy={activeIsBusy}
+                        busyLabel="Working..."
+                        stableHeight={58}
+                        fullWidth
+                        debugId="community-join-requests.neutral"
+                        style={decisionButtonStyle("neutral")}
+                      >
+                        {iconText("neutral", "Ignore for now")}
+                      </SecondaryButton>
+                    ) : null}
+
+                    <SecondaryButton
+                      type="button"
+                      onClick={() => handleVote(activeItem.id, "reject")}
+                      disabled={activeIsBusy}
+                      busy={activeIsBusy}
+                      busyLabel="Working..."
+                      stableHeight={58}
+                      fullWidth
+                      debugId="community-join-requests.reject"
+                      style={decisionButtonStyle("reject")}
+                    >
+                      {iconText("reject", "Disapprove")}
+                    </SecondaryButton>
+                  </CardActionRow>
+                </>
               ) : (
                 <div
                   style={{
-                    marginTop: 12,
-                    padding: 12,
-                    borderRadius: 12,
-                    background: "#FFF8E7",
-                    color: "#7C5A06",
-                    fontWeight: 850,
-                    lineHeight: 1.45,
+                    marginTop: 16,
+                    padding: "13px 14px",
+                    borderRadius: 14,
+                    border: "1px solid rgba(201,161,54,0.18)",
+                    background:
+                      "linear-gradient(180deg, #FFF9E9 0%, #FFF5D8 100%)",
                   }}
                 >
-                  {activeAdmissionMode === "admin_approval"
-                    ? "An admin must approve or disapprove this request."
-                    : "This request does not need a vote."}
+                  <div
+                    style={{
+                      color: "#5F4A12",
+                      fontSize: 13.5,
+                      fontWeight: 800,
+                      lineHeight: 1.42,
+                    }}
+                  >
+                    {passiveDecisionText}
+                  </div>
                 </div>
               )}
 
@@ -1581,18 +1725,17 @@ export default function CommunityJoinRequestsPage() {
           ) : null}
 
           {otherWaitingItems.length > 0 ? (
-            <details style={whitePanel(14)}>
-              <summary
-                style={{
-                  cursor: "pointer",
-                  color: "#0B1F33",
-                  fontSize: 16,
-                  fontWeight: 1000,
-                }}
-              >
+            <details style={compactDisclosurePanel()}>
+              <summary style={compactDisclosureSummary()}>
                 {otherWaitingItems.length} more waiting
               </summary>
-              <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gap: 10,
+                  padding: "0 0 14px",
+                }}
+              >
                 {otherWaitingItems.map((item) => {
                   const label = safeStr(
                     item.applicant_name ||
@@ -1635,18 +1778,17 @@ export default function CommunityJoinRequestsPage() {
           ) : null}
 
           {canManageAdmission ? (
-            <details style={whitePanel(14)}>
-              <summary
-                style={{
-                  cursor: "pointer",
-                  color: "#0B1F33",
-                  fontSize: 16,
-                  fontWeight: 1000,
-                }}
-              >
+            <details style={compactDisclosurePanel()}>
+              <summary style={compactDisclosureSummary()}>
                 Joining setting: {admissionModeLabel(admissionMode)}
               </summary>
-              <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gap: 10,
+                  padding: "0 0 14px",
+                }}
+              >
                 {[
                   {
                     value: "instant_invite",
@@ -1755,18 +1897,17 @@ export default function CommunityJoinRequestsPage() {
           ) : null}
 
           {completedItems.length > 0 ? (
-            <details style={whitePanel(14)}>
-              <summary
-                style={{
-                  cursor: "pointer",
-                  color: "#0B1F33",
-                  fontSize: 16,
-                  fontWeight: 1000,
-                }}
-              >
+            <details style={compactDisclosurePanel()}>
+              <summary style={compactDisclosureSummary()}>
                 Past decisions ({completedItems.length})
               </summary>
-              <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gap: 10,
+                  padding: "0 0 14px",
+                }}
+              >
                 {completedItems.map((item) => {
                   const status = friendlyStatus(item.status);
                   const label = safeStr(
@@ -1820,18 +1961,17 @@ export default function CommunityJoinRequestsPage() {
             </details>
           ) : null}
 
-          <details style={whitePanel(14)}>
-            <summary
-              style={{
-                cursor: "pointer",
-                color: "#0B1F33",
-                fontSize: 16,
-                fontWeight: 1000,
-              }}
-            >
+          <details style={compactDisclosurePanel()}>
+            <summary style={compactDisclosureSummary()}>
               More options
             </summary>
-            <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+            <div
+              style={{
+                display: "grid",
+                gap: 10,
+                padding: "0 0 14px",
+              }}
+            >
               <SecondaryButton
                 type="button"
                 onClick={() => void load()}

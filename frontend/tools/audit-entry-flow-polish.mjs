@@ -77,6 +77,30 @@ assertContains(
   "Cover and Welcome must stay public-entry guarded and outside the authenticated app shell."
 );
 
+assertNotContains(
+  "src/pages/WelcomePage.tsx",
+  />Existing account</,
+  "Welcome must not restore the redundant existing-account explanation page before Sign In."
+);
+
+assertContains(
+  "src/pages/WelcomePage.tsx",
+  /isIntentGateway[\s\S]*?data-welcome-intent-gateway="true"[\s\S]*?debugId="welcome\.gateway\.create-community"[\s\S]*?Create community[\s\S]*?debugId="welcome\.gateway\.join-community"[\s\S]*?Join an existing community[\s\S]*?No invitation needed[\s\S]*?Already a member\?[\s\S]*?debugId="welcome\.gateway\.sign-in"[\s\S]*?Sign in/,
+  "Welcome must keep Create Community dominant while exposing compact no-invite Join and existing-member Sign In paths."
+);
+
+assertNotContains(
+  "src/pages/WelcomePage.tsx",
+  /Founder path|Set up the basics/,
+  "Known Create Community intent must not restore the redundant founder introduction card."
+);
+
+assertContains(
+  "src/pages/WelcomePage.tsx",
+  /function intentNeutralSearch[\s\S]*?\["entry", "entry_from", "flow", "mode", "intent"\][\s\S]*?routeForCreate\(neutralSearch\)[\s\S]*?routeForJoin\(neutralSearch\)/,
+  "Switching gateway intent must clear stale lane markers before opening Create or Join."
+);
+
 [
   ['<Route path="/login" element={<LoginPage />} />', "Sign In"],
   [
@@ -135,7 +159,7 @@ entryPages.forEach((file) => {
 [
   ["src/pages/WelcomePage.tsx", /<EntryBackLink to="\/cover" \/>/],
   ["src/pages/LoginPage.tsx", /<EntryBackLink to="\/welcome" \/>/],
-  ["src/components/CommunityEntryShell.tsx", /<Link to="\/cover"/],
+  ["src/components/CommunityEntryShell.tsx", /exitTo = "\/cover"[\s\S]*?<OriginLink to=\{exitTo\}/],
   ["src/pages/JoinEntryPage.tsx", /<EntryBackLink to="\/welcome" \/>/],
   ["src/pages/JoinApprovalPage.tsx", /debugId="join-approval\.back"[\s\S]*?debugId=\{welcomeCta\.debugId\}/],
   ["src/pages/MemberActivationPage.tsx", /debugId="member-activation\.back"[\s\S]*?aria-label="Back to welcome"/],
@@ -166,9 +190,45 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/IdentityFirstCreateCommunityPage.tsx",
+  /invite_admission_mode: "instant_invite"[\s\S]*?invite_admin_override: false[\s\S]*?search_join_enabled: false[\s\S]*?search_join_admission_mode: "community_vote"[\s\S]*?search_join_admin_override: false/,
+  "Create Community must use safe admission defaults without exposing join-policy work before creation."
+);
+
+assertNotContains(
+  "src/pages/IdentityFirstCreateCommunityPage.tsx",
+  /People joining by invitation|Let people find this community|draft\.(inviteMode|inviteOverride|searchEnabled|searchMode|searchOverride)/,
+  "Create Community must not expose invitation or search-join controls before the community exists."
+);
+
+assertContains(
   "src/pages/FindCommunityJoinPage.tsx",
   /createSearchJoinRequest[\s\S]*?searchJoinableCommunities[\s\S]*?data-gsn-search-join="true"/,
   "Join Community must keep public discovery and search-based requests distinct from invite entry."
+);
+
+assertNotContains(
+  "src/pages/FindCommunityJoinPage.tsx",
+  /Create community|Start community|createCommunityAfterIdentity/,
+  "Join Community must not expose or execute the Create Community journey."
+);
+
+assertContains(
+  "src/App.tsx",
+  /path="create-community" element=\{<PreserveRedirect to="\/create\?stage=community" \/>\}[\s\S]*?path="new-community" element=\{<PreserveRedirect to="\/create\?stage=community" \/>\}/,
+  "Authenticated Create Community aliases must stay on the dedicated create journey."
+);
+
+assertContains(
+  "src/pages/CommunityHomePage.tsx",
+  /createCommunity: "\/create\?stage=community"/,
+  "Community Home must open the dedicated Create Community journey."
+);
+
+assertContains(
+  "src/pages/marketplace/MarketplaceToolsSection.tsx",
+  /openMarketplaceRoute\(event, "\/create\?stage=community"\)/,
+  "Marketplace Create Community must open the dedicated create journey."
 );
 
 if (findings.length > 0) {

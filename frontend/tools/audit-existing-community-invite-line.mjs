@@ -52,8 +52,8 @@ const findings = [];
 
 assertContains(
   "frontend/src/App.tsx",
-  /const CreateEntryPage = React\.lazy\(\(\) => import\("\.\/pages\/CreateEntryPage"\)\);[\s\S]*?const JoinEntryPage = React\.lazy\(\(\) => import\("\.\/pages\/JoinEntryPage"\)\);[\s\S]*?<Route path="\/create" element=\{<CreateEntryPage \/>\} \/>[\s\S]*?<Route path="\/join" element=\{<JoinEntryPage \/>\} \/>[\s\S]*?<Route path="\/join\/:code" element=\{<JoinEntryPage \/>\} \/>[\s\S]*?path="\/start\/join\/:code"[\s\S]*?element=\{<JoinEntryPage \/>\}[\s\S]*?path="\/start\/invite\/:code"[\s\S]*?element=\{<JoinEntryPage \/>\}/,
-  "Create-community and existing-community invite routes must stay separate: /create uses CreateEntryPage, while /join and /start/join invite links use JoinEntryPage."
+  /const IdentityFirstCreateCommunityPage = React\.lazy\([\s\S]*?import\("\.\/pages\/IdentityFirstCreateCommunityPage"\)[\s\S]*?const JoinEntryPage = React\.lazy\(\(\) => import\("\.\/pages\/JoinEntryPage"\)\);[\s\S]*?const FindCommunityJoinPage = React\.lazy\([\s\S]*?import\("\.\/pages\/FindCommunityJoinPage"\)[\s\S]*?<Route path="\/create" element=\{<IdentityFirstCreateCommunityPage \/>\} \/>[\s\S]*?<Route path="\/join" element=\{<FindCommunityJoinPage \/>\} \/>[\s\S]*?<Route path="\/join\/:code" element=\{<JoinEntryPage \/>\} \/>[\s\S]*?path="\/start\/join\/:code"[\s\S]*?element=\{<JoinEntryPage \/>\}[\s\S]*?path="\/start\/invite\/:code"[\s\S]*?element=\{<JoinEntryPage \/>\}/,
+  "Corrected entry routes must stay separate: /create uses identity-first creation, bare /join uses opt-in community search, and coded invite routes use JoinEntryPage."
 );
 
 assertContains(
@@ -70,14 +70,14 @@ assertContains(
 
 assertContains(
   "frontend/src/App.tsx",
-  /const ClansPage = React\.lazy\(\(\) => import\("\.\/pages\/ClansPage"\)\);[\s\S]*?<Route path="clans" element=\{<ClansPage \/>\} \/>[\s\S]*?path="create-community" element=\{<PreserveRedirect to=\{APP_ROUTES\.CLANS\} \/>\}/,
-  "Authenticated create-community alias must open the existing-member create-community lane, not the public new-founder form or the join form."
+  /path="create-community" element=\{<PreserveRedirect to="\/create\?stage=community" \/>\}/,
+  "Authenticated create-community alias must open the dedicated existing-identity community setup stage, not the mixed communities manager or the join form."
 );
 
 assertContains(
   "frontend/src/App.tsx",
-  /path="new-community" element=\{<PreserveRedirect to=\{APP_ROUTES\.CLANS\} \/>\}/,
-  "Authenticated new-community alias must open the existing-member create-community lane, not the public new-founder form or the join form."
+  /path="new-community" element=\{<PreserveRedirect to="\/create\?stage=community" \/>\}/,
+  "Authenticated new-community alias must open the dedicated existing-identity community setup stage, not the mixed communities manager or the join form."
 );
 
 assertContains(
@@ -118,31 +118,31 @@ assertNotContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /const inviteAdmissionMode[\s\S]*?const isInstantJoin = inviteAdmissionMode === "instant_invite";[\s\S]*?const joinActionLabel = isInstantJoin \? "Accept invite" : "Request access";[\s\S]*?showJoinPathLauncher[\s\S]*?debugId="join-entry\.sign-in-existing"[\s\S]*?Sign in[\s\S]*?debugId="join-entry\.toggle-new-member-request-form"[\s\S]*?joinActionLabel[\s\S]*?Already have a GSN ID\?[\s\S]*?joinPathChoice === "existing"[\s\S]*?Existing GSN ID[\s\S]*?Full name[\s\S]*?Phone number[\s\S]*?Optional details[\s\S]*?requestJoinWithExistingGsnId[\s\S]*?Send with GSN ID[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"[\s\S]*?canOpenForm[\s\S]*?canUseNewMemberForm[\s\S]*?!hasExistingGsnClaim[\s\S]*?Full name[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Optional details[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?Submit request/,
-  "A ready existing-community invite must first present Sign in and the mode-aware Accept invite / Request access action, keep existing-GSN-ID reuse behind help, and collapse optional new-member details."
+  /const inviteAdmissionMode[\s\S]*?const isInstantJoin = inviteAdmissionMode === "instant_invite";[\s\S]*?const joinActionLabel = isInstantJoin[\s\S]*?"Accept invite and join"[\s\S]*?"Submit request for approval"[\s\S]*?showJoinPathLauncher[\s\S]*?debugId="join-entry\.sign-in-existing"[\s\S]*?Sign in[\s\S]*?Already have a GSN ID\?[\s\S]*?debugId="join-entry\.choose-existing-gsn"[\s\S]*?joinPathChoice === "existing"[\s\S]*?Existing GSN ID[\s\S]*?Full name[\s\S]*?Phone number[\s\S]*?Optional details[\s\S]*?requestJoinWithExistingGsnId[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"[\s\S]*?canOpenForm[\s\S]*?canUseNewMemberForm[\s\S]*?!hasExistingGsnClaim[\s\S]*?Full name[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Optional details[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?debugId="join-entry\.submit-new-request"/,
+  "A ready existing-community invite must expose the mode-aware direct form, preserve Sign in, keep existing-GSN-ID reuse behind help, and collapse optional new-member details."
 );
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /function CompactInviteWelcome[\s\S]*?data-gsn-compact-invite-welcome="true"[\s\S]*?You&apos;re Invited![\s\S]*?Join \{safeCommunityName\} on GSN[\s\S]*?Invited by: \{inviterLabel\}[\s\S]*?Welcome to your community[\s\S]*?showcase your business and discover opportunities/,
+  /function CompactInviteWelcome[\s\S]*?data-gsn-compact-invite-welcome="true"[\s\S]*?You are invited[\s\S]*?Join \{safeCommunityName\} on GSN[\s\S]*?Invited by \{inviterLabel\}[\s\S]*?Membership starts after account setup[\s\S]*?The community reviews your request[\s\S]*?Free to join\. No payment required\./,
   "Phone invite entry must open with the compact dynamic community welcome instead of the long invitation paper."
 );
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /const compactJoinActionLabel = isInstantJoin \? "Join Community" : "Request to Join";[\s\S]*?isCompact && inviteAcknowledged && !storedRequest\?\.request_id[\s\S]*?debugId="join-entry\.sign-in-existing"[\s\S]*?Already on GSN\? Sign in[\s\S]*?debugId="join-entry\.toggle-new-member-request-form"[\s\S]*?compactJoinActionLabel/,
+  /const joinActionLabel = isInstantJoin[\s\S]*?"Accept invite and join"[\s\S]*?"Submit request for approval"[\s\S]*?isCompact && inviteAcknowledged && !storedRequest\?\.request_id[\s\S]*?debugId="join-entry\.sign-in-existing"[\s\S]*?Already on GSN\? Sign in[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"[\s\S]*?debugId="join-entry\.submit-new-request"[\s\S]*?joinActionLabel/,
   "Phone invite entry must keep one truthful primary join action while preserving the existing-member sign-in path."
 );
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /debugId="join-entry\.compact-invitation-safety-details"[\s\S]*?Invitation & safety details[\s\S]*?identity verification remains separate[\s\S]*?Free to join\. No payment required/,
+  /function CompactInviteWelcome[\s\S]*?Free to join\. No payment required\.[\s\S]*?debugId="join-entry\.compact-invitation-safety-details"[\s\S]*?Invitation & safety details[\s\S]*?does not verify identity, money, conduct or trust[\s\S]*?identity verification remains separate/,
   "Phone invite entry must keep consent and safety information accessible without exposing it on the main surface."
 );
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /const restoredJoinDraftHasInput = useMemo[\s\S]*?if \(!restoredJoinDraftHasInput\) return false;[\s\S]*?return restoredJoinDraft\?\.formOpen !== false;[\s\S]*?if \(restoredJoinDraftHasInput && restoredJoinDraft\?\.formOpen !== false\) return "new";[\s\S]*?return null;[\s\S]*?order: isCompact && inviteAcknowledged \? 2 : 1[\s\S]*?order: isCompact \? 1 : 2[\s\S]*?debugId="join-entry\.request-meaning-details"[\s\S]*?Why review matters/,
-  "Fresh existing-community invite links must show the path choice before opening the form, while real saved input may resume and invitation details stay second on phone."
+  /const restoredJoinDraftHasInput = useMemo[\s\S]*?if \(!restoredJoinDraftHasInput\) return Boolean\(inviteCode\);[\s\S]*?return restoredJoinDraft\?\.formOpen !== false;[\s\S]*?if \(restoredJoinDraftHasInput && restoredJoinDraft\?\.formOpen !== false\) return "new";[\s\S]*?return inviteCode \? "new" : null;[\s\S]*?order: isCompact && inviteAcknowledged \? 2 : 1[\s\S]*?debugId="join-entry\.request-meaning-details"[\s\S]*?Why review matters[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"/,
+  "Fresh valid invite links must open the short new-member form directly, real saved input must resume, and invitation details must stay secondary on phone."
 );
 
 assertContains(
@@ -153,8 +153,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /setInviteAcknowledged\(true\);[\s\S]*?setJoinPathChoice\("new"\);[\s\S]*?setFormOpen\(true\);[\s\S]*?debugId="join-entry\.acknowledge-invite"/,
-  "Legacy invite acknowledgement recovery must open the new-request form instead of hiding it."
+  /function startFreshJoinDraft\(\)[\s\S]*?clearJoinEntryDraft\(inviteCode, communityCode\);[\s\S]*?setInviteAcknowledged\(true\);[\s\S]*?setJoinPathChoice\("new"\);[\s\S]*?setFormOpen\(true\);[\s\S]*?onClick=\{startFreshJoinDraft\}[\s\S]*?debugId="join-entry\.resume-draft-start-fresh"/,
+  "Saved-form recovery must offer a clean fresh start that opens the new-request form instead of hiding it."
 );
 
 assertContains(

@@ -598,7 +598,24 @@ Primary action:
 
 Rules:
 - Create community goes to StartCommunityPage.
+- The ordinary Welcome surface is a compact intent gateway. `Create community`
+  remains the dominant primary action; `Join an existing community` remains a
+  smaller secondary action for people who have no invitation and want to find
+  a community and ask to join; `Already a member? Sign in` remains a slim
+  direct path to the separate existing-member login.
+- Do not insert a second founder-path card or a multi-screen member/new-member
+  chooser before these three intents. After selection, each journey owns its
+  screen and must not expose the other journeys.
 - Request to join goes to JoinRequestMembershipPage.
+- After either choice is made, that journey owns the screen until completion
+  or an explicit leave action. Do not show the opposite journey inside the
+  active flow.
+- Create Community shows only personal identity, account security, and the new
+  community's name and description before creation. Invitation, discovery, and
+  admission controls belong after the community exists.
+- Join Community shows only community discovery or invitation, applicant
+  verification, request status, and activation. It must not expose Create
+  Community choices or fields.
 - Join stays visually primary for the ordinary new-member path; Start community stays visible but compact.
 - Purchase Community Domain goes to CommunityDomainPurchasePage from the compact Institutional setup option.
 - Purchase Community Domain is a separate institutional provisioning path and must not be
@@ -844,6 +861,8 @@ Must show, in phone-first order:
   - Bulletin posting/settings/review
   - join requests
     - phone entry leads with the exact person named by the notification `request_id`, followed by the person's name, phone, inviter, one progress line when voting applies, and the decision
+    - the focused person card uses one text-only state line; do not repeat `Waiting` in a second icon badge beside it
+    - keep phone and inviter in compact labelled rows, and show a truthful compact no-vote explanation instead of asking `Should this person join?` when the signed-in viewer cannot answer
     - use `Waiting`, `Accepted`, and `Not accepted`; the focused phone decisions are `Approve`, `Ignore for now`, and `Disapprove`
     - `Ignore for now` records the existing neutral answer, closes that member's attention item, and remains changeable while the request is still open; after any saved answer, the still-pending committee request must not reappear as that reviewer's Dashboard Attention Guide task
     - joining-setting names are `Instant Join`, `Admin Approval`, and `Committee Voting`; do not replace them with indirect descriptions
@@ -1554,6 +1573,11 @@ Rules:
   and reveals the existing Share, Refresh, Copy card, and Copy verify link
   chooser only after tap; one tap must not expose any other Identity Integrity
   sections.
+- Selecting Share opens one focused sharing surface and temporarily hides the
+  unrelated card actions. It shows a large face-to-face QR for the stable
+  `/id/:gmfnId` public card and a `Share link` action that retains the
+  social-preview gateway. Both delivery methods must resolve to the same public
+  GSN card, and neither may expose the member's phone number.
 - The downloadable/shareable PNG follows the same landscape structure and uses
   the current member data and live QR. Do not substitute a fixed screenshot or
   a decorative QR.

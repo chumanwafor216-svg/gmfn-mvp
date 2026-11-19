@@ -2707,11 +2707,7 @@ export default function CommunityHomePage() {
         selectedClanId,
         "community-home.route.join-requests"
       ),
-      createCommunity: routeTarget(
-        "clans",
-        selectedClanId,
-        "community-home.route.create-community"
-      ),
+      createCommunity: "/create?stage=community",
       marketplace: routeTarget(
         "marketplace",
         selectedClanId,

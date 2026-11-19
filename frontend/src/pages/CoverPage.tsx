@@ -383,7 +383,7 @@ function mergeSearchIntoPath(to: string, currentSearch: string): string {
 
 
 function nextRouteForMode(mode: EntryMode): string {
-  void mode;
+  if (mode === "existing") return "/login?force=1";
   return "/welcome?entry_from=cover";
 
 }

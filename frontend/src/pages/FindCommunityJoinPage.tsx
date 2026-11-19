@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   confirmEntryPhoneVerification,
   createSearchJoinRequest,
@@ -19,6 +19,8 @@ import {
 } from "../components/CommunityEntryShell";
 import { brandHelperText, brandInnerCard, gmfnBrand } from "../styles/gmfnBrand";
 import { saveActivationContinuation } from "../lib/activationContinuation";
+import OriginLink from "../components/OriginLink";
+import { StableButton } from "../components/StableButton";
 
 type CommunityResult = {
   community_id: number;
@@ -197,11 +199,21 @@ export default function FindCommunityJoinPage() {
     }
   }
 
+  function chooseDifferentCommunity() {
+    setSelected(null);
+    setVerificationId(0);
+    setVerificationCode("");
+    setPhoneVerified(false);
+    setNotice(null);
+    if (params.clanId) navigate("/join", { replace: true });
+  }
+
   return (
     <CommunityEntryShell
       eyebrow="Join an existing community"
       title="Find your community"
       summary="Search communities that chose to be discoverable, select the right one, then ask to join. Invite links still work separately."
+      exitLabel="Leave join journey"
     >
       <div style={{ display: "grid", gap: 16 }} data-gsn-search-join="true">
         {notice ? <EntryNotice tone={notice.tone}>{notice.text}</EntryNotice> : null}
@@ -218,17 +230,18 @@ export default function FindCommunityJoinPage() {
                 autoComplete="off"
               />
             </label>
-            <button type="button" onClick={() => void runSearch()} disabled={busy} style={entryPrimaryButtonStyle}>
+            <StableButton debugId="find-community.search" onClick={() => void runSearch()} disabled={busy} style={entryPrimaryButtonStyle}>
               {busy ? "Searching…" : "Find communities"}
-            </button>
+            </StableButton>
             <div style={{ display: "grid", gap: 10 }}>
               {results.map((community) => (
-                <button
-                  type="button"
+                <StableButton
                   key={community.community_id}
+                  debugId={`find-community.select.${community.community_id}`}
                   onClick={() => setSelected(community)}
                   style={{
                     ...brandInnerCard(),
+                    display: "block",
                     textAlign: "left",
                     cursor: "pointer",
                     color: gmfnBrand.colors.ink,
@@ -240,7 +253,7 @@ export default function FindCommunityJoinPage() {
                   <span style={{ display: "block", color: gmfnBrand.colors.accent, fontWeight: 850, marginTop: 10 }}>
                     {community.admission_mode_label} · Select
                   </span>
-                </button>
+                </StableButton>
               ))}
             </div>
           </>
@@ -252,9 +265,9 @@ export default function FindCommunityJoinPage() {
               <div style={brandHelperText()}>{selected.community_code}</div>
               <p style={{ ...brandHelperText(), marginBottom: 0 }}>{selected.admission_explanation}</p>
             </div>
-            <button type="button" onClick={() => { setSelected(null); setPhoneVerified(false); }} style={entrySecondaryButtonStyle}>
+            <StableButton debugId="find-community.choose-different" onClick={chooseDifferentCommunity} style={entrySecondaryButtonStyle}>
               Choose a different community
-            </button>
+            </StableButton>
             {signedIn ? (
               <EntryNotice tone="success">Signed in as {me?.display_name || me?.gmfn_id}. GSN will reuse this identity.</EntryNotice>
             ) : (
@@ -266,22 +279,22 @@ export default function FindCommunityJoinPage() {
                 <label style={entryLabelStyle}>Phone in international format<input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+44… or +234…" style={entryFieldStyle} disabled={phoneVerified} /></label>
                 <label style={entryLabelStyle}>Country<input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} style={entryFieldStyle} /></label>
                 {!verificationId ? (
-                  <button type="button" onClick={() => void startVerification()} disabled={busy} style={entryPrimaryButtonStyle}>Verify phone</button>
+                  <StableButton debugId="find-community.verify-phone" onClick={() => void startVerification()} disabled={busy} style={entryPrimaryButtonStyle}>Verify phone</StableButton>
                 ) : !phoneVerified ? (
                   <>
                     <label style={entryLabelStyle}>Verification code<input value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} inputMode="numeric" style={entryFieldStyle} /></label>
-                    <button type="button" onClick={() => void confirmVerification()} disabled={busy || !verificationCode.trim()} style={entryPrimaryButtonStyle}>Confirm phone</button>
+                    <StableButton debugId="find-community.confirm-phone" onClick={() => void confirmVerification()} disabled={busy || !verificationCode.trim()} style={entryPrimaryButtonStyle}>Confirm phone</StableButton>
                   </>
                 ) : null}
                 <label style={entryLabelStyle}>Short note (optional)<textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} rows={3} style={entryFieldStyle} /></label>
                 <div style={{ ...brandHelperText(), textAlign: "center" }}>
-                  Already have a GSN ID? <Link to={`/login?force=1&next=${encodeURIComponent(location.pathname)}`} style={{ color: gmfnBrand.colors.accent, fontWeight: 850 }}>Sign in first</Link>
+                  Already have a GSN ID? <OriginLink to={`/login?force=1&next=${encodeURIComponent(location.pathname)}`} style={{ color: gmfnBrand.colors.accent, fontWeight: 850 }}>Sign in first</OriginLink>
                 </div>
               </>
             )}
-            <button type="button" onClick={() => void submitRequest()} disabled={busy || !canSubmit} style={entryPrimaryButtonStyle}>
+            <StableButton debugId="find-community.submit-request" onClick={() => void submitRequest()} disabled={busy || !canSubmit} style={entryPrimaryButtonStyle}>
               {busy ? "Sending request…" : selected.admission_mode === "instant_invite" ? "Join this community" : "Ask to join"}
-            </button>
+            </StableButton>
           </>
         )}
       </div>

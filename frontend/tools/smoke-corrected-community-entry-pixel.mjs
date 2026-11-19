@@ -1,4 +1,4 @@
-/* global console, process, URL */
+/* global console, document, process, sessionStorage, URL, window */
 
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
@@ -99,6 +99,7 @@ async function runJoinJourney(browser, baseUrl) {
 
 async function installCreateMocks(page) {
   let activated = false;
+  let communityPayload = null;
   await page.route("**/api/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname.replace(/^\/api/, "");
@@ -142,6 +143,7 @@ async function installCreateMocks(page) {
       });
     }
     if (path === "/entry/identity/community") {
+      communityPayload = request.postDataJSON();
       return json(route, {
         ok: true,
         community_id: 9,
@@ -151,12 +153,79 @@ async function installCreateMocks(page) {
     }
     return json(route, { ok: true });
   });
+  return () => communityPayload;
 }
 
 async function runCreateJourney(browser, baseUrl) {
   const { context, page } = await newPixel(browser);
-  await installCreateMocks(page);
-  await page.goto(`${baseUrl}/create`, { waitUntil: "networkidle" });
+  const readCommunityPayload = await installCreateMocks(page);
+  await page.addInitScript(() => {
+    sessionStorage.setItem("gmfn_cover_welcome_session", "active");
+  });
+  await page.goto(`${baseUrl}/welcome?entry=create&entry_from=cover`, {
+    waitUntil: "networkidle",
+  });
+  await expect(
+    page.getByText("Create community", { exact: true }).first()
+  ).toBeVisible();
+  await expect(page.getByText("Founder path", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Set up the basics", { exact: true })).toHaveCount(0);
+  const intentGateway = page.locator(
+    '[data-welcome-intent-gateway="true"]'
+  );
+  await expect(intentGateway).toBeVisible();
+  await expect(
+    page.getByText("No invitation needed. Find one and ask to join.", {
+      exact: true,
+    })
+  ).toBeVisible();
+  const createButton = intentGateway.locator(
+    '[data-cta-id="welcome.gateway.create-community"]'
+  );
+  const joinButton = intentGateway.locator(
+    '[data-cta-id="welcome.gateway.join-community"]'
+  );
+  const signInButton = intentGateway.locator(
+    '[data-cta-id="welcome.gateway.sign-in"]'
+  );
+  const createButtonBox = await createButton.boundingBox();
+  const joinButtonBox = await joinButton.boundingBox();
+  const signInButtonBox = await signInButton.boundingBox();
+  expect(createButtonBox?.width || 0).toBeGreaterThanOrEqual(240);
+  expect(createButtonBox?.height || 0).toBeGreaterThanOrEqual(52);
+  expect(joinButtonBox?.width || 0).toBeGreaterThanOrEqual(240);
+  expect(joinButtonBox?.height || 0).toBeGreaterThanOrEqual(48);
+  expect(signInButtonBox?.width || 0).toBeGreaterThanOrEqual(80);
+  expect(signInButtonBox?.height || 0).toBeGreaterThanOrEqual(40);
+  const entryOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth
+  );
+  expect(entryOverflow).toBeLessThanOrEqual(1);
+  await page.screenshot({
+    path: resolve(screenshotDir, "00-community-intent-gateway.png"),
+    fullPage: true,
+  });
+
+  await signInButton.click();
+  await expect(page).toHaveURL(/\/login\?force=1$/);
+
+  await page.goto(`${baseUrl}/welcome?entry=create&entry_from=cover`, {
+    waitUntil: "networkidle",
+  });
+  await page
+    .locator('[data-cta-id="welcome.gateway.join-community"]')
+    .click();
+  await expect(page).toHaveURL(/\/join(?:\?|$)/);
+  expect(new URL(page.url()).searchParams.get("entry")).toBeNull();
+
+  await page.goto(`${baseUrl}/welcome?entry=create&entry_from=cover`, {
+    waitUntil: "networkidle",
+  });
+  await page
+    .locator('[data-cta-id="welcome.gateway.create-community"]')
+    .click();
+  await expect(page).toHaveURL(/\/create(?:\?|$)/);
+  expect(new URL(page.url()).searchParams.get("entry")).toBeNull();
   await expect(page.getByRole("heading", { name: "Secure your identity first" })).toBeVisible();
   await page.getByLabel("Your name").fill("Ife Founder");
   await page.getByLabel("Phone in international format").fill("+447700900902");
@@ -174,10 +243,18 @@ async function runCreateJourney(browser, baseUrl) {
   await expect(page.getByRole("heading", { name: "Set up your community" })).toBeVisible();
   await page.getByLabel("Community name").fill("Ife Trusted Circle");
   await page.getByLabel("Short description").fill("A trusted local support community.");
-  await page.getByLabel("Let people find this community and ask to join").check();
+  await expect(page.getByText("People joining by invitation")).toHaveCount(0);
+  await expect(page.getByLabel("Let people find this community and ask to join")).toHaveCount(0);
   await page.screenshot({ path: resolve(screenshotDir, "03-identity-first-community-setup.png"), fullPage: true });
   await page.getByRole("button", { name: "Create community" }).click();
   await expect(page).toHaveURL(/\/app\/community\/9/);
+  expect(readCommunityPayload()).toMatchObject({
+    invite_admission_mode: "instant_invite",
+    invite_admin_override: false,
+    search_join_enabled: false,
+    search_join_admission_mode: "community_vote",
+    search_join_admin_override: false,
+  });
   await context.close();
 }
 

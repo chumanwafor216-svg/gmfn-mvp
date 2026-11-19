@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { Link } from "react-router-dom";
+import OriginLink from "./OriginLink";
 import {
   brandActionButton,
   brandHelperText,
@@ -44,11 +44,15 @@ export function CommunityEntryShell({
   eyebrow,
   title,
   summary,
+  exitLabel = "Back to GSN entry",
+  exitTo = "/cover",
   children,
 }: {
   eyebrow: string;
   title: string;
   summary: string;
+  exitLabel?: string;
+  exitTo?: string;
   children: ReactNode;
 }) {
   return (
@@ -93,9 +97,9 @@ export function CommunityEntryShell({
         </header>
         <section style={{ ...brandPageCard(), padding: 18 }}>{children}</section>
         <footer style={{ ...brandHelperText(), textAlign: "center", marginTop: 18 }}>
-          <Link to="/cover" style={{ color: gmfnBrand.colors.accent, fontWeight: 800 }}>
-            Back to GSN entry
-          </Link>
+          <OriginLink to={exitTo} style={{ color: gmfnBrand.colors.accent, fontWeight: 800 }}>
+            {exitLabel}
+          </OriginLink>
         </footer>
       </div>
     </main>

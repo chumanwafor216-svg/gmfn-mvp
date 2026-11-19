@@ -1,17 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
   EntryActionButton,
   EntryBackLink,
 } from "../components/EntryControls";
 import GsnInstallPrompt from "../components/GsnInstallPrompt";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
-import { StableDisclosureSummary } from "../components/StableButton";
 import { getAccessToken } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
 import {
   detectEntryMode,
-  initialWelcomeStep,
   isKnownSingleLane,
   routeForActivation,
   routeForCreate,
@@ -21,7 +19,6 @@ import {
   ENTRY_INVITE_CODE_KEY,
   ENTRY_MODE_KEY,
   type EntryMode,
-  type WelcomeStep,
 } from "../lib/entryFlow";
 
 function pageShell(): React.CSSProperties {
@@ -84,24 +81,6 @@ function routeCard(): React.CSSProperties {
   };
 }
 
-function choiceCard(): React.CSSProperties {
-  return {
-    width: "100%",
-    borderRadius: 24,
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.045) 100%)",
-    border: "1px solid rgba(220,231,243,0.20)",
-    boxShadow:
-      "0 24px 46px rgba(0,8,18,0.28), inset 0 1px 0 rgba(255,255,255,0.13), inset 0 -10px 22px rgba(6,18,35,0.12)",
-    padding: 16,
-    display: "grid",
-    gridTemplateColumns: "58px minmax(0, 1fr)",
-    gap: "12px 14px",
-    alignItems: "center",
-    minHeight: 166,
-  };
-}
-
 function iconBadge(): React.CSSProperties {
   return {
     width: 58,
@@ -136,23 +115,6 @@ function WelcomeIcon({ name }: { name: Gsn3DIconKey }) {
   );
 }
 
-function routePill(): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    minHeight: 28,
-    padding: "6px 10px",
-    borderRadius: 999,
-    background: "rgba(255,255,255,0.08)",
-    border: "1px solid rgba(243,208,106,0.20)",
-    color: "rgba(243,208,106,0.92)",
-    fontSize: 11,
-    fontWeight: 1000,
-    letterSpacing: 1.3,
-    textTransform: "uppercase",
-  };
-}
-
 function supportText(): React.CSSProperties {
   return {
     color: "rgba(255,255,255,0.84)",
@@ -167,6 +129,15 @@ function addForceLoginFlag(base: string): string {
   params.set("force", "1");
   const query = params.toString();
   return query ? `${pathname}?${query}` : pathname;
+}
+
+function intentNeutralSearch(search: string): string {
+  const params = new URLSearchParams(search);
+  for (const key of ["entry", "entry_from", "flow", "mode", "intent"]) {
+    params.delete(key);
+  }
+  const query = params.toString();
+  return query ? `?${query}` : "";
 }
 
 export default function WelcomePage() {
@@ -184,8 +155,6 @@ export default function WelcomePage() {
   );
   const [isSignedIn] = useState(() => Boolean(getAccessToken()));
 
-  const [step, setStep] = useState<WelcomeStep>(initialWelcomeStep(entryMode));
-
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -200,39 +169,38 @@ export default function WelcomePage() {
   }, []);
 
   useEffect(() => {
-    setStep(initialWelcomeStep(entryMode));
-  }, [entryMode]);
-
-  useEffect(() => {
     if (typeof document !== "undefined") {
       document.title = "GSN | Welcome";
     }
   }, []);
 
-  const createTo = useMemo(() => routeForCreate(location.search), [location.search]);
-  const joinTo = useMemo(() => routeForJoin(location.search), [location.search]);
-  const activationTo = useMemo(
-    () => routeForActivation(location.search),
+  const neutralSearch = useMemo(
+    () => intentNeutralSearch(location.search),
     [location.search]
+  );
+  const createTo = useMemo(() => routeForCreate(neutralSearch), [neutralSearch]);
+  const joinTo = useMemo(() => routeForJoin(neutralSearch), [neutralSearch]);
+  const activationTo = useMemo(
+    () => routeForActivation(neutralSearch),
+    [neutralSearch]
   );
 
   const loginTo = useMemo(() => {
     const params = new URLSearchParams(location.search);
     params.delete("entry");
+    params.delete("entry_from");
     const base = `/login${params.toString() ? `?${params.toString()}` : ""}`;
     return addForceLoginFlag(base);
   }, [location.search]);
+
+  if (entryMode === "existing") {
+    return <Navigate to={loginTo} replace state={location.state} />;
+  }
 
   function openCreate() {
     writeStorage(ENTRY_MODE_KEY, "create");
     writeStorage(ENTRY_INVITE_CODE_KEY, null);
     navigate(createTo);
-  }
-
-  function openCommunityDomainPurchase() {
-    writeStorage(ENTRY_MODE_KEY, "create");
-    writeStorage(ENTRY_INVITE_CODE_KEY, null);
-    navigate("/community-domain/purchase");
   }
 
   function openJoin() {
@@ -255,30 +223,23 @@ export default function WelcomePage() {
     navigate(APP_ROUTES.DASHBOARD);
   }
 
+  const isIntentGateway = entryMode === "general" || entryMode === "create";
   const headline =
     entryMode === "invite"
       ? "Open your invitation path."
-      : entryMode === "create"
+      : isIntentGateway
       ? "Create community"
       : entryMode === "approved"
       ? "Open your activation path."
-      : entryMode === "existing"
-      ? "Open sign in."
-      : step === "choose_new_lane"
-      ? "New member"
       : "Welcome";
 
   const subtext =
     entryMode === "invite"
       ? "Your invitation has already been recognised. Open the guided join path below."
-      : entryMode === "create"
+      : isIntentGateway
       ? ""
       : entryMode === "approved"
       ? "Your approval has already been confirmed. Open activation below."
-      : entryMode === "existing"
-      ? "For active accounts."
-      : step === "choose_new_lane"
-      ? ""
       : "";
 
   return (
@@ -338,40 +299,90 @@ export default function WelcomePage() {
           <div />
           </div>
 
-          {entryMode === "create" && isKnownSingleLane(entryMode) ? (
+          {isIntentGateway ? (
             <div
+              data-welcome-intent-gateway="true"
               style={{
-                ...routeCard(),
-                width: isCompact ? "min(100%, 268px)" : routeCard().width,
-                minHeight: isCompact ? 72 : routeCard().minHeight,
-                padding: isCompact ? 9 : routeCard().padding,
-                gap: isCompact ? 7 : routeCard().gap,
+                width: isCompact ? "min(100%, 260px)" : 280,
+                justifySelf: "center",
+                display: "grid",
+                justifyItems: "center",
+                gap: 10,
               }}
             >
-              <div style={labelText()}>Founder path</div>
-              <div
-                style={{
-                  fontSize: isCompact ? 23 : 28,
-                  fontWeight: 900,
-                  lineHeight: 1.08,
-                }}
+              <EntryActionButton
+                type="button"
+                onClick={openCreate}
+                debugId="welcome.gateway.create-community"
+                style={{ width: "100%", fontSize: 16 }}
               >
-                Set up the basics
-              </div>
+                Create community
+              </EntryActionButton>
+
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  gap: 12,
-                  flexWrap: "wrap",
+                  width: "100%",
+                  display: "grid",
+                  justifyItems: "center",
+                  gap: 5,
                 }}
               >
                 <EntryActionButton
                   type="button"
-                  onClick={openCreate}
-                  debugId="welcome.single-create.begin"
+                  onClick={openJoin}
+                  variant="secondary"
+                  debugId="welcome.gateway.join-community"
+                  style={{
+                    width: "100%",
+                    minHeight: 48,
+                    background: "rgba(255,255,255,0.075)",
+                    boxShadow: "none",
+                  }}
                 >
-                  Begin
+                  Join an existing community
+                </EntryActionButton>
+                <span
+                  style={{
+                    color: "rgba(255,255,255,0.64)",
+                    fontSize: 11.5,
+                    lineHeight: 1.35,
+                    textAlign: "center",
+                  }}
+                >
+                  No invitation needed. Find one and ask to join.
+                </span>
+              </div>
+
+              <div
+                style={{
+                  minHeight: 44,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  color: "rgba(255,255,255,0.72)",
+                  fontSize: 12.5,
+                  fontWeight: 750,
+                }}
+              >
+                <span>Already a member?</span>
+                <EntryActionButton
+                  type="button"
+                  onClick={openExisting}
+                  variant="secondary"
+                  debugId="welcome.gateway.sign-in"
+                  style={{
+                    minHeight: 40,
+                    width: 86,
+                    padding: "8px 12px",
+                    borderRadius: 999,
+                    background: "transparent",
+                    boxShadow: "none",
+                    color: "#F3D06A",
+                    fontSize: 12.5,
+                  }}
+                >
+                  Sign in
                 </EntryActionButton>
               </div>
             </div>
@@ -477,239 +488,6 @@ export default function WelcomePage() {
                   Finish activation
                 </EntryActionButton>
               </div>
-            </div>
-          ) : null}
-
-          {entryMode === "existing" ? (
-            <div style={routeCard()}>
-              <div style={labelText()}>Existing account</div>
-              <div style={supportText()}>
-                Enter your email and password on the next page.
-              </div>
-
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <EntryActionButton
-                  type="button"
-                  onClick={openExisting}
-                  debugId="welcome.existing.open-sign-in"
-                >
-                  Open sign in
-                </EntryActionButton>
-              </div>
-            </div>
-          ) : null}
-
-          {entryMode === "general" && step === "choose_identity" ? (
-            <div
-              style={{
-                display: "grid",
-                width: "min(100%, 480px)",
-                justifySelf: "center",
-                gap: isCompact ? 10 : 12,
-              }}
-            >
-              <div
-                style={{
-                  ...choiceCard(),
-                  minHeight: isCompact ? 142 : 156,
-                  border: "1px solid rgba(243,208,106,0.30)",
-                  boxShadow:
-                    "0 28px 52px rgba(0,8,18,0.32), inset 0 1px 0 rgba(255,255,255,0.15)",
-                }}
-              >
-                <div style={iconBadge()} aria-hidden="true">
-                  <WelcomeIcon name="identity-card" />
-                </div>
-
-                <div style={{ display: "grid" }}>
-                  <div style={routePill()}>Existing member</div>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "center", gridColumn: "1 / -1" }}>
-                  <EntryActionButton
-                    type="button"
-                    onClick={openExisting}
-                    debugId="welcome.identity.sign-in"
-                    style={{ width: "100%" }}
-                  >
-                    Sign in
-                  </EntryActionButton>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  minHeight: 48,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 10,
-                  padding: "2px 8px",
-                  color: "rgba(255,255,255,0.72)",
-                  fontSize: 13,
-                  fontWeight: 750,
-                }}
-              >
-                <span>New to GSN?</span>
-                <EntryActionButton
-                  type="button"
-                  onClick={() => setStep("choose_new_lane")}
-                  variant="secondary"
-                  debugId="welcome.identity.sign-up"
-                  style={{
-                    minHeight: 42,
-                    width: 112,
-                    padding: "9px 14px",
-                    borderRadius: 999,
-                    background: "rgba(255,255,255,0.07)",
-                    boxShadow: "none",
-                    color: "rgba(255,255,255,0.88)",
-                    fontSize: 13,
-                  }}
-                >
-                  Sign up
-                </EntryActionButton>
-              </div>
-
-            </div>
-          ) : null}
-
-          {entryMode === "general" && step === "choose_new_lane" ? (
-            <div
-              style={{
-                display: "grid",
-                justifyItems: "center",
-                gap: 12,
-              }}
-            >
-              <div
-                style={{
-                  width: "min(100%, 480px)",
-                  display: "grid",
-                  gap: isCompact ? 10 : 12,
-                  padding: 0,
-                }}
-              >
-                <div
-                  style={{
-                    ...choiceCard(),
-                    border: "1px solid rgba(243,208,106,0.30)",
-                    boxShadow:
-                      "0 28px 52px rgba(0,8,18,0.32), inset 0 1px 0 rgba(255,255,255,0.15)",
-                  }}
-                >
-                  <div style={iconBadge()} aria-hidden="true">
-                    <WelcomeIcon name="join-person-plus" />
-                  </div>
-
-                  <div style={{ display: "grid", gap: 6 }}>
-                    <div style={routePill()}>Most new members</div>
-                    <div
-                      style={{
-                        fontSize: isCompact ? 23 : 26,
-                        fontWeight: 900,
-                        lineHeight: 1.08,
-                        textShadow: "0 10px 24px rgba(0,0,0,0.12)",
-                      }}
-                    >
-                      Join a community
-                    </div>
-                    <div style={supportText()}>
-                      Use an invite or community code.
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", justifyContent: "center", gridColumn: "1 / -1" }}>
-                    <EntryActionButton
-                      type="button"
-                      onClick={openJoin}
-                      debugId="welcome.new.join-community"
-                      style={{ width: "100%" }}
-                    >
-                      Request to join
-                    </EntryActionButton>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    minHeight: 48,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 10,
-                    padding: "2px 8px",
-                    color: "rgba(255,255,255,0.72)",
-                    fontSize: 13,
-                    fontWeight: 750,
-                  }}
-                >
-                  <span>Starting your own?</span>
-                  <EntryActionButton
-                    type="button"
-                    onClick={openCreate}
-                    variant="secondary"
-                    debugId="welcome.new.start-community"
-                    style={{
-                      minHeight: 42,
-                      width: 150,
-                      padding: "9px 14px",
-                      borderRadius: 999,
-                      background: "rgba(255,255,255,0.07)",
-                      boxShadow: "none",
-                      color: "rgba(255,255,255,0.88)",
-                      fontSize: 13,
-                    }}
-                  >
-                    Start community
-                  </EntryActionButton>
-                </div>
-              </div>
-
-              <details
-                style={{
-                  width: "min(100%, 480px)",
-                  borderRadius: 18,
-                  border: "1px solid rgba(220,231,243,0.14)",
-                  background: "rgba(255,255,255,0.055)",
-                  padding: isCompact ? 12 : 14,
-                }}
-              >
-                <StableDisclosureSummary
-                  debugId="welcome.new.institutional-setup-toggle"
-                  stableHeight={44}
-                  style={{
-                    cursor: "pointer",
-                    color: "rgba(243,208,106,0.94)",
-                    fontSize: 13,
-                    fontWeight: 900,
-                    lineHeight: 1.3,
-                  }}
-                >
-                  Institutional setup
-                </StableDisclosureSummary>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gap: 10,
-                    paddingTop: 12,
-                  }}
-                >
-                  <div style={{ ...supportText(), color: "rgba(255,255,255,0.80)" }}>
-                    For schools, churches, unions, markets, NGOs, and other organisations that need a protected Community Domain.
-                  </div>
-                  <EntryActionButton
-                    type="button"
-                    onClick={openCommunityDomainPurchase}
-                    variant="secondary"
-                    debugId="welcome.new.purchase-community-domain"
-                    style={{ width: "100%" }}
-                  >
-                    Purchase Community Domain
-                  </EntryActionButton>
-                </div>
-              </details>
             </div>
           ) : null}
 

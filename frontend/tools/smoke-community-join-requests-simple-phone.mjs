@@ -72,6 +72,7 @@ const requests = [
     admission_mode: "community_vote",
   },
 ];
+let mockedAdmissionMode = "community_vote";
 
 async function installApiMocks(page) {
   await page.route("**/*", async (route) => {
@@ -121,7 +122,7 @@ async function installApiMocks(page) {
           community_name: "Homeland Isa",
           reviewer_role: "member",
           reviewer_can_admin_approve: false,
-          admission_mode: "community_vote",
+          admission_mode: mockedAdmissionMode,
           voting_admin_override: false,
         })
       );
@@ -132,7 +133,7 @@ async function installApiMocks(page) {
         json({
           community_id: 8,
           community_name: "Homeland Isa",
-          admission_mode: "community_vote",
+          admission_mode: mockedAdmissionMode,
           voting_admin_override: false,
           can_manage: true,
         })
@@ -197,6 +198,13 @@ async function run() {
     const activeRequest = page.locator('[data-gsn-join-request-active="41"]');
     await activeRequest.waitFor();
 
+    assert(
+      (await activeRequest.getByText("Waiting", { exact: true }).count()) === 0 &&
+        (await activeRequest
+          .locator('[data-gsn-join-request-status="text-only"]')
+          .count()) === 1,
+      "The focused request must use one text-only status and no redundant Waiting icon pill."
+    );
     assert(
       await activeRequest.getByText("AnekeChinecherem", { exact: true }).isVisible(),
       "The notification request_id must open the exact person's decision card."
@@ -264,8 +272,26 @@ async function run() {
     );
     assert(!hasHorizontalOverflow, "Join Requests overflows horizontally at 390x844.");
 
+    mockedAdmissionMode = "instant_invite";
+    requests[1].admission_mode = "instant_invite";
+    await page.goto(routeUrl, { waitUntil: "networkidle" });
+    const noVoteRequest = page.locator('[data-gsn-join-request-active="41"]');
+    await noVoteRequest.waitFor();
+    assert(
+      (await noVoteRequest.getByText("No vote needed", { exact: true }).count()) === 1 &&
+        (await noVoteRequest.getByText("Should this person join?", { exact: true }).count()) === 0 &&
+        (await noVoteRequest.getByRole("button", { name: "Approve", exact: true }).count()) === 0,
+      "Instant Join must show the compact no-vote explanation without a false decision question or action."
+    );
+    if (screenshotDir) {
+      await page.screenshot({
+        path: join(screenshotDir, "join-requests-no-vote-390.png"),
+        fullPage: true,
+      });
+    }
+
     console.log(
-      "Community Join Requests simple-phone smoke passed: exact notification focus, three decisions, closed secondary tools, restored setting names, alternate-request opening, and 390px containment."
+      "Community Join Requests simple-phone smoke passed: exact notification focus, text-only status, three decisions, truthful Instant Join no-vote state, closed secondary tools, restored setting names, alternate-request opening, and 390px containment."
     );
   } finally {
     if (browser) await browser.close();

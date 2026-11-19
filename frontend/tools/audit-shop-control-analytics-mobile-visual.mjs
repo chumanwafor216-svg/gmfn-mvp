@@ -654,8 +654,11 @@ try {
 
   const compactRowHeights = await page
     .locator('[data-cta-id^="shop-control.orientation."]:not([data-cta-id^="shop-control.orientation.primary."])')
-    .evaluateAll((controls) => controls.map((control) => Math.round(control.parentElement?.getBoundingClientRect().height || 0)));
-  if (compactRowHeights.length !== 5 || compactRowHeights.some((height) => height <= 0 || height > 96)) {
+    .evaluateAll((controls) => controls.map((control) => ({
+      id: control.getAttribute("data-cta-id") || "unknown",
+      height: Math.round(control.parentElement?.getBoundingClientRect().height || 0),
+    })));
+  if (compactRowHeights.length !== 5 || compactRowHeights.some((row) => row.height <= 0 || row.height > 96)) {
     findings.push({
       label: "overview:compact-rows",
       findings: [`expected five compact phone rows no taller than 96px; measured ${JSON.stringify(compactRowHeights)}`],
@@ -675,7 +678,7 @@ try {
   const paidServiceStates = await page
     .locator('[data-paid-service-state]')
     .evaluateAll((rows) => rows.map((row) => row.getAttribute("data-paid-service-state")));
-  const expectedPaidServiceStates = { available: 5, paused: 1, planned: 2 };
+  const expectedPaidServiceStates = { available: 4, paused: 1, planned: 2 };
   const actualPaidServiceStates = paidServiceStates.reduce((counts, state) => {
     if (state === "available" || state === "paused" || state === "planned") {
       counts[state] += 1;

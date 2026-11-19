@@ -118,12 +118,27 @@ assertContains(
 );
 
 assertContains(
+  /function focusedContextPanel[\s\S]*?function focusedDecisionPanel[\s\S]*?function focusedIdentityRows[\s\S]*?function compactDisclosurePanel[\s\S]*?function compactDisclosureSummary[\s\S]*?data-gsn-join-request-status="text-only"[\s\S]*?fontSize: "clamp\(24px, 7vw, 30px\)"[\s\S]*?focusedIdentityRows\(\)/,
+  "Join Requests focused phone presentation must keep the premium compact context, decision, identity, and disclosure hierarchy."
+);
+
+assertNotContains(
+  /<span style=\{statusPill\("pending"\)\}>/g,
+  "Join Requests must not restore the redundant Waiting icon pill beside the focused status line."
+);
+
+assertContains(
+  /const passiveDecisionTitle =[\s\S]*?"Admin decision required"[\s\S]*?"No vote needed"[\s\S]*?const passiveDecisionText =[\s\S]*?This community uses Instant Join, so this request does not need your vote\.[\s\S]*?\{activeCanAnswer \? \(/,
+  "Join Requests must explain non-voting states truthfully instead of asking a decision question that the viewer cannot answer."
+);
+
+assertContains(
   /function admissionModeLabel[\s\S]*?"Instant Join"[\s\S]*?"Admin Approval"[\s\S]*?"Committee Voting"[\s\S]*?Joining setting: \{admissionModeLabel\(admissionMode\)\}/,
   "Join Requests must restore the owner-approved joining-setting names."
 );
 
 assertContains(
-  /data-gsn-join-request-active=\{String\(activeItem\.id\)\}[\s\S]*?<details style=\{whitePanel\(14\)\}>[\s\S]*?Joining setting: \{admissionModeLabel\(admissionMode\)\}[\s\S]*?Past decisions[\s\S]*?More options/,
+  /data-gsn-join-request-active=\{String\(activeItem\.id\)\}[\s\S]*?<details style=\{compactDisclosurePanel\(\)\}>[\s\S]*?Joining setting: \{admissionModeLabel\(admissionMode\)\}[\s\S]*?Past decisions[\s\S]*?More options/,
   "Join Requests phone entry must keep settings, history, and route tools after the active decision and closed by default."
 );
 

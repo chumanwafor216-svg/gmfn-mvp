@@ -81,7 +81,9 @@ The three existing Pixel 5 screenshots were inspected before adding evidence:
 
 - 01-find-and-ask-ready.png clearly shows the selected community, verified phone state, voting explanation, and primary ask-to-join action, but it does not show the result list itself;
 - 02-find-and-ask-pending.png clearly states Pending Review, that the request is waiting for community approval, that membership is not active, and what to do next;
-- 03-identity-first-community-setup.png shows GMFN-U-NEW1001 secured before community fields, a resumable setup message, community voting selected, and admin override unchecked.
+- 03-identity-first-community-setup.png shows GMFN-U-NEW1001 secured before the
+  focused community-name and description fields. Invitation, discovery, and
+  admission controls are absent because they belong after creation.
 
 Because the original set did not visibly prove the search query and result state, the existing smoke added only 00-find-community-results.png. It shows the query, returned community identity, description, voting mode, and select action. No UX structure or feature behavior changed.
 

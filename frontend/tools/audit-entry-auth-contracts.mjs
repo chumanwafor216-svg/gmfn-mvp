@@ -137,8 +137,14 @@ assertContains(
 
 assertContains(
   "src/pages/CoverPage.tsx",
-  /const COVER_WELCOME_SESSION_KEY = "gmfn_cover_welcome_session";[\s\S]*?function nextRouteForMode\(mode: EntryMode\): string \{[\s\S]*?return "\/welcome\?entry_from=cover";[\s\S]*?function markCoverWelcomeSession\(\): void \{[\s\S]*?window\.sessionStorage\.setItem\(COVER_WELCOME_SESSION_KEY, "active"\);[\s\S]*?markCoverWelcomeSession\(\);/,
-  "Cover Continue must mark the active browser session before opening Welcome."
+  /const COVER_WELCOME_SESSION_KEY = "gmfn_cover_welcome_session";[\s\S]*?function nextRouteForMode\(mode: EntryMode\): string \{[\s\S]*?mode === "existing"[\s\S]*?return "\/login\?force=1";[\s\S]*?return "\/welcome\?entry_from=cover";[\s\S]*?function markCoverWelcomeSession\(\): void \{[\s\S]*?window\.sessionStorage\.setItem\(COVER_WELCOME_SESSION_KEY, "active"\);[\s\S]*?markCoverWelcomeSession\(\);/,
+  "Cover Continue must send existing members directly to Sign In and mark the active browser session before opening Welcome for other entry modes."
+);
+
+assertContains(
+  "src/pages/WelcomePage.tsx",
+  /params\.delete\("entry"\);[\s\S]*?params\.delete\("entry_from"\);[\s\S]*?if \(entryMode === "existing"\) \{[\s\S]*?<Navigate to=\{loginTo\} replace state=\{location\.state\} \/>/,
+  "Existing-member Welcome links must bypass the retired explanation card and open Sign In directly."
 );
 
 assertContains(

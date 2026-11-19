@@ -1046,8 +1046,8 @@ export default function App() {
         />
 
         <Route path="clans" element={<ClansPage />} />
-        <Route path="create-community" element={<PreserveRedirect to={APP_ROUTES.CLANS} />} />
-        <Route path="new-community" element={<PreserveRedirect to={APP_ROUTES.CLANS} />} />
+        <Route path="create-community" element={<PreserveRedirect to="/create?stage=community" />} />
+        <Route path="new-community" element={<PreserveRedirect to="/create?stage=community" />} />
 
         <Route path="community" element={<CommunityHomePage />} />
         <Route path="community-home" element={<PreserveRedirect to={APP_ROUTES.COMMUNITY} />} />

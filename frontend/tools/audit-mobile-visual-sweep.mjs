@@ -61,6 +61,7 @@ const routes = [
   "/app/my-gmfn-and-i",
   "/app/my-gmfn-and-i?tab=settings",
   "/app/command-center",
+  "/app/command-center/pipeline-credit-pricing",
   "/app/command-center/bank-console",
   "/app/command-center/revenue-allocation",
   "/app/command-center/exposure",

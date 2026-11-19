@@ -2579,8 +2579,15 @@ assertContains(
 
 assertContains(
   "src/pages/VaultControlPage.tsx",
-  /createVaultInstruction[\s\S]*vaultFeatureOffText[\s\S]*\/api\/payment-instructions\/vault[\s\S]*disabled=\{vaultFeatureOff \|\| creatingPayment \|\| !shop\?\.id\}[\s\S]*debugId="vault-control\.generate-payment-code"/,
-  "Vault Control must explain/disable disabled Vault before creating a Vault payment instruction.",
+  /async function completeVaultActivation[\s\S]*if \(vaultFeatureOff\)[\s\S]*vaultFeatureOffText[\s\S]*spendPipelineCreditServiceQuote[\s\S]*async function requestVaultCreditQuote[\s\S]*if \(vaultFeatureOff\)[\s\S]*vaultFeatureOffText[\s\S]*createPipelineCreditServiceQuote/,
+  "Vault Control must block disabled Vault before requesting or spending a Pipeline Credit activation quote.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/VaultControlPage.tsx",
+  /disabled=\{\s*vaultFeatureOff \|\|[\s\S]*debugId="vault-control\.request-credit-quote"[\s\S]*vaultFeatureOff \? <div style=\{noticeCard\("error"\)\}>\{vaultFeatureOffText\}<\/div> : null[\s\S]*disabled=\{vaultFeatureOff \|\| vaultCreditQuote\.spendable[\s\S]*debugId="vault-control\.agree-pipeline-credit-quote"[\s\S]*disabled=\{\s*vaultFeatureOff \|\|[\s\S]*debugId="vault-control\.spend-pipeline-credits"/,
+  "Vault Control must explain and visibly disable disabled Vault across quote review, agreement, and spend actions.",
   { frontend: true }
 );
 

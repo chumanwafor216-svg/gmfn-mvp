@@ -1,4 +1,4 @@
-/* global console, localStorage, process, URL */
+/* global console, document, getComputedStyle, HTMLImageElement, localStorage, navigator, process, URL, window */
 
 import { chromium } from "@playwright/test";
 import { dirname, join } from "node:path";
@@ -566,11 +566,11 @@ try {
   if (
     !qrHref ||
     qrHref !== qrValue ||
-    !qrHref.includes("/t/TS-HITBOX/card") ||
+    !qrHref.includes("/id/GMFN-U-HITBOX") ||
     qrGraphicCount < 1
   ) {
     throw new Error(
-      `GSN QR link and encoded live-card target must agree; href=${qrHref}, value=${qrValue}, graphics=${qrGraphicCount}.`
+      `GSN QR link and encoded stable public-ID target must agree; href=${qrHref}, value=${qrValue}, graphics=${qrGraphicCount}.`
     );
   }
   if (process.env.GSN_ID_CARD_SCREENSHOT) {
@@ -644,7 +644,7 @@ try {
   await cardActionsToggle.tap();
   await cardActionsMenu.waitFor({ state: "visible", timeout: 5000 });
 
-  for (const action of ["share", "refresh", "copy", "copy-verify-link"]) {
+  for (const action of ["share", "save-picture", "refresh", "copy", "copy-verify-link"]) {
     const actionControl = page.locator(
       `[data-cta-id="identity-integrity.gsn-card.${action}"]`
     );
@@ -657,9 +657,7 @@ try {
     .locator('[data-cta-id="identity-integrity.gsn-card.copy"]')
     .tap();
   await page.waitForFunction(() =>
-    window.__gsnIdentityAuditClipboard.some((value) =>
-      value.includes("GSN Identity Card") && value.includes("GMFN-U-HITBOX")
-    )
+    window.__gsnIdentityAuditClipboard.some((value) => value === "GMFN-U-HITBOX")
   );
 
   await page
@@ -674,10 +672,109 @@ try {
   await page
     .locator('[data-cta-id="identity-integrity.gsn-card.share"]')
     .tap();
-  await page.waitForFunction(() =>
-    window.__gsnIdentityAuditSharePayload?.title === "GSN Identity Card" &&
-    String(window.__gsnIdentityAuditSharePayload?.text || "").includes("GMFN-U-HITBOX")
+
+  const shareOptions = page.locator(
+    '[data-gsn-identity-card-share-options="true"]'
   );
+  await shareOptions.waitFor({ state: "visible", timeout: 5000 });
+
+  const shareQr = shareOptions.locator(
+    '[data-gsn-identity-card-share-qr="true"]'
+  );
+  const shareQrValue = await shareQr.getAttribute(
+    "data-gsn-identity-card-share-qr-value"
+  );
+  if (
+    (await shareQr.count()) !== 1 ||
+    !(await shareQr.isVisible()) ||
+    !shareQrValue?.includes("/id/GMFN-U-HITBOX") ||
+    (await shareQr.locator("svg").count()) !== 1
+  ) {
+    throw new Error(
+      `Face-to-face sharing must show one live QR for the stable public card; value=${shareQrValue}.`
+    );
+  }
+
+  const shareOptionsText = (await shareOptions.textContent()) || "";
+  if (
+    !shareOptionsText.includes("same public GSN card") ||
+    !shareOptionsText.includes("phone number is not shared")
+  ) {
+    throw new Error(
+      "GSN ID Card share options must explain route equivalence and phone-number privacy."
+    );
+  }
+
+  const shareQrBox = await shareQr.boundingBox();
+  if (
+    !shareQrBox ||
+    shareQrBox.width < 210 ||
+    shareQrBox.height < 210
+  ) {
+    throw new Error(
+      `Face-to-face QR is not large enough for comfortable phone scanning: ${JSON.stringify(shareQrBox)}.`
+    );
+  }
+
+  for (const shareAction of ["share-link", "share-back"]) {
+    const shareControl = page.locator(
+      `[data-cta-id="identity-integrity.gsn-card.${shareAction}"]`
+    );
+    const shareControlBox = await shareControl.boundingBox();
+    if (
+      (await shareControl.count()) !== 1 ||
+      !(await shareControl.isVisible()) ||
+      !shareControlBox ||
+      shareControlBox.height < 48
+    ) {
+      throw new Error(
+        `GSN ID share control ${shareAction} is not phone-usable: ${JSON.stringify(shareControlBox)}.`
+      );
+    }
+  }
+
+  const shareOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth
+  );
+  if (shareOverflow > 1) {
+    throw new Error(
+      `GSN ID share options caused ${shareOverflow}px horizontal overflow.`
+    );
+  }
+
+  if (process.env.GSN_ID_CARD_SHARE_SCREENSHOT) {
+    await page.screenshot({
+      path: process.env.GSN_ID_CARD_SHARE_SCREENSHOT,
+      fullPage: true,
+    });
+  }
+
+  for (const unrelatedAction of ["save-picture", "refresh", "copy", "copy-verify-link"]) {
+    if (
+      await page
+        .locator(`[data-cta-id="identity-integrity.gsn-card.${unrelatedAction}"]`)
+        .isVisible()
+        .catch(() => false)
+    ) {
+      throw new Error(
+        `Focused GSN ID sharing still exposed unrelated ${unrelatedAction} action.`
+      );
+    }
+  }
+
+  await page
+    .locator('[data-cta-id="identity-integrity.gsn-card.share-link"]')
+    .tap();
+  await page.waitForFunction(() =>
+    window.__gsnIdentityAuditSharePayload?.title === "Open my GSN card" &&
+    String(window.__gsnIdentityAuditSharePayload?.url || "").includes("/share/id/GMFN-U-HITBOX") &&
+    !window.__gsnIdentityAuditSharePayload?.text
+  );
+
+  await page
+    .locator('[data-cta-id="identity-integrity.gsn-card.share-back"]')
+    .tap();
+  await shareOptions.waitFor({ state: "detached", timeout: 5000 });
 
   await page
     .locator('[data-cta-id="identity-integrity.gsn-card.refresh"]')
@@ -768,7 +865,7 @@ try {
 
   if (
     !compactTriggerBox ||
-    compactTriggerBox.width > 64 ||
+    compactTriggerBox.width > 72 ||
     compactTriggerBox.height !== 30 ||
     compactTriggerText !== "Edit" ||
     compactTriggerLabel !== "Open profile photo tools"

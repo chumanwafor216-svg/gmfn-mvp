@@ -1642,7 +1642,7 @@ export default function MyGMFNAndIPage() {
     const frame = window.requestAnimationFrame(() => {
       document
         .getElementById("public-professional-profile")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        ?.scrollIntoView({ behavior: "auto", block: "start" });
     });
 
     return () => window.cancelAnimationFrame(frame);

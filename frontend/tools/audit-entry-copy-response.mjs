@@ -78,8 +78,8 @@ assertContains(
 
 assertContains(
   "src/pages/WelcomePage.tsx",
-  /New member[\s\S]*?Existing member[\s\S]*?debugId="welcome\.identity\.sign-in"[\s\S]*?New to GSN\?[\s\S]*?variant="secondary"[\s\S]*?debugId="welcome\.identity\.sign-up"[\s\S]*?Most new members[\s\S]*?Join a community[\s\S]*?debugId="welcome\.new\.join-community"[\s\S]*?Starting your own\?[\s\S]*?variant="secondary"[\s\S]*?debugId="welcome\.new\.start-community"[\s\S]*?Institutional setup[\s\S]*?Purchase Community Domain/,
-  "Welcome must make Sign in primary, keep Sign up secondary, make Join the primary new-member path, and keep founder/institutional setup visually subordinate."
+  /Create community[\s\S]*?debugId="welcome\.gateway\.create-community"[\s\S]*?debugId="welcome\.gateway\.join-community"[\s\S]*?Join an existing community[\s\S]*?No invitation needed\. Find one and ask to join\.[\s\S]*?Already a member\?[\s\S]*?debugId="welcome\.gateway\.sign-in"[\s\S]*?Sign in/,
+  "Welcome must keep Create Community centre stage while making no-invite Join and separate existing-member Sign In immediately reachable."
 );
 
 assertContains(
@@ -222,8 +222,8 @@ assertContains(
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /Membership activated\. Verify this phone next[\s\S]*?Membership activated\. Set private recovery next[\s\S]*?debugId="member-activation\.notice-action"[\s\S]*?data-gsn-activation-complete="true"[\s\S]*?member-activation\.verify-phone[\s\S]*?member-activation\.set-recovery[\s\S]*?member-activation\.build-first-circle/,
-  "Member Activation must answer success visibly, offer shortcut guidance, and lead to phone verification or private recovery before First Circle growth."
+  /setActivated\(true\);[\s\S]*?title: "Activation complete"[\s\S]*?data-gsn-activation-complete="true"[\s\S]*?member-activation\.open-community[\s\S]*?member-activation\.verify-phone[\s\S]*?member-activation\.set-recovery[\s\S]*?debugId="member-activation\.other-setup"[\s\S]*?<GsnInstallPrompt[\s\S]*?member-activation\.build-first-circle/,
+  "Member Activation must answer success visibly, lead to the exact community, keep phone verification or private recovery visible, and place shortcut guidance and First Circle growth behind Other setup."
 );
 
 assertContains(

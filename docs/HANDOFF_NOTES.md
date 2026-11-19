@@ -1,5 +1,184 @@
 # Active Handoff Notes
 
+## Community Domain Vault contract audit repaired - 2026-11-19
+
+- The Community Domain product contract audit no longer expects the retired
+  direct Vault bank-payment function and endpoint. Its Vault activation guard
+  now follows the frozen Pipeline Credit quote-and-spend contract.
+- `VaultControlPage.tsx` already blocked disabled Vault before requesting a
+  quote. It now checks the feature policy again immediately before the accepted
+  quote is spent, and visibly disables both quote agreement and final spend
+  while the Community Domain has Vault turned off.
+- Removed the dead `vaultPaymentNeedsAction` calculation left behind when
+  direct Vault bank-payment creation was retired.
+- Verification passed: focused ESLint, Community Domain product contracts,
+  Vault Control button inventory, Vault access integrity, Private Vault visual
+  language, the 328-module production build, scoped diff checks, and the full
+  protected frontend suite.
+- The broader action-response and trust-action audits remain red on unrelated
+  existing contract drift across several pages, including older Vault
+  copy/link and pilot-activation expectations. Those separate assertions were
+  not concealed or rewritten as part of this policy-boundary repair.
+- No backend route, schema, payment rail, price, entitlement rule, production
+  data, commit, push, or deployment changed.
+
+## Welcome three-intent gateway fixed - 2026-11-19
+
+- The ordinary Welcome surface is now one compact gateway even when Cover
+  preserves a previous Create intent.
+- `Create community` remains the dominant action and opens the isolated
+  `/create` journey.
+- `Join an existing community` is a compact secondary action, clearly says
+  that no invitation is needed, and opens the isolated `/join` search and
+  request journey.
+- `Already a member? Sign in` remains a slim direct path to
+  `/login?force=1`; it does not compete with the primary Create action.
+- Gateway navigation removes stale `entry`, `entry_from`, `flow`, `mode`,
+  and `intent` query markers before Create or Join, preventing either journey
+  from inheriting the other lane. Real invitation and approved-activation deep
+  links remain dedicated entry states.
+- The retired `Founder path / Set up the basics / Begin` card and the former
+  multi-screen ordinary chooser stay absent. Once an intent is selected, each
+  journey owns its screen and does not expose the other two paths.
+- Pixel 5 coverage verifies all three destinations, minimum action geometry,
+  zero horizontal overflow, and complete Create and Join journeys.
+- Verification passed: entry-flow, entry-copy, and entry-auth audits; focused
+  ESLint; Pixel 5 browser journey; 328-module production build; and the complete
+  protected frontend suite.
+- The phone capture was generated at
+  `frontend/screenshots/corrected-community-entry-pixel/00-community-intent-gateway.png`.
+  The CLI image viewer could not open it because the Windows split-root sandbox
+  refused startup, so no manual visual-inspection claim is made; browser
+  visibility, geometry, navigation, and overflow checks passed.
+- The protected suite remains green with the known non-failing duplicate React
+  key `0` and oversized `CommunityDomainDashboardPage.tsx` code-generation
+  warnings. The broader Community Domain contract audit now also passes after
+  the separate Vault policy-boundary repair recorded above.
+- No backend route, schema, permission, admission rule, production data,
+  commit, push, or deployment changed.
+
+## GSN ID Card face-to-face QR sharing - 2026-11-19
+
+- The authenticated GSN ID Card Share action now opens a focused sharing
+  surface instead of immediately opening the device share sheet.
+- Face-to-face sharing shows one large scan-ready QR for the stable public
+  `/id/:gmfnId` card. Remote sharing remains available through `Share link`
+  and preserves the existing `/share/id/:gmfnId` social-preview gateway.
+- The QR and remote preview are two delivery methods for the same public card,
+  not separate records. The focused surface says this plainly and confirms
+  that the member's phone number is not shared.
+- While sharing is active, Save picture, Refresh, Copy GSN ID, verification
+  link, and profile settings are hidden. `Back to card actions` restores the
+  existing chooser without changing card, TrustSlip, auth, or backend rules.
+- Static and 390 x 844 phone-browser guards cover the QR payload, same-card
+  wording, phone-number privacy, focused-action isolation, remote share
+  payload, and return path.
+- Verification passed: Identity Integrity static contract audit, focused audit
+  ESLint, scoped diff checks, the real 390 x 844 Dashboard/card interaction,
+  the 328-module production build, and the complete protected frontend suite.
+- The complete protected suite remains green and still prints the known
+  non-failing duplicate React key `0` and oversized
+  `CommunityDomainDashboardPage.tsx` code-generation warnings. Full-file
+  ESLint for `IdentityIntegrityPage.tsx` also still reports the unrelated
+  pre-existing redundant `Boolean(trustSlip?.phone_verified)` expression
+  already present in `HEAD`; this task did not conceal or rewrite it.
+- No backend route, schema, permission, public payload, auth rule, production
+  data, commit, push, or deployment changed.
+
+## Create and join journey boundary enforced - 2026-11-19
+
+- Owner video review confirmed that Create Community was still exposing
+  invitation and search-admission controls before the community existed. That
+  joined two journeys that the product contract requires to remain separate.
+- `/create` now contains only identity, account activation, community name,
+  short description, and the final create action. Existing saved drafts are
+  sanitised so retired join-policy fields do not return.
+- Community creation keeps backend-compatible safe defaults: valid invitations
+  join instantly, public search is off, and the stored search policy is
+  community vote if an owner later enables discovery.
+- `/join` remains find/select/verify/request only, now labels its exit as
+  leaving the join journey, and correctly clears direct-community selection
+  state when choosing another community.
+- Authenticated Create Community aliases, Community Home, and Marketplace now
+  open the dedicated `/create?stage=community` journey instead of the mixed
+  `/app/clans` management page.
+- Entry audit and Pixel smoke coverage now fail if pre-creation join controls,
+  join-page create controls, mixed create aliases, or non-default hidden
+  admission values return.
+- Verification passed: focused entry-flow and existing-community invite-line
+  audits, focused ESLint for the changed entry and audit files, the complete
+  Pixel 5 create-and-join smoke, the 328-module production build, scoped diff
+  checks, and the full protected frontend suite.
+- The full suite still prints the known non-failing warnings: three duplicate
+  React key `0` messages and Babel code-generation de-optimisation for the
+  oversized `CommunityDomainDashboardPage.tsx`. Full-file ESLint on
+  `CommunityHomePage.tsx` also remains blocked by 15 unrelated pre-existing
+  unused declarations; this task did not hide or rewrite that debt.
+- No backend route, schema, permission, admission engine, invite journey,
+  search-join engine, production data, commit, push, or deployment changed.
+
+## Protected frontend suite baseline reconciled - 2026-11-19
+
+- The complete `audit:protected-button-freeze` suite now passes end to end.
+  The earlier statement that it had unrelated pre-existing failures is no
+  longer true for the current working tree.
+- Real interaction regressions were repaired rather than waived: the corrected
+  Create Community and Find Community entry pages now use shared stable button
+  and link primitives, the shared entry shell uses `OriginLink`, and the My GSN
+  public-profile hash landing no longer requests smooth post-action scrolling.
+- Stale guards were reconciled with already-approved and released contracts:
+  identity-first `/create`, search-based bare `/join`, coded invitation entry,
+  direct first-screen invite forms, current Member Activation completion,
+  stable `/id/:gmfnId` card QR/copy/share behavior, the 72px compact Dashboard
+  photo control, the included 12-space Shop model, and Pipeline Credit pricing
+  route coverage.
+- Shop Control keeps its five-row phone overview under the frozen 96px row
+  ceiling by reducing compact row vertical padding. The paid-services audit now
+  expects the truthful seven-item catalogue: four available, one paused, and
+  two planned. The retired paid extra-shop-space row was not restored.
+- Verification passed: mobile tap stability, global raw-action hygiene, entry
+  flow/copy/invite contracts, mobile visual route coverage, Shop Control
+  analytics visual audit, the complete Dashboard passport browser trace, and
+  the full protected frontend suite with exit code 0. Focused ESLint, the
+  328-module production frontend build, and `git diff --check` also passed.
+- Remaining non-failing console debt is still visible: the browser audits emit
+  three duplicate React key `0` warnings, and Babel reports de-optimised code
+  generation for the oversized `CommunityDomainDashboardPage.tsx`. Neither was
+  hidden or reclassified as a pass condition by this reconciliation.
+- No backend route, schema, permission, admission rule, payment behavior,
+  deployment setting, production data, commit, push, or deployment changed.
+
+## Join Requests focused-card presentation polish - 2026-11-19
+
+- Owner phone review removed the redundant icon-led `Waiting` badge from the
+  focused Join Requests person card and requested a premium presentation pass.
+- Ordinary phone entry now uses one calm text-only state, a compact
+  community/joining-setting strip, a long-name-safe applicant heading, labelled
+  phone and inviter rows, a restrained progress block, and slimmer closed
+  disclosures for other waiting people, joining settings, past decisions, and
+  route tools.
+- The action path remains exact-request and decision-first. Committee Voting
+  still exposes `Approve`, `Ignore for now`, and `Disapprove`. Instant Join
+  and non-admin Admin Approval now show a truthful compact explanation without
+  the false `Should this person join?` question or unusable decision controls.
+- Routes, request focus, vote values, thresholds, admin authority, admission
+  modes, notification retirement, activation handoff, APIs, permissions,
+  schemas, desktop behavior, and the preserved `advanced=1` workspace are
+  unchanged.
+- Verification passed: Join Requests layout audit, membership-admission-policy
+  audit, 390 x 844 browser smoke for both Committee Voting and Instant Join,
+  horizontal containment, scoped diff checks, and the 328-module production
+  frontend build. Visual captures are in
+  `C:\tmp\join-requests-polish\join-requests-focused-390.png` and
+  `C:\tmp\join-requests-polish\join-requests-no-vote-390.png`.
+- The broad protected-button suite reached and passed the changed Community
+  Join Requests stage. It remains red on unrelated pre-existing mobile-tap,
+  raw-entry-action, Dashboard passport timeout, Shop Control analytics,
+  Member Activation copy, existing-community invite-line, and mobile
+  route-coverage checks. Focused ESLint also remains red only on pre-existing
+  unused `err` catches in the page and missing Node/browser globals in the
+  smoke script.
+
 ## Finance selected-currency workbench - 2026-11-12
 
 - `/app/finance` no longer hardcodes NGN. It loads the saved preferred
@@ -6574,6 +6753,22 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Post-deploy HTTP verification passed for `GMFN-U-63655DE6`: the personalised preview returned `200` with `Cache-Control: no-store`, the preview title was `Open my GSN card`, the human target was the stable frontend `/id/:gmfnId` route, the card returned `200 image/png`, and the frontend ID route returned `200`.
 - WhatsApp may temporarily retain an older preview for a previously shared URL because its preview cache is external to GSN. Its native `Copy link` and `Open link` controls remain outside GSN control.
 
+# Public GSN ID first-visit action clarity - 2026-11-17
+
+- Owner phone review showed that the closed `Shop, profile & GSN website` disclosure looked like ordinary text. A first-time visitor could not tell that it opened three useful destinations. The owner subsequently confirmed that the destinations should remain grouped, but the disclosure itself must look like a button.
+- `/id/:gmfnId` now keeps `Check this TrustSlip` as the blue primary action and presents `Shop, profile & GSN website` as a full-width gold action with the same height and rounded geometry. Tapping it reveals the backend-approved `Shop & verification` action when available, `Personal profile`, and `GSN website` as recognisable secondary button rows.
+- The public Shop action still appears only after the unauthenticated public-Shop endpoint returns `is_public_shop_face: true`. The profile route still fails closed when the member has not published professional details. No authenticated owner route, private evidence, permission, API, or schema changed.
+- The route-local identity opportunity audit now requires the labelled gold disclosure button, the covered destination order, and the existing privacy gates.
+
+# Sam McKinstrie post-meeting follow-up pack - 2026-11-16
+
+- The post-meeting strategy now treats Sam as an RGU route-finder who needs enough business context to identify relevant colleagues, programmes and support, not only as a placement contact.
+- `deliverables/GSN_SAM_POST_MEETING_FOLLOW_UP_2026-11-16.md` contains the Sam-focused message for the existing shared conversation and the full source copy for the decision brief. The message addresses Sam throughout, records the introduction and wider route-finding support he offered, asks him directly for the next action, and thanks Chris only in one closing sentence because Chris will already see the shared conversation.
+- `deliverables/GSN_Executive_Follow_Up_For_Sam_McKinstrie_2026-11-16.docx` is the sendable four-page executive decision brief on GSN text letterhead. It addresses Sam directly as `you`, leads with the action requested from him, includes the working 12-month OGSM, separates the possible student routes, and accurately describes the unpublished working journal paper. Its clickable official links are `https://globalsupportnetwork.org/`, `https://gmfn-frontend.onrender.com/` and `hello@globalsupportnetwork.org`; the website and app both returned HTTP 200 during preparation.
+- The pack does not claim product-market fit, repeatable revenue, confirmed placement terms, RGU endorsement or confirmed placement funding. The referenced one-month and up-to-one-year opportunities remain subject to Sam's confirmation of programme, duration, funding, supervision, IP, confidentiality, insurance and data-protection requirements.
+- The final executive DOCX passed two LibreOffice render passes and page-by-page visual inspection. The second pass corrected cross-section numbering and removed an inherited title border. The final four pages have no clipping or overflow, and the official website, app and email are embedded as clickable hyperlinks. A content scan confirmed that no browser-session dump or authentication-token material entered either deliverable.
+- No email or conversation message was sent, no file was uploaded, and no placement commitment was made. The recommended initial send is the Sam-addressed message in the existing conversation already visible to Chris, with the executive DOCX only. The theory of change, unpublished journal paper, white paper/RGU academic copy, business plan, pilot records and technical material should be supplied only when Sam or the colleague he introduces asks for a relevant item.
+
 # Focused public-verification phone readiness correction - 2026-11-17
 
 - Owner evidence: the supplied 22-second phone recording showed the `verification_request=1` Community Confirmation policy landing still exposing policy timing, Community ID Domain affiliation, member-witness records, responder administration and the privacy footer as one long workspace.
@@ -6648,3 +6843,51 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Authentication, Demand Box submission, routes, permissions, data contracts and backend behavior are unchanged.
 - Verification passed: focused Demand Box, Marketplace ownership, entry/auth and entry-flow audits; focused ESLint; `git diff --check`; the 327-module production frontend build; Demand Box phone smoke at 390 x 844 and 360 x 780; and the login phone smoke at 390 x 844. Captured phone output was visually inspected after both smokes passed.
 - The aggregate button-stability audit remains red only for unrelated pre-existing AppLayout, Join Entry, Shop Access, Shop Gallery, Shop Assets and Vault Control patterns. The aggregate entry-copy audit remains red only for an unrelated pre-existing Member Activation pattern.
+
+# TrustSlip founder-theory reconciliation audit - 2026-11-17
+
+- Completed a read-only comparison of the founder reconciliation request against the Mission Protocol, September TrustSlip journal, active positioning records, Book Alignment Map, finance boundaries, Pipeline Credit protocol, current TrustSlip/Decision Pack implementation, and the Gary Hogan brief.
+- Created `deliverables/GSN_TRUSTSLIP_FOUNDER_THEORY_RECONCILIATION_AUDIT_2026-11-17.md`. No implementation, schema, route, original journal, constitutional record, active positioning protocol, or Gary brief was changed.
+- Confirmed Behavioural Placement and Behavioural Capital as documented research concepts. Found no repository or matching September-journal DOCX occurrence of `Capitalisation Threshold`, so it remains a founder-proposed reconciliation term awaiting approval rather than proven canonical history.
+- Corrected the three-engine attribution to the 27 August ICA guide: `Community Value Maintenance`, `Verification And Trust Transport`, and `Opportunity Engine`. `Institutional Verification Bridge` is a separate composite capability.
+- Confirmed purpose, recipient-question, scope, evidence-pointer, gap, boundary, verification, and human-decision support in the current implementation. No Behavioural Placement schema, Capitalisation Threshold evaluator, universal credit score, lender decision, or proof of external TrustSlip acceptance was found.
+- Recommended founder approval before amending the Gary brief or canonical records. The supplied attachment also contained unrelated browser/authentication session material; none was copied into the repository, and the affected sessions should be revoked or signed out.
+
+# Final Gary Hogan brief retained - 2026-11-17
+
+- The founder supplied `C:\Users\chukwuma pc\Downloads\GSN_Brief_For_Gary_Hogan_Final_2026-11-17.pdf` and asked that the records be updated and the document kept.
+- The exact PDF was preserved unchanged as `deliverables/GSN_Brief_For_Gary_Hogan_Final_2026-11-17.pdf`. Source and archived SHA-256 values match: `ECBC4B13E91A8CC7C1ED8BA853E126E89BF01D0EA86D4191E7BF60F86A901751`; 4 pages; 199,947 bytes.
+- Full text extraction and four-page visual review found a clean, readable research-discussion brief with no clipping or broken layout. The final page contains working links to the GSN website, web app, live GSN ID card, live TrustSlip, Facebook and cited reference sources.
+- The current source index, Gary amendment addendum and Founder Insight and Evidence Bank now identify this PDF as the first-use final Gary discussion brief. Earlier Gary drafts remain preserved historical records and were not deleted or overwritten.
+- `Final` records founder document status only. It does not prove Gary/RGU/Interface endorsement, academic validation, funding eligibility, global uniqueness, adoption or measured economic impact.
+- No application code, route, schema, production data, deployment, original constitutional record or earlier brief was changed.
+
+# Join Requests focused phone decision - 2026-11-19
+
+- Owner review of `WhatsApp Video 2026-11-19 at 12.36.31.mp4` confirmed `/app/community/:clanId/join-requests` was still too busy on phone: two large introduction/community panels, route actions, joining settings, three counters and history controls appeared before the person who needed an answer.
+- Ordinary phone entry now returns a focused decision surface before the legacy workspace. It shows one compact community/rule strip, the exact pending person's name, phone and inviter, one Committee Voting progress line when applicable, then `Approve`, `Ignore for now`, and `Disapprove`.
+- Notification links already included `request_id`, but the page previously ignored it. The route now sorts that request first and makes it active, so opening a notification leads to the intended person rather than whichever pending request happened to be first.
+- Joining-setting names are restored to `Instant Join`, `Admin Approval`, and `Committee Voting` on phone and desktop. Phone settings, past decisions, refresh/navigation and the full workspace remain closed after the active decision. `Advanced view` enters the preserved `advanced=1` workspace.
+- `Ignore for now` uses the existing neutral vote and reason. It retires that member's actionable review notification through the existing backend path and can be changed while the request remains pending. No vote values, thresholds, admin authority, QR guardrails, notification creation, activation handoff, route, API, permission, schema or desktop layout changed.
+- Verification passed: TypeScript and the 328-module production frontend build; the dedicated Join Requests layout audit; the membership-admission-policy audit; and the new 390 x 844 browser smoke covering exact notification focus, the three decisions, closed secondary tools, alternate-request opening, restored setting names, and horizontal containment. Review captures: `tmp/join-requests-review/join-requests-focused-390.png` and `tmp/join-requests-review/join-requests-secondary-open-390.png`.
+- The aggregate protected-button freeze suite reached and passed the changed Community Join Requests stage. It remains red on unrelated pre-existing My GSN smooth-scroll, raw entry controls, Member Activation copy, existing-community invite-line, mobile route-coverage, and sandboxed Vite/esbuild checks; none were changed in this task.
+- Published as commits `4526b376` and `a551e5d7` to `codex/public-shop-audio-fallback` and `main`. GitHub Actions run `44530218953` completed successfully and Render frontend deploy `dep-dbvf8rlg1s2s73f2l8eg` became live; the API deploy input remained `false`. The workflow also confirmed the public URL served the deployed build and retained no-store shell caching. Independent verification returned HTTP 200 with `Cache-Control: no-store, max-age=0` and found `focused-decision`, `Ignore for now`, all three restored setting names, and `Advanced view` in `assets/CommunityJoinRequestsPage-BNQdBegi.js`.
+
+# Answered join-request Attention Guide retirement - 2026-11-19
+
+- Owner phone evidence confirmed the Dashboard Attention Guide kept reopening the same pending join request after the signed-in reviewer had already answered it.
+- Backend review proved the answer was being saved correctly: each reviewer vote retires that reviewer's approval notification even when Committee Voting leaves the request globally pending. The focused neutral-vote regression passed unchanged.
+- The recurrence was frontend-only. Join-review mutation calls left startup read caches intact, and Dashboard promoted any globally pending community request into a synthetic personal `NOW` item regardless of whether this reviewer had already voted.
+- Every successful vote, pilot approval, or admin approval now clears the join-request, notification-list, and unread-count caches. Dashboard reconciles guidance copies with current notification state, excludes explicitly non-actionable approval rows, and keeps globally pending committee context in `watch` rather than personal actionable attention.
+- Personal Dashboard guidance now counts only actionable approval rows belonging to the signed-in reviewer. Market Wisdom, vote values, thresholds, admin authority, routes, permissions, schemas, and backend behavior are unchanged.
+- Verification passed: Dashboard attention semantics, Dashboard action audit, Join Requests layout audit, membership admission-policy audit, the 390 x 844 Join Requests browser smoke, TypeScript, the 328-module production build, focused backend neutral-vote retirement, and scoped `git diff --check`. The aggregate protected suite passed both changed stages and remained red only on unrelated pre-existing tap, raw-entry, Member Activation, invite-line, route-coverage, and sandboxed browser checks.
+- Published as commit `caba627ec1cd29cd4b8a64a8253d3f60674cbd3f` to `codex/public-shop-audio-fallback` and `main`. GitHub Actions run `44536294368` completed successfully; Render frontend deploy `dep-dbvfq3jl550s739lbac0` became live and the API deploy input remained `false`. Independent verification returned HTTP 200 with `Cache-Control: no-store, max-age=0` and confirmed `assets/DashboardPage-9WVpmbbQ.js` keeps `synthetic-join-` in `watch` with `attentionActionable: false`, while the live entry bundle contains all three invalidated read-cache labels.
+- Owner then requested the complete appropriate service deployment. GitHub Actions run `44537418366` redeployed the same exact commit to both Render application services: frontend deploy `dep-dbvft8m0tbcc73ek41o0` and API deploy `dep-dbvfu9ou01pc73do2isg` both became live. The workflow passed frontend public-build/cache checks, synchronized backend Web Push environment variables, and passed live API identity-contract verification. Independent checks returned frontend HTTP 200 with `Cache-Control: no-store, max-age=0`, API `/health` HTTP 200 with `{"ok":true,"dev_mode":false}`, and OpenAPI HTTP 200 with notification routes present. PostgreSQL remained managed infrastructure and was not restarted or altered.
+
+# Public GSN ID one-button owner gateway - 2026-11-19
+
+- Owner phone review requested one obvious button on the public GSN ID card that opens TrustSlip, the owner's published service/product Shop, GSN owner profile, website, and social channels.
+- `/id/:gmfnId` now initially exposes one full-width gold `Open TrustSlip, shop & owner links` button. Opening it reveals `Check this TrustSlip` first, `Owner services & products` when available, `GSN owner profile`, `GSN website`, and official GSN LinkedIn, Facebook, and Instagram rows.
+- Shop visibility still requires the existing unauthenticated backend `is_public_shop_face: true` decision. The profile route still fails closed when unpublished. No authenticated owner route or inferred personal social handle became public; the social rows use only the confirmed official GSN channels already present in the application.
+- Verification passed: the focused identity-opportunity audit, public TrustSlip first-viewport audit, Identity Integrity front-package audit, public TrustSlip browser-state smoke, scoped `git diff --check`, TypeScript, and the 328-module production frontend build.
+- Published as commit `1f1c7f3e7251912b640a97a934426473accf19ec` to `codex/public-shop-audio-fallback` and `main`. GitHub Actions run `44541195421` completed successfully and Render frontend deploy `dep-dbvg7ihsrm7s73ccmp90` became live; the backend deploy decision was correctly `false`. Independent verification returned HTTP 200 with `Cache-Control: no-store, max-age=0` and confirmed all seven destination labels in live asset `assets/TrustSlipVerifyPublicPaper-fptrTY8O.js`.

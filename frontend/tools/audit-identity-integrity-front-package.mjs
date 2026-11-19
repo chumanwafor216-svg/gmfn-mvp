@@ -350,6 +350,11 @@ assertContains(
 );
 
 assertContains(
+  /identityCardShareOptionsOpen[\s\S]*?handleGsnIdentityCardPrimaryAction[\s\S]*?setIdentityCardShareOptionsOpen\(true\)[\s\S]*?data-gsn-identity-card-share-options="true"[\s\S]*?data-gsn-identity-card-share-qr="true"[\s\S]*?data-gsn-identity-card-share-qr-value=\{identityCardLiveUrl\}[\s\S]*?<LazyQRCodeSVG[\s\S]*?value=\{identityCardLiveUrl\}[\s\S]*?Both options open the same public GSN card[\s\S]*?Your phone number[\s\S]*?shareGsnIdentityCard\(\)[\s\S]*?debugId="identity-integrity\.gsn-card\.share-link"[\s\S]*?debugId="identity-integrity\.gsn-card\.share-back"/,
+  "GSN ID Card Share must open a focused face-to-face QR option and preserve the existing remote link path to the same public card without sharing a phone number."
+);
+
+assertContains(
   /type GsnIdentityCardShareImageParams = \{[\s\S]*?websiteDisplay: string;[\s\S]*?socialHandle: string;[\s\S]*?memberHandle: string;[\s\S]*?privacySafe: boolean;[\s\S]*?const height = 1320;[\s\S]*?params\.privacySafe \? "GSN" : "QR"[\s\S]*?Open GSN yourself[\s\S]*?const contactBandTop = 964;[\s\S]*?GSN WEBSITE[\s\S]*?GSN SOCIAL[\s\S]*?MY GSN HANDLE[\s\S]*?For current status, type globalsupportnetwork\.org yourself\./,
   "The shared PNG must preserve the public contact band while removing the QR payload and directing recipients to type the official GSN website themselves."
 );

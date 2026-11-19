@@ -1252,12 +1252,6 @@ export default function VaultControlPage() {
     "0.00"
   );
   const activeVaultPayment = vaultInstruction || latestVaultPayment;
-  const activeVaultPaymentStatus = firstTruthy(activeVaultPayment?.status).toLowerCase();
-  const vaultPaymentNeedsAction = Boolean(
-    activeVaultPayment &&
-      !isConfirmedPayment(activeVaultPayment) &&
-      !["expired", "cancelled", "canceled"].includes(activeVaultPaymentStatus)
-  );
   const selectedBlockHasUsableLink = isUsableVaultLink(selectedBlockPrimaryLink);
   const vaultGuidedPanel: VaultPanelKey = confirmedVaultSlots > 0
     ? selectedProduct
@@ -1654,6 +1648,10 @@ export default function VaultControlPage() {
   }
 
   async function completeVaultActivation(quote: PipelineCreditQuote, pilotWaived: boolean) {
+    if (vaultFeatureOff) {
+      showNotice("error", vaultFeatureOffText);
+      return;
+    }
     const firstNewSlot = [1, 2].find((slotNumber) => !activeVaultSlotNumbers.has(slotNumber)) || 1;
     setSpendingPipelineCredits(true);
     try {
@@ -2303,7 +2301,7 @@ export default function VaultControlPage() {
             <StableButton
               kind={vaultCreditQuoteAgreed ? "primary" : "secondary"}
               onClick={() => setVaultCreditQuoteAgreed((current) => !current)}
-              disabled={vaultCreditQuote.spendable === false || !vaultCreditQuote.has_sufficient_balance || spendingPipelineCredits}
+              disabled={vaultFeatureOff || vaultCreditQuote.spendable === false || !vaultCreditQuote.has_sufficient_balance || spendingPipelineCredits}
               debugId="vault-control.agree-pipeline-credit-quote"
               style={{ minHeight: 56, width: "100%" }}
             >
@@ -2315,6 +2313,7 @@ export default function VaultControlPage() {
             <PrimaryButton
               onClick={() => void spendVaultPipelineCredits()}
               disabled={
+                vaultFeatureOff ||
                 vaultCreditQuote.spendable === false ||
                 !vaultCreditQuoteAgreed ||
                 !vaultCreditQuote.has_sufficient_balance ||

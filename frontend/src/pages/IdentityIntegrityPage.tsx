@@ -2081,6 +2081,8 @@ export default function IdentityIntegrityPage() {
   const [activeIdentityTask, setActiveIdentityTask] =
     useState<IdentityTaskKey>("phone");
   const [identityCardActionsOpen, setIdentityCardActionsOpen] = useState(false);
+  const [identityCardShareOptionsOpen, setIdentityCardShareOptionsOpen] =
+    useState(false);
   const [identityCardGeneratedAt, setIdentityCardGeneratedAt] = useState(() =>
     new Date().toISOString()
   );
@@ -3099,12 +3101,19 @@ export default function IdentityIntegrityPage() {
 
   function handleGsnIdentityCardPrimaryAction() {
     if (identityCardLiveUrl) {
-      void shareGsnIdentityCard();
+      setIdentityCardShareOptionsOpen(true);
       return;
     }
 
     showNotice("error", "GSN ID is not ready yet.");
   }
+
+  function toggleGsnIdentityCardActions() {
+    const nextOpen = !identityCardActionsOpen;
+    setIdentityCardActionsOpen(nextOpen);
+    if (!nextOpen) setIdentityCardShareOptionsOpen(false);
+  }
+
   async function shareGsnIdentityCard() {
     if (!identityCardLiveUrl || !identityCardShareUrl) {
       showNotice("error", "GSN ID is not ready yet.");
@@ -3596,7 +3605,7 @@ export default function IdentityIntegrityPage() {
 
         <StableButton
           type="button"
-          onClick={() => setIdentityCardActionsOpen((open) => !open)}
+          onClick={toggleGsnIdentityCardActions}
           aria-expanded={identityCardActionsOpen}
           aria-label={identityCardActionsOpen ? "Close GSN ID Card actions" : "Use this GSN ID Card"}
           data-gsn-identity-card-title-control="true"
@@ -4132,64 +4141,204 @@ export default function IdentityIntegrityPage() {
             style={{
               ...innerCard("#F8FBFF"),
               display: "grid",
-              gridTemplateColumns: isCompact
-                ? "repeat(2, minmax(0, 1fr))"
-                : "repeat(4, minmax(0, 1fr))",
+              gridTemplateColumns: identityCardShareOptionsOpen
+                ? "minmax(0, 1fr)"
+                : isCompact
+                  ? "repeat(2, minmax(0, 1fr))"
+                  : "repeat(4, minmax(0, 1fr))",
               gap: 8,
               padding: 8,
             }}
           >
-            <PrimaryButton
-              onClick={handleGsnIdentityCardPrimaryAction}
-              stableHeight={50}
-              fullWidth
-              debugId="identity-integrity.gsn-card.share"
-            >
-              {identityCardLiveUrl ? "Share live card" : "ID pending"}
-            </PrimaryButton>
-            <SecondaryButton
-              onClick={() => void saveGsnIdentityCardPicture()}
-              stableHeight={50}
-              fullWidth
-              disabled={!identityCardLiveUrl}
-              debugId="identity-integrity.gsn-card.save-picture"
-            >
-              Save picture
-            </SecondaryButton>
-            <SecondaryButton
-              onClick={() => void refreshGsnIdentityCard()}
-              stableHeight={50}
-              fullWidth
-              disabled={identityCardRefreshing}
-              debugId="identity-integrity.gsn-card.refresh"
-            >
-              {identityCardRefreshing ? "Refreshing" : "Refresh card"}
-            </SecondaryButton>
-            <SecondaryButton
-              onClick={() => void copyGsnIdentityCard()}
-              stableHeight={50}
-              fullWidth
-              debugId="identity-integrity.gsn-card.copy"
-            >
-              Copy GSN ID
-            </SecondaryButton>
-            <SecondaryButton
-              onClick={() => void copyTrustSlipVerifyLink()}
-              stableHeight={50}
-              fullWidth
-              disabled={!trustSlipVerifyUrl}
-              debugId="identity-integrity.gsn-card.copy-verify-link"
-            >
-              {trustSlipVerifyUrl ? "Copy verification link" : "TrustSlip pending"}
-            </SecondaryButton>
-            <SecondaryButton
-              onClick={() => navigate(routes.publicProfileSettings)}
-              stableHeight={50}
-              fullWidth
-              debugId="identity-integrity.gsn-card.public-profile-settings"
-            >
-              Public profile settings
-            </SecondaryButton>
+            {identityCardShareOptionsOpen ? (
+              <div
+                data-gsn-identity-card-share-options="true"
+                style={{
+                  minWidth: 0,
+                  borderRadius: 22,
+                  border: "1px solid rgba(214,170,69,0.42)",
+                  background:
+                    "linear-gradient(180deg, #071B2E 0%, #0B2942 100%)",
+                  padding: isCompact ? "18px 14px" : "24px",
+                  display: "grid",
+                  justifyItems: "center",
+                  gap: isCompact ? 14 : 18,
+                  boxShadow:
+                    "0 18px 38px rgba(7,23,44,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+                }}
+              >
+                <div style={{ maxWidth: 520, textAlign: "center" }}>
+                  <div
+                    style={{
+                      color: "#F2C766",
+                      fontSize: isCompact ? 12 : 14,
+                      fontWeight: 950,
+                      letterSpacing: 1.4,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Share your GSN ID card
+                  </div>
+                  <h3
+                    style={{
+                      margin: "6px 0 0",
+                      color: "#FFFFFF",
+                      fontSize: isCompact ? 23 : 28,
+                      lineHeight: 1.12,
+                      fontWeight: 1000,
+                      letterSpacing: -0.7,
+                    }}
+                  >
+                    Scan here in person
+                  </h3>
+                  <p
+                    style={{
+                      margin: "8px 0 0",
+                      color: "rgba(255,255,255,0.76)",
+                      fontSize: isCompact ? 14 : 15,
+                      lineHeight: 1.55,
+                    }}
+                  >
+                    Let the other person scan this code, or send the same public
+                    card as a link.
+                  </p>
+                </div>
+
+                <div
+                  data-gsn-identity-card-share-qr="true"
+                  data-gsn-identity-card-share-qr-value={identityCardLiveUrl}
+                  aria-label="QR code for this public GSN ID card"
+                  style={{
+                    width: isCompact ? 226 : 258,
+                    height: isCompact ? 226 : 258,
+                    maxWidth: "72vw",
+                    maxHeight: "72vw",
+                    boxSizing: "border-box",
+                    borderRadius: isCompact ? 22 : 26,
+                    border: "4px solid #F2C766",
+                    background: "#FFFFFF",
+                    padding: isCompact ? 9 : 11,
+                    display: "grid",
+                    placeItems: "center",
+                    boxShadow:
+                      "0 18px 34px rgba(0,0,0,0.32), 0 0 0 5px rgba(242,199,102,0.12)",
+                  }}
+                >
+                  <React.Suspense fallback={<GsnLegacyIcon name="qr" size={176} />}>
+                    <LazyQRCodeSVG
+                      value={identityCardLiveUrl}
+                      size={isCompact ? 198 : 226}
+                      bgColor="#FFFFFF"
+                      fgColor="#07172C"
+                      level="H"
+                      marginSize={1}
+                      imageSettings={{
+                        src: GSN_GLOBE_QR_MARK,
+                        height: isCompact ? 40 : 46,
+                        width: isCompact ? 40 : 46,
+                        excavate: true,
+                      }}
+                    />
+                  </React.Suspense>
+                </div>
+
+                <div
+                  style={{
+                    maxWidth: 520,
+                    color: "rgba(255,255,255,0.74)",
+                    fontSize: isCompact ? 12.5 : 13.5,
+                    lineHeight: 1.5,
+                    textAlign: "center",
+                  }}
+                >
+                  Both options open the same public GSN card. Your phone number
+                  is not shared.
+                </div>
+
+                <div
+                  style={{
+                    width: "100%",
+                    maxWidth: 520,
+                    display: "grid",
+                    gridTemplateColumns: isCompact
+                      ? "minmax(0, 1fr)"
+                      : "repeat(2, minmax(0, 1fr))",
+                    gap: 10,
+                  }}
+                >
+                  <PrimaryButton
+                    onClick={() => void shareGsnIdentityCard()}
+                    stableHeight={52}
+                    fullWidth
+                    debugId="identity-integrity.gsn-card.share-link"
+                  >
+                    Share link
+                  </PrimaryButton>
+                  <SecondaryButton
+                    onClick={() => setIdentityCardShareOptionsOpen(false)}
+                    stableHeight={52}
+                    fullWidth
+                    debugId="identity-integrity.gsn-card.share-back"
+                  >
+                    Back to card actions
+                  </SecondaryButton>
+                </div>
+              </div>
+            ) : (
+              <>
+                <PrimaryButton
+                  onClick={handleGsnIdentityCardPrimaryAction}
+                  stableHeight={50}
+                  fullWidth
+                  debugId="identity-integrity.gsn-card.share"
+                >
+                  {identityCardLiveUrl ? "Share live card" : "ID pending"}
+                </PrimaryButton>
+                <SecondaryButton
+                  onClick={() => void saveGsnIdentityCardPicture()}
+                  stableHeight={50}
+                  fullWidth
+                  disabled={!identityCardLiveUrl}
+                  debugId="identity-integrity.gsn-card.save-picture"
+                >
+                  Save picture
+                </SecondaryButton>
+                <SecondaryButton
+                  onClick={() => void refreshGsnIdentityCard()}
+                  stableHeight={50}
+                  fullWidth
+                  disabled={identityCardRefreshing}
+                  debugId="identity-integrity.gsn-card.refresh"
+                >
+                  {identityCardRefreshing ? "Refreshing" : "Refresh card"}
+                </SecondaryButton>
+                <SecondaryButton
+                  onClick={() => void copyGsnIdentityCard()}
+                  stableHeight={50}
+                  fullWidth
+                  debugId="identity-integrity.gsn-card.copy"
+                >
+                  Copy GSN ID
+                </SecondaryButton>
+                <SecondaryButton
+                  onClick={() => void copyTrustSlipVerifyLink()}
+                  stableHeight={50}
+                  fullWidth
+                  disabled={!trustSlipVerifyUrl}
+                  debugId="identity-integrity.gsn-card.copy-verify-link"
+                >
+                  {trustSlipVerifyUrl ? "Copy verification link" : "TrustSlip pending"}
+                </SecondaryButton>
+                <SecondaryButton
+                  onClick={() => navigate(routes.publicProfileSettings)}
+                  stableHeight={50}
+                  fullWidth
+                  debugId="identity-integrity.gsn-card.public-profile-settings"
+                >
+                  Public profile settings
+                </SecondaryButton>
+              </>
+            )}
           </div>
         ) : null}
       </div>

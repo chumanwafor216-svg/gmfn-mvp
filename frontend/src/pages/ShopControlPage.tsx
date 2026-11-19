@@ -7787,7 +7787,7 @@ export default function ShopControlPage() {
                   alignItems: isCompact ? "center" : "stretch",
                   alignContent: "space-between",
                   gap: isCompact ? 12 : 10,
-                  padding: isCompact ? 12 : undefined,
+                  padding: isCompact ? "10px 12px" : undefined,
                 }}
               >
                 <div style={{ minWidth: 0 }}>
