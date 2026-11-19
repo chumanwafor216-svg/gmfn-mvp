@@ -9691,6 +9691,10 @@ export type CommunityAdmissionMode =
   | "admin_approval"
   | "community_vote";
 
+export type CommunitySearchJoinMode =
+  | "instant_invite"
+  | "community_vote";
+
 export async function getCommunityAdmissionPolicy(clanId: number): Promise<any> {
   return httpJson(
     `/clans/${encodeURIComponent(String(clanId))}/admission-policy`,
@@ -9709,6 +9713,31 @@ export async function updateCommunityAdmissionPolicy(
 ): Promise<any> {
   return httpJson(
     `/clans/${encodeURIComponent(String(clanId))}/admission-policy`,
+    "PATCH",
+    payload,
+    { header_clan_id: clanId }
+  );
+}
+
+export async function getCommunitySearchJoinSettings(clanId: number): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/search-join-settings`,
+    "GET",
+    undefined,
+    { header_clan_id: clanId }
+  );
+}
+
+export async function updateCommunitySearchJoinSettings(
+  clanId: number,
+  payload: {
+    enabled: boolean;
+    admission_mode: CommunitySearchJoinMode;
+    admin_override?: boolean;
+  }
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/search-join-settings`,
     "PATCH",
     payload,
     { header_clan_id: clanId }

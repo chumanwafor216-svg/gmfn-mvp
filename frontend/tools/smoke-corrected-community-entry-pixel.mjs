@@ -78,6 +78,10 @@ async function runJoinJourney(browser, baseUrl) {
   await installJoinMocks(page);
   await page.goto(`${baseUrl}/join`, { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { name: "Find your community" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Back to welcome" })).toHaveAttribute(
+    "href",
+    "/welcome"
+  );
   await page.getByLabel("Community name or GSN community ID").fill("Blessed");
   await page.getByRole("button", { name: "Find communities" }).click();
   const searchResult = page.getByRole("button", { name: /Blessed Satch Family/ });

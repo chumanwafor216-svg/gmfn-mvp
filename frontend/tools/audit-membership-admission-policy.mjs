@@ -65,6 +65,11 @@ requirePattern(
 );
 requirePattern(
   "frontend/src/pages/CommunityJoinRequestsPage.tsx",
+  /getCommunitySearchJoinSettings[\s\S]*?updateCommunitySearchJoinSettings[\s\S]*?Let people find this community[\s\S]*?invitation links still work[\s\S]*?Save community search/,
+  "Community owners must have an explicit public-search opt-in that stays separate from invitation admission."
+);
+requirePattern(
+  "frontend/src/pages/CommunityJoinRequestsPage.tsx",
   /Choose one simple option[\s\S]*?Instant Join[\s\S]*?Admin Approval[\s\S]*?Committee Voting[\s\S]*?admissionMode === "community_vote"[\s\S]*?Allow an admin to approve immediately during Committee Voting/,
   "The settings surface must keep one clear three-mode choice and show override only for voting."
 );

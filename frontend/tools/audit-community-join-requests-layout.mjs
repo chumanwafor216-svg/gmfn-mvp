@@ -138,6 +138,11 @@ assertContains(
 );
 
 assertContains(
+  /getCommunitySearchJoinSettings[\s\S]*?updateCommunitySearchJoinSettings[\s\S]*?data-gsn-search-join-settings="true"[\s\S]*?Allow people to search for this community and ask to join[\s\S]*?save-search-join-settings/,
+  "Join Requests owners must be able to opt a community into public search without changing invitation behavior."
+);
+
+assertContains(
   /data-gsn-join-request-active=\{String\(activeItem\.id\)\}[\s\S]*?<details style=\{compactDisclosurePanel\(\)\}>[\s\S]*?Joining setting: \{admissionModeLabel\(admissionMode\)\}[\s\S]*?Past decisions[\s\S]*?More options/,
   "Join Requests phone entry must keep settings, history, and route tools after the active decision and closed by default."
 );

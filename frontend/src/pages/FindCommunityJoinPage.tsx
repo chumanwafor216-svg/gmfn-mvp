@@ -86,7 +86,10 @@ export default function FindCommunityJoinPage() {
       const out = await searchJoinableCommunities(query.trim());
       setResults(Array.isArray(out?.items) ? out.items : []);
       if (!out?.items?.length) {
-        setNotice({ tone: "info", text: "No opted-in community matched that search. Check the name or ask the community for an invite." });
+        setNotice({
+          tone: "info",
+          text: "No community is available under that name yet. Check the spelling or GSN community ID. The community owner may also need to turn on public join requests.",
+        });
       }
     } catch (error) {
       setNotice({ tone: "error", text: messageFrom(error) });
@@ -213,6 +216,8 @@ export default function FindCommunityJoinPage() {
       eyebrow="Join an existing community"
       title="Find your community"
       summary="Search communities that chose to be discoverable, select the right one, then ask to join. Invite links still work separately."
+      backTo="/welcome"
+      backLabel="Back to welcome"
       exitLabel="Leave join journey"
     >
       <div style={{ display: "grid", gap: 16 }} data-gsn-search-join="true">

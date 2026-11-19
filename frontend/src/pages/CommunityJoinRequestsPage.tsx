@@ -11,13 +11,16 @@ import {
 import {
   adminApproveJoinRequest,
   type CommunityAdmissionMode,
+  type CommunitySearchJoinMode,
   getCommunityAdmissionPolicy,
   getCommunityJoinRequests,
   getJoinApprovalStatus,
+  getCommunitySearchJoinSettings,
   issueJoinActivationAssistance,
   safeCopy,
   selectClan,
   updateCommunityAdmissionPolicy,
+  updateCommunitySearchJoinSettings,
   voteOnJoinRequest,
 } from "../lib/api";
 import { navigateToCta, resolveCtaTarget, type CtaTarget } from "../lib/ctaTargets";
@@ -646,6 +649,162 @@ function admissionModeLabel(value: CommunityAdmissionMode): string {
   return "Committee Voting";
 }
 
+function SearchJoinSettingsControl({
+  enabled,
+  onEnabledChange,
+  admissionMode,
+  onAdmissionModeChange,
+  adminOverride,
+  onAdminOverrideChange,
+  saving,
+  onSave,
+}: {
+  enabled: boolean;
+  onEnabledChange: (value: boolean) => void;
+  admissionMode: CommunitySearchJoinMode;
+  onAdmissionModeChange: (value: CommunitySearchJoinMode) => void;
+  adminOverride: boolean;
+  onAdminOverrideChange: (value: boolean) => void;
+  saving: boolean;
+  onSave: () => void;
+}) {
+  return (
+    <div
+      data-gsn-search-join-settings="true"
+      style={{
+        display: "grid",
+        gap: 12,
+        paddingTop: 16,
+        borderTop: "1px solid #D7E1EC",
+      }}
+    >
+      <div>
+        <div style={sectionLabel("#64748B")}>Community search</div>
+        <strong style={{ display: "block", marginTop: 5, color: "#0B1F33" }}>
+          Let people find this community
+        </strong>
+        <span style={{ display: "block", marginTop: 4, color: "#52667C", lineHeight: 1.5 }}>
+          When this is off, the community stays private and invitation links still work.
+        </span>
+      </div>
+
+      <label
+        style={{
+          display: "grid",
+          gridTemplateColumns: "22px minmax(0, 1fr)",
+          gap: 10,
+          alignItems: "start",
+          color: "#0B1F33",
+          fontWeight: 900,
+          cursor: "pointer",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(event) => onEnabledChange(event.target.checked)}
+          style={{ width: 18, height: 18 }}
+        />
+        <span>Allow people to search for this community and ask to join.</span>
+      </label>
+
+      {enabled ? (
+        <>
+          <div style={{ color: "#52667C", fontWeight: 800 }}>
+            What happens after someone asks?
+          </div>
+          {[
+            {
+              value: "community_vote" as const,
+              title: "Committee Voting",
+              note: "Community members review the request before the person joins.",
+            },
+            {
+              value: "instant_invite" as const,
+              title: "Instant Join",
+              note: "A verified request joins immediately without a vote.",
+            },
+          ].map((option) => {
+            const selected = admissionMode === option.value;
+            return (
+              <label
+                key={option.value}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "22px minmax(0, 1fr)",
+                  gap: 10,
+                  padding: 12,
+                  borderRadius: 14,
+                  border: selected ? "2px solid #C9A136" : "1px solid #D7E1EC",
+                  background: selected ? "#FFF8E3" : "#FFFFFF",
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="community-search-join-mode"
+                  value={option.value}
+                  checked={selected}
+                  onChange={() => onAdmissionModeChange(option.value)}
+                  style={{ width: 18, height: 18, marginTop: 2 }}
+                />
+                <span>
+                  <strong style={{ display: "block", color: "#0B1F33" }}>
+                    {option.title}
+                  </strong>
+                  <span
+                    style={{
+                      display: "block",
+                      marginTop: 3,
+                      color: "#52667C",
+                      fontSize: 13,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {option.note}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+          {admissionMode === "community_vote" ? (
+            <label
+              style={{
+                display: "grid",
+                gridTemplateColumns: "22px minmax(0, 1fr)",
+                gap: 10,
+                color: "#334155",
+                fontWeight: 800,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={adminOverride}
+                onChange={(event) => onAdminOverrideChange(event.target.checked)}
+                style={{ width: 18, height: 18 }}
+              />
+              <span>Allow an admin to approve a public join request immediately.</span>
+            </label>
+          ) : null}
+        </>
+      ) : null}
+
+      <PrimaryButton
+        type="button"
+        onClick={onSave}
+        disabled={saving}
+        busy={saving}
+        busyLabel="Saving..."
+        stableHeight={54}
+        fullWidth
+        debugId="community-join-requests.save-search-join-settings"
+      >
+        Save community search
+      </PrimaryButton>
+    </div>
+  );
+}
+
 
 function qrPolicyReviewContext(
   item: JoinRequestItem | undefined | null
@@ -767,6 +926,11 @@ export default function CommunityJoinRequestsPage() {
   const [votingAdminOverride, setVotingAdminOverride] = useState(false);
   const [canManageAdmission, setCanManageAdmission] = useState(false);
   const [admissionSaving, setAdmissionSaving] = useState(false);
+  const [searchJoinEnabled, setSearchJoinEnabled] = useState(false);
+  const [searchJoinMode, setSearchJoinMode] =
+    useState<CommunitySearchJoinMode>("community_vote");
+  const [searchJoinAdminOverride, setSearchJoinAdminOverride] = useState(false);
+  const [searchJoinSaving, setSearchJoinSaving] = useState(false);
   const [voteDecisions, setVoteDecisions] = useState<Record<number, JoinVoteDecision>>({});
   const [voteReasonCodes, setVoteReasonCodes] = useState<Record<number, string>>({});
   const [showCompletedRequests, setShowCompletedRequests] = useState(false);
@@ -805,9 +969,10 @@ export default function CommunityJoinRequestsPage() {
         throw new Error("This community could not be opened.");
       }
 
-      const [data, policy] = await Promise.all([
+      const [data, policy, searchPolicy] = await Promise.all([
         getCommunityJoinRequests(clanNum),
         getCommunityAdmissionPolicy(clanNum),
+        getCommunitySearchJoinSettings(clanNum),
       ]);
       const rows = Array.isArray(data) ? data : data?.items || [];
       setItems(rows);
@@ -829,6 +994,13 @@ export default function CommunityJoinRequestsPage() {
       setVotingAdminOverride(
         Boolean(policy?.voting_admin_override ?? data?.voting_admin_override)
       );
+      setSearchJoinEnabled(Boolean(searchPolicy?.enabled));
+      setSearchJoinMode(
+        safeStr(searchPolicy?.admission_mode) === "instant_invite"
+          ? "instant_invite"
+          : "community_vote"
+      );
+      setSearchJoinAdminOverride(Boolean(searchPolicy?.admin_override));
       setCanManageAdmission(
         Boolean(
           policy?.can_manage ??
@@ -842,6 +1014,9 @@ export default function CommunityJoinRequestsPage() {
       setReviewerCanPilotApprove(false);
       setLoadedCommunityName("");
       setCanManageAdmission(false);
+      setSearchJoinEnabled(false);
+      setSearchJoinMode("community_vote");
+      setSearchJoinAdminOverride(false);
     } finally {
       setLoading(false);
     }
@@ -1195,6 +1370,37 @@ export default function CommunityJoinRequestsPage() {
         ? successMessage
         : "The copy button did not work. Open the message and copy it by hand."
     );
+  }
+
+  async function saveSearchJoinSettings() {
+    try {
+      setSearchJoinSaving(true);
+      setError("");
+      setSuccess("");
+      const result = await updateCommunitySearchJoinSettings(clanNum, {
+        enabled: searchJoinEnabled,
+        admission_mode: searchJoinMode,
+        admin_override:
+          searchJoinMode === "community_vote" && searchJoinAdminOverride,
+      });
+      setSearchJoinEnabled(Boolean(result?.enabled));
+      setSearchJoinMode(
+        safeStr(result?.admission_mode) === "instant_invite"
+          ? "instant_invite"
+          : "community_vote"
+      );
+      setSearchJoinAdminOverride(Boolean(result?.admin_override));
+      setSuccess(
+        result?.enabled
+          ? "Saved. People can now find this community and ask to join."
+          : "Saved. This community is hidden from public search; invitation links still work."
+      );
+      await load();
+    } catch (err: any) {
+      setError("The community search setting could not be saved. Please try again.");
+    } finally {
+      setSearchJoinSaving(false);
+    }
   }
 
   if (isCompact && !advancedPhoneView) {
@@ -1892,6 +2098,16 @@ export default function CommunityJoinRequestsPage() {
                 >
                   Save joining setting
                 </PrimaryButton>
+                <SearchJoinSettingsControl
+                  enabled={searchJoinEnabled}
+                  onEnabledChange={setSearchJoinEnabled}
+                  admissionMode={searchJoinMode}
+                  onAdmissionModeChange={setSearchJoinMode}
+                  adminOverride={searchJoinAdminOverride}
+                  onAdminOverrideChange={setSearchJoinAdminOverride}
+                  saving={searchJoinSaving}
+                  onSave={() => void saveSearchJoinSettings()}
+                />
               </div>
             </details>
           ) : null}
@@ -2313,6 +2529,18 @@ export default function CommunityJoinRequestsPage() {
             >
               Save this choice
             </PrimaryButton>
+          ) : null}
+          {canManageAdmission ? (
+            <SearchJoinSettingsControl
+              enabled={searchJoinEnabled}
+              onEnabledChange={setSearchJoinEnabled}
+              admissionMode={searchJoinMode}
+              onAdmissionModeChange={setSearchJoinMode}
+              adminOverride={searchJoinAdminOverride}
+              onAdminOverrideChange={setSearchJoinAdminOverride}
+              saving={searchJoinSaving}
+              onSave={() => void saveSearchJoinSettings()}
+            />
           ) : null}
           </div>
         </details>

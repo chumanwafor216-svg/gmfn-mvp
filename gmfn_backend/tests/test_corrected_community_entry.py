@@ -98,6 +98,40 @@ def test_public_search_only_returns_opted_in_communities(client):
         assert db.query(ClanJoinRequest).count() == 0
 
 
+def test_owner_can_enable_search_without_changing_invitation_policy(
+    client,
+    override_clan_ctx_admin,
+):
+    _seed_community(enabled=False)
+
+    before = client.get("/clans/1/search-join-settings")
+    assert before.status_code == 200, before.text
+    assert before.json()["enabled"] is False
+
+    updated = client.patch(
+        "/clans/1/search-join-settings",
+        json={
+            "enabled": True,
+            "admission_mode": "community_vote",
+            "admin_override": True,
+        },
+    )
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["enabled"] is True
+    assert updated.json()["admission_mode"] == "community_vote"
+    assert updated.json()["admin_override"] is True
+
+    visible = client.get("/clans/join-search", params={"query": "Visible"})
+    assert visible.status_code == 200, visible.text
+    assert [item["community_id"] for item in visible.json()["items"]] == [1]
+
+    with SessionLocal() as db:
+        clan = db.get(Clan, 1)
+        assert clan.admission_mode == "instant_invite"
+        assert clan.voting_admin_override is False
+        assert clan.search_join_enabled is True
+
+
 def test_search_join_uses_separate_policy_and_records_immutable_snapshot(client):
     _seed_community(enabled=True, search_mode="community_vote")
     verification_id = _verified_phone(phone="+447700900711")

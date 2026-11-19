@@ -73,6 +73,8 @@ const requests = [
   },
 ];
 let mockedAdmissionMode = "community_vote";
+let mockedSearchJoinEnabled = false;
+let savedSearchJoinPayload = null;
 
 async function installApiMocks(page) {
   await page.route("**/*", async (route) => {
@@ -135,6 +137,23 @@ async function installApiMocks(page) {
           community_name: "Homeland Isa",
           admission_mode: mockedAdmissionMode,
           voting_admin_override: false,
+          can_manage: true,
+        })
+      );
+    }
+
+    if (path === "/clans/8/search-join-settings") {
+      if (route.request().method() === "PATCH") {
+        savedSearchJoinPayload = route.request().postDataJSON();
+        mockedSearchJoinEnabled = Boolean(savedSearchJoinPayload?.enabled);
+      }
+      return route.fulfill(
+        json({
+          community_id: 8,
+          community_name: "Homeland Isa",
+          enabled: mockedSearchJoinEnabled,
+          admission_mode: savedSearchJoinPayload?.admission_mode || "community_vote",
+          admin_override: Boolean(savedSearchJoinPayload?.admin_override),
           can_manage: true,
         })
       );
@@ -259,6 +278,19 @@ async function run() {
         await settings.getByText("Committee Voting", { exact: true }).isVisible(),
       "Joining settings must use the restored owner-approved names."
     );
+    const searchJoinToggle = settings.getByLabel(
+      "Allow people to search for this community and ask to join.",
+      { exact: true }
+    );
+    await searchJoinToggle.check();
+    await settings
+      .getByRole("button", { name: "Save community search", exact: true })
+      .click();
+    assert(
+      savedSearchJoinPayload?.enabled === true &&
+        savedSearchJoinPayload?.admission_mode === "community_vote",
+      "The owner search opt-in must save independently through the search-join settings contract."
+    );
 
     if (screenshotDir) {
       await page.screenshot({
@@ -291,7 +323,7 @@ async function run() {
     }
 
     console.log(
-      "Community Join Requests simple-phone smoke passed: exact notification focus, text-only status, three decisions, truthful Instant Join no-vote state, closed secondary tools, restored setting names, alternate-request opening, and 390px containment."
+      "Community Join Requests simple-phone smoke passed: exact notification focus, text-only status, three decisions, truthful Instant Join no-vote state, closed secondary tools, restored setting names, saved public-search opt-in, alternate-request opening, and 390px containment."
     );
   } finally {
     if (browser) await browser.close();

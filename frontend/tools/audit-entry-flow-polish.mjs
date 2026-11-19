@@ -159,6 +159,7 @@ entryPages.forEach((file) => {
 [
   ["src/pages/WelcomePage.tsx", /<EntryBackLink to="\/cover" \/>/],
   ["src/pages/LoginPage.tsx", /<EntryBackLink to="\/welcome" \/>/],
+  ["src/pages/FindCommunityJoinPage.tsx", /backTo="\/welcome"[\s\S]*?backLabel="Back to welcome"/],
   ["src/components/CommunityEntryShell.tsx", /exitTo = "\/cover"[\s\S]*?<OriginLink to=\{exitTo\}/],
   ["src/pages/JoinEntryPage.tsx", /<EntryBackLink to="\/welcome" \/>/],
   ["src/pages/JoinApprovalPage.tsx", /debugId="join-approval\.back"[\s\S]*?debugId=\{welcomeCta\.debugId\}/],

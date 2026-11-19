@@ -76,10 +76,17 @@ export function EntryActionButton({
   );
 }
 
-export function EntryBackLink({ to }: { to: string }) {
+export function EntryBackLink({
+  to,
+  label = "Back",
+}: {
+  to: string;
+  label?: string;
+}) {
   return (
     <StableCtaLink
       to={to}
+      aria-label={label}
       kind="secondary"
       debugId="entry-controls.back"
       style={{

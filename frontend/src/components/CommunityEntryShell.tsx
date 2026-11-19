@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import OriginLink from "./OriginLink";
+import { EntryBackLink } from "./EntryControls";
 import {
   brandActionButton,
   brandHelperText,
@@ -44,6 +45,8 @@ export function CommunityEntryShell({
   eyebrow,
   title,
   summary,
+  backTo,
+  backLabel = "Back to welcome",
   exitLabel = "Back to GSN entry",
   exitTo = "/cover",
   children,
@@ -51,6 +54,8 @@ export function CommunityEntryShell({
   eyebrow: string;
   title: string;
   summary: string;
+  backTo?: string;
+  backLabel?: string;
   exitLabel?: string;
   exitTo?: string;
   children: ReactNode;
@@ -66,6 +71,11 @@ export function CommunityEntryShell({
       }}
     >
       <div style={{ width: "min(100%, 620px)", margin: "0 auto" }}>
+        {backTo ? (
+          <div style={{ display: "flex", marginBottom: 12 }}>
+            <EntryBackLink to={backTo} label={backLabel} />
+          </div>
+        ) : null}
         <header
           style={{
             borderRadius: 26,
