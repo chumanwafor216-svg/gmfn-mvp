@@ -101,8 +101,38 @@ assertContains(
 );
 
 assertContains(
-  /const \[showCompletedRequests, setShowCompletedRequests\] = useState\(false\);[\s\S]*?const visibleItems = useMemo\(\(\) => \{[\s\S]*?if \(showCompletedRequests\) return items;[\s\S]*?friendlyStatus\(item\.status\) === "pending"[\s\S]*?debugId="community-join-requests\.toggle-completed"[\s\S]*?visibleItems\.map/,
+  /const \[showCompletedRequests, setShowCompletedRequests\] = useState\(false\);[\s\S]*?const visibleItems = useMemo\(\(\) => \{[\s\S]*?showCompletedRequests[\s\S]*?friendlyStatus\(item\.status\) === "pending"[\s\S]*?debugId="community-join-requests\.toggle-completed"[\s\S]*?visibleItems\.map/,
   "Join Requests must keep completed records out of the working queue by default while preserving a stable Show completed review path."
+);
+
+assertContains(
+  /const requestedRequestId = useMemo[\s\S]*?new URLSearchParams\(location\.search\)\.get\("request_id"\)[\s\S]*?if \(left\.id === requestedRequestId\) return -1[\s\S]*?setActiveRequestId\(requestedItem\.id\)/,
+  "Join Requests notifications must focus the exact pending person identified by request_id."
+);
+
+assertContains(
+  /if \(isCompact && !advancedPhoneView\)[\s\S]*?data-gsn-join-requests-phone="focused-decision"[\s\S]*?data-gsn-join-request-active=\{String\(activeItem\.id\)\}[\s\S]*?Should this person join\?[\s\S]*?"Approve"[\s\S]*?"Ignore for now"[\s\S]*?"Disapprove"/,
+  "Join Requests phone entry must lead with one exact person and the three owner-approved decisions."
+);
+
+assertContains(
+  /function admissionModeLabel[\s\S]*?"Instant Join"[\s\S]*?"Admin Approval"[\s\S]*?"Committee Voting"[\s\S]*?Joining setting: \{admissionModeLabel\(admissionMode\)\}/,
+  "Join Requests must restore the owner-approved joining-setting names."
+);
+
+assertContains(
+  /data-gsn-join-request-active=\{String\(activeItem\.id\)\}[\s\S]*?<details style=\{whitePanel\(14\)\}>[\s\S]*?Joining setting: \{admissionModeLabel\(admissionMode\)\}[\s\S]*?Past decisions[\s\S]*?More options/,
+  "Join Requests phone entry must keep settings, history, and route tools after the active decision and closed by default."
+);
+
+assertContains(
+  /advancedParams\.set\("advanced", "1"\)[\s\S]*?debugId="community-join-requests\.advanced-view"/,
+  "Join Requests must preserve the full existing workspace behind an explicit Advanced view."
+);
+
+assertNotContains(
+  /title: "Join with an invite"|title: "One leader decides"|title: "Several people agree"/g,
+  "Join Requests must not restore the replaced joining-setting names."
 );
 
 assertContains(

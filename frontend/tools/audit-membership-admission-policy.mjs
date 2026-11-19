@@ -65,7 +65,7 @@ requirePattern(
 );
 requirePattern(
   "frontend/src/pages/CommunityJoinRequestsPage.tsx",
-  /Choose one simple option[\s\S]*?Join with an invite[\s\S]*?One leader decides[\s\S]*?Several people agree[\s\S]*?admissionMode === "community_vote"[\s\S]*?Let one community leader accept someone without waiting for everyone/,
+  /Choose one simple option[\s\S]*?Instant Join[\s\S]*?Admin Approval[\s\S]*?Committee Voting[\s\S]*?admissionMode === "community_vote"[\s\S]*?Allow an admin to approve immediately during Committee Voting/,
   "The settings surface must keep one clear three-mode choice and show override only for voting."
 );
 requirePattern(

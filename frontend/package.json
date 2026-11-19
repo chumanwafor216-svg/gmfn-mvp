@@ -107,6 +107,7 @@
     "audit:community-home-phone-buttons": "node tools/audit-community-home-phone-buttons.mjs",
     "audit:community-home-billboard": "node tools/audit-community-home-billboard.mjs",
     "audit:community-join-requests-layout": "node tools/audit-community-join-requests-layout.mjs",
+    "smoke:community-join-requests-simple-phone": "node tools/smoke-community-join-requests-simple-phone.mjs",
     "audit:membership-admission-policy": "node tools/audit-membership-admission-policy.mjs",
     "audit:notifications-button-inventory": "node tools/audit-notifications-button-inventory.mjs",
     "smoke:action-inbox-simple-phone": "node tools/smoke-action-inbox-simple-phone.mjs",

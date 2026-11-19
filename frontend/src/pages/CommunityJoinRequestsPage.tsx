@@ -556,6 +556,12 @@ function statusLabel(value: any): string {
   return "Waiting";
 }
 
+function admissionModeLabel(value: CommunityAdmissionMode): string {
+  if (value === "instant_invite") return "Instant Join";
+  if (value === "admin_approval") return "Admin Approval";
+  return "Committee Voting";
+}
+
 
 function qrPolicyReviewContext(
   item: JoinRequestItem | undefined | null
@@ -667,6 +673,7 @@ export default function CommunityJoinRequestsPage() {
     useState<ActivationAssistanceResult | null>(null);
   const [assistanceCopyStatus, setAssistanceCopyStatus] = useState("");
   const activationPackRef = useRef<HTMLDivElement | null>(null);
+  const requestFocusAppliedRef = useRef<number | null>(null);
   const [activeRequestId, setActiveRequestId] = useState<number | null>(null);
   const [reviewerRole, setReviewerRole] = useState<string>("user");
   const [reviewerCanPilotApprove, setReviewerCanPilotApprove] = useState(false);
@@ -682,6 +689,15 @@ export default function CommunityJoinRequestsPage() {
 
   const clanNum = Number(clanId || 0);
   const reviewerIsAdmin = reviewerRole.toLowerCase() === "admin";
+  const requestedRequestId = useMemo(() => {
+    const value = new URLSearchParams(location.search).get("request_id");
+    const parsed = Number(value || 0);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }, [location.search]);
+  const advancedPhoneView = useMemo(
+    () => new URLSearchParams(location.search).get("advanced") === "1",
+    [location.search]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -788,13 +804,35 @@ export default function CommunityJoinRequestsPage() {
   }, [items]);
 
   const visibleItems = useMemo(() => {
-    if (showCompletedRequests) return items;
-    return items.filter((item) => friendlyStatus(item.status) === "pending");
-  }, [items, showCompletedRequests]);
+    const rows = showCompletedRequests
+      ? items
+      : items.filter((item) => friendlyStatus(item.status) === "pending");
+    if (!requestedRequestId) return rows;
+    return [...rows].sort((left, right) => {
+      if (left.id === requestedRequestId) return -1;
+      if (right.id === requestedRequestId) return 1;
+      return 0;
+    });
+  }, [items, requestedRequestId, showCompletedRequests]);
 
   useEffect(() => {
     if (!visibleItems.length) {
       setActiveRequestId(null);
+      return;
+    }
+
+    const requestedItem = requestedRequestId
+      ? visibleItems.find((item) => item.id === requestedRequestId)
+      : null;
+    if (!requestedRequestId) {
+      requestFocusAppliedRef.current = null;
+    }
+    if (
+      requestedItem &&
+      requestFocusAppliedRef.current !== requestedItem.id
+    ) {
+      requestFocusAppliedRef.current = requestedItem.id;
+      setActiveRequestId(requestedItem.id);
       return;
     }
 
@@ -803,7 +841,7 @@ export default function CommunityJoinRequestsPage() {
 
     const firstPending = visibleItems.find((item) => friendlyStatus(item.status) === "pending");
     setActiveRequestId(firstPending?.id || visibleItems[0]?.id || null);
-  }, [activeRequestId, visibleItems]);
+  }, [activeRequestId, requestedRequestId, visibleItems]);
 
   useEffect(() => {
     if (!activationPack?.gmfn_id || !activationPackRef.current) return;
@@ -1075,6 +1113,762 @@ export default function CommunityJoinRequestsPage() {
     );
   }
 
+  if (isCompact && !advancedPhoneView) {
+    const activeItem =
+      visibleItems.find((item) => item.id === activeRequestId) ||
+      visibleItems[0] ||
+      null;
+    const otherWaitingItems = activeItem
+      ? visibleItems.filter((item) => item.id !== activeItem.id)
+      : [];
+    const completedItems = items.filter(
+      (item) => friendlyStatus(item.status) !== "pending"
+    );
+    const advancedParams = new URLSearchParams(location.search);
+    advancedParams.set("advanced", "1");
+    const advancedPath =
+      location.pathname + "?" + advancedParams.toString();
+
+    const activeApplicantName = activeItem
+      ? safeStr(activeItem.applicant_name || activeItem.applicant_nickname)
+      : "";
+    const activeApplicantPhone = activeItem
+      ? safeStr(activeItem.applicant_phone_e164)
+      : "";
+    const activeApplicantEmail = activeItem
+      ? publicApplicantEmail(activeItem.applicant_email)
+      : "";
+    const activeApplicantLabel = activeItem
+      ? safeStr(
+          activeApplicantName ||
+            activeApplicantPhone ||
+            activeApplicantEmail ||
+            activeItem.applicant_gmfn_id ||
+            "Applicant"
+        )
+      : "";
+    const activeAdmissionMode = activeItem
+      ? (safeStr(
+          activeItem.admission_mode || admissionMode
+        ) as CommunityAdmissionMode)
+      : admissionMode;
+    const activeQrGuardrail = activeItem?.qr_policy_review_guardrail || null;
+    const activeAdminOverrideBlocked = Boolean(
+      activeItem &&
+        activeQrGuardrail?.pilot_override_blocked &&
+        (activeQrGuardrail.approval_posture === "market_access" ||
+          Number(activeItem.active_member_count || 0) > 1)
+    );
+    const activeCanAdminApprove = Boolean(
+      activeItem &&
+        (activeItem.reviewer_can_admin_approve ??
+          (reviewerCanPilotApprove &&
+            (activeAdmissionMode === "admin_approval" ||
+              (activeAdmissionMode === "community_vote" &&
+                votingAdminOverride))))
+    );
+    const activeCanAdminApproveNow =
+      activeCanAdminApprove && !activeAdminOverrideBlocked;
+    const activeCanAnswer =
+      activeAdmissionMode === "community_vote" ||
+      (activeAdmissionMode === "admin_approval" && reviewerIsAdmin);
+    const activeIsBusy = activeItem ? busyId === activeItem.id : false;
+
+    return (
+      <div style={pageShell()} data-gsn-join-requests-phone="focused-decision">
+        <PageTopNav
+          sectionLabel="New members"
+          title="Join Request"
+          subtitle=""
+        />
+
+        <div style={contentRail()}>
+          <section
+            style={{
+              ...darkPanel(14),
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr) auto",
+              gap: 10,
+              alignItems: "center",
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div style={sectionLabel()}>For {selectedCommunityName}</div>
+              <div
+                style={{
+                  marginTop: 5,
+                  color: "#FFFFFF",
+                  fontSize: 18,
+                  fontWeight: 1000,
+                  lineHeight: 1.25,
+                }}
+              >
+                {admissionModeLabel(admissionMode)}
+              </div>
+            </div>
+            <span style={iconTile("person", "gold")}>
+              <JoinRequestIcon name="person" size={26} />
+            </span>
+          </section>
+
+          {error ? (
+            <div
+              role="alert"
+              style={{
+                ...whitePanel(14),
+                border: "1px solid #FECACA",
+                color: "#991B1B",
+                fontWeight: 900,
+              }}
+            >
+              {iconText("reject", error)}
+            </div>
+          ) : null}
+
+          {success ? (
+            <div
+              role="status"
+              aria-live="polite"
+              style={{
+                ...whitePanel(14),
+                border: "1px solid #A7F3D0",
+                color: "#065F46",
+                fontWeight: 900,
+              }}
+            >
+              {iconText("approve", success)}
+            </div>
+          ) : null}
+
+          {activationPack?.gmfn_id ? (
+            <section
+              ref={activationPackRef}
+              style={{
+                ...whitePanel(16),
+                border: "2px solid #C9A136",
+                scrollMarginTop: 92,
+              }}
+              data-gsn-activation-handoff="admin-share"
+            >
+              <div style={sectionLabel("#8A5A08")}>Person accepted</div>
+              <div
+                style={{
+                  marginTop: 6,
+                  color: "#0B1F33",
+                  fontSize: 21,
+                  fontWeight: 1000,
+                }}
+              >
+                Send their joining details
+              </div>
+              <div
+                style={{
+                  marginTop: 7,
+                  color: "#475569",
+                  fontSize: 13,
+                  fontWeight: 800,
+                  lineHeight: 1.45,
+                }}
+              >
+                Copy the message, then send it privately to the person.
+              </div>
+
+              <PrimaryButton
+                type="button"
+                disabled={!safeStr(activationPack.activation_message)}
+                onClick={() =>
+                  void copyActivationText(
+                    safeStr(activationPack.activation_message),
+                    "Message copied. Send it to the person."
+                  )
+                }
+                stableHeight={54}
+                fullWidth
+                debugId="community-join-requests.copy-activation-message"
+                style={{ marginTop: 12 }}
+              >
+                {iconText("copy", "Copy joining message")}
+              </PrimaryButton>
+
+              <details style={{ marginTop: 10 }}>
+                <summary
+                  style={{
+                    cursor: "pointer",
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                  }}
+                >
+                  More joining details
+                </summary>
+                <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+                  <SecondaryButton
+                    type="button"
+                    disabled={!safeStr(activationPack.activation_link)}
+                    onClick={() =>
+                      void copyActivationText(
+                        safeStr(activationPack.activation_link),
+                        "Joining link copied. Send it to the person."
+                      )
+                    }
+                    stableHeight={52}
+                    fullWidth
+                    debugId="community-join-requests.copy-activation-link"
+                  >
+                    {iconText("copy", "Copy joining link")}
+                  </SecondaryButton>
+                  <SecondaryButton
+                    type="button"
+                    onClick={() =>
+                      setActivationPackDetailsOpen((value) => !value)
+                    }
+                    stableHeight={52}
+                    fullWidth
+                    debugId="community-join-requests.toggle-activation-details"
+                  >
+                    {iconText(
+                      "review",
+                      activationPackDetailsOpen ? "Hide message" : "Show message"
+                    )}
+                  </SecondaryButton>
+                  {activationPackDetailsOpen ? (
+                    <pre
+                      data-gsn-activation-message-preview="collapsed-until-opened"
+                      style={{
+                        margin: 0,
+                        padding: 12,
+                        borderRadius: 12,
+                        background: "#F8FAFC",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                        fontFamily: "inherit",
+                        color: "#0B1F33",
+                        lineHeight: 1.55,
+                        fontSize: 13,
+                      }}
+                    >
+                      {safeStr(activationPack.activation_message)}
+                    </pre>
+                  ) : null}
+                </div>
+              </details>
+
+              {activationCopyStatus ? (
+                <div
+                  role="status"
+                  style={{
+                    marginTop: 10,
+                    color: "#334155",
+                    fontSize: 13,
+                    fontWeight: 850,
+                  }}
+                >
+                  {activationCopyStatus}
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
+          {loading ? (
+            <div style={whitePanel(16)}>
+              <strong>{iconText("clock", "Opening this request...")}</strong>
+            </div>
+          ) : null}
+
+          {!loading && !error && activeItem ? (
+            <article
+              style={{
+                ...whitePanel(16),
+                border: "1px solid rgba(34,120,242,0.34)",
+              }}
+              data-gsn-join-request-active={String(activeItem.id)}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                }}
+              >
+                <div style={sectionLabel("#8A5A08")}>Waiting for an answer</div>
+                <span style={statusPill("pending")}>
+                  <StatusMark status="pending" />
+                  Waiting
+                </span>
+              </div>
+
+              <h1
+                style={{
+                  margin: "10px 0 0",
+                  color: "#0B1F33",
+                  fontSize: 28,
+                  fontWeight: 1000,
+                  lineHeight: 1.08,
+                  overflowWrap: "break-word",
+                }}
+              >
+                {activeApplicantLabel}
+              </h1>
+
+              {activeApplicantPhone &&
+              activeApplicantPhone !== activeApplicantLabel ? (
+                <div
+                  style={{
+                    marginTop: 5,
+                    color: "#1D4ED8",
+                    fontSize: 15,
+                    fontWeight: 900,
+                  }}
+                >
+                  {activeApplicantPhone}
+                </div>
+              ) : null}
+
+              <div
+                style={{
+                  marginTop: 9,
+                  color: "#334155",
+                  fontSize: 14,
+                  fontWeight: 750,
+                  lineHeight: 1.45,
+                }}
+              >
+                Invited by{" "}
+                <strong>
+                  {safeStr(
+                    activeItem.invited_by_display || "a community member"
+                  )}
+                </strong>
+              </div>
+
+              {activeAdmissionMode === "community_vote" ? (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: 12,
+                    borderRadius: 12,
+                    background: "#EFF6FF",
+                    color: "#1E3A8A",
+                    fontSize: 14,
+                    fontWeight: 850,
+                    lineHeight: 1.45,
+                  }}
+                >
+                  {approvalProgressText(activeItem)}.
+                </div>
+              ) : null}
+
+              <div
+                style={{
+                  marginTop: 16,
+                  color: "#0B1F33",
+                  fontSize: 18,
+                  fontWeight: 1000,
+                }}
+              >
+                Should this person join?
+              </div>
+
+              {activeCanAnswer ? (
+                <CardActionRow
+                  align="stretch"
+                  style={{
+                    marginTop: 12,
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr)",
+                    gap: 10,
+                    minHeight: 0,
+                    width: "100%",
+                  }}
+                >
+                  <PrimaryButton
+                    type="button"
+                    onClick={() =>
+                      activeCanAdminApproveNow
+                        ? handlePilotApprove(activeItem.id)
+                        : handleVote(activeItem.id, "approve")
+                    }
+                    disabled={activeIsBusy}
+                    busy={activeIsBusy}
+                    busyLabel="Working..."
+                    stableHeight={58}
+                    fullWidth
+                    debugId="community-join-requests.approve"
+                    style={decisionButtonStyle("approve")}
+                  >
+                    {iconText("approve", "Approve")}
+                  </PrimaryButton>
+
+                  {activeAdmissionMode === "community_vote" ? (
+                    <SecondaryButton
+                      type="button"
+                      onClick={() => handleVote(activeItem.id, "neutral")}
+                      disabled={activeIsBusy}
+                      busy={activeIsBusy}
+                      busyLabel="Working..."
+                      stableHeight={58}
+                      fullWidth
+                      debugId="community-join-requests.neutral"
+                      style={decisionButtonStyle("neutral")}
+                    >
+                      {iconText("neutral", "Ignore for now")}
+                    </SecondaryButton>
+                  ) : null}
+
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => handleVote(activeItem.id, "reject")}
+                    disabled={activeIsBusy}
+                    busy={activeIsBusy}
+                    busyLabel="Working..."
+                    stableHeight={58}
+                    fullWidth
+                    debugId="community-join-requests.reject"
+                    style={decisionButtonStyle("reject")}
+                  >
+                    {iconText("reject", "Disapprove")}
+                  </SecondaryButton>
+                </CardActionRow>
+              ) : (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: 12,
+                    borderRadius: 12,
+                    background: "#FFF8E7",
+                    color: "#7C5A06",
+                    fontWeight: 850,
+                    lineHeight: 1.45,
+                  }}
+                >
+                  {activeAdmissionMode === "admin_approval"
+                    ? "An admin must approve or disapprove this request."
+                    : "This request does not need a vote."}
+                </div>
+              )}
+
+              {activeAdmissionMode === "community_vote" ? (
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#64748B",
+                    fontSize: 12,
+                    fontWeight: 750,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  Ignore for now records that you are not deciding. You can
+                  change your answer later while the request is still open.
+                </div>
+              ) : null}
+            </article>
+          ) : null}
+
+          {!loading && !error && !activeItem ? (
+            <div style={whitePanel(16)}>
+              <strong>{iconText("approve", "No one is waiting to join.")}</strong>
+              <div
+                style={{
+                  marginTop: 7,
+                  color: "#475569",
+                  fontSize: 13,
+                  fontWeight: 750,
+                }}
+              >
+                You are up to date.
+              </div>
+            </div>
+          ) : null}
+
+          {otherWaitingItems.length > 0 ? (
+            <details style={whitePanel(14)}>
+              <summary
+                style={{
+                  cursor: "pointer",
+                  color: "#0B1F33",
+                  fontSize: 16,
+                  fontWeight: 1000,
+                }}
+              >
+                {otherWaitingItems.length} more waiting
+              </summary>
+              <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                {otherWaitingItems.map((item) => {
+                  const label = safeStr(
+                    item.applicant_name ||
+                      item.applicant_nickname ||
+                      item.applicant_phone_e164 ||
+                      publicApplicantEmail(item.applicant_email) ||
+                      item.applicant_gmfn_id ||
+                      "Applicant"
+                  );
+                  return (
+                    <div
+                      key={item.id}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "minmax(0, 1fr) 100px",
+                        gap: 10,
+                        alignItems: "center",
+                        padding: 10,
+                        borderRadius: 12,
+                        background: "#F8FAFC",
+                      }}
+                    >
+                      <strong style={{ minWidth: 0, overflowWrap: "break-word" }}>
+                        {label}
+                      </strong>
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => setActiveRequestId(item.id)}
+                        stableHeight={46}
+                        fullWidth
+                        debugId="community-join-requests.review-request"
+                      >
+                        Open
+                      </SecondaryButton>
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
+          ) : null}
+
+          {canManageAdmission ? (
+            <details style={whitePanel(14)}>
+              <summary
+                style={{
+                  cursor: "pointer",
+                  color: "#0B1F33",
+                  fontSize: 16,
+                  fontWeight: 1000,
+                }}
+              >
+                Joining setting: {admissionModeLabel(admissionMode)}
+              </summary>
+              <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                {[
+                  {
+                    value: "instant_invite",
+                    title: "Instant Join",
+                    note: "A valid invite lets the person join immediately.",
+                  },
+                  {
+                    value: "admin_approval",
+                    title: "Admin Approval",
+                    note: "A community admin approves or disapproves.",
+                  },
+                  {
+                    value: "community_vote",
+                    title: "Committee Voting",
+                    note: "Community members answer before the person joins.",
+                  },
+                ].map((option) => {
+                  const selected = admissionMode === option.value;
+                  return (
+                    <label
+                      key={option.value}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "22px minmax(0, 1fr)",
+                        gap: 10,
+                        padding: 12,
+                        borderRadius: 14,
+                        border: selected
+                          ? "2px solid #C9A136"
+                          : "1px solid #D7E1EC",
+                        background: selected ? "#FFF8E3" : "#FFFFFF",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="community-admission-mode-phone"
+                        value={option.value}
+                        checked={selected}
+                        onChange={() =>
+                          setAdmissionMode(
+                            option.value as CommunityAdmissionMode
+                          )
+                        }
+                        style={{ width: 18, height: 18, marginTop: 2 }}
+                      />
+                      <span>
+                        <strong style={{ display: "block", color: "#0B1F33" }}>
+                          {option.title}
+                        </strong>
+                        <span
+                          style={{
+                            display: "block",
+                            marginTop: 3,
+                            color: "#52667C",
+                            fontSize: 13,
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {option.note}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+
+                {admissionMode === "community_vote" ? (
+                  <label
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "22px minmax(0, 1fr)",
+                      gap: 10,
+                      color: "#334155",
+                      fontWeight: 800,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={votingAdminOverride}
+                      onChange={(event) =>
+                        setVotingAdminOverride(event.target.checked)
+                      }
+                      style={{ width: 18, height: 18 }}
+                    />
+                    <span>
+                      Allow an admin to approve immediately during Committee
+                      Voting.
+                    </span>
+                  </label>
+                ) : null}
+
+                <PrimaryButton
+                  type="button"
+                  onClick={() => void saveAdmissionPolicy()}
+                  disabled={admissionSaving}
+                  busy={admissionSaving}
+                  busyLabel="Saving..."
+                  stableHeight={54}
+                  fullWidth
+                  debugId="community-join-requests.save-admission-policy"
+                >
+                  Save joining setting
+                </PrimaryButton>
+              </div>
+            </details>
+          ) : null}
+
+          {completedItems.length > 0 ? (
+            <details style={whitePanel(14)}>
+              <summary
+                style={{
+                  cursor: "pointer",
+                  color: "#0B1F33",
+                  fontSize: 16,
+                  fontWeight: 1000,
+                }}
+              >
+                Past decisions ({completedItems.length})
+              </summary>
+              <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                {completedItems.map((item) => {
+                  const status = friendlyStatus(item.status);
+                  const label = safeStr(
+                    item.applicant_name ||
+                      item.applicant_nickname ||
+                      item.applicant_phone_e164 ||
+                      publicApplicantEmail(item.applicant_email) ||
+                      item.applicant_gmfn_id ||
+                      "Applicant"
+                  );
+                  return (
+                    <div
+                      key={item.id}
+                      style={{
+                        padding: 11,
+                        borderRadius: 12,
+                        background: "#F8FAFC",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          color: "#0B1F33",
+                          fontWeight: 900,
+                        }}
+                      >
+                        <span>{label}</span>
+                        <span>{statusLabel(status)}</span>
+                      </div>
+                      {status === "approved" ? (
+                        <SecondaryButton
+                          type="button"
+                          onClick={() => void openApprovedHandoff(item)}
+                          disabled={activationHandoffBusyId === item.id}
+                          busy={activationHandoffBusyId === item.id}
+                          busyLabel="Opening..."
+                          stableHeight={48}
+                          fullWidth
+                          debugId="community-join-requests.open-approved-handoff"
+                          style={{ marginTop: 9 }}
+                        >
+                          Send joining details
+                        </SecondaryButton>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
+          ) : null}
+
+          <details style={whitePanel(14)}>
+            <summary
+              style={{
+                cursor: "pointer",
+                color: "#0B1F33",
+                fontSize: 16,
+                fontWeight: 1000,
+              }}
+            >
+              More options
+            </summary>
+            <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+              <SecondaryButton
+                type="button"
+                onClick={() => void load()}
+                disabled={loading}
+                busy={loading}
+                busyLabel="Refreshing..."
+                stableHeight={52}
+                fullWidth
+                debugId="community-join-requests.refresh"
+              >
+                {iconText("refresh", "Refresh")}
+              </SecondaryButton>
+              <SecondaryButton
+                type="button"
+                onClick={goBack}
+                stableHeight={52}
+                fullWidth
+                debugId={communityHomeCta.debugId}
+              >
+                {iconText("home", "Community Home")}
+              </SecondaryButton>
+              <StableCtaLink
+                to={advancedPath}
+                kind="secondary"
+                stableHeight={52}
+                fullWidth
+                debugId="community-join-requests.advanced-view"
+              >
+                {iconText("review", "Advanced view")}
+              </StableCtaLink>
+            </div>
+          </details>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={pageShell()}>
       <PageTopNav
@@ -1168,11 +1962,7 @@ export default function CommunityJoinRequestsPage() {
                   fontSize: isCompact ? 15 : 18,
                 }}
               >
-                {admissionMode === "instant_invite"
-                  ? "Anyone with a fresh invite can join."
-                  : admissionMode === "admin_approval"
-                    ? "One community leader decides."
-                    : "Several trusted people must agree."}
+                Joining setting: {admissionModeLabel(admissionMode)}
               </div>
 
             </div>
@@ -1285,18 +2075,18 @@ export default function CommunityJoinRequestsPage() {
             {[
               {
                 value: "instant_invite",
-                title: "Join with an invite",
-                note: "A fresh invite lets one person join without waiting.",
+                title: "Instant Join",
+                note: "A valid invite lets the person join immediately.",
               },
               {
                 value: "admin_approval",
-                title: "One leader decides",
-                note: "One community leader says yes or no.",
+                title: "Admin Approval",
+                note: "A community admin approves or disapproves.",
               },
               {
                 value: "community_vote",
-                title: "Several people agree",
-                note: "Trusted community members answer before the person joins.",
+                title: "Committee Voting",
+                note: "Community members answer before the person joins.",
               },
             ].map((option) => {
               const selected = admissionMode === option.value;
@@ -1364,7 +2154,9 @@ export default function CommunityJoinRequestsPage() {
                 onChange={(event) => setVotingAdminOverride(event.target.checked)}
                 style={{ width: 18, height: 18 }}
               />
-              <span>Let one community leader accept someone without waiting for everyone.</span>
+              <span>
+                Allow an admin to approve immediately during Committee Voting.
+              </span>
             </label>
           ) : null}
 
