@@ -126,6 +126,54 @@ def test_reference_board_reconciles_fulfilment_shortfall_and_recovery() -> None:
     assert board["frequency_continuity_proof"]["accepted_count"] == 5
     assert board["frequency_continuity_proof"]["suppressed_count"] == 1
     assert board["settings"]["canonical_live_delivery_connected"] is False
+    assert board["settings"]["inactive_windows"][0]["code"] == "overnight"
+    assert board["settings"]["inactive_windows"][0]["allocated_opportunities"] == 0
+    assert board["programme_board"]["available_views"] == [
+        "day",
+        "week",
+        "accessible_list",
+    ]
+    assert board["programme_board"]["filters"]["programme_types"] == [
+        "house_campaign",
+        "merchant_purchase",
+        "sponsor_programme",
+    ]
+    assert board["programme_board"]["day_view"]["rows"][0]["code"] == "overnight"
+    assert board["programme_board"]["day_view"]["rows"][0]["programmes"] == []
+    assert len(board["programme_board"]["week_overview"]["days"]) == 7
+    change = board["contract_change_rejection_proof"]
+    assert change["status"] == "rejected"
+    assert change["reason_code"] == "audience_scope_exceeds_basic_allocations"
+    assert change["entitlement_before"] == change["entitlement_after"] == 30
+    assert change["live_booking_changed"] is False
+    assert change["live_capacity_changed"] is False
+    assert change["live_credit_changed"] is False
+
+
+def test_programme_clock_is_authoritative_and_browser_timezone_is_ignored() -> None:
+    preview = preview_programmes(
+        [
+            {
+                "plan_id": "dst-clock-proof",
+                "advert_id": "offer-clock-001",
+                "community_ids": [10],
+                "credits": 1,
+                "funding_classification": "house",
+                "service_date": "2027-03-28",
+                "timezone": "Europe/London",
+                "browser_timezone": "America/New_York",
+                "region": "GB-SCT",
+            }
+        ]
+    )
+
+    schedule = preview["programmes"][0]["schedule"]
+    assert schedule["timezone"] == "Europe/London"
+    assert schedule["browser_timezone_authoritative"] is False
+    assert schedule["authoritative_timezone_source"] == "programme_booking"
+    assert schedule["dayparts"][0]["starts_at"].endswith("+01:00")
+    assert schedule["inactive_windows"][0]["policy"] == "no_active_allocation_policy"
+    assert schedule["inactive_windows"][0]["allocated_opportunities"] == 0
 
 
 def test_programme_board_route_is_admin_only_and_feature_gated(

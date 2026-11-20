@@ -106,11 +106,18 @@ for (const text of [
   "Programme board",
   "Preview current draft",
   "Show reference scenarios",
+  "Programme tray",
+  "Day programme board",
+  "Week overview",
+  "Selected programme inspector",
+  "Filter programme type",
+  "No active allocation policy",
   "Accessible schedule list",
   "consideration counts as supplied: <strong>No</strong>",
   "Interrupted batch recovery",
-  "Pause maps to reversible",
-  "permanent stop maps to",
+  "Rejected contract and capacity change proof",
+  "it is not a general pause/resume control",
+  "Permanent stop uses",
   'debugId="admin-gsn-campaign.simulation-preview"',
 ]) {
   requireText(pageFile, page, text, "Missing Spotlight Slice 2 programme-board contract: " + text + ".");
@@ -132,11 +139,17 @@ for (const text of [
   "RECOGNISED_VIEWER_DAILY_CAP = 5",
   '"considered_counts_as_supplied": False',
   '"booking_and_community_changes_reset_count": False',
+  '"browser_timezone_authoritative": False',
+  '"policy": "no_active_allocation_policy"',
+  '"general_pause_resume_available": False',
+  '"unknown_capacity_is_unlimited": False',
   '"selection_does_not_multiply_entitlement": True',
   '"live_pipeline_credit_debit": "0.00"',
   '"booking_persisted_live": False',
   '"campaign_activated_live": False',
   "simulate_interrupted_batch_recovery",
+  "simulate_contract_change_rejection",
+  '"available_views": ["day", "week", "accessible_list"]',
 ]) {
   requireText(simulationFile, simulation, text, "Missing isolated simulation contract: " + text + ".");
 }
@@ -151,7 +164,10 @@ for (const text of [
   "Version: 1.3",
   "9.4 Command Centre Campaign Schedule",
   "Selecting several media items or communities must not multiply one booking's entitlement.",
-  "Keep reversible pause distinct from permanent stop.",
+  "Keep correction hold distinct from permanent stop.",
+  "C1",
+  "C11",
+  "No active overnight allocation exists in this versioned simulation.",
 ]) {
   requireText(protocolFile, protocol, text, "Missing corrected protocol 1.3 contract: " + text + ".");
 }

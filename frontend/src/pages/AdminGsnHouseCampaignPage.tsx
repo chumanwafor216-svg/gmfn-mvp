@@ -424,6 +424,14 @@ export default function AdminGsnHouseCampaignPage() {
   const [simulationNotice, setSimulationNotice] = useState("");
   const [simulationFunding, setSimulationFunding] = useState<"paid" | "sponsored" | "gifted" | "waived" | "house">("house");
   const [simulationCredits, setSimulationCredits] = useState("1");
+  const [simulationServiceDate, setSimulationServiceDate] = useState(nextSimulationServiceDate);
+  const [simulationTimezone, setSimulationTimezone] = useState("Europe/London");
+  const [simulationRegion, setSimulationRegion] = useState("GB-SCT");
+  const [simulationView, setSimulationView] = useState<"day" | "week">("day");
+  const [simulationFundingFilter, setSimulationFundingFilter] = useState("all");
+  const [simulationTypeFilter, setSimulationTypeFilter] = useState("all");
+  const [simulationStatusFilter, setSimulationStatusFilter] = useState("all");
+  const [selectedSimulationPlanId, setSelectedSimulationPlanId] = useState("");
   const [stopReason, setStopReason] = useState("");
   const [stopConfirmed, setStopConfirmed] = useState(false);
   const [destinationStopTarget, setDestinationStopTarget] = useState<{
@@ -471,6 +479,17 @@ export default function AdminGsnHouseCampaignPage() {
   const draftBusy = preparingMedia || reviewing || publishing;
   const displayedSimulation = simulationPreview || simulationBoard;
   const simulationProgrammes = displayedSimulation?.programmes || [];
+  const visibleSimulationProgrammes = useMemo(
+    () => simulationProgrammes.filter((programme) => (
+      (simulationFundingFilter === "all" || programme.quote.funding_classification === simulationFundingFilter)
+      && (simulationTypeFilter === "all" || programme.programme_type === simulationTypeFilter)
+      && (simulationStatusFilter === "all" || programme.lifecycle.state === simulationStatusFilter)
+    )),
+    [simulationFundingFilter, simulationProgrammes, simulationStatusFilter, simulationTypeFilter]
+  );
+  const selectedSimulationProgramme = visibleSimulationProgrammes.find(
+    (programme) => programme.plan_id === selectedSimulationPlanId
+  ) || visibleSimulationProgrammes[0] || null;
   const reviewBlockers = useMemo(() => {
     const blockers: string[] = [];
     const expiryProblem = campaignExpiryProblem(expiryInput);
@@ -629,6 +648,16 @@ export default function AdminGsnHouseCampaignPage() {
     void loadSimulationBoard();
   }, [loadDestinations, loadOperations, loadSimulationBoard]);
 
+  useEffect(() => {
+    if (!visibleSimulationProgrammes.length) {
+      setSelectedSimulationPlanId("");
+      return;
+    }
+    if (!visibleSimulationProgrammes.some((programme) => programme.plan_id === selectedSimulationPlanId)) {
+      setSelectedSimulationPlanId(visibleSimulationProgrammes[0].plan_id);
+    }
+  }, [selectedSimulationPlanId, visibleSimulationProgrammes]);
+
   async function previewSimulationDraft() {
     if (selectedRows.length === 0 || mediaQueue.length === 0) {
       setSimulationNotice("Choose at least one eligible community and one media item before previewing this draft schedule.");
@@ -647,9 +676,9 @@ export default function AdminGsnHouseCampaignPage() {
             community_ids: selectedRows.map((row) => row.clan_id),
             credits,
             funding_classification: simulationFunding,
-            service_date: nextSimulationServiceDate(),
-            timezone: "Europe/London",
-            region: "GB-SCT",
+            service_date: simulationServiceDate,
+            timezone: simulationTimezone,
+            region: simulationRegion,
           },
         ],
       });
@@ -1628,6 +1657,40 @@ export default function AdminGsnHouseCampaignPage() {
                   data-gmfn-field="admin-gsn-campaign.simulation-credits"
                 />
               </label>
+              <label>
+                <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>Service date</span>
+                <input
+                  type="date"
+                  value={simulationServiceDate}
+                  onChange={(event) => setSimulationServiceDate(event.target.value)}
+                  style={fieldStyle()}
+                  data-gmfn-field="admin-gsn-campaign.simulation-service-date"
+                />
+              </label>
+              <label>
+                <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>Authoritative timezone</span>
+                <select
+                  value={simulationTimezone}
+                  onChange={(event) => setSimulationTimezone(event.target.value)}
+                  style={fieldStyle()}
+                  data-gmfn-field="admin-gsn-campaign.simulation-timezone"
+                >
+                  <option value="Europe/London">Europe/London</option>
+                  <option value="Africa/Lagos">Africa/Lagos</option>
+                </select>
+              </label>
+              <label>
+                <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>Region</span>
+                <select
+                  value={simulationRegion}
+                  onChange={(event) => setSimulationRegion(event.target.value)}
+                  style={fieldStyle()}
+                  data-gmfn-field="admin-gsn-campaign.simulation-region"
+                >
+                  <option value="GB-SCT">Scotland</option>
+                  <option value="NG">Nigeria</option>
+                </select>
+              </label>
             </div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <StableButton
@@ -1653,6 +1716,36 @@ export default function AdminGsnHouseCampaignPage() {
             <div style={{ ...helper(), fontSize: 13 }}>
               Several media items or communities remain one booking selection. They do not multiply the booking entitlement; added credits are the only input that increases 30 opportunities.
             </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+              <label>
+                <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>Filter funding</span>
+                <select value={simulationFundingFilter} onChange={(event) => setSimulationFundingFilter(event.target.value)} style={fieldStyle()}>
+                  <option value="all">All funding</option>
+                  <option value="paid">Merchant purchase</option>
+                  <option value="sponsored">Sponsor-funded</option>
+                  <option value="house">GSN house campaign</option>
+                  <option value="gifted">Gifted</option>
+                  <option value="waived">Waived</option>
+                </select>
+              </label>
+              <label>
+                <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>Filter status</span>
+                <select value={simulationStatusFilter} onChange={(event) => setSimulationStatusFilter(event.target.value)} style={fieldStyle()}>
+                  <option value="all">All statuses</option>
+                  <option value="scheduled">Scheduled</option>
+                  <option value="planning_conflict">Planning conflict</option>
+                </select>
+              </label>
+              <label>
+                <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>Filter programme type</span>
+                <select value={simulationTypeFilter} onChange={(event) => setSimulationTypeFilter(event.target.value)} style={fieldStyle()}>
+                  <option value="all">All programme types</option>
+                  <option value="merchant_purchase">Merchant purchase</option>
+                  <option value="sponsor_programme">Sponsor programme</option>
+                  <option value="house_campaign">GSN house campaign</option>
+                </select>
+              </label>
+            </div>
           </div>
 
           {simulationNotice ? (
@@ -1667,8 +1760,107 @@ export default function AdminGsnHouseCampaignPage() {
 
           {simulationProgrammes.length > 0 ? (
             <>
+              <div style={{ marginTop: 16, ...institutionalInnerCard("#FFFFFF") }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                  <div>
+                    <div style={sectionLabel()}>Programme tray</div>
+                    <h3 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 19 }}>Choose a programme to inspect</h3>
+                  </div>
+                  <div role="group" aria-label="Schedule view" style={{ display: "flex", gap: 8 }}>
+                    {(["day", "week"] as const).map((view) => (
+                      <button
+                        key={view}
+                        type="button"
+                        onClick={() => setSimulationView(view)}
+                        aria-pressed={simulationView === view}
+                        style={{ border: "1px solid #B8C9D9", borderRadius: 999, padding: "8px 12px", background: simulationView === view ? "#0B5CC5" : "#FFFFFF", color: simulationView === view ? "#FFFFFF" : "#174C84", fontWeight: 900 }}
+                      >
+                        {stateLabel(view)} view
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ marginTop: 12, display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+                  {visibleSimulationProgrammes.map((programme) => (
+                    <button
+                      key={`tray-${programme.plan_id}`}
+                      type="button"
+                      onClick={() => setSelectedSimulationPlanId(programme.plan_id)}
+                      aria-pressed={selectedSimulationProgramme?.plan_id === programme.plan_id}
+                      style={{ flex: "0 0 auto", minWidth: 190, textAlign: "left", border: selectedSimulationProgramme?.plan_id === programme.plan_id ? "2px solid #0B5CC5" : "1px solid #CAD6E2", borderRadius: 16, padding: 12, background: "#F8FBFF", color: "#0B1F33" }}
+                    >
+                      <strong style={{ display: "block" }}>{programme.plan_id}</strong>
+                      <span style={{ display: "block", marginTop: 4, color: "#496277", fontSize: 12 }}>{simulationFundingLabel(programme.quote.funding_classification)} Â· {stateLabel(programme.lifecycle.state)}</span>
+                      <span style={{ display: "block", marginTop: 4, color: "#496277", fontSize: 12 }}>Expires {dateTimeLabel(programme.schedule.expires_at)}</span>
+                    </button>
+                  ))}
+                </div>
+                {!visibleSimulationProgrammes.length ? (
+                  <div style={{ marginTop: 12, ...statusPanel("info") }}>No programme matches the current funding and status filters.</div>
+                ) : null}
+              </div>
+
+              {selectedSimulationProgramme ? (
+                <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
+                  <div style={institutionalInnerCard("#F8FBFF")}>
+                    <div style={sectionLabel()}>{simulationView === "day" ? "Day programme board" : "Week overview"}</div>
+                    {simulationView === "day" ? (
+                      <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                        {["morning", "afternoon", "evening", "overnight"].map((daypart) => {
+                          const active = daypart !== "overnight";
+                          const allocation = active ? Number(selectedSimulationProgramme.entitlement.by_daypart[daypart] || 0) : 0;
+                          const window = active
+                            ? selectedSimulationProgramme.schedule.dayparts.find((item) => item.code === daypart)
+                            : selectedSimulationProgramme.schedule.inactive_windows?.find((item) => item.code === daypart);
+                          return (
+                            <div key={daypart} style={{ ...institutionalInnerCard("#FFFFFF"), display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                              <div>
+                                <strong style={{ color: "#0B1F33" }}>{stateLabel(daypart)}</strong>
+                                <div style={{ marginTop: 3, ...helper(), fontSize: 12 }}>{window ? `${dateTimeLabel(window.starts_at)} to ${dateTimeLabel(window.ends_at)}` : "Window unavailable"}</div>
+                              </div>
+                              <div style={{ textAlign: "right", color: active ? "#174C84" : "#64778B", fontWeight: 900 }}>
+                                {active ? `${allocation} planned opportunities` : "No active allocation policy"}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))", gap: 8 }}>
+                        {(displayedSimulation?.programme_board?.week_overview?.days || [{ service_date: selectedSimulationProgramme.schedule.service_date, programme_count: 1, planned_opportunities: selectedSimulationProgramme.entitlement.total_opportunities, plan_ids: [selectedSimulationProgramme.plan_id] }]).map((day) => (
+                          <div key={day.service_date} style={institutionalInnerCard("#FFFFFF")}>
+                            <div style={{ color: "#0B1F33", fontWeight: 900 }}>{day.service_date}</div>
+                            <div style={{ marginTop: 5, ...helper(), fontSize: 12 }}>{day.programme_count} programme{day.programme_count === 1 ? "" : "s"}</div>
+                            <div style={{ marginTop: 3, color: "#174C84", fontWeight: 900 }}>{day.planned_opportunities} planned</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <aside style={institutionalInnerCard("#FFFFFF")} aria-label="Selected programme inspector">
+                    <div style={sectionLabel()}>Selected programme inspector</div>
+                    <h3 style={{ margin: "7px 0 0", color: "#0B1F33", fontSize: 18 }}>{selectedSimulationProgramme.plan_id}</h3>
+                    <div style={{ marginTop: 10, display: "grid", gap: 6, ...helper(), fontSize: 13 }}>
+                      <div><strong>Advert:</strong> {selectedSimulationProgramme.advert.advert_id}</div>
+                      <div><strong>Media:</strong> {selectedSimulationProgramme.advert.media_ids.join(", ")}</div>
+                      <div><strong>Audience:</strong> {selectedSimulationProgramme.authorised_audience.community_ids.map((id) => `Community ${id}`).join(", ")}</div>
+                      <div><strong>Region / timezone:</strong> {selectedSimulationProgramme.schedule.region} Â· {selectedSimulationProgramme.schedule.timezone}</div>
+                      <div><strong>Service:</strong> {selectedSimulationProgramme.schedule.service_date} to {dateTimeLabel(selectedSimulationProgramme.schedule.expires_at)}</div>
+                      <div><strong>Funding:</strong> {simulationFundingLabel(selectedSimulationProgramme.quote.funding_classification)}</div>
+                      <div><strong>Programme type:</strong> {stateLabel(selectedSimulationProgramme.programme_type)}</div>
+                      <div><strong>Quote:</strong> Â£{selectedSimulationProgramme.quote.quoted_amount_gbp}; live debit Â£{selectedSimulationProgramme.quote.live_pipeline_credit_debit}</div>
+                      <div><strong>Capacity:</strong> {stateLabel(selectedSimulationProgramme.capacity.status)}</div>
+                      <div><strong>Delivery:</strong> {selectedSimulationProgramme.actual_delivery?.supplied_opportunities ?? "not started"} supplied; {selectedSimulationProgramme.actual_delivery?.qualifying_impressions ?? "not started"} impressions; {selectedSimulationProgramme.actual_delivery?.recognised_unique_reach ?? "not started"} recognised reach</div>
+                    </div>
+                    <div style={{ marginTop: 10, ...statusPanel("info"), fontSize: 12 }}>
+                      The programme timezone is authoritative. Browser or device timezone changes do not alter this booking.
+                    </div>
+                  </aside>
+                </div>
+              ) : null}
+
               <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
-                {simulationProgrammes.map((programme) => {
+                {visibleSimulationProgrammes.map((programme) => {
                   const delivery = programme.actual_delivery;
                   return (
                     <article key={programme.plan_id} style={institutionalInnerCard("#FFFFFF")}>
@@ -1729,7 +1921,7 @@ export default function AdminGsnHouseCampaignPage() {
                         </div>
                       ) : null}
                       <div style={{ marginTop: 10, color: "#496277", fontSize: 12, lineHeight: 1.55 }}>
-                        Pause maps to reversible <strong>{programme.lifecycle.reversible_pause_authority}</strong>; permanent stop maps to <strong>{programme.lifecycle.permanent_stop_authority}</strong>. They are not the same action.
+                        Simulation correction hold uses <strong>{programme.lifecycle.reversible_pause_authority}</strong>; it is not a general pause/resume control. Permanent stop uses <strong>{programme.lifecycle.permanent_stop_authority}</strong>. They are not the same action.
                       </div>
                     </article>
                   );
@@ -1742,10 +1934,10 @@ export default function AdminGsnHouseCampaignPage() {
                   stableHeight={44}
                   style={{ color: "#0B1F33", fontWeight: 900 }}
                 >
-                  Accessible schedule list ({simulationProgrammes.length})
+                  Accessible schedule list ({visibleSimulationProgrammes.length})
                 </StableDisclosureSummary>
                 <ul aria-label="Spotlight simulation programme schedule" style={{ margin: "12px 0 0", paddingLeft: 22, display: "grid", gap: 12, color: "#0B1F33", lineHeight: 1.6 }}>
-                  {simulationProgrammes.map((programme) => (
+                  {visibleSimulationProgrammes.map((programme) => (
                     <li key={`list-${programme.plan_id}`}>
                       <strong>{programme.plan_id}</strong>: {simulationFundingLabel(programme.quote.funding_classification)}; advert {programme.advert.advert_id}; communities {programme.authorised_audience.community_ids.join(", ")}; {programme.schedule.service_date} in {programme.schedule.timezone}; {simulationDaypartLabel(programme)}; {programme.entitlement.total_opportunities} total; capacity {stateLabel(programme.capacity.status)}; supplied {programme.actual_delivery?.supplied_opportunities ?? "not started"}; impressions {programme.actual_delivery?.qualifying_impressions ?? "not started"}; reach {programme.actual_delivery?.recognised_unique_reach ?? "not started"}.
                     </li>
@@ -1764,6 +1956,21 @@ export default function AdminGsnHouseCampaignPage() {
                   </StableDisclosureSummary>
                   <div style={{ marginTop: 10, ...helper() }}>
                     Interrupted after {simulationBoard.interrupted_batch_recovery.interruption_after} item; resumed to {simulationBoard.interrupted_batch_recovery.final_unique_booking_count} unique bookings with {simulationBoard.interrupted_batch_recovery.duplicate_booking_count} duplicates. Existing completed work replayed idempotently rather than buying entitlement again.
+                  </div>
+                </details>
+              ) : null}
+
+              {simulationBoard?.contract_change_rejection_proof ? (
+                <details style={{ marginTop: 12, ...softCard("#FFFFFF") }}>
+                  <StableDisclosureSummary
+                    debugId="admin-gsn-campaign.simulation-contract-change.summary"
+                    stableHeight={44}
+                    style={{ color: "#0B1F33", fontWeight: 900 }}
+                  >
+                    Rejected contract and capacity change proof
+                  </StableDisclosureSummary>
+                  <div style={{ marginTop: 10, ...helper() }}>
+                    Adding another community was {stateLabel(simulationBoard.contract_change_rejection_proof.status)} under the one-community-per-credit test setting. Entitlement stayed at {simulationBoard.contract_change_rejection_proof.entitlement_after} opportunities, quote stayed at Â£{simulationBoard.contract_change_rejection_proof.quoted_amount_after_gbp}, and no live booking, capacity or credit changed.
                   </div>
                 </details>
               ) : null}

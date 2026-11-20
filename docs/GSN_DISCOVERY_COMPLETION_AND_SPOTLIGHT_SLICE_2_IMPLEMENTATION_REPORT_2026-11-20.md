@@ -125,6 +125,22 @@ The existing `/app/command-center/gsn-campaigns` page now exposes, when enabled:
 
 The operator may preview an individual programme or a batch. Selecting several media items or communities does not multiply one programme's purchased entitlement. A programme that exceeds the current one-community-per-credit test scope receives a visible planning conflict instead of hidden multiplication.
 
+### Operational-theatre refinement
+
+The safely extracted version 1.2 operational-theatre detail was reconciled into protocol 1.3 without copying the unrelated account/session export that followed it. The isolated board now adds:
+
+- operator-selected service date, region and authoritative IANA timezone for draft preview;
+- day and week views plus the existing accessible list;
+- separate programme-type, funding and lifecycle filters;
+- a programme tray and selected-programme inspector;
+- an explicit overnight row with zero allocation and `no_active_allocation_policy`;
+- an explicit rule that browser/device timezone does not rewrite a programme booking;
+- an explicit rule that unknown capacity is not unlimited capacity;
+- a rejected audience-scope change proof showing unchanged entitlement, quote, live capacity, booking and credits;
+- truthful wording that correction hold is not a general pause/resume promise.
+
+The day/week controls remain inspect-and-preview controls. They do not rearrange or persist live campaigns. Drag-and-drop was not added because it is optional in the corrected protocol and would add risk without proving a required contract.
+
 ## 4. Review scenarios
 
 ### Fulfilled simulated booking
@@ -153,7 +169,7 @@ Six same-day attempts are modelled for one recognised viewer and one advert whil
 
 Focused verification performed for this candidate:
 
-- `python -m pytest -q --basetemp <workspace-temp> tests/test_marketplace_public_discovery.py tests/test_spotlight_slice2_simulation.py tests/test_gsn_house_spotlight.py tests/test_spotlight_frequency_control_service.py tests/test_spotlight_presentation_contract.py` - `63 passed`;
+- `python -m pytest -q --basetemp <writable-isolated-temp> tests/test_marketplace_public_discovery.py tests/test_spotlight_slice2_simulation.py tests/test_gsn_house_spotlight.py tests/test_spotlight_frequency_control_service.py tests/test_spotlight_presentation_contract.py` - `64 passed`;
 - `npm run audit:admin-gsn-house-campaign` - passed;
 - `python -m alembic heads` with local development mode - one head: `20261120_public_discovery_coverage`;
 - `python -m py_compile` for the changed backend, migration and focused test files - passed;
@@ -175,6 +191,7 @@ The completed Slice 1 discovery audit was not repeated. Its documented broad `au
 7. Define aggregate privacy suppression for reach and frequency reporting.
 8. Approve accounting, VAT, sponsor-funded and gifted-credit treatment before collection.
 9. Define the operational evidence that proves a scheduled opportunity was genuinely supplied when no qualifying impression occurs.
+10. Decide whether a genuine general pause/resume lifecycle is needed. The existing correction-hold authority is not represented as that customer promise.
 
 ## 7. Release boundary
 

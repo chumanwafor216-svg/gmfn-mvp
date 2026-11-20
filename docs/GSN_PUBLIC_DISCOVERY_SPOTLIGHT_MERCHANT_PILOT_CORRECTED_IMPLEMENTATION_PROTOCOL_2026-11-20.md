@@ -5,7 +5,7 @@ Date: 20 November 2026
 Version: 1.3 — discovery-completion and Command Centre schedule revision
 Status: Implementation handoff following the audit; preparation of this document does not activate product changes or the pilot.
 
-Repository adoption note: this file contains only the safe protocol text through its stated definition of done. An unrelated account/session export appended to the supplied source was excluded completely. Version 1.3 uses `3ce16134e1b6a07b040099dbe7faad5bc626f7d3` as the public-discovery candidate baseline. It adds the bounded discovery-completion requirements and Command Centre Campaign Schedule in Section 9.4 without authorising deployment, production activation, real payments, outreach or owner notices.
+Repository adoption note: this file contains only the safe protocol text through its stated definition of done. An unrelated account/session export appended to the supplied source was excluded completely. Version 1.3 uses `3ce16134e1b6a07b040099dbe7faad5bc626f7d3` as the public-discovery candidate baseline. It adds the bounded discovery-completion requirements and Command Centre Campaign Schedule in Section 9.4 without authorising deployment, production activation, real payments, outreach or owner notices. The later supplied version 1.2 operational-theatre detail is adopted here as a refinement of Section 9.4 and the C-series acceptance checks; it does not roll this protocol back from version 1.3.
 
 Corrections governing this version
 Use the agreed brainstorming for the intended commercial promise and the completed audit for evidence of existing code. An absence from code does not make an agreed management decision disappear. A recommendation in an audit does not automatically become an adopted price, policy or live setting.
@@ -257,6 +257,10 @@ Check precision, funding-source treatment and supported adjustment operations in
 9.4 Command Centre Campaign Schedule
 Extend the existing Command Centre campaign page rather than creating a second scheduler or purchase route. The schedule is an operator planning and reconciliation surface over the existing campaign, permission, pacing, lifecycle, Pipeline Credit and reporting authorities.
 
+The operational theatre must provide a day view, a week overview and an accessible list containing equivalent facts. Its operator filters should cover service date or week, authorised audience/community, region and authoritative timezone, campaign/funding type and lifecycle status. A programme tray must make selected adverts, advertiser/source class, booking or draft reference, status and expiry inspectable without opening an unrelated page.
+
+The board groups work by destination/authorised audience, authoritative timezone and service window. Morning, afternoon and evening remain the only active allocation windows in this versioned simulation. No active overnight allocation exists in this versioned simulation. Overnight must appear as an explicit inactive policy rather than disappearing or silently borrowing allocation.
+
 The programme board and its accessible list view must show:
 - the selected advert and selected media;
 - the authorised community audience, without inventing a fixed-person target or ceiling;
@@ -267,11 +271,19 @@ The programme board and its accessible list view must show:
 - supplied opportunities, qualifying impressions, recognised reach, shortfall and remedy;
 - selection-system considerations separately, never as supplied opportunities.
 
+Selecting a programme must expose an inspector with the advert/media identity, authorised audience, region/timezone, service dates, windows and exclusions, expiry, purchased quantity, funding treatment, capacity/conflicts and actual delivery. Planned allocation, capacity reservation, supplied opportunities, impressions, recognised reach and shortfall are separate fields. Unknown capacity is not unlimited capacity.
+
 Support individual and batch planning with a preview of each programme's outcome. Selecting several media items or communities must not multiply one booking's entitlement. A scope that is not supported by the current versioned test parameter must produce an explicit conflict rather than hidden multiplication.
+
+Preview is not commitment. A preview, drag action or client-side rearrangement must never publish a campaign, collect money, debit a Pipeline Credit or reserve live capacity. Drag-and-drop is optional; explicit controls and an accessible list are sufficient. Batch previews must preserve per-item outcomes, expose stale/invalid/conflicting items and recover interruption idempotently without duplicating bookings.
+
+The programme's recorded IANA timezone is authoritative, including daylight-saving transitions where applicable. A browser or device timezone change must not rewrite the booking. The 10/10/10 entitlement remains tied to the recorded service day and active windows until an explicit later protocol changes it.
 
 Keep existing house campaigns, merchant purchases and sponsor-funded programmes visibly distinct. Preserve paid, sponsored, gifted, waived and house funding classifications through any simulated remedy. A sponsor payment and the resulting merchant use must not become two sales.
 
-Keep reversible pause distinct from permanent stop. Reversible pause must use the existing correction-hold lifecycle authority. Permanent stop must use the existing withdrawn authority and preserve its historical evidence. Do not create a competing lifecycle.
+Keep correction hold distinct from permanent stop. Correction hold must use the existing correction-hold lifecycle authority, but must not be presented as a general customer pause/resume control unless the lifecycle genuinely supports that promise. Permanent stop must use the existing withdrawn authority and preserve its historical evidence. Do not create a competing lifecycle.
+
+Platform administration must remain bounded to authorised programme planning and aggregate operational evidence. The board must not become an audience-surveillance surface and must not reveal private viewer identities, affiliations, TrustSlip evidence or protected activity.
 
 For the bounded Slice 2 implementation, the board may use explicit, labelled simulation parameters for audience scope, capacity, timezone, clock windows, late booking and remedy. The simulation must default off, remain platform-admin only, and make clear that it does not collect payment, debit Pipeline Credits, persist a live booking, activate a live campaign, change live capacity or create a customer promise.
 
@@ -429,6 +441,17 @@ M1	Commercial cohorts	Paid, sponsored, gifted, waived, refunded and repeated act
 M2	Financial waterfall	Revenue, obligations, direct contribution, shared costs and cash reconcile without duplicated revenue or deductions.
 E1	Evidence integrity	Supported activity labels and linked corrections remain accurate; promotion cannot buy favourable unrelated evidence.
 F1	Accessible participation	Useful organic participation remains available; no superseded Demand Box reply gate is introduced, and ordinary supported activity capture is not charged merely for recording it.
+C1	Schedule views	Day, week and accessible-list views expose equivalent programme facts without creating a competing scheduler.
+C2	Programme inspection	The selected programme exposes advert/media, authorised audience, dates, windows, expiry, funding, capacity and delivery fields.
+C3	Window policy	Morning, afternoon and evening retain 10/10/10 allocation; overnight is visibly inactive with zero allocation.
+C4	Timezone authority	The recorded IANA programme timezone, not the browser/device timezone, controls service dates and windows across DST changes.
+C5	Preview boundary	Preview or rearrangement cannot publish, charge, spend credits, reserve live capacity or create a customer promise.
+C6	Batch integrity	Individual and batch preview preserve per-item outcomes; multiple media or destinations do not silently multiply entitlement.
+C7	Conflict truth	Unsupported scope, stale input and capacity conflict are explicit; unknown capacity is never presented as unlimited.
+C8	Delivery separation	Planned, reserved, supplied, impressions, recognised reach, shortfall and remedy remain separate.
+C9	Lifecycle truth	Correction hold is not presented as a general pause/resume promise; permanent withdrawal remains distinct and historical.
+C10	Recovery	An interrupted batch resumes idempotently without duplicate booking, entitlement or financial movement.
+C11	Privacy and activation	The board remains platform-admin, aggregate and default-off; it exposes no private viewer evidence and makes no live-service claim.
 
 
 Report the tested revision, environment, actual results and untested limitations. Passing a simulated payment or synthetic delivery proves the tested behaviour, not actual customer demand or production readiness in every configuration.

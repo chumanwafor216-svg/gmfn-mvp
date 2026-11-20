@@ -7882,6 +7882,7 @@ export type GsnHouseCampaignOperations = {
 export type SpotlightSimulationProgramme = {
   plan_id: string;
   booking_id: string;
+  programme_type: "house_campaign" | "merchant_purchase" | "sponsor_programme";
   advert: {
     advert_id: string;
     media_ids: string[];
@@ -7928,6 +7929,15 @@ export type SpotlightSimulationProgramme = {
       ends_at: string;
       allocated_opportunities: number;
     }>;
+    inactive_windows?: Array<{
+      code: string;
+      starts_at: string;
+      ends_at: string;
+      allocated_opportunities: number;
+      policy: string;
+    }>;
+    authoritative_timezone_source?: string;
+    browser_timezone_authoritative?: boolean;
   };
   capacity: {
     status: string;
@@ -7935,6 +7945,7 @@ export type SpotlightSimulationProgramme = {
     by_daypart: Record<string, any>;
     conflicts: Array<{ code: string; message: string }>;
     live_capacity_changed: boolean;
+    unknown_capacity_is_unlimited?: boolean;
   };
   lifecycle: {
     state: string;
@@ -7942,6 +7953,8 @@ export type SpotlightSimulationProgramme = {
     serving_authority: string;
     permanent_stop_authority: string;
     pause_is_permanent_stop: boolean;
+    general_pause_resume_available?: boolean;
+    correction_hold_is_general_pause?: boolean;
   };
   actual_delivery?: {
     state: string;
@@ -7968,13 +7981,42 @@ export type SpotlightSimulationBoard = {
   programmes: SpotlightSimulationProgramme[];
   batch_summary: Record<string, any>;
   programme_board?: {
-    view: string;
+    default_view: "day" | "week";
+    available_views: string[];
     accessible_list: SpotlightSimulationProgramme[];
     programme_count: number;
     source_classifications: string[];
+    filters?: Record<string, string[]>;
+    day_view?: {
+      service_date: string;
+      authoritative_timezone: string;
+      rows: Array<{
+        code: string;
+        starts_at: string;
+        ends_at: string;
+        policy: string;
+        programmes: Array<{
+          plan_id: string;
+          allocated_opportunities: number;
+          status: string;
+          capacity_status: string;
+        }>;
+      }>;
+    };
+    week_overview?: {
+      starts_on: string;
+      days: Array<{
+        service_date: string;
+        programme_count: number;
+        planned_opportunities: number;
+        plan_ids: string[];
+      }>;
+    };
+    overnight_policy?: string;
   };
   interrupted_batch_recovery?: Record<string, any>;
   frequency_continuity_proof?: Record<string, any>;
+  contract_change_rejection_proof?: Record<string, any>;
   authority_reuse?: Record<string, string>;
   remaining_live_decisions?: string[];
 };

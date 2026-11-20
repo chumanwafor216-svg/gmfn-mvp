@@ -36,6 +36,10 @@ DAYPARTS = (
     ("evening", time(18, 0), time(0, 0)),
 )
 
+INACTIVE_WINDOWS = (
+    ("overnight", time(0, 0), time(5, 0)),
+)
+
 FUNDING_CLASSIFICATIONS = frozenset({"paid", "sponsored", "gifted", "waived", "house"})
 
 
@@ -83,6 +87,16 @@ def simulation_settings() -> dict[str, Any]:
                 "ends_at": end.strftime("%H:%M"),
             }
             for code, start, end in DAYPARTS
+        ],
+        "inactive_windows": [
+            {
+                "code": code,
+                "starts_at": start.strftime("%H:%M"),
+                "ends_at": end.strftime("%H:%M"),
+                "allocated_opportunities": 0,
+                "policy": "no_active_allocation_policy",
+            }
+            for code, start, end in INACTIVE_WINDOWS
         ],
         "late_booking_policy": "next_complete_service_day",
         "recognised_viewer_same_advert_daily_cap": RECOGNISED_VIEWER_DAILY_CAP,
@@ -245,6 +259,18 @@ def _preview_programme(
             }
             for code, start, end in DAYPARTS
         ],
+        "inactive_windows": [
+            {
+                "code": code,
+                "starts_at": datetime.combine(service_date, start, tzinfo=timezone).isoformat(),
+                "ends_at": datetime.combine(service_date, end, tzinfo=timezone).isoformat(),
+                "allocated_opportunities": 0,
+                "policy": "no_active_allocation_policy",
+            }
+            for code, start, end in INACTIVE_WINDOWS
+        ],
+        "authoritative_timezone_source": "programme_booking",
+        "browser_timezone_authoritative": False,
     }
     per_media = _allocate_media_outcomes(media_ids, daypart_entitlement)
     quote_amount = PIPELINE_CREDIT_GBP_PRICE * credits
@@ -252,6 +278,7 @@ def _preview_programme(
     return {
         "plan_id": plan_id,
         "booking_id": booking_id,
+        "programme_type": _programme_type(funding),
         "advert": {
             "advert_id": advert_id,
             "media_ids": media_ids,
@@ -289,6 +316,7 @@ def _preview_programme(
             "by_daypart": daypart_capacity,
             "conflicts": conflicts,
             "live_capacity_changed": False,
+            "unknown_capacity_is_unlimited": False,
         },
         "lifecycle": {
             "state": "scheduled" if not conflicts else "planning_conflict",
@@ -296,6 +324,8 @@ def _preview_programme(
             "serving_authority": SPOTLIGHT_SERVING,
             "permanent_stop_authority": SPOTLIGHT_WITHDRAWN,
             "pause_is_permanent_stop": False,
+            "general_pause_resume_available": False,
+            "correction_hold_is_general_pause": False,
         },
         "simulation_boundary": {
             "booking_persisted_live": False,
@@ -416,18 +446,35 @@ def simulation_programme_board() -> dict[str, Any]:
             for index in range(6)
         ]
     )
+    contract_change = simulate_contract_change_rejection(programmes[0], added_community_id=999)
+    schedule_overview = _schedule_overview(programmes, service_date=service_date)
     return {
         **preview,
         "programme_board": {
-            "view": "cards",
+            "default_view": "day",
+            "available_views": ["day", "week", "accessible_list"],
             "accessible_list": programmes,
             "programme_count": len(programmes),
             "source_classifications": ["house", "paid", "sponsored"],
+            "filters": {
+                "service_dates": schedule_overview["service_dates"],
+                "regions": schedule_overview["regions"],
+                "timezones": schedule_overview["timezones"],
+                "funding_classifications": schedule_overview["funding_classifications"],
+                "programme_types": schedule_overview["programme_types"],
+                "statuses": schedule_overview["statuses"],
+            },
+            "day_view": schedule_overview["day_view"],
+            "week_overview": schedule_overview["week_overview"],
+            "overnight_policy": "no_active_allocation_policy",
+            "drag_and_drop_required": False,
+            "drag_and_drop_can_publish_or_charge": False,
         },
         "fulfilled_booking": programmes[0],
         "shortfall_booking": programmes[1],
         "interrupted_batch_recovery": recovery,
         "frequency_continuity_proof": frequency,
+        "contract_change_rejection_proof": contract_change,
         "authority_reuse": {
             "payment_reconciliation": "existing advertising settlement and payment-reconciliation authority; not invoked in simulation",
             "pipeline_credit": f"canonical {SPOTLIGHT_SERVICE_CODE} catalogue entry and quote/spend authority; live spend remains disconnected",
@@ -446,6 +493,97 @@ def simulation_programme_board() -> dict[str, Any]:
             "Approve a live capacity limit and operational headroom; the simulation value is not saleable capacity.",
             "Define aggregate privacy suppression for advertiser reach and frequency reporting.",
         ],
+}
+
+
+def simulate_contract_change_rejection(
+    programme: dict[str, Any],
+    *,
+    added_community_id: int,
+) -> dict[str, Any]:
+    original_communities = list(programme["authorised_audience"]["community_ids"])
+    attempted_communities = _unique_positive_ints([*original_communities, added_community_id])
+    credits = int(programme["quote"]["credits"])
+    rejected = len(attempted_communities) > credits
+    return {
+        "change": "add_authorised_community",
+        "status": "rejected" if rejected else "accepted_in_simulation",
+        "reason_code": "audience_scope_exceeds_basic_allocations" if rejected else None,
+        "original_community_ids": original_communities,
+        "attempted_community_ids": attempted_communities,
+        "credits_before": credits,
+        "credits_after": credits,
+        "entitlement_before": int(programme["entitlement"]["total_opportunities"]),
+        "entitlement_after": int(programme["entitlement"]["total_opportunities"]),
+        "quoted_amount_before_gbp": programme["quote"]["quoted_amount_gbp"],
+        "quoted_amount_after_gbp": programme["quote"]["quoted_amount_gbp"],
+        "live_booking_changed": False,
+        "live_capacity_changed": False,
+        "live_credit_changed": False,
+    }
+
+
+def _schedule_overview(
+    programmes: list[dict[str, Any]],
+    *,
+    service_date: date,
+) -> dict[str, Any]:
+    service_dates = sorted({item["schedule"]["service_date"] for item in programmes})
+    regions = sorted({item["schedule"]["region"] for item in programmes})
+    timezones = sorted({item["schedule"]["timezone"] for item in programmes})
+    funding = sorted({item["quote"]["funding_classification"] for item in programmes})
+    programme_types = sorted({item["programme_type"] for item in programmes})
+    statuses = sorted({item["lifecycle"]["state"] for item in programmes})
+    day_rows: list[dict[str, Any]] = []
+    for code, start, end in (*INACTIVE_WINDOWS, *DAYPARTS):
+        active = code != "overnight"
+        day_rows.append(
+            {
+                "code": code,
+                "starts_at": start.strftime("%H:%M"),
+                "ends_at": end.strftime("%H:%M"),
+                "policy": "scheduled_allocation" if active else "no_active_allocation_policy",
+                "programmes": [
+                    {
+                        "plan_id": item["plan_id"],
+                        "allocated_opportunities": int(item["entitlement"]["by_daypart"].get(code, 0)),
+                        "status": item["lifecycle"]["state"],
+                        "capacity_status": item["capacity"]["status"],
+                    }
+                    for item in programmes
+                ] if active else [],
+            }
+        )
+    week_rows = []
+    for offset in range(7):
+        current = service_date + timedelta(days=offset)
+        scheduled = [item for item in programmes if item["schedule"]["service_date"] == current.isoformat()]
+        week_rows.append(
+            {
+                "service_date": current.isoformat(),
+                "programme_count": len(scheduled),
+                "planned_opportunities": sum(
+                    int(item["entitlement"]["total_opportunities"]) for item in scheduled
+                ),
+                "plan_ids": [item["plan_id"] for item in scheduled],
+            }
+        )
+    return {
+        "service_dates": service_dates,
+        "regions": regions,
+        "timezones": timezones,
+        "funding_classifications": funding,
+        "programme_types": programme_types,
+        "statuses": statuses,
+        "day_view": {
+            "service_date": service_date.isoformat(),
+            "authoritative_timezone": SIMULATION_TIMEZONE,
+            "rows": day_rows,
+        },
+        "week_overview": {
+            "starts_on": service_date.isoformat(),
+            "days": week_rows,
+        },
     }
 
 
@@ -686,3 +824,11 @@ def _unique_positive_ints(values: Iterable[Any]) -> list[int]:
 
 def _clean(value: Any) -> str:
     return str(value or "").strip()
+
+
+def _programme_type(funding_classification: str) -> str:
+    if funding_classification == "house":
+        return "house_campaign"
+    if funding_classification == "sponsored":
+        return "sponsor_programme"
+    return "merchant_purchase"
