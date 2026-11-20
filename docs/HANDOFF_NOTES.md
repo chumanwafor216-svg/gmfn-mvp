@@ -1,5 +1,16 @@
 # Active Handoff Notes
 
+## Spotlight rotation and impression protocol audit - 2026-11-20
+
+- Added docs/GSN_SPOTLIGHT_ROTATION_AND_IMPRESSION_PROTOCOL_AUDIT_2026-11-20.md for the proposed GBP 0.50 Pipeline Credit / 30 scheduled-opportunity contract.
+- Current ordinary Spotlight is viewer-request driven: campaigns default to 10 rounds, issuance only reserves, and a round is spent only after one-second / 60%-visible / active-document qualification.
+- The proposed product sells scheduled availability independent of a view and may serve concurrent viewers. Current Spotlight equates each spent round with one qualifying presentation and allows only one live campaign-version reservation.
+- Current frequency is two qualifying impressions per viewer per campaign lifetime plus one DemandBox override, keyed by campaign ID. It is not five per recognized viewer, offer and day, and a new campaign resets it.
+- GSN-HOUSE timed campaigns offer reusable window and due-slot foundations, but are admin-only, have no payment effect and do not separate audience-empty supply from platform failure.
+- Commercial rails conflict or remain disconnected: legacy Subscription Spotlight is GBP 1 per day (six for GBP 5), Member Credit Spotlight is gated/test-active, and Pipeline Credit paid_spotlight.day is unconnected.
+- Recommended first-pilot scope is one credit per advert, community and local service day, with separate multi-community order lines. This is an audit recommendation, not an approved price amendment.
+- Payment remains suspended. No behavior, API, schema, canonical price, permission, production data or deployment changed.
+
 ## Public Shop visitor shelf continuity repaired - 2026-11-20
 
 - Reviewed the supplied 13-second phone recording frame by frame. The definite
