@@ -1,5 +1,70 @@
 # Active Handoff Notes
 
+## Persistent Cover shortcut and returning-member entry - 2026-11-20
+
+- Cover now owns one persistent compact `Save GSN on your phone` launcher. It
+  expands into the existing three manual browser steps and remains hidden in an
+  already-installed standalone display. Welcome remains free of install help.
+- A valid GSN ID now leaves only a boolean same-browser returning-member marker.
+  Plain later Cover visits go directly to Sign In without retaining or showing
+  the member's phone number or GSN ID. Explicit public Cover, Create,
+  invitation, and activation links continue through their dedicated journeys.
+- Sign In Back deliberately opens Welcome; Welcome Back deliberately opens the
+  public Cover view. This avoids the prior entry gate redirect loop.
+- Truth boundary: this does not identify a person on a new browser or phone.
+  Recognition there still requires sign-in or a trusted entry link.
+
+## TrustSlip four-layer receipt model adopted - 2026-11-20
+
+- Refined the working TrustSlip definition into four public layers: activity,
+  structured evidence receipt, purpose-specific TrustSlip presentation, and
+  recipient decision.
+- Evidence statements remain an internal projection from receipts, not a fifth
+  public product layer or a universal assessment of the holder.
+- Added the distinction between automatic supported-event capture and automatic
+  verification, plus activity-level linking to prevent stage receipts from
+  being counted as several completed transactions.
+- Added honest packet-selection scope, linked corrections and disputes,
+  receipt-traceable AI summaries, imported-evidence source labels, and concrete
+  TrustSlip cost drivers.
+- The clarification does not create a new payer or revenue line and does not
+  change the promotion-led financial-engine decision.
+- No product behaviour, API, schema, price, permission, production data, or
+  deployment changed.
+
+## Financial engine decision and implementation audit recorded - 2026-11-20
+
+- Added `docs/GSN_FINANCIAL_ENGINE_DECISION_AND_IMPLEMENTATION_AUDIT_2026-11-20.md`.
+- Recorded the qualified founder decision that GSN should be promotion-led
+  commercially: free organic utility and discovery, paid merchant promotion,
+  corporate opportunity distribution, and stabilising enterprise/community
+  services. TrustSlip remains the evidence infrastructure, not advertising.
+- The code audit confirms substantial Spotlight, pacing, attention, advertising
+  settlement, community-allocation, and payout foundations.
+- Material gaps remain: Shop search is selected-community scoped; public Shop
+  pages require a known identity/link; payment operations default to suspended;
+  member-credit Spotlight is gated/test-active; Pipeline Credit paid Spotlight
+  is catalogued but not connected; corporate campaigns remain admin-led; and
+  repeat buyer/revenue evidence is not established.
+- Advertising remains GBP 0 in the base forecast until buyer, delivery, cost,
+  accounting, privacy, and repeat-purchase gates are passed.
+- No product behaviour, API, schema, price, permission, production data,
+  deployment, or canonical commercial rail changed.
+
+## TrustSlip evidence and commercial working synthesis recorded - 2026-11-20
+
+- Added docs/GSN_TRUSTSLIP_EVIDENCE_AND_COMMERCIAL_WORKING_FRAMEWORK_2026-11-20.md
+  as the durable record of the current founder brainstorming.
+- TrustSlip is recorded as a purpose-specific evidence receipt or case file,
+  not GSN's judgement of universal trustworthiness. The recipient decides.
+- The record covers the utility, evidence, and revenue engines; commercial
+  alternatives; investor framing; boundaries; forecast discipline; risks; kill
+  criteria; and four bounded next-test lanes.
+- Institutional programmes remain a route to compare with Community commerce,
+  Spotlight, and Community Domain services; no route is declared proven.
+- No product behaviour, canonical protocol, price, permission, API, schema,
+  route, production data, or deployment changed.
+
 ## Notification badge acknowledgement repaired - 2026-11-20
 
 - Opening `/app/notifications` now acknowledges the current user's unread
