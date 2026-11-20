@@ -396,17 +396,17 @@ assertNotContains(
 );
 
 assertContains(
-  /const GALLERY_STANDARD_SLOTS_TOTAL = 12;[\s\S]*?const GALLERY_EXTRA_SLOTS_LIMIT = 0;[\s\S]*?const GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT = 6;[\s\S]*?products\.filter\(\(product, index\)[\s\S]*?shelfSlot <= GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT[\s\S]*?const nextEmptyProductSlot = useMemo\([\s\S]*?Array\.from\([\s\S]*?find\(\(slotNumber\) => !occupiedSlots\.has\(slotNumber\)\)[\s\S]*?const ownerProgressiveEmptySlotVisible = Boolean\([\s\S]*?showAllProducts \|\| nextEmptyProductSlot <= GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT[\s\S]*?const ownerEmptyProductSlots =[\s\S]*?\[nextEmptyProductSlot\]/,
-  "Public Shop must include all 12 spaces and keep the owner's exact progressive space inside the six-position reveal boundary."
+  /const GALLERY_STANDARD_SLOTS_TOTAL = 12;[\s\S]*?const GALLERY_EXTRA_SLOTS_LIMIT = 0;[\s\S]*?const GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT = 6;[\s\S]*?products\.slice\(0, GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT\)[\s\S]*?const nextEmptyProductSlot = useMemo\([\s\S]*?Array\.from\([\s\S]*?find\(\(slotNumber\) => !occupiedSlots\.has\(slotNumber\)\)[\s\S]*?const hiddenProductCount =[\s\S]*?products\.length - GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT[\s\S]*?const ownerProgressiveEmptySlotVisible = Boolean\([\s\S]*?showAllProducts \|\| hiddenProductCount === 0[\s\S]*?const ownerEmptyProductSlots =[\s\S]*?\[nextEmptyProductSlot\]/,
+  "Public Shop must include all 12 spaces, show six real products first, and keep the owner's progressive space after hidden real products."
 );
 
 assertContains(
-  /const hiddenProductCount =[\s\S]*?const visitorProgressiveEmptySlotVisible = Boolean\([\s\S]*?showAllProducts \|\| hiddenProductCount === 0[\s\S]*?const visitorOpeningSoonSlot =[\s\S]*?nextEmptyProductSlot[\s\S]*?const visitorOpeningSoonOrder = gallerySlotsTotal \+ 1[\s\S]*?data-visitor-opening-soon-space=\{visitorOpeningSoonSlot\}[\s\S]*?order: visitorOpeningSoonOrder/,
+  /const hiddenProductCount =[\s\S]*?const visitorProgressiveEmptySlotVisible = Boolean\([\s\S]*?showAllProducts \|\| hiddenProductCount === 0[\s\S]*?const visitorOpeningSoonSlot =[\s\S]*?nextEmptyProductSlot[\s\S]*?const progressiveShelfCardOrder = gallerySlotsTotal \+ 1[\s\S]*?data-visitor-opening-soon-space=\{visitorOpeningSoonSlot\}[\s\S]*?order: progressiveShelfCardOrder/,
   "A visitor's passive coming-soon message must wait for every real product and render after the complete product shelf."
 );
 
 assertContains(
-  /function ownerEmptyProductPath\(blockNumber: number\)[\s\S]*?manage_block[\s\S]*?source", "public-shop-product"[\s\S]*?#shop-control-gallery-tools[\s\S]*?Add your product[\s\S]*?Add another product[\s\S]*?data-owner-empty-shop-space=\{slotNumber\}[\s\S]*?gridColumn: progressiveSlotSpansPair \? "1 \/ -1" : undefined[\s\S]*?Tap to start selling[\s\S]*?Awaiting your product/,
+  /function ownerEmptyProductPath\(blockNumber: number\)[\s\S]*?manage_block[\s\S]*?source", "public-shop-product"[\s\S]*?#shop-control-gallery-tools[\s\S]*?Add your product[\s\S]*?Add another product[\s\S]*?data-owner-empty-shop-space=\{slotNumber\}[\s\S]*?order: progressiveShelfCardOrder[\s\S]*?gridColumn: progressiveSlotSpansPair \? "1 \/ -1" : undefined[\s\S]*?Tap to start selling[\s\S]*?Awaiting your product/,
   "The owner's single progressive plus must hand the exact next empty slot to the existing Shop Control item workflow with clear first and follow-on language."
 );
 
@@ -433,8 +433,8 @@ assertFileContains(
 );
 
 assertContains(
-  /const hiddenProductCount =[\s\S]*?shelfSlot > GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT[\s\S]*?const hiddenShelfEntryCount =[\s\S]*?hiddenProductCount[\s\S]*?signedInOwnsShop &&[\s\S]*?nextEmptyProductSlot > GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT[\s\S]*?hiddenShelfEntryCount > 0 \|\| showAllProducts[\s\S]*?`Show \$\{hiddenShelfEntryCount\} more`/,
-  "Show more must count the owner's hidden progressive space but only hidden real products for visitors."
+  /const hiddenProductCount =[\s\S]*?Math\.max\(0, products\.length - GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT\)[\s\S]*?const hiddenShelfEntryCount =[\s\S]*?hiddenProductCount[\s\S]*?signedInOwnsShop &&[\s\S]*?nextEmptyProductSlot > 0 &&[\s\S]*?hiddenProductCount > 0[\s\S]*?hiddenShelfEntryCount > 0 \|\| showAllProducts[\s\S]*?`Show \$\{hiddenShelfEntryCount\} more`/,
+  "Show more must count hidden real products plus the owner's hidden progressive card, while visitors count only hidden real products."
 );
 
 assertNotContains(

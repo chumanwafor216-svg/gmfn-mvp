@@ -3732,10 +3732,7 @@ export default function ShopGalleryPage() {
   const visibleProducts = useMemo(() => {
     if (focusedBlockLinkActive) return focusedBlockProduct ? [focusedBlockProduct] : [];
     if (showAllProducts) return products;
-    return products.filter((product, index) => {
-      const shelfSlot = positiveNumber(product.slotNumber) || index + 1;
-      return shelfSlot <= GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT;
-    });
+    return products.slice(0, GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT);
   }, [focusedBlockLinkActive, focusedBlockProduct, products, showAllProducts]);
 
   const liveShopDiaryEntries = useMemo(() => {
@@ -4593,13 +4590,9 @@ export default function ShopGalleryPage() {
   }, [focusedBlockLinkActive, gallerySlotsTotal, products]);
   const hiddenProductCount = focusedBlockLinkActive
     ? 0
-    : products.filter((product, index) => {
-        const shelfSlot = positiveNumber(product.slotNumber) || index + 1;
-        return shelfSlot > GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT;
-      }).length;
+    : Math.max(0, products.length - GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT);
   const ownerProgressiveEmptySlotVisible = Boolean(
-    nextEmptyProductSlot &&
-      (showAllProducts || nextEmptyProductSlot <= GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT)
+    nextEmptyProductSlot && (showAllProducts || hiddenProductCount === 0)
   );
   const visitorProgressiveEmptySlotVisible = Boolean(
     nextEmptyProductSlot && (showAllProducts || hiddenProductCount === 0)
@@ -4612,13 +4605,14 @@ export default function ShopGalleryPage() {
     !signedInOwnsShop && visitorProgressiveEmptySlotVisible
       ? nextEmptyProductSlot
       : 0;
-  const visitorOpeningSoonOrder = gallerySlotsTotal + 1;
+  const progressiveShelfCardOrder = gallerySlotsTotal + 1;
   const progressiveSlotSpansPair = visibleProducts.length % 2 === 0;
   const hiddenShelfEntryCount = focusedBlockLinkActive
     ? 0
     : hiddenProductCount +
       (signedInOwnsShop &&
-      nextEmptyProductSlot > GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT
+      nextEmptyProductSlot > 0 &&
+      hiddenProductCount > 0
         ? 1
         : 0);
 
@@ -8687,7 +8681,7 @@ export default function ShopGalleryPage() {
                   data-public-shop-neon-card="visitor-message"
                   data-visitor-opening-soon-space={visitorOpeningSoonSlot}
                   style={{
-                    order: visitorOpeningSoonOrder,
+                    order: progressiveShelfCardOrder,
                     gridColumn: progressiveSlotSpansPair ? "1 / -1" : undefined,
                     width: "100%",
                     minWidth: 0,
@@ -8843,7 +8837,7 @@ export default function ShopGalleryPage() {
                     data-owner-empty-shop-space={slotNumber}
                     data-owner-empty-shop-primary={isFirstShopStep ? "true" : "false"}
                     style={{
-                      order: slotNumber,
+                      order: progressiveShelfCardOrder,
                       gridColumn: progressiveSlotSpansPair ? "1 / -1" : undefined,
                       width: "100%",
                       minWidth: 0,

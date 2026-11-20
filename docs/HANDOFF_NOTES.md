@@ -7137,3 +7137,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Confirmed the current Community Domain package remains a six-month no-charge pilot and GBP 24/GBP 40 remain candidate prices. Demand Box currently keeps five-open-request/24-hour and 48-hour-expiry boundaries with no discovered per-reply charge.
 - Release verdict: no paid public merchant offer is ready. The next decision is whether to authorize the narrow connection sequence and adopt the proposed timezone, dayparts, late-booking, legacy-publication and whole-credit pilot-remedy defaults.
 - Security boundary: the new attachment again ended with an unrelated live session/account dump. It was excluded and not copied. The product owner should revoke the exposed session and remove unsafe copies.
+
+# Public Shop real-product shelf continuity - 2026-11-20
+
+- Owner phone evidence showed the signed-in Public Shop placing the first empty numbered `Add another product` card between real products. With an early gap, only four real items could appear before the large add card while later products were pushed below it or behind `Show more`.
+- Products & Services now opens with the first six real products consecutively, independent of gaps in their numbered storage spaces. The progressive owner add card renders only after every real product; when more real products remain hidden, the add card remains behind `Show more` with them.
+- The add card still targets the exact authoritative first-empty numbered space, still performs no write on open, advances after save, returns after permanent deletion, disappears at twelve occupied spaces, and remains owner-only. Product records, numbering, media, APIs, permissions and backend contracts are unchanged.
+- Visitor and owner shelf continuity now use the same visual ordering rule. Visitors still receive only the passive coming-soon/shop-message card, and their `Show more` count still names only hidden real products; owners also count their hidden actionable card.
+- Updated the frozen screen specification and freeze policy to supersede the earlier owner numbered-position presentation detail without changing the twelve-space capacity or exact write target.
+- Verification passed: focused ESLint, Public Shop button inventory audit, the focused 390x844 progressive-shelf browser smoke, TypeScript and the 329-module production build, the isolated Dashboard passport guard, and the complete protected-button-freeze suite. The protected browser sweep still logs its unrelated pre-existing duplicate React-key warning while passing.

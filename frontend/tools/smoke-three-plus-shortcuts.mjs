@@ -1048,17 +1048,31 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     timeout: 20_000,
   });
   const thirdSpace = earlyGapOwner.page.locator('[data-owner-empty-shop-space="3"]');
+  if (await thirdSpace.count()) {
+    throw new Error('An early empty owner space interrupted real products before Show more.');
+  }
+  if (await earlyGapOwner.page.locator('[id^="shop-block-"]').count() !== 6) {
+    throw new Error('An early owner gap did not keep the first six real products together.');
+  }
+  if (
+    !(await earlyGapOwner.page.locator('#shop-block-7').count()) ||
+    (await earlyGapOwner.page.locator('#shop-block-8').count())
+  ) {
+    throw new Error('An early owner gap did not reveal real products in sequence before Show more.');
+  }
+  await earlyGapOwner.page.getByRole('button', { name: 'Show 2 more', exact: true }).click();
   await thirdSpace.waitFor({ state: 'visible', timeout: 20_000 });
-  if (await earlyGapOwner.page.locator('[id^="shop-block-"]').count() !== 5) {
-    throw new Error('An early deleted owner space did not keep exactly spaces 1-6 open.');
-  }
-  if (await earlyGapOwner.page.locator('#shop-block-7, #shop-block-8').count()) {
-    throw new Error('Products after space 6 escaped Show more when an early owner space was empty.');
-  }
   const thirdSpaceBox = await thirdSpace.boundingBox();
-  const fourthProductBox = await earlyGapOwner.page.locator('#shop-block-4').boundingBox();
-  if (!thirdSpaceBox || !fourthProductBox || thirdSpaceBox.y > fourthProductBox.y + 4) {
-    throw new Error('The reopened third owner space was not restored before shop space 4.');
+  const lastEarlyGapOwnerProductBox = await earlyGapOwner.page
+    .locator('#shop-block-8')
+    .boundingBox();
+  if (
+    !thirdSpaceBox ||
+    !lastEarlyGapOwnerProductBox ||
+    Math.abs(thirdSpaceBox.y - lastEarlyGapOwnerProductBox.y) > 4 ||
+    thirdSpaceBox.x <= lastEarlyGapOwnerProductBox.x + 4
+  ) {
+    throw new Error('The owner add-product card did not move behind all seven real products.');
   }
   await earlyGapOwner.context.close();
 
@@ -1109,14 +1123,14 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     waitUntil: 'domcontentloaded',
     timeout: 60_000,
   });
-  await earlyGapVisitor.page.getByRole('button', { name: 'Show 2 more', exact: true }).waitFor({
+  await earlyGapVisitor.page.getByRole('button', { name: 'Show 1 more', exact: true }).waitFor({
     state: 'visible',
     timeout: 20_000,
   });
   if (await earlyGapVisitor.page.locator('[data-visitor-opening-soon-space]').count()) {
     throw new Error('An early empty visitor space interrupted real products before Show more.');
   }
-  await earlyGapVisitor.page.getByRole('button', { name: 'Show 2 more', exact: true }).click();
+  await earlyGapVisitor.page.getByRole('button', { name: 'Show 1 more', exact: true }).click();
   const earlyGapVisitorPoster = earlyGapVisitor.page.locator(
     '[data-visitor-opening-soon-space="3"]'
   );
@@ -1859,7 +1873,7 @@ try {
     ] : progressiveOnly ? [
       'every shop normalizes to all twelve included product spaces',
       'an eight-item owner sees the ninth-space plus only after Show 3 more',
-      'an early deleted owner space returns inside the first six positions',
+      'an early empty owner space moves behind every real product instead of interrupting the shelf',
       'an eight-item visitor sees the ninth-space poster only after Show 2 more real products',
       'an early empty visitor space moves behind every real product instead of interrupting the shelf',
       'a full twelve-item shop exposes no thirteenth prompt and opening a plus performs no write',
@@ -1871,7 +1885,7 @@ try {
       'Public Shop includes all twelve spaces and advances the single owner/visitor next-space presentation',
       'an empty next-space card spans both columns while one product and its included next space form one paired row',
       'an eight-item owner sees the ninth-space plus only after expanding Show 3 more, while a full shop exposes no thirteenth prompt',
-      'an early deleted owner space returns before space 4, while the visitor ninth-space poster follows the same Show more boundary',
+      'owner and visitor progressive cards follow every real product, while preserving the exact first-empty numbered space',
       'authenticated backend ownership restores the owner shelf when the route and stored identity labels differ',
       'the first owner shop-space plus reaches the exact existing add-item workflow without a business write',
       'owner product card keeps the outer + / × control and reveals the owner-only inner media-management plus only when open',
