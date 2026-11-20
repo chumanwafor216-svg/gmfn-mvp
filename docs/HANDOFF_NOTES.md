@@ -7115,3 +7115,14 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Verification passed: focused ESLint, media-quality and Shop Assets slot audits, TypeScript, the 328-module production build, both 390 px Shop Assets/public Shop Gallery browser smokes with no horizontal overflow, and the complete protected-button-freeze suite.
 - Honest residual: the screenshots do not expose the failed request status or selected file size, and Render log access had no confirmed workspace in this session. The exact production request failure therefore remains unproven; the reported handset/file should be retried after deployment to confirm the live network path.
 - The protected browser sweep passes but still logs the unrelated pre-existing duplicate React-key warning.
+
+# 2026-11-20 — Brainstorming record reconciled with canonical commercial summary
+
+- Reconciled the supplied `GSN Brainstorming Summary and Working Decision Record` against the existing commercial, Spotlight, financial-engine, and TrustSlip records.
+- Added `docs/GSN_BRAINSTORMING_RECONCILIATION_AND_WORKING_DECISION_RECORD_2026-11-20.md` as the consolidated management record.
+- Confirmed that the new record does not require a strategic reversal: GSN remains a community commerce and opportunity network with a promotion-led mixed-income direction and an evidence/TrustSlip foundation.
+- Preserved settled Spotlight terms: GBP 0.50 per Pipeline Credit, 30 scheduled opportunities, 10/10/10 daypart allocation, scheduled opportunity as the purchased unit, no five-person target or ceiling, no purchase reset of viewer frequency, and ten seconds as a planning baseline.
+- Added the record's useful clarifications: payer and participant separation, concentrated Scottish merchant-pilot recommendation, unresolved Demand Box charging, free-layer cost ownership, accounting boundaries, founder-effort costing, and external support-claim verification.
+- Corrected overreach risks: promotion is a chosen experiment rather than proven revenue; Community Domain, institutional activation, embedded-first TrustSlip, overnight promotion, and candidate prices remain recommendations; public discovery does not force private or historic records public.
+- No product behaviour, payment state, schema, forecast, external communication, or deployment changed.
+- Security boundary: the supplied attachment included an unrelated session/account dump. It was excluded completely and no sensitive material was copied into the repository. The exposed session should be revoked by the product owner.
