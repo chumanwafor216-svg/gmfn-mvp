@@ -7146,3 +7146,13 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Visitor and owner shelf continuity now use the same visual ordering rule. Visitors still receive only the passive coming-soon/shop-message card, and their `Show more` count still names only hidden real products; owners also count their hidden actionable card.
 - Updated the frozen screen specification and freeze policy to supersede the earlier owner numbered-position presentation detail without changing the twelve-space capacity or exact write target.
 - Verification passed: focused ESLint, Public Shop button inventory audit, the focused 390x844 progressive-shelf browser smoke, TypeScript and the 329-module production build, the isolated Dashboard passport guard, and the complete protected-button-freeze suite. The protected browser sweep still logs its unrelated pre-existing duplicate React-key warning while passing.
+
+# 2026-11-20 — Corrected Public Discovery, Spotlight and Merchant Pilot implementation protocol
+
+- Added `docs/GSN_PUBLIC_DISCOVERY_SPOTLIGHT_MERCHANT_PILOT_CORRECTED_IMPLEMENTATION_PROTOCOL_2026-11-20.md` as the sanitized version 1.1 implementation handoff.
+- The protocol corrects commercial interpretation without rewriting the completed source audit: GBP 0.50 buys one Pipeline Credit and 30 genuine scheduled opportunities split 10/10/10; mere consideration is not supplied delivery; the five-view founder threshold is preserved; entitlement, genuine supply, impressions, shortfall and remedy remain separate evidence.
+- The current task authorizes protocol preparation only. It does not authorize production code, public exposure, payment activation, merchant/sponsor contact, owner notices, deployment or forecast revision.
+- Limited revision check: current checkout `87bc51b57a9a16da4f9bfc9518b25aff966a6f33` differs from audited code revision `cabbfb04048e418a86ef16390c32cfa685dead5c` only in the Public Shop shelf presentation among relevant paths. No audited discovery, payment, Pipeline Credit, Spotlight pacing/frequency, advertising-settlement, Community Domain or Demand Box backend owner changed.
+- Corrected the commercial register so the 10/10/10 allocation remains settled while the exact `Europe/London` clock boundaries remain a proposed paid-pilot setting requiring resolution.
+- Existing audit facts and no-release verdict remain valid: public cross-community shop/offer search and the complete canonical paid Spotlight chain are not implemented, and live payment remains unapproved.
+- Security boundary: the supplied attachment contained a live account/session export after the protocol. It was excluded completely. The product owner should revoke the exposed session, remove unsafe copies and sign in again before treating the account as secure.

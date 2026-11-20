@@ -8,6 +8,8 @@ Audited revision: `cabbfb04048e418a86ef16390c32cfa685dead5c`
 
 Status: current-revision audit and implementation preparation only
 
+> **Precedence update — 2026-11-20:** `docs/GSN_PUBLIC_DISCOVERY_SPOTLIGHT_MERCHANT_PILOT_CORRECTED_IMPLEMENTATION_PROTOCOL_2026-11-20.md` supersedes conflicting commercial interpretation in this audit, including any suggestion that mere consideration is supplied opportunity, uncertainty over the monthly basis of the GBP 24/GBP 40 candidate Domain prices, or reliance on the separate member-credit test writer for canonical remedy precision. The factual code findings and no-release verdict remain in force. The exact pilot clock boundaries, strict sixth-display suppression, late-booking rule, legacy-publication treatment and remedy policy remain proposed live settings until their affected release gate is explicitly resolved.
+
 ## 1. Authority and safety boundary
 
 This record reconciles the supplied Public Discovery, Spotlight and Merchant Pilot Protocol with the current repository. It does not authorize production code changes, payment activation, merchant or sponsor contact, external promises, forecast revision, deployment, or release.
