@@ -6952,3 +6952,13 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Sign In receives the identifier through private router state, prefills the existing username field, explains that the account already exists, and opens the normal authenticated destination. The creation draft is cleared before leaving so personal details do not remain on the shared entry screen.
 - No account, password, authentication, activation, community-creation or admission rule changed.
 - Verification passed: entry-flow polish, entry copy/response, the complete Pixel 5 entry smoke including registered-account recovery and prefilled Sign In, the production frontend build, and the full protected-button-freeze audit.
+
+# Context-driven community entry lanes - 2026-11-20
+
+- Owner review clarified that GSN must use known entry context instead of showing Create Community, community joining and Sign In together after intent is already known.
+- Cover now sends known Create Community intent directly to `/create`, known invitation intent directly to `/join/:code`, and known existing-member intent directly to `/login?force=1`. Only an untagged general visit opens the compact Welcome intent gateway.
+- Recognised invitation entry remains mode-aware: `instant_invite` approves membership immediately and sends a new identity to protected activation; `community_vote` stays pending; an admin can override voting only when the saved admission policy authorises it.
+- Invitation forms now ask new people only for full name, phone and country. Existing-GSN-ID reuse asks only for the existing ID, full name and phone. Work, birth, residential and written-note fields are removed from the entry gate and are no longer submitted.
+- Voluntary community search asks for community, identity and verified phone only. The optional joining note is removed from the screen and request payload. Every active, non-system community remains searchable; discovery still does not force admission, and inactive, dormant, closed or internal default communities remain excluded.
+- Verification passed: focused ESLint, entry-flow, entry/auth, entry-copy and existing-community invite audits; the Pixel 5 corrected-entry journey including direct Cover invitation routing and a note-free search request; 13 corrected-community-entry backend tests covering instant, voting and bounded admin override; TypeScript; the 328-module production build; and the complete protected-button-freeze suite.
+- Honest residual: the protected browser sweep passes but still logs the unrelated pre-existing duplicate React-key warning.

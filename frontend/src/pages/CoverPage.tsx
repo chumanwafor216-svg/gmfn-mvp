@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { PrimaryButton, SecondaryButton } from "../components/StableButton";
+import { routeForInvitation } from "../lib/entryFlow";
 
 
 
@@ -382,9 +383,20 @@ function mergeSearchIntoPath(to: string, currentSearch: string): string {
 
 
 
-function nextRouteForMode(mode: EntryMode): string {
-  if (mode === "existing") return "/login?force=1";
-  return "/welcome?entry_from=cover";
+function nextRouteForMode(mode: EntryMode, currentSearch: string): string {
+  if (mode === "existing") {
+    return mergeSearchIntoPath("/login?force=1", currentSearch);
+  }
+  if (mode === "create") return mergeSearchIntoPath("/create", currentSearch);
+  if (mode === "invite") {
+    return (
+      routeForInvitation(
+        currentSearch,
+        readStorage(ENTRY_INVITE_CODE_KEY)
+      ) || mergeSearchIntoPath("/join", currentSearch)
+    );
+  }
+  return mergeSearchIntoPath("/welcome?entry_from=cover", currentSearch);
 
 }
 
@@ -1502,13 +1514,7 @@ export default function CoverPage() {
 
 
 
-    const nextTo = mergeSearchIntoPath(
-
-      nextRouteForMode(entryMode),
-
-      location.search
-
-    );
+    const nextTo = nextRouteForMode(entryMode, location.search);
 
 
 

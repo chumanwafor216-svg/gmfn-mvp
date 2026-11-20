@@ -118,8 +118,14 @@ assertNotContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /const inviteAdmissionMode[\s\S]*?const isInstantJoin = inviteAdmissionMode === "instant_invite";[\s\S]*?const joinActionLabel = isInstantJoin[\s\S]*?"Accept invite and join"[\s\S]*?"Submit request for approval"[\s\S]*?showJoinPathLauncher[\s\S]*?debugId="join-entry\.sign-in-existing"[\s\S]*?Sign in[\s\S]*?Already have a GSN ID\?[\s\S]*?debugId="join-entry\.choose-existing-gsn"[\s\S]*?joinPathChoice === "existing"[\s\S]*?Existing GSN ID[\s\S]*?Full name[\s\S]*?Phone number[\s\S]*?Optional details[\s\S]*?requestJoinWithExistingGsnId[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"[\s\S]*?canOpenForm[\s\S]*?canUseNewMemberForm[\s\S]*?!hasExistingGsnClaim[\s\S]*?Full name[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Optional details[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?debugId="join-entry\.submit-new-request"/,
-  "A ready existing-community invite must expose the mode-aware direct form, preserve Sign in, keep existing-GSN-ID reuse behind help, and collapse optional new-member details."
+  /const inviteAdmissionMode[\s\S]*?const isInstantJoin = inviteAdmissionMode === "instant_invite";[\s\S]*?const joinActionLabel = isInstantJoin[\s\S]*?"Accept invite and join"[\s\S]*?"Submit request for approval"[\s\S]*?showJoinPathLauncher[\s\S]*?debugId="join-entry\.sign-in-existing"[\s\S]*?Sign in[\s\S]*?Already have a GSN ID\?[\s\S]*?debugId="join-entry\.choose-existing-gsn"[\s\S]*?joinPathChoice === "existing"[\s\S]*?Existing GSN ID[\s\S]*?Full name[\s\S]*?Phone number[\s\S]*?requestJoinWithExistingGsnId[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"[\s\S]*?canOpenForm[\s\S]*?canUseNewMemberForm[\s\S]*?!hasExistingGsnClaim[\s\S]*?Full name[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?debugId="join-entry\.submit-new-request"/,
+  "A ready existing-community invite must expose the mode-aware direct form, preserve Sign in, keep existing-GSN-ID reuse behind help, and ask only for essential identity details."
+);
+
+assertNotContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /join-entry\.(?:new|existing)-optional-details-toggle|Short note to the community|Work, business, or trade \(optional\)|Date of birth \(optional\)/,
+  "Existing-community entry must not restore optional profile or joining-reason fields at the admission gate."
 );
 
 assertContains(

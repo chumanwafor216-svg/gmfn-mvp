@@ -609,6 +609,9 @@ Rules:
   owners do not control search visibility. Search visibility does not grant
   membership: each community's saved search-request rule still decides whether
   a verified request joins immediately or requires Committee Voting.
+- When the cover already carries Create Community or invitation intent, continue
+  directly into that dedicated journey. Do not show the ordinary three-choice
+  gateway after GSN already knows the person's lane.
 - Do not insert a second founder-path card or a multi-screen member/new-member
   chooser before these three intents. After selection, each journey owns its
   screen and must not expose the other journeys.
@@ -728,14 +731,19 @@ admission rule.
 
 Must show:
 - invite code or community code input
-- requester details
-- reason / short note
+- requester name, phone number, and country
 - recorded community setup/governance note when the invite preview provides one
 - rules/admin-review acknowledgement before submit only when the selected
   reviewed mode requires it
 - a mode-aware primary action: Accept invite for instant admission or
   Request access for reviewed admission
 - privacy, membership, and verification boundary
+
+Must not ask for:
+- a joining reason
+- a written note
+- a voice note
+- work, birth, or residential details at the entry gate
 
 Phone-first rule:
 - Open with one compact `You're Invited!` card that resolves the authoritative

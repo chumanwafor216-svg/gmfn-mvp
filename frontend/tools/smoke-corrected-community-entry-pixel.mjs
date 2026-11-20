@@ -24,6 +24,7 @@ async function newPixel(browser) {
 }
 
 async function installJoinMocks(page) {
+  let searchJoinPayload = null;
   await page.route("**/api/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname.replace(/^\/api/, "");
@@ -49,6 +50,7 @@ async function installJoinMocks(page) {
     }
     if (path === "/entry/phone/confirm") return json(route, { ok: true, verified: true });
     if (path === "/clans/search-join-requests") {
+      searchJoinPayload = request.postDataJSON();
       return json(route, {
         ok: true,
         status: "pending",
@@ -71,11 +73,12 @@ async function installJoinMocks(page) {
     }
     return json(route, { ok: true });
   });
+  return () => searchJoinPayload;
 }
 
 async function runJoinJourney(browser, baseUrl) {
   const { context, page } = await newPixel(browser);
-  await installJoinMocks(page);
+  const readSearchJoinPayload = await installJoinMocks(page);
   await page.goto(`${baseUrl}/join`, { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { name: "Find a community" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Back to welcome" })).toHaveAttribute(
@@ -94,9 +97,11 @@ async function runJoinJourney(browser, baseUrl) {
   await page.getByLabel("Country").fill("United Kingdom");
   await page.getByRole("button", { name: "Verify phone" }).click();
   await page.getByRole("button", { name: "Confirm phone" }).click();
+  await expect(page.getByLabel("Short note (optional)")).toHaveCount(0);
   await page.screenshot({ path: resolve(screenshotDir, "01-find-and-ask-ready.png"), fullPage: true });
   await page.getByRole("button", { name: "Ask to join" }).click();
   await expect(page).toHaveURL(/\/pending-approval/);
+  expect(readSearchJoinPayload()).not.toHaveProperty("note");
   await page.screenshot({ path: resolve(screenshotDir, "02-find-and-ask-pending.png"), fullPage: true });
   await context.close();
 }
@@ -317,6 +322,13 @@ async function runInvitationBypass(browser, baseUrl) {
   );
   await expect(page).toHaveURL(/\/join\/review-invite\?qr_policy=card-share$/);
   await expect(page.getByText("Open your invitation path.", { exact: true })).toHaveCount(0);
+
+  await page.goto(
+    `${baseUrl}/cover?entry=invite&invite_code=direct-invite&qr_policy=card-share`,
+    { waitUntil: "domcontentloaded" }
+  );
+  await page.locator('[data-cta-id="cover.continue"]').click();
+  await expect(page).toHaveURL(/\/join\/direct-invite\?qr_policy=card-share$/);
   await context.close();
 }
 

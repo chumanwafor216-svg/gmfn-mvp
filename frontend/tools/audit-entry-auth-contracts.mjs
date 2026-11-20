@@ -137,8 +137,8 @@ assertContains(
 
 assertContains(
   "src/pages/CoverPage.tsx",
-  /const COVER_WELCOME_SESSION_KEY = "gmfn_cover_welcome_session";[\s\S]*?function nextRouteForMode\(mode: EntryMode\): string \{[\s\S]*?mode === "existing"[\s\S]*?return "\/login\?force=1";[\s\S]*?return "\/welcome\?entry_from=cover";[\s\S]*?function markCoverWelcomeSession\(\): void \{[\s\S]*?window\.sessionStorage\.setItem\(COVER_WELCOME_SESSION_KEY, "active"\);[\s\S]*?markCoverWelcomeSession\(\);/,
-  "Cover Continue must send existing members directly to Sign In and mark the active browser session before opening Welcome for other entry modes."
+  /const COVER_WELCOME_SESSION_KEY = "gmfn_cover_welcome_session";[\s\S]*?function nextRouteForMode\(mode: EntryMode, currentSearch: string\): string \{[\s\S]*?mode === "existing"[\s\S]*?"\/login\?force=1"[\s\S]*?mode === "create"[\s\S]*?"\/create"[\s\S]*?mode === "invite"[\s\S]*?routeForInvitation[\s\S]*?"\/join"[\s\S]*?"\/welcome\?entry_from=cover"[\s\S]*?function markCoverWelcomeSession\(\): void \{[\s\S]*?window\.sessionStorage\.setItem\(COVER_WELCOME_SESSION_KEY, "active"\);[\s\S]*?markCoverWelcomeSession\(\);/,
+  "Cover Continue must route known existing, create, and invitation intent directly while reserving Welcome for an unknown general entry."
 );
 
 assertContains(

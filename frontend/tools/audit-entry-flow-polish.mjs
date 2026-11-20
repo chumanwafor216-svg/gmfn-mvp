@@ -120,6 +120,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CoverPage.tsx",
+  /function nextRouteForMode\(mode: EntryMode, currentSearch: string\)[\s\S]*?mode === "create"[\s\S]*?"\/create"[\s\S]*?mode === "invite"[\s\S]*?routeForInvitation/,
+  "Known Create and invitation intent must leave Cover directly for the dedicated journey instead of reopening the mixed Welcome gateway."
+);
+
+assertContains(
   "src/pages/WelcomePage.tsx",
   /function intentNeutralSearch[\s\S]*?\["entry", "entry_from", "flow", "mode", "intent"\][\s\S]*?routeForCreate\(neutralSearch\)[\s\S]*?routeForJoin\(neutralSearch\)/,
   "Switching gateway intent must clear stale lane markers before opening Create or Join."
@@ -248,6 +254,18 @@ assertNotContains(
   "src/pages/FindCommunityJoinPage.tsx",
   /Create community|Start community|createCommunityAfterIdentity/,
   "Join Community must not expose or execute the Create Community journey."
+);
+
+assertNotContains(
+  "src/pages/FindCommunityJoinPage.tsx",
+  /Short note|form\.note|note:/,
+  "Voluntary community search must ask only for identity and phone verification, not a joining reason or note."
+);
+
+assertNotContains(
+  "src/pages/JoinEntryPage.tsx",
+  /join-entry\.(?:new|existing)-optional-details-toggle|Short note to the community|Work, business, or trade \(optional\)|Date of birth \(optional\)/,
+  "Recognised invitation entry must stay limited to the identity details needed for the saved admission rule."
 );
 
 assertContains(

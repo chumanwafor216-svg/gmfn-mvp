@@ -107,16 +107,6 @@ function inputStyle(): React.CSSProperties {
   };
 }
 
-function textareaStyle(): React.CSSProperties {
-  return {
-    ...inputStyle(),
-    minHeight: 110,
-    resize: "vertical",
-    fontFamily: "inherit",
-    lineHeight: 1.6,
-  };
-}
-
 function mergeSearchIntoPath(to: string, currentSearch: string): string {
   const [basePath, baseQueryRaw = ""] = String(to || "").split("?");
   const merged = new URLSearchParams(baseQueryRaw);
@@ -785,49 +775,6 @@ const COUNTRY_DIAL_CODES: Record<string, string> = {
   Zimbabwe: "+263",
 };
 
-const WORK_OPTIONS = [
-  {
-    value: "trader",
-    label: "Trader / market seller",
-    hint: "Food seller, clothes, phone accessories, spare parts, provisions.",
-  },
-  {
-    value: "service",
-    label: "Service work / skill",
-    hint: "Driver, plumber, tailor, hairdresser, mechanic, electrician.",
-  },
-  {
-    value: "salary",
-    label: "Salary worker / civil servant",
-    hint: "Teacher, nurse, office worker, security, government or company work.",
-  },
-  {
-    value: "farming",
-    label: "Farming / agriculture",
-    hint: "Crop farming, poultry, livestock, produce trading.",
-  },
-  {
-    value: "student",
-    label: "Student / apprentice",
-    hint: "School, training, learning a skill, early work stage.",
-  },
-  {
-    value: "home",
-    label: "Home support / family work",
-    hint: "Family care, home trading, helping a household business.",
-  },
-  {
-    value: "none",
-    label: "Not working yet",
-    hint: "You can still join if the community knows you.",
-  },
-  {
-    value: "other",
-    label: "Other",
-    hint: "Write the closest simple description.",
-  },
-];
-
 function cleanText(value: any): string {
   return String(value || "").trim();
 }
@@ -838,20 +785,6 @@ function ctaPath(target: CtaTarget): string {
 
 function dialCodeForCountry(country: string): string {
   return COUNTRY_DIAL_CODES[cleanText(country)] || "";
-}
-
-function workOptionFor(value: string) {
-  return WORK_OPTIONS.find((item) => item.value === value) || null;
-}
-
-function buildWorkSummary(category: string, detail: string): string {
-  const option = workOptionFor(category);
-  const safeDetail = cleanText(detail);
-
-  if (!option) return safeDetail;
-  if (!safeDetail) return option.label;
-
-  return `${option.label}: ${safeDetail}`;
 }
 
 function friendlyJoinError(value: any): string {
@@ -2306,10 +2239,6 @@ export default function JoinEntryPage() {
     return dialCodeForCountry(country);
   }, [country]);
 
-  const selectedWorkOption = useMemo(() => {
-    return workOptionFor(workCategory);
-  }, [workCategory]);
-
   function handleCountryChange(nextCountry: string) {
     const previousDialCode = dialCodeForCountry(country);
     const nextDialCode = dialCodeForCountry(nextCountry);
@@ -2331,11 +2260,6 @@ export default function JoinEntryPage() {
 
       return current;
     });
-  }
-
-  function handleWorkCategoryChange(nextCategory: string) {
-    setWorkCategory(nextCategory);
-    setWorkDetail("");
   }
 
   function clearUnclearSessionAndOpenForm() {
@@ -2417,13 +2341,6 @@ export default function JoinEntryPage() {
       const safeSurname = cleanText(nameParts.surname);
       const safePhone = cleanText(phone);
       const safeCountry = cleanText(country);
-      const safeDateOfBirth = cleanText(dateOfBirth);
-      const safeBirthCountry = cleanText(birthCountry) || safeCountry;
-      const safeBirthPlace = cleanText(birthPlace);
-      const safeCountryOfOrigin = cleanText(countryOfOrigin);
-      const safeResidentialArea = cleanText(residentialArea);
-      const safeBusinessName = buildWorkSummary(workCategory, workDetail);
-      const safeNote = cleanText(note);
 
       if (!safeInviteCode) {
         throw new Error("Invite code is missing from this join link.");
@@ -2453,13 +2370,6 @@ export default function JoinEntryPage() {
           surname: safeSurname || undefined,
           phone_e164: safePhone,
           country: safeCountry,
-          date_of_birth: safeDateOfBirth,
-          birth_country: safeBirthCountry,
-          birth_place: safeBirthPlace,
-          country_of_origin: safeCountryOfOrigin || undefined,
-          residential_area: safeResidentialArea || undefined,
-          business_name: safeBusinessName || undefined,
-          note: safeNote || undefined,
           rules_accepted: joinRequiresRulesAcceptance ? rulesAccepted : undefined,
           governance_preset_key_acknowledged: joinRequiresRulesAcceptance
             ? cleanText(inviteGovernanceProfile?.preset_key) || undefined
@@ -2706,7 +2616,6 @@ export default function JoinEntryPage() {
       const safeFirstName = cleanText(nameParts.firstName);
       const safeSurname = cleanText(nameParts.surname);
       const safePhone = cleanText(phone);
-      const safeBusinessName = buildWorkSummary(workCategory, workDetail);
 
       if (!safeFirstName || !safePhone) {
         throw new Error(
@@ -2721,8 +2630,6 @@ export default function JoinEntryPage() {
           first_name: safeFirstName,
           surname: safeSurname || undefined,
           phone_e164: safePhone,
-          business_name: safeBusinessName || undefined,
-          note: cleanText(note) || undefined,
           rules_accepted: joinRequiresRulesAcceptance ? rulesAccepted : undefined,
           governance_preset_key_acknowledged: joinRequiresRulesAcceptance
             ? cleanText(inviteGovernanceProfile?.preset_key) || undefined
@@ -3684,52 +3591,6 @@ export default function JoinEntryPage() {
                         style={{ ...inputStyle(), marginTop: 8 }}
                       />
                     </div>
-                    <details>
-                      <StableDisclosureSummary
-                        debugId="join-entry.existing-optional-details-toggle"
-                        stableHeight={48}
-                        style={entryChoiceActionStyle("secondary")}
-                      >
-                        {joinEntryIconText("eye", "Optional details", 20)}
-                      </StableDisclosureSummary>
-                      <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
-                        <div>
-                          <div style={labelText()}>Work, business, or trade (optional)</div>
-                          <select
-                            value={workCategory}
-                            onChange={(event) => handleWorkCategoryChange(event.target.value)}
-                            style={{ ...inputStyle(), marginTop: 8 }}
-                          >
-                            <option value="">Select the closest one</option>
-                            {WORK_OPTIONS.map((item) => (
-                              <option key={item.value} value={item.value}>
-                                {item.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        {workCategory && workCategory !== "none" ? (
-                          <div>
-                            <div style={labelText()}>Short detail (optional)</div>
-                            <input
-                              value={workDetail}
-                              onChange={(event) => setWorkDetail(event.target.value)}
-                              placeholder={selectedWorkOption?.hint || "Add a few words if needed"}
-                              style={{ ...inputStyle(), marginTop: 8 }}
-                            />
-                          </div>
-                        ) : null}
-                        <div>
-                          <div style={labelText()}>Short note to the community (optional)</div>
-                          <textarea
-                            value={note}
-                            onChange={(event) => setNote(event.target.value)}
-                            placeholder="Add a short note"
-                            style={{ ...textareaStyle(), marginTop: 8, minHeight: 84 }}
-                          />
-                        </div>
-                      </div>
-                    </details>
                     {identityNoteOpen ? (
                       <div style={{ ...noticeStyle("info"), marginTop: 0 }}>
                         One person should keep one GSN identity across communities. If the community accepts this request, GSN uses that same identity instead of creating another one.
@@ -4009,153 +3870,6 @@ export default function JoinEntryPage() {
                   </select>
                 </div>
               </div>
-
-              <details style={{ marginTop: 12 }}>
-                <StableDisclosureSummary
-                  debugId="join-entry.new-optional-details-toggle"
-                  stableHeight={48}
-                  style={entryChoiceActionStyle("secondary")}
-                >
-                  {joinEntryIconText("eye", "Optional details", 20)}
-                </StableDisclosureSummary>
-                <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-                  gap: 12,
-                }}
-              >
-                <div>
-                  <div style={labelText()}>Date of birth (optional)</div>
-                  <input
-                    type="date"
-                    value={dateOfBirth}
-                    onChange={(e) => setDateOfBirth(e.target.value)}
-                    style={{ ...inputStyle(), marginTop: 8 }}
-                  />
-                </div>
-
-                <div>
-                  <div style={labelText()}>Place of birth (optional)</div>
-                  <input
-                    value={birthPlace}
-                    onChange={(e) => setBirthPlace(e.target.value)}
-                    placeholder="Town, city, or area"
-                    style={{ ...inputStyle(), marginTop: 8 }}
-                  />
-                </div>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 12,
-                  display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-                  gap: 12,
-                }}
-              >
-                <div>
-                  <div style={labelText()}>Birth country (optional)</div>
-                  <select
-                    value={birthCountry}
-                    onChange={(e) => setBirthCountry(e.target.value)}
-                    style={{ ...inputStyle(), marginTop: 8 }}
-                  >
-                    <option value="">Same as country</option>
-                    {COUNTRY_OPTIONS.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <div style={labelText()}>Residential area (optional)</div>
-                  <input
-                    value={residentialArea}
-                    onChange={(e) => setResidentialArea(e.target.value)}
-                    placeholder="Area or district"
-                    style={{ ...inputStyle(), marginTop: 8 }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ marginTop: 12 }}>
-                <div style={labelText()}>Country of origin (optional)</div>
-                <select
-                  value={countryOfOrigin}
-                  onChange={(e) => setCountryOfOrigin(e.target.value)}
-                  style={{ ...inputStyle(), marginTop: 8 }}
-                >
-                  <option value="">Not added</option>
-                  {COUNTRY_OPTIONS.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ marginTop: 12, ...noticeStyle("info") }}>
-                Extra identity details help the community and GSN avoid
-                duplicate identities. You can complete them now or improve them
-                later after the request starts. This is not government
-                verification.
-              </div>
-
-              <div style={{ marginTop: 12 }}>
-                <div style={labelText()}>Work, business, or trade (optional)</div>
-                <select
-                  value={workCategory}
-                  onChange={(e) => handleWorkCategoryChange(e.target.value)}
-                  style={{ ...inputStyle(), marginTop: 8 }}
-                >
-                  <option value="">Select the closest one</option>
-                  {WORK_OPTIONS.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-                <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                  Choose the nearest fit. This only helps the community
-                  understand you faster.
-                </div>
-              </div>
-
-              {workCategory && workCategory !== "none" ? (
-                <div style={{ marginTop: 12 }}>
-                  <div style={labelText()}>Short detail (optional)</div>
-                  <input
-                    value={workDetail}
-                    onChange={(e) => setWorkDetail(e.target.value)}
-                    placeholder={selectedWorkOption?.hint || "Add a few words if needed"}
-                    style={{ ...inputStyle(), marginTop: 8 }}
-                  />
-                </div>
-              ) : null}
-
-              {workCategory === "none" ? (
-                <div style={{ marginTop: 12, ...noticeStyle("info") }}>
-                  That is okay. GSN is not judging income. The community can
-                  still review you by relationship, trust, and what they know
-                  about you.
-                </div>
-              ) : null}
-
-              <div style={{ marginTop: 12 }}>
-                <div style={labelText()}>Short note to the community (optional)</div>
-                <textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="Add a short note"
-                  style={{ ...textareaStyle(), marginTop: 8 }}
-                />
-              </div>
-                </div>
-              </details>
 
               <div
                 style={{

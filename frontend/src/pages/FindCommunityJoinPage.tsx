@@ -47,7 +47,7 @@ export default function FindCommunityJoinPage() {
     ((location.state as any)?.community as CommunityResult) || null
   );
   const [me, setMe] = useState<any>(null);
-  const [form, setForm] = useState({ firstName: "", surname: "", phone: "", country: "", note: "" });
+  const [form, setForm] = useState({ firstName: "", surname: "", phone: "", country: "" });
   const [verificationId, setVerificationId] = useState(0);
   const [verificationCode, setVerificationCode] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
@@ -155,7 +155,6 @@ export default function FindCommunityJoinPage() {
               surname: form.surname.trim() || undefined,
               phone_e164: form.phone.trim(),
               country: form.country.trim(),
-              note: form.note.trim() || undefined,
             }),
       });
       const requestId = String(out?.request_id || out?.request?.id || "").trim();
@@ -292,7 +291,6 @@ export default function FindCommunityJoinPage() {
                     <StableButton debugId="find-community.confirm-phone" onClick={() => void confirmVerification()} disabled={busy || !verificationCode.trim()} style={entryPrimaryButtonStyle}>Confirm phone</StableButton>
                   </>
                 ) : null}
-                <label style={entryLabelStyle}>Short note (optional)<textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} rows={3} style={entryFieldStyle} /></label>
                 <div style={{ ...brandHelperText(), textAlign: "center" }}>
                   Already have a GSN ID? <OriginLink to={`/login?force=1&next=${encodeURIComponent(location.pathname)}`} style={{ color: gmfnBrand.colors.accent, fontWeight: 850 }}>Sign in first</OriginLink>
                 </div>
