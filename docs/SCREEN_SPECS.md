@@ -696,6 +696,7 @@ Must show:
 
 Rules:
 - The first phone surface asks only whether the founder is new to GSN. `Continue as new founder` is primary; `I have a GSN ID` is secondary and routes to sign in.
+- If the entered phone or email already belongs to an active GSN account, replace the creation form with one calm `Sign in` action. Prefill the identifier privately in app navigation; do not leave the user on a red duplicate-account error.
 - Do not expose the long duplicate-identity explanation before the founder makes that first choice.
 - Only one step expanded at a time.
 - Future steps collapsed or clearly marked optional.

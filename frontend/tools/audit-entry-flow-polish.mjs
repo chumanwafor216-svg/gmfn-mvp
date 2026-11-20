@@ -216,6 +216,18 @@ assertContains(
 
 assertContains(
   "src/pages/IdentityFirstCreateCommunityPage.tsx",
+  /phone number already registered[\s\S]*?Sign in to continue[\s\S]*?navigate\("\/login\?force=1"[\s\S]*?sign_in_identifier[\s\S]*?identity-first\.existing-account\.sign-in/,
+  "A registered phone must replace the creation form with one direct, prefilled sign-in recovery."
+);
+
+assertContains(
+  "src/pages/LoginPage.tsx",
+  /sign_in_identifier[\s\S]*?sign_in_notice[\s\S]*?routedSignInIdentifier[\s\S]*?routedSignInNotice/,
+  "Sign In must accept the private in-app identifier and explanation from registered-account recovery."
+);
+
+assertContains(
+  "src/pages/IdentityFirstCreateCommunityPage.tsx",
   /invite_admission_mode: "instant_invite"[\s\S]*?invite_admin_override: false[\s\S]*?search_join_admission_mode: "community_vote"[\s\S]*?search_join_admin_override: false/,
   "Create Community must use safe admission defaults while universal active-community discovery remains system-owned."
 );

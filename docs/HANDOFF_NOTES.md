@@ -6944,3 +6944,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The owner-facing search visibility checkbox and hidden-state copy are removed. Owners still control what happens after a person asks to join.
 - The legacy search_join_enabled field remains temporarily for backwards compatibility, always resolves true for active-community search contracts, and is normalised true for active production communities by migration 20261119_universal_clan_search.
 - Verification passed: 14 corrected-entry backend/migration tests, both focused phone smokes, the production frontend build, and the full protected-button-freeze audit.
+
+# Existing-account sign-in recovery - 2026-11-20
+
+- Owner phone review showed an existing member entering the Create Community identity step and receiving a red `Phone number already registered` error above the full creation form.
+- A registered phone or email now replaces that form with a calm existing-member state and one primary `Sign in` action. `Use different details` remains a quiet secondary escape for an accidental identifier.
+- Sign In receives the identifier through private router state, prefills the existing username field, explains that the account already exists, and opens the normal authenticated destination. The creation draft is cleared before leaving so personal details do not remain on the shared entry screen.
+- No account, password, authentication, activation, community-creation or admission rule changed.
+- Verification passed: entry-flow polish, entry copy/response, the complete Pixel 5 entry smoke including registered-account recovery and prefilled Sign In, the production frontend build, and the full protected-button-freeze audit.

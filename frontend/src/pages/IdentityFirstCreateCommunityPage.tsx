@@ -77,6 +77,17 @@ function messageFrom(error: any): string {
   return String(detail?.message || detail || error?.message || "GSN could not complete that step.");
 }
 
+function existingAccountNotice(error: any): string {
+  const message = messageFrom(error).toLowerCase();
+  if (message.includes("phone number already registered")) {
+    return "This phone already has a GSN account. Sign in to continue.";
+  }
+  if (message.includes("email already registered")) {
+    return "This email already has a GSN account. Sign in to continue.";
+  }
+  return "";
+}
+
 export default function IdentityFirstCreateCommunityPage() {
   const navigate = useNavigate();
   const [draft, setDraft] = useState<Draft>(() => initialDraft());
@@ -86,6 +97,7 @@ export default function IdentityFirstCreateCommunityPage() {
   const [verificationCode, setVerificationCode] = useState("");
   const [verificationReady, setVerificationReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [existingAccountFound, setExistingAccountFound] = useState(false);
   const [notice, setNotice] = useState<{ tone: "info" | "error" | "success"; text: string } | null>(null);
 
   useEffect(() => {
@@ -111,6 +123,7 @@ export default function IdentityFirstCreateCommunityPage() {
   async function startPhone() {
     if (!canStart) return;
     setBusy(true);
+    setExistingAccountFound(false);
     setNotice(null);
     try {
       const out = await startEntryPhoneVerification({
@@ -134,10 +147,43 @@ export default function IdentityFirstCreateCommunityPage() {
               : "A verification code was sent to your phone.",
       });
     } catch (error) {
-      setNotice({ tone: "error", text: messageFrom(error) });
+      const accountNotice = existingAccountNotice(error);
+      if (accountNotice) {
+        setExistingAccountFound(true);
+        setNotice({ tone: "info", text: accountNotice });
+      } else {
+        setNotice({ tone: "error", text: messageFrom(error) });
+      }
     } finally {
       setBusy(false);
     }
+  }
+
+  function openSignIn() {
+    const signInIdentifier = draft.phone.trim() || draft.email.trim();
+    localStorage.removeItem(DRAFT_KEY);
+    navigate("/login?force=1", {
+      replace: true,
+      state: {
+        sign_in_identifier: signInIdentifier,
+        sign_in_notice: "Your GSN account already exists. Sign in with your password.",
+      },
+    });
+  }
+
+  function useDifferentDetails() {
+    setDraft((current) => ({
+      ...current,
+      identityRequestKey: uniqueKey("identity"),
+      phone: "",
+      email: "",
+    }));
+    setVerificationId(0);
+    setVerificationCode("");
+    setVerificationReady(false);
+    setExistingAccountFound(false);
+    setNotice(null);
+    setStage("identity");
   }
 
   async function confirmPhone() {
@@ -217,16 +263,46 @@ export default function IdentityFirstCreateCommunityPage() {
 
   return (
     <CommunityEntryShell
-      eyebrow="Create community"
-      title={stage === "community" ? "Set up your community" : "Secure your identity first"}
+      eyebrow={existingAccountFound ? "Existing member" : "Create community"}
+      title={
+        existingAccountFound
+          ? "Sign in to continue"
+          : stage === "community"
+            ? "Set up your community"
+            : "Secure your identity first"
+      }
       summary={
-        stage === "community"
-          ? "Name the new community, add a short description, and create it. Nothing else is required here."
-          : "Secure your personal GSN identity first, then continue directly to creating one new community."
+        existingAccountFound
+          ? "These details already belong to a GSN account. Use that account instead of creating another one."
+          : stage === "community"
+            ? "Name the new community, add a short description, and create it. Nothing else is required here."
+            : "Secure your personal GSN identity first, then continue directly to creating one new community."
       }
       exitLabel="Leave create journey"
     >
       <div style={{ display: "grid", gap: 16 }} data-gsn-identity-first-create="true">
+        {existingAccountFound ? (
+          <>
+            <EntryNotice tone="info">
+              {notice?.text || "This account already exists. Sign in to continue."}
+            </EntryNotice>
+            <StableButton
+              debugId="identity-first.existing-account.sign-in"
+              onClick={openSignIn}
+              style={entryPrimaryButtonStyle}
+            >
+              Sign in
+            </StableButton>
+            <StableButton
+              debugId="identity-first.existing-account.different-details"
+              onClick={useDifferentDetails}
+              style={entrySecondaryButtonStyle}
+            >
+              Use different details
+            </StableButton>
+          </>
+        ) : (
+          <>
         {notice ? <EntryNotice tone={notice.tone}>{notice.text}</EntryNotice> : null}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
           {["Identity", "Secure account", "Community"].map((label, index) => (
@@ -265,6 +341,8 @@ export default function IdentityFirstCreateCommunityPage() {
             <label style={entryLabelStyle}>Short description<textarea value={draft.clanDescription} onChange={(e) => setDraft({ ...draft, clanDescription: e.target.value })} rows={3} style={entryFieldStyle} /></label>
 
             <StableButton debugId="identity-first.create-community" onClick={() => void createCommunity()} disabled={busy || !identityComplete || draft.clanName.trim().length < 2} style={entryPrimaryButtonStyle}>{busy ? "Creating community…" : "Create community"}</StableButton>
+          </>
+        )}
           </>
         )}
       </div>

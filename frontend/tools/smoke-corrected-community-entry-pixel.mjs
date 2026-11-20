@@ -160,6 +160,51 @@ async function installCreateMocks(page) {
   return () => communityPayload;
 }
 
+async function runExistingAccountSignIn(browser, baseUrl) {
+  const { context, page } = await newPixel(browser);
+  await page.route("**/api/**", async (route) => {
+    const path = new URL(route.request().url()).pathname.replace(/^\/api/, "");
+    if (path === "/auth/me") {
+      return json(route, { detail: "Not authenticated" }, 401);
+    }
+    if (path === "/entry/phone/start") {
+      return json(route, { detail: "Phone number already registered" }, 400);
+    }
+    return json(route, { ok: true });
+  });
+
+  await page.goto(`${baseUrl}/create`, { waitUntil: "networkidle" });
+  await page.getByLabel("Your name").fill("Existing Member");
+  await page.getByLabel("Phone in international format").fill("+447700900903");
+  await page.getByLabel("Email (optional)").fill("existing@example.test");
+  await page.getByLabel("Country").fill("United Kingdom");
+  await page.getByRole("button", { name: "Verify identity details" }).click();
+
+  await expect(page.getByRole("heading", { name: "Sign in to continue" })).toBeVisible();
+  await expect(
+    page.getByText("This phone already has a GSN account. Sign in to continue.", {
+      exact: true,
+    })
+  ).toBeVisible();
+  await expect(page.getByLabel("Your name")).toHaveCount(0);
+  await page.screenshot({
+    path: resolve(screenshotDir, "03-existing-account-sign-in-recovery.png"),
+    fullPage: true,
+  });
+
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL(/\/login\?force=1$/);
+  await expect(page.getByLabel("Phone number, email, or GSN ID")).toHaveValue(
+    "+447700900903"
+  );
+  await expect(
+    page.getByText("Your GSN account already exists. Sign in with your password.", {
+      exact: true,
+    })
+  ).toBeVisible();
+  await context.close();
+}
+
 async function runCreateJourney(browser, baseUrl) {
   const { context, page } = await newPixel(browser);
   const readCommunityPayload = await installCreateMocks(page);
@@ -288,6 +333,7 @@ async function main() {
   try {
     await runInvitationBypass(browser, baseUrl);
     await runJoinJourney(browser, baseUrl);
+    await runExistingAccountSignIn(browser, baseUrl);
     await runCreateJourney(browser, baseUrl);
   } finally {
     await browser.close();

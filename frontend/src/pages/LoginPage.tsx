@@ -527,6 +527,8 @@ export default function LoginPage() {
     () =>
       ((location.state as {
         from?: { pathname?: string; search?: string; hash?: string };
+        sign_in_identifier?: string;
+        sign_in_notice?: string;
         create_entry?: {
           clan_name?: string;
           clan_description?: string;
@@ -538,6 +540,8 @@ export default function LoginPage() {
 
   const founderContext = routeState.create_entry || {};
   const founderEmail = safeStr(founderContext.email || "");
+  const routedSignInIdentifier = safeStr(routeState.sign_in_identifier);
+  const routedSignInNotice = safeStr(routeState.sign_in_notice);
   const inviteGsnId =
     safeStr(searchParams.get("gsn_id")) ||
     safeStr(searchParams.get("gmfn_id"));
@@ -575,7 +579,9 @@ export default function LoginPage() {
     return window.innerWidth <= 920;
   });
 
-  const [email, setEmail] = useState(founderEmail || inviteGsnId || "");
+  const [email, setEmail] = useState(
+    routedSignInIdentifier || founderEmail || inviteGsnId || ""
+  );
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -589,7 +595,7 @@ export default function LoginPage() {
       ? publishRecoveryReturnTarget
         ? "Your previous sign-in expired before GSN could finish the action. Sign in again and GSN will return you to Spotlight. For phone security, choose the picture or video again before publishing."
         : "Your previous sign-in expired while GSN was closed. Sign in again to continue."
-      : null
+      : routedSignInNotice || null
   );
   const [msg, setMsg] = useState<string | null>(null);
   const [activationPath, setActivationPath] = useState<string | null>(null);
