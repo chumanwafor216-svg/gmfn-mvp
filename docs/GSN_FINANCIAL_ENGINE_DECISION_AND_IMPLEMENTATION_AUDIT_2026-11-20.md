@@ -3,6 +3,8 @@
 **Date:** 20 November 2026  
 **Status:** Founder decision framework; market proof and production activation remain gated
 
+Decision-status reconciliation: see docs/GSN_COMMERCIAL_DECISION_RECONCILIATION_2026-11-20.md. It separates settled working decisions from implementation work, recommendations and evidence questions.
+
 ## Decision
 
 GSN should be defined as:
@@ -111,12 +113,12 @@ There is enough code to implement a bounded paid-promotion pilot without rebuild
 - the audience is large or active enough to sustain advertiser demand;
 - merchants or corporate advertisers will repeatedly pay;
 - views reliably become serious contacts, completed activity, margin, or retention;
-- the existing GBP pricing is economically correct;
+- the settled working GBP 0.50 tariff has proven willingness to pay or positive contribution;
 - community advertising payouts operate at scale;
 - universal public product discovery is live;
-- the five-year forecast may include material advertising revenue.
+- conditional five-year scenarios are dependable operating forecasts.
 
-The disciplined forecast remains correct to hold advertising at GBP 0 in the base case until buyer, delivery, pricing, cost, accounting, privacy, and repeat-purchase gates are passed.
+A clearly labelled conditional five-year scenario may now include promotion revenue using the settled GBP 0.50 tariff and 30-opportunity package. A conservative operating/base case may still hold promotion revenue at GBP 0 until buyer, delivery, cost, accounting, privacy, repeat-purchase and retention gates pass.
 
 ## What must be added
 
@@ -130,13 +132,13 @@ The disciplined forecast remains correct to hold advertising at GBP 0 in the bas
 - Never expose private membership, private requests, TrustSlip testimony, exact private location, or restricted contact data.
 - Explain why a result appeared and provide abuse reporting.
 
-The founder's desired default may be **publicly discoverable unless the owner switches discovery off**, but this must be an explicit privacy and product contract, not an accidental interpretation of `community_visible`.
+The settled working direction is **default-on discovery for deliberately published, active public offers**, with owner controls to hide, pause or withdraw them. Mandatory public discoverability without owner control is rejected. Existing Shop records still require reconciliation; this must be an explicit privacy and product contract, not an accidental interpretation of community_visible.
 
 ### 2. One paid-promotion rail
 
-Expected-payment Spotlight, member credits, and Pipeline Credits must not remain competing user-facing commercial systems. Select one canonical rail and define:
+Expected-payment Spotlight, member credits, and Pipeline Credits must not remain competing user-facing commercial systems. Pipeline Credits are the settled standard customer-facing direction for ordinary merchant Spotlight. Connect one canonical booking and fulfillment rail and define:
 
-- purchased unit and delivery promise;
+- the settled purchased unit: 30 scheduled opportunities for one eligible advert in its authorized community rotation on one campaign day;
 - eligible inventory;
 - duration or qualifying-impression allowance;
 - pacing and frequency;
@@ -144,10 +146,7 @@ Expected-payment Spotlight, member credits, and Pipeline Credits must not remain
 - expiry, renewal, correction, and withdrawal;
 - ledger, settlement, tax, and accounting ownership.
 
-A day alone is a weak unit because time can pass without useful delivery. Pilot both:
-
-1. fixed-duration rotation with minimum eligible delivery; and
-2. a qualifying-impression package with an expiry ceiling.
+The day is the service boundary, not the purchased result. Allocation is settled at 10 morning opportunities, 10 afternoon and 10 evening. Impressions and unique reach remain measured outcomes rather than purchased quantities. Technical delivery, distribution scope, underdelivery and remedies still require implementation.
 
 ### 3. Governed advertiser workflow
 

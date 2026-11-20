@@ -1,8 +1,20 @@
 # Active Handoff Notes
 
+## Commercial decision register reconciled - 2026-11-20
+
+- Added docs/GSN_COMMERCIAL_DECISION_RECONCILIATION_2026-11-20.md so settled decisions, implementation work, recommendations and evidence questions are no longer mixed together.
+- Settled working Spotlight terms are GBP 0.50 per Pipeline Credit, 30 scheduled opportunities, 10 morning / 10 afternoon / 10 evening, scheduled opportunity rather than impression as the purchased unit, no five-person ceiling, five recognized-viewer qualifying occasions before daily suppression, no reset after another purchase, and ten seconds as the scheduling calculation baseline.
+- Pipeline Credits are the settled standard customer-facing direction for ordinary merchant Spotlight. The authoritative booking, capacity, fulfillment, adjustment and reporting rail remains unconnected, and live payment remains suspended.
+- Deliberately published active public offers are discoverable by default with owner hide, pause and withdrawal controls. Mandatory discovery without owner control is rejected; existing Shop records still require reconciliation.
+- Promotion revenue may enter a clearly labelled conditional five-year scenario now. It remains unsuitable as dependable operating income or a certain break-even claim until demand, delivery, cost, repeat-purchase and retention evidence exists.
+- Recommendations remain recommendations: first merchant cohort, sponsored merchant programme, Community Domain monthly subscription, embedded-first TrustSlip and one-community Spotlight order lines have not been silently converted into founder decisions.
+- Genuine open matters include distribution scope, multi-community pricing, timezone, late booking, remedies, overnight allocation, VAT/future currencies, capacity headroom, exact Community Domain obligations, measured evidence costs, matching performance and external TrustSlip reuse.
+- Updated the Spotlight protocol audit and financial-engine audit to remove stale wording that reopened the settled price, unit, dayparts, shared-opportunity meaning, ten-second baseline and Pipeline Credit direction.
+- No product behavior, API, schema, payment state, production data, main promotion or deployment changed.
+
 ## Spotlight rotation and impression protocol audit - 2026-11-20
 
-- Added docs/GSN_SPOTLIGHT_ROTATION_AND_IMPRESSION_PROTOCOL_AUDIT_2026-11-20.md for the proposed GBP 0.50 Pipeline Credit / 30 scheduled-opportunity contract.
+- Added docs/GSN_SPOTLIGHT_ROTATION_AND_IMPRESSION_PROTOCOL_AUDIT_2026-11-20.md for the settled working GBP 0.50 Pipeline Credit / 30 scheduled-opportunity contract.
 - Current ordinary Spotlight is viewer-request driven: campaigns default to 10 rounds, issuance only reserves, and a round is spent only after one-second / 60%-visible / active-document qualification.
 - The proposed product sells scheduled availability independent of a view and may serve concurrent viewers. Current Spotlight equates each spent round with one qualifying presentation and allows only one live campaign-version reservation.
 - Current frequency is two qualifying impressions per viewer per campaign lifetime plus one DemandBox override, keyed by campaign ID. It is not five per recognized viewer, offer and day, and a new campaign resets it.

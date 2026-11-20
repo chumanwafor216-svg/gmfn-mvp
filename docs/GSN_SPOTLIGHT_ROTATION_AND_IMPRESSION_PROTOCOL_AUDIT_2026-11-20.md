@@ -3,11 +3,11 @@
 Date: 20 November 2026
 Audit revision: d4ab1773545a0d123858f26eb09d8572dd1c5e3a
 Source protocol: GSN Spotlight Rotation and Impression Protocol, version 1.0
-Status: source-level audit and decision record only
+Status: source-level audit and decision record only; reconciled with later founder decision clarification
 
 ## 1. Executive verdict
 
-The protocol proposes a clear paid Spotlight product:
+The protocol records a settled working paid Spotlight product:
 
 - one Pipeline Credit costs GBP 0.50;
 - one credit buys 30 scheduled Spotlight opportunities for one eligible advert on one campaign day;
@@ -26,7 +26,7 @@ The honest decision is:
 
 1. Preserve the payment suspension.
 2. Do not relabel current delivery rounds as the new 30-opportunity product.
-3. Settle opportunity and community-scope definitions before schema or payment work.
+3. Preserve the settled opportunity definition and settle only its remaining distribution-scope and implementation details.
 4. Reuse current qualification, identity, eligibility and evidence controls behind a new opportunity ledger.
 5. Test the new model in shadow mode before promising paid delivery.
 
@@ -101,7 +101,7 @@ Current Public Shop presentation is media-aware:
 - reduced-motion dwell: 30 seconds;
 - qualification: one second at 60 percent visibility in an active document.
 
-Ten seconds is not the current universal slot duration. It can be a conservative planning quantum, but must not be sold as an existing playback promise.
+Ten seconds is the settled scheduling calculation baseline, but is not the current universal dwell or a completed-playback promise. Implementation must reconcile that baseline with current media-aware presentation without turning Spotlight into a price-per-second product.
 
 ### 3.6 Current commercial rails
 
@@ -116,6 +116,8 @@ None implements GBP 0.50 = 30 opportunities. Legacy GBP 1-per-day directly confl
 Payment operations correctly default to suspended for the free pilot. That protection must remain.
 
 ## 4. Requirement audit
+
+The status column below describes the current implementation, not whether the commercial decision is settled. GBP 0.50, 30 opportunities, 10/10/10 dayparts, the shared-opportunity meaning, the five-view daily target and the ten-second calculation baseline are settled working decisions even where code is absent or conflicting.
 
 | Protocol requirement | Status | Current evidence and gap |
 | --- | --- | --- |
@@ -151,49 +153,27 @@ Payment operations correctly default to suspended for the free pilot. That prote
 | Identity coverage caveat | Absent in advertiser product | Reporting must explain recognized signed-in coverage. |
 | Paid activation remains off | Present | Global payment operations are suspended by default. |
 
-## 5. Definition that must be settled first
+## 5. Settled opportunity definition and technical consequence
 
-The protocol uses scheduled opportunity as the sold unit, but two materially different interpretations remain.
+The commercial definition is settled. A scheduled opportunity is the purchased unit. It is not one purchased impression and it does not cap the advert at one viewer.
 
-### Model A: one opportunity can serve several concurrent viewers
+During a scheduled opportunity, the advert is eligible in its authorized rotation. Subject to eligibility and the five-per-day recognized-viewer cap, that opportunity may produce:
 
-For ten seconds, the advert is eligible in one shared community lane. Every eligible active viewer may receive a separate presentation, subject to the five-per-day cap. The opportunity can produce zero, one or several impressions.
+- no qualifying impression when no eligible viewer is present;
+- one qualifying impression;
+- qualifying impressions from several eligible viewers.
 
-Benefits:
+Therefore a 30-opportunity purchase is not a promise of 30 people and is not a maximum of 30 impressions. The earlier alternative in which every opportunity could create at most one impression is rejected as the commercial definition, even though it would be closer to the current round-consumption architecture.
 
-- matches the statement that 30 opportunities are not necessarily capped at 30 impressions;
-- makes audience size valuable without promising reach;
-- resembles shared advertising inventory.
+The implementation consequence is substantial:
 
-Costs and risks:
+- the current global one-live-lease-per-campaign-version rule cannot express several concurrent viewers in one shared opportunity;
+- opportunity fulfillment must be recorded separately from viewer presentation leases;
+- concurrency, fairness and overlapping-community behavior require explicit tests;
+- cost per impression remains variable and cannot be promised;
+- zero audience must remain distinguishable from platform failure.
 
-- the global one-lease-per-campaign-version rule must change;
-- opportunity fulfillment must be separate from viewer leases;
-- concurrency, fairness and overlapping-community rules become mandatory;
-- one high-concurrency slot can create more impressions than another;
-- cost per impression is variable and cannot be promised.
-
-### Model B: one opportunity is one viewer presentation chance
-
-Each opportunity can produce at most one qualifying impression. Thirty opportunities therefore means at most 30 qualifying impressions.
-
-Benefits:
-
-- close to current delivery-round architecture;
-- simpler capacity, accounting and idempotency;
-- easier to test and explain internally.
-
-Costs and risks:
-
-- conflicts with the statement that 30 opportunities need not mean a maximum of 30 impressions;
-- behaves more like impression inventory than shared scheduled rotation;
-- can make the product weak in an active community.
-
-### Audit recommendation
-
-Adopt Model A as the intended destination only if management confirms it explicitly. It best matches the protocol, but it is not a small extension of current code.
-
-Under Model A:
+Use these terms:
 
 - Entitlement: purchased right to 30 opportunity slots on one service day.
 - Opportunity slot: one deterministic interval when one advert is eligible in one specified community lane.
@@ -204,7 +184,7 @@ Under Model A:
 - Advertiser-invalid opportunity: the advert became ineligible through expiry, withdrawal, invalid content or advertiser action.
 - Cancelled opportunity: cancelled under approved policy.
 
-This keeps the promise honest: GSN can supply an opportunity without pretending a person viewed it.
+This keeps the settled promise honest: GSN can supply an opportunity without pretending a person viewed it.
 
 ## 6. Community-scope ambiguity
 
@@ -216,7 +196,7 @@ Authorized community rotation does not yet state whether GBP 0.50 buys:
 
 These have radically different inventory and revenue consequences.
 
-Recommendation for the first paid pilot:
+Implementation recommendation for the first paid pilot, not yet a settled distribution rule:
 
 - one credit = one advert + one community + one local service day + 30 opportunities;
 - a multi-community campaign creates one separately priced order line per community;
@@ -224,7 +204,7 @@ Recommendation for the first paid pilot:
 - overlapping members count as separate impressions only on separate qualifying presentation occasions;
 - one viewing event must never be duplicated merely because the viewer belongs to two communities.
 
-This is less generous than an all-communities interpretation, but it is auditable, prevents hidden overselling and gives GBP 0.50 a defensible denominator. If one credit should cover multiple communities, the maximum scope and capacity formula must be stated first.
+This is less generous than an all-communities interpretation, but it is auditable, prevents hidden overselling and gives GBP 0.50 a defensible denominator. The later decision clarification does not adopt this recommendation: it confirms that distribution scope remains part of the purchased service and that a six-community audience example creates no six-community promise. The maximum scope and capacity formula must still be stated.
 
 ## 7. Frequency identity recommendation
 
@@ -268,16 +248,11 @@ Recommended first-pilot rule:
 
 This is less instant but prevents allocation and refund disputes.
 
-### 8.3 Ten-second duration
+### 8.3 Ten-second scheduling baseline
 
-Treat ten seconds as a capacity-planning quantum, not an existing playback guarantee. Current image dwell is five seconds and video dwell is eight to ten seconds.
+Ten seconds is settled as the scheduling calculation baseline. It does not create a separate price-per-second product and does not promise a completed ten-second playback.
 
-Before paid launch, management must either:
-
-- standardize a paid lane to a real ten-second availability window; or
-- sell opportunity units without quoting duration and calculate internal capacity from governed media dwell.
-
-The first option is easier to audit, but changes frozen presentation behavior and requires an explicit approved exception and tests.
+Current image dwell is five seconds and video dwell is eight to ten seconds. Engineering must map the settled scheduling baseline to actual opportunity availability and current qualification rules without silently changing frozen presentation behavior. If implementation requires an exact ten-second paid-lane dwell, that remains a separate explicit frozen-contract exception and test obligation, not a reason to reopen the commercial baseline.
 
 ### 8.4 Overnight
 
@@ -301,11 +276,11 @@ This is not a forecast. It is an upper-bound illustration based on assumptions t
 
 Operational headroom reduces safe saleable capacity. The scheduler must reserve room for failures, house messages, clock drift and make-good obligations. A pilot should not sell the theoretical maximum.
 
-Under Model A, slot capacity remains 216 campaigns per community per day, but impressions are audience-driven and variable. The current one-live-lease restriction would need replacement by one opportunity plus separate per-viewer leases.
+Under the settled shared-opportunity definition, slot capacity remains 216 campaigns per community per day in this one-lane scenario, but impressions are audience-driven and variable. The current one-live-lease restriction would need replacement by one opportunity plus separate per-viewer leases.
 
 ## 10. Financial and legal cautions
 
-GBP 0.50 is a management hypothesis, not validated willingness to pay.
+GBP 0.50 is the settled working GBP tariff. It is not validated willingness to pay or proof of positive contribution.
 
 At this price:
 
@@ -377,7 +352,7 @@ Do not preserve as the new paid contract:
 - 10 total qualified rounds;
 - two lifetime campaign impressions plus one DemandBox override;
 - campaign ID as frequency identity;
-- global one-live-lease behavior if Model A is adopted;
+- global one-live-lease behavior, because it conflicts with the settled shared-opportunity definition;
 - legacy GBP 1-per-day pricing;
 - due minus qualified as the sole definition of underdelivery;
 - unconnected paid_spotlight.day semantics.
@@ -386,13 +361,13 @@ Do not preserve as the new paid contract:
 
 No step authorizes payment activation or deployment.
 
-1. Approve Model A or B, one-community scope, timezone, late booking, duration, remedy, overnight use and VAT display.
+1. Preserve the settled commercial unit, tariff, 10/10/10 allocation, shared-opportunity meaning and ten-second planning baseline; approve the remaining distribution scope, timezone, late-booking, remedy, overnight and VAT rules.
 2. Add immutable offer identity without changing current frequency behavior.
 3. Add order-line, service-date, daypart-entitlement and opportunity-slot records with lifecycle reasons.
 4. Build deterministic capacity allocation that rejects oversold dayparts before credit spend.
 5. Run the allocator in shadow mode with free internal campaigns and record supplied, audience-empty and platform-missed slots.
 6. Add the five-per-viewer, per-offer, per-service-day cap in shadow reporting and compare it with current control.
-7. If Model A is approved, separate shared opportunity state from per-viewer leases and prove concurrency.
+7. Separate the settled shared-opportunity state from per-viewer leases and prove concurrency.
 8. Add aggregate advertiser reporting and privacy tests.
 9. Add automated make-good and credit-restoration reconciliation.
 10. Connect one canonical Pipeline Credit service while payment remains suspended.
@@ -416,7 +391,7 @@ Future implementation must prove:
 - device timezone, login cycle and second device do not reset a recognized cap;
 - anonymous activity is not falsely merged into recognized reach;
 - overlapping community membership does not duplicate one event;
-- concurrent viewers follow the approved Model A or B contract;
+- concurrent viewers follow the settled shared-opportunity contract without imposing an audience ceiling;
 - hidden-tab, below-threshold, expired-token, owner-preview and off-screen events do not qualify;
 - retries remain idempotent under process and database concurrency;
 - replay and visibility continuity remain non-counting;
@@ -426,24 +401,41 @@ Future implementation must prove:
 - purchased, restored, promotional and spent credits remain distinguishable;
 - payment suspension prevents charges, purchase awards and paid deductions until lifted.
 
-## 16. Unresolved decisions and consequences
+## 16. Decision-status correction
 
-| Decision | Recommendation | Consequence if unresolved |
+The following are settled working decisions and must not remain in an unresolved register:
+
+- Pipeline Credits are the standard customer-facing direction for ordinary merchant Spotlight.
+- One Pipeline Credit has the working GBP tariff of GBP 0.50.
+- One credit purchases 30 scheduled opportunities.
+- Allocation is 10 morning, 10 afternoon and 10 evening.
+- Scheduled opportunity is the purchased unit; impressions and reach are measured results.
+- There is no five-person target or ceiling.
+- One recognized viewer can create five separate qualifying impressions before automatic suppression for that authoritative day.
+- Additional purchases do not reset that viewer counter.
+- Ten seconds is the scheduling calculation baseline, not a separate price-per-second product.
+
+The following remain genuinely open:
+
+| Open matter | Current recommendation | Consequence if unresolved |
 | --- | --- | --- |
-| Opportunity concurrency | Approve Model A explicitly | Engineering cannot know whether 30 means at most 30 impressions. |
-| Community scope | One credit per advert, community and day | Inventory and revenue cannot be reconciled. |
-| Daily clock | Stored community IANA timezone and UTC boundaries | Frequency can reset inconsistently. |
-| Late booking | Next complete service day | 10/10/10 cannot be guaranteed honestly. |
-| Ten-second rule | Planning quantum until paid-lane approval | Capacity claims can contradict actual dwell. |
-| Remedy | Make-good first, proportional credit restoration second | Underdelivery becomes a manual dispute. |
-| Overnight | Exclude from paid launch | Free allocation can confuse paid inventory. |
-| VAT/currency | Finance/legal approval before display | Price and margin may be misstated. |
-| Multi-community price | Separate order lines | One cheap purchase can consume undefined inventory. |
+| Authorized distribution scope | Define one explicit scope per purchased entitlement; separate community order lines remain the audit recommendation | Inventory and revenue cannot be reconciled. |
+| Multi-community pricing | Price and report multi-community scope explicitly | An inexpensive purchase can consume undefined inventory. |
+| Daily clock | Store community IANA timezone and UTC boundaries | Frequency can reset inconsistently. |
+| Late booking | Start the next complete service day | 10/10/10 cannot be guaranteed honestly. |
+| Remedy and cancellation | Make-good first, proportional credit restoration second | Underdelivery becomes a manual dispute. |
+| Overnight | Exclude it from the initial paid entitlement | Free allocation can confuse paid inventory. |
+| VAT and future currencies | Obtain finance/legal approval before display | Price and margin may be misstated. |
+| Safe capacity headroom | Sell below the theoretical maximum during pilot | Failures and make-good obligations can oversell the lane. |
+
+Implementation mechanics also remain, but they are not reasons to reopen the settled commercial contract: concurrency, opportunity-ledger design, stable offer identity, daily frequency enforcement, advertiser reporting and reconciliation all require code and tests.
 
 ## 17. Final decision statement
 
 GSN has enough technical foundation to prototype this without rebuilding Spotlight. It does not yet have the commercial ledger, opportunity scheduler, stable advert identity, daily frequency rule, capacity admission, daypart fulfillment, remedy automation or reporting required to sell the promise safely.
 
-Accept the protocol as a working product specification, subject to the unresolved decisions. Do not represent it as implemented, deployable or financially proven.
+Accept the tariff, purchased unit, dayparts, shared-opportunity meaning, frequency target and scheduling baseline as settled working commercial decisions. Resolve the surrounding distribution, timezone, remedy, tax and capacity rules without reopening those decisions.
+
+The working tariff and package may now enter a clearly labelled conditional five-year planning scenario. They must not be represented as implemented, deployable, demand-validated, contribution-positive or dependable operating income.
 
 No product behavior, API, schema, price, permission, production data, payment state or deployment changed through this audit.
