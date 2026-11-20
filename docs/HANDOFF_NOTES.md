@@ -7126,3 +7126,14 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Corrected overreach risks: promotion is a chosen experiment rather than proven revenue; Community Domain, institutional activation, embedded-first TrustSlip, overnight promotion, and candidate prices remain recommendations; public discovery does not force private or historic records public.
 - No product behaviour, payment state, schema, forecast, external communication, or deployment changed.
 - Security boundary: the supplied attachment included an unrelated session/account dump. It was excluded completely and no sensitive material was copied into the repository. The exposed session should be revoked by the product owner.
+
+# 2026-11-20 — Public discovery, Spotlight and merchant-pilot current-revision audit
+
+- Audited the supplied Public Discovery, Spotlight and Merchant Pilot Protocol against revision `cabbfb04048e418a86ef16390c32cfa685dead5c` without changing product behavior, payment state, environment, forecast, external communication or deployment.
+- Added `docs/GSN_PUBLIC_DISCOVERY_SPOTLIGHT_MERCHANT_PILOT_CURRENT_REVISION_AUDIT_2026-11-20.md` with a preservation map, proposed decision defaults, minimal implementation sequence, test advertiser report, metric dictionary, negative purchase/remedy trace, Community Domain service sheet, Demand Box recommendation, Scottish pilot design and sponsor boundary.
+- Confirmed the central gap: anonymous direct public-shop viewing and community-bound shop discovery exist, but global public shop/offer discovery does not. A new public projection must preserve the existing community directory and use explicit publication authority.
+- Confirmed the commercial Spotlight chain is not connected: canonical `paid_spotlight.day` remains unconnected, current pacing defaults to 10 qualifying rounds rather than 30 scheduled opportunities, and current recognized-viewer frequency is two plus a bounded Demand Box exception rather than five with sixth suppression.
+- Confirmed existing presentation integrity, exposure evidence, owner analytics, house-campaign reporting and advertising-settlement structures should be reused rather than rebuilt.
+- Confirmed the current Community Domain package remains a six-month no-charge pilot and GBP 24/GBP 40 remain candidate prices. Demand Box currently keeps five-open-request/24-hour and 48-hour-expiry boundaries with no discovered per-reply charge.
+- Release verdict: no paid public merchant offer is ready. The next decision is whether to authorize the narrow connection sequence and adopt the proposed timezone, dayparts, late-booking, legacy-publication and whole-credit pilot-remedy defaults.
+- Security boundary: the new attachment again ended with an unrelated live session/account dump. It was excluded and not copied. The product owner should revoke the exposed session and remove unsafe copies.
