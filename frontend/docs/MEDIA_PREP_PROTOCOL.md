@@ -16,6 +16,7 @@ Do not ask normal users to understand file sizes before they can continue.
 ## Current Frontend Preparation Pattern
 
 - Pictures use `prepareSpotlightImageFile` to resize/compress oversized images before upload.
+- Shop Gallery pictures target the same `4 MB` ceiling as the server's prepared public image before upload, reducing slow-phone transfer failures while the server still decodes, verifies, and normalises the result.
 - Videos use `prepareSpotlightVideoFile` to prepare a short clip that fits the current pilot media limit.
 - If a selected video is already under the current upload size limit, keep the original file to preserve audio. Limit public playback in the player instead of re-recording a silent copy.
 - Video display surfaces should show safe muted motion first. When audio is available, the shared media frame must provide an explicit `Sound on` / `Sound off` toggle so the user controls listening.
@@ -26,6 +27,7 @@ Do not ask normal users to understand file sizes before they can continue.
 ## Current Backend Limits
 
 - Marketplace images currently upload through `/marketplace/media/image`.
+- Verified Marketplace image uploads allow up to three minutes for slow mobile transfer and server preparation; this changes no file-size, format, authentication, or quality gate.
 - Local/direct Marketplace image uploads must decode successfully as the JPG,
   PNG, or WebP format claimed by the file extension before any bytes are
   persisted. A filename or browser-declared content type is not proof that a

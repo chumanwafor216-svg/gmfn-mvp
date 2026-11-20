@@ -6995,3 +6995,14 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Companion repeat delivery is now bounded to at least two hours for every priority, and the configured daily limit also applies to urgent reminders. Dismissing a specific toast retains the existing 14-day suppression.
 - Verification passed: 86 join-request backend tests, Dashboard action audit, Dashboard attention semantics, Companion interruption audit, TypeScript, the 328-module production build, and the complete protected-button-freeze suite.
 - Honest residual: the protected browser sweep passes but still logs the unrelated pre-existing duplicate React-key warning.
+
+# Shop Gallery mobile image-upload resilience - 2026-11-20
+
+- Owner phone evidence showed a Shop Gallery item reaching the final Review step with its picture and details intact, then failing before publication with the generic browser/connection error.
+- Code tracing found two concrete reliability gaps: Shop Gallery passed ordinary phone pictures through unchanged until they exceeded the full 10 MB server source ceiling, and the shared verified Marketplace image upload aborted after 60 seconds even though mobile transfer plus server image preparation could still be progressing.
+- Shop Gallery now prepares pictures to the server's existing 4 MB published-image ceiling before upload. The authenticated `/marketplace/media/image` route remains authoritative and still decodes, verifies, normalises and bounds every image; no format, authentication, permission, product-schema or backend quality rule changed.
+- Verified Marketplace image upload now allows up to three minutes for slow mobile transfer and server preparation. Recoverable network/timeout feedback no longer tells the member to reopen GSN and risk losing context; it confirms the current form remains open and asks the member to keep GSN open before retrying.
+- Regression coverage in the media-quality audit now pins the 4 MB Shop Gallery preparation target, three-minute verified-image timeout and form-preserving recovery language.
+- Verification passed: focused ESLint, media-quality and Shop Assets slot audits, TypeScript, the 328-module production build, both 390 px Shop Assets/public Shop Gallery browser smokes with no horizontal overflow, and the complete protected-button-freeze suite.
+- Honest residual: the screenshots do not expose the failed request status or selected file size, and Render log access had no confirmed workspace in this session. The exact production request failure therefore remains unproven; the reported handset/file should be retried after deployment to confirm the live network path.
+- The protected browser sweep passes but still logs the unrelated pre-existing duplicate React-key warning.

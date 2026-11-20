@@ -61,7 +61,10 @@ import {
   publicShopUpdateSocialPreviewUrl,
   publicShopUpdateUrl,
 } from "../lib/publicLinks";
-import { createShopGalleryCoverFromVideo } from "../lib/shopGalleryMediaProtocol";
+import {
+  createShopGalleryCoverFromVideo,
+  SHOP_GALLERY_IMAGE_UPLOAD_TARGET_BYTES,
+} from "../lib/shopGalleryMediaProtocol";
 import type { ShareResultChannel, ShareTarget } from "../lib/share";
 import {
   forgetShopProductMedia,
@@ -70,7 +73,6 @@ import {
 import { marketplaceGovernanceErrorMessage } from "../lib/structuredErrors";
 import { resolveProfileImageUrl } from "../lib/profileImage";
 import {
-  SPOTLIGHT_MAX_IMAGE_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_VIDEO_QUALITY_GUIDANCE,
@@ -594,7 +596,7 @@ function shopAssetsRequestErrorMessage(error: any, fallback = ""): string {
     lower.includes("check your connection")
   ) {
     return (
-      "GSN could not save from this browser yet. Check your connection, reopen GSN if needed, then try again."
+      "GSN could not finish this request. Your current form is still here. Check your connection, keep GSN open, then try again."
     );
   }
   return message || fallback || "Shop Gallery could not complete that request.";
@@ -2007,7 +2009,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     try {
       setPreparingProductImage(true);
       const prepared = await prepareSpotlightImageFile(file, {
-        maxBytes: SPOTLIGHT_MAX_IMAGE_BYTES,
+        maxBytes: SHOP_GALLERY_IMAGE_UPLOAD_TARGET_BYTES,
       });
 
       if (productImagePrepJobRef.current !== prepJob) return;

@@ -98,6 +98,7 @@ class HttpStatusError extends Error {
 
 const DEFAULT_JSON_TIMEOUT_MS = 30000;
 const DEFAULT_MULTIPART_TIMEOUT_MS = 60000;
+const MARKETPLACE_IMAGE_UPLOAD_TIMEOUT_MS = 180000;
 const PUBLIC_VERIFY_MINIMAL_TIMEOUT_MS = 12000;
 const PUBLIC_VERIFY_STANDARD_TIMEOUT_MS = 30000;
 const TRUSTSLIP_VERIFY_MINIMAL_TIMEOUT_MS = 18000;
@@ -9110,7 +9111,7 @@ export async function uploadMarketplaceImageFile(
       headers,
       body: fd,
     },
-    DEFAULT_MULTIPART_TIMEOUT_MS
+    MARKETPLACE_IMAGE_UPLOAD_TIMEOUT_MS
   );
 
   if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));

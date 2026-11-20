@@ -1,3 +1,5 @@
+export const SHOP_GALLERY_IMAGE_UPLOAD_TARGET_BYTES = 4 * 1024 * 1024;
+
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
 }

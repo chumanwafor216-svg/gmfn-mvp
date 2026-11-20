@@ -38,6 +38,7 @@ const freezePolicy = readRepo("docs/FREEZE_POLICY.md");
 const requirements = readRepo("gmfn_backend/requirements.txt");
 const prep = readFrontend("src/lib/spotlightMediaPrep.ts");
 const pilot = readFrontend("src/lib/spotlightPilot.ts");
+const shopGalleryMediaProtocol = readFrontend("src/lib/shopGalleryMediaProtocol.ts");
 const api = readFrontend("src/lib/api.ts");
 const shopAssets = readFrontend("src/pages/ShopAssetsPage.tsx");
 const vault = readFrontend("src/pages/VaultControlPage.tsx");
@@ -73,6 +74,10 @@ requirePattern(mediaRoute, /_write_limited_upload\([\s\S]*?MAX_SOURCE_VIDEO_BYTE
 requirePattern(mediaRoute, /verified_video_upload_required/g, "Direct video upload bypasses must remain closed.");
 requirePattern(marketplaceRoute, /def _require_verified_marketplace_video[\s\S]*?is_verified_marketplace_video_url/, "Marketplace writes must retain the verified managed-video guard.");
 requirePattern(prep, /file\.size \|\| 0\) <= maxBytes[\s\S]*?durationSeconds <= maxDurationSeconds[\s\S]*?createSpotlightReadyClip/, "The browser may keep an original only when both size and duration pass; otherwise it must create a real clip.");
+requirePattern(shopGalleryMediaProtocol, /SHOP_GALLERY_IMAGE_UPLOAD_TARGET_BYTES = 4 \* 1024 \* 1024/, "Shop Gallery phone pictures must target the server's four-megabyte published-image bound before upload.");
+requirePattern(shopAssets, /prepareSpotlightImageFile\(file, \{[\s\S]*?maxBytes: SHOP_GALLERY_IMAGE_UPLOAD_TARGET_BYTES/, "Shop Gallery must prepare heavy phone pictures to its bounded upload target before posting.");
+requirePattern(api, /MARKETPLACE_IMAGE_UPLOAD_TIMEOUT_MS = 180000[\s\S]*?uploadMarketplaceImageFile[\s\S]*?MARKETPLACE_IMAGE_UPLOAD_TIMEOUT_MS/, "Verified Marketplace image uploads must allow slow phone connections to finish without weakening validation.");
+forbidPattern(shopAssets, /reopen GSN if needed/, "Shop Gallery must not tell a member to discard the still-open form after a recoverable upload failure.");
 requirePattern(prep, /This is not a quality-gate bypass[\s\S]*?server inspects,[\s\S]*?trims and normalises/, "Unsupported phone-side preparation must fall back to the authoritative server gate.");
 requirePattern(pilot, /clean the lens[\s\S]*?good light[\s\S]*?quiet place[\s\S]*?Common social-video downloads are accepted[\s\S]*?opening 10 seconds[\s\S]*?extremely small[\s\S]*?very choppy/, "Shared guidance must accept usable social video and reserve rejection for clearly unusable sources.");
 requirePattern(serviceTests, /accepts_usable_576x1296_social_portrait[\s\S]*?size="576x1296"[\s\S]*?output\.short_edge >= MIN_VIDEO_SHORT_EDGE/, "Backend regression coverage must prove the reported 576x1296 portrait video is accepted and prepared.");
