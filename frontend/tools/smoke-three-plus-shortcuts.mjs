@@ -1072,21 +1072,66 @@ async function testOwnerEmptyShopSpaces(browser, baseUrl) {
     waitUntil: 'domcontentloaded',
     timeout: 60_000,
   });
-  await eightItemVisitor.page.getByRole('button', { name: 'Show 3 more', exact: true }).waitFor({
+  await eightItemVisitor.page.getByRole('button', { name: 'Show 2 more', exact: true }).waitFor({
     state: 'visible',
     timeout: 20_000,
   });
   if (await eightItemVisitor.page.locator('[data-visitor-opening-soon-space="9"]').count()) {
     throw new Error('Eight-item visitor shop exposed its ninth-space poster before Show more.');
   }
-  await eightItemVisitor.page.getByRole('button', { name: 'Show 3 more', exact: true }).click();
+  await eightItemVisitor.page.getByRole('button', { name: 'Show 2 more', exact: true }).click();
   await eightItemVisitor.page
     .locator('[data-visitor-opening-soon-space="9"]')
     .waitFor({ state: 'visible', timeout: 20_000 });
+  const eighthVisitorProductBox = await eightItemVisitor.page.locator('#shop-block-8').boundingBox();
+  const ninthVisitorPosterBox = await eightItemVisitor.page
+    .locator('[data-visitor-opening-soon-space="9"]')
+    .boundingBox();
+  if (
+    !eighthVisitorProductBox ||
+    !ninthVisitorPosterBox ||
+    ninthVisitorPosterBox.y <= eighthVisitorProductBox.y + 4
+  ) {
+    throw new Error('Eight-item visitor shop did not place its coming-soon message after every real product.');
+  }
   if (await eightItemVisitor.page.locator('[data-owner-empty-shop-space]').count()) {
     throw new Error('Eight-item visitor received the owner creation control after Show more.');
   }
   await eightItemVisitor.context.close();
+
+  const earlyGapVisitorScenario = {
+    ...earlyGapOwnerScenario,
+    identity: visitorId,
+    mutations: [],
+  };
+  const earlyGapVisitor = await newPhonePage(browser, earlyGapVisitorScenario);
+  await earlyGapVisitor.page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await earlyGapVisitor.page.getByRole('button', { name: 'Show 2 more', exact: true }).waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  if (await earlyGapVisitor.page.locator('[data-visitor-opening-soon-space]').count()) {
+    throw new Error('An early empty visitor space interrupted real products before Show more.');
+  }
+  await earlyGapVisitor.page.getByRole('button', { name: 'Show 2 more', exact: true }).click();
+  const earlyGapVisitorPoster = earlyGapVisitor.page.locator(
+    '[data-visitor-opening-soon-space="3"]'
+  );
+  await earlyGapVisitorPoster.waitFor({ state: 'visible', timeout: 20_000 });
+  const lastEarlyGapProductBox = await earlyGapVisitor.page.locator('#shop-block-8').boundingBox();
+  const earlyGapVisitorPosterBox = await earlyGapVisitorPoster.boundingBox();
+  if (
+    !lastEarlyGapProductBox ||
+    !earlyGapVisitorPosterBox ||
+    Math.abs(earlyGapVisitorPosterBox.y - lastEarlyGapProductBox.y) > 4 ||
+    earlyGapVisitorPosterBox.x <= lastEarlyGapProductBox.x + 4
+  ) {
+    throw new Error('An early empty visitor space did not move behind all seven real products.');
+  }
+  await earlyGapVisitor.context.close();
 
   const twelveItemVisitorScenario = {
     ...visitorScenario,
@@ -1815,7 +1860,8 @@ try {
       'every shop normalizes to all twelve included product spaces',
       'an eight-item owner sees the ninth-space plus only after Show 3 more',
       'an early deleted owner space returns inside the first six positions',
-      'an eight-item visitor sees the ninth-space poster only after Show 3 more',
+      'an eight-item visitor sees the ninth-space poster only after Show 2 more real products',
+      'an early empty visitor space moves behind every real product instead of interrupting the shelf',
       'a full twelve-item shop exposes no thirteenth prompt and opening a plus performs no write',
       'the owner plus stays unchanged while the visitor coming-soon card uses equal message/audio halves only when a public shop message exists',
     ] : [

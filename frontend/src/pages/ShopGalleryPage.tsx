@@ -4591,25 +4591,36 @@ export default function ShopGalleryPage() {
       ).find((slotNumber) => !occupiedSlots.has(slotNumber)) || 0
     );
   }, [focusedBlockLinkActive, gallerySlotsTotal, products]);
-  const progressiveEmptySlotVisible = Boolean(
-    nextEmptyProductSlot &&
-      (showAllProducts || nextEmptyProductSlot <= GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT)
-  );
-  const ownerEmptyProductSlots =
-    signedInOwnsShop && progressiveEmptySlotVisible ? [nextEmptyProductSlot] : [];
-  const visitorOpeningSoonSlot =
-    !signedInOwnsShop && progressiveEmptySlotVisible ? nextEmptyProductSlot : 0;
-  const progressiveSlotSpansPair = visibleProducts.length % 2 === 0;
   const hiddenProductCount = focusedBlockLinkActive
     ? 0
     : products.filter((product, index) => {
         const shelfSlot = positiveNumber(product.slotNumber) || index + 1;
         return shelfSlot > GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT;
       }).length;
+  const ownerProgressiveEmptySlotVisible = Boolean(
+    nextEmptyProductSlot &&
+      (showAllProducts || nextEmptyProductSlot <= GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT)
+  );
+  const visitorProgressiveEmptySlotVisible = Boolean(
+    nextEmptyProductSlot && (showAllProducts || hiddenProductCount === 0)
+  );
+  const ownerEmptyProductSlots =
+    signedInOwnsShop && ownerProgressiveEmptySlotVisible
+      ? [nextEmptyProductSlot]
+      : [];
+  const visitorOpeningSoonSlot =
+    !signedInOwnsShop && visitorProgressiveEmptySlotVisible
+      ? nextEmptyProductSlot
+      : 0;
+  const visitorOpeningSoonOrder = gallerySlotsTotal + 1;
+  const progressiveSlotSpansPair = visibleProducts.length % 2 === 0;
   const hiddenShelfEntryCount = focusedBlockLinkActive
     ? 0
     : hiddenProductCount +
-      (nextEmptyProductSlot > GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT ? 1 : 0);
+      (signedInOwnsShop &&
+      nextEmptyProductSlot > GALLERY_INITIAL_VISIBLE_PRODUCT_COUNT
+        ? 1
+        : 0);
 
   useEffect(() => {
     if (hiddenShelfEntryCount === 0 && showAllProducts) {
@@ -8676,7 +8687,7 @@ export default function ShopGalleryPage() {
                   data-public-shop-neon-card="visitor-message"
                   data-visitor-opening-soon-space={visitorOpeningSoonSlot}
                   style={{
-                    order: visitorOpeningSoonSlot,
+                    order: visitorOpeningSoonOrder,
                     gridColumn: progressiveSlotSpansPair ? "1 / -1" : undefined,
                     width: "100%",
                     minWidth: 0,

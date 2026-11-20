@@ -1,5 +1,26 @@
 # Active Handoff Notes
 
+## Public Shop visitor shelf continuity repaired - 2026-11-20
+
+- Reviewed the supplied 13-second phone recording frame by frame. The definite
+  product defect was the passive `Product coming soon` card appearing inside a
+  visitor's run of real products when an earlier numbered owner space was empty.
+- Visitor shelves now show all real products first. If later products remain
+  behind `Show more`, the passive card waits until those products are revealed,
+  then follows the complete real-product sequence. Visitor `Show more` counts
+  hidden real products only.
+- The exact owner contract is unchanged: the first-empty numbered `+` remains
+  in its real shelf position, retains its existing count, and still enters the
+  exact Shop Control add-item workflow without writing on open.
+- The visitor card keeps its next-empty identity, two-column pairing/span rule,
+  shop-message audio, neon presentation, permissions, APIs and 12-space limit.
+- Added an explicit frozen-contract exception plus static and browser
+  regressions for both contiguous eight-item inventory and the recorded early
+  gap case `[1, 2, 4, 5, 6, 7, 8]`.
+- Verification passed: Public Shop button inventory audit, focused 390x844
+  progressive owner/visitor Playwright smoke, scoped diff check, and the
+  production TypeScript/Vite build.
+
 ## Persistent Cover shortcut and returning-member entry - 2026-11-20
 
 - Cover now owns one persistent compact `Save GSN on your phone` launcher. It
