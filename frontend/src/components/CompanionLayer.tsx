@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { PrimaryButton, SecondaryButton, SubtleButton } from "./StableButton";
 import { getMyNotifications, getMySettings } from "../lib/api";
 import { type GuidanceSnapshot } from "../lib/guidance";
@@ -35,6 +35,14 @@ const PHONE_TRIGGER_NOTIFICATION_KINDS = new Set([
   "community_domain.notice.posted",
 ]);
 const PHONE_TRIGGER_POLL_MS = 15000;
+const DASHBOARD_DUPLICATE_TOAST_SOURCES = new Set([
+  "action-inbox-act-now",
+  "action-inbox-due-soon",
+  "action-inbox-watch-and-wait",
+  "recovery-path",
+  "next-best-step",
+  "notification-feed",
+]);
 
 function notificationKind(row: any): string {
   return String(row?.kind || "").trim();
@@ -220,6 +228,8 @@ function dismissButton(): React.CSSProperties {
 
 export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isDashboardRoute = location.pathname === "/app/dashboard";
 
   const [settings, setSettings] = useState<CompanionSettings>(
     normalizeCompanionSettings()
@@ -354,13 +364,23 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
   }, []);
 
   useEffect(() => {
+    if (!isDashboardRoute) return;
+    setToasts((prev) =>
+      prev.filter(
+        (toast) => !DASHBOARD_DUPLICATE_TOAST_SOURCES.has(toast.source)
+      )
+    );
+  }, [isDashboardRoute]);
+
+  useEffect(() => {
     if (!snapshot) return;
+    if (isDashboardRoute) return;
 
     void runCompanionCycle({
       snapshot,
       settings,
     });
-  }, [snapshot, settings]);
+  }, [isDashboardRoute, snapshot, settings]);
 
   useEffect(() => {
     if (!settings.systemPushEnabled) return;
@@ -373,6 +393,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
 
   useEffect(() => {
     if (!snapshot) return;
+    if (isDashboardRoute) return;
 
     function handleFocusLikeEvent() {
       const localSettings = readLocalCompanionSettings();
@@ -403,7 +424,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
       window.removeEventListener("focus", handleFocusLikeEvent);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [snapshot, settings]);
+  }, [isDashboardRoute, snapshot, settings]);
 
   useEffect(() => {
     let alive = true;
@@ -427,7 +448,9 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
       const phoneNotice =
         urgent ||
         rows.find(isPhoneTriggerNotification) ||
-        rows.find(isActionableUnreadNotification);
+        (isDashboardRoute
+          ? undefined
+          : rows.find(isActionableUnreadNotification));
 
       if (!phoneNotice) return;
 
@@ -497,7 +520,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
       window.removeEventListener("focus", handleFocusLikeEvent);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [settings]);
+  }, [isDashboardRoute, settings]);
 
   if (toasts.length === 0) return null;
   const visibleToasts = isPhone ? toasts.slice(-1) : toasts;

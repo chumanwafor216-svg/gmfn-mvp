@@ -619,18 +619,10 @@ function writeDailyCounter(value: { day: string; count: number }): void {
 }
 
 function minRepeatMinutesForPriority(
-  priority: CompanionPriority,
+  _priority: CompanionPriority,
   settings: CompanionSettings
 ): number {
-  if (priority === "urgent") {
-    return Math.max(10, Math.floor(settings.repeatReminderMinutes / 4));
-  }
-
-  if (priority === "important") {
-    return Math.max(20, Math.floor(settings.repeatReminderMinutes / 2));
-  }
-
-  return settings.repeatReminderMinutes;
+  return Math.max(120, settings.repeatReminderMinutes);
 }
 
 export function canDeliverCompanionDecision(
@@ -648,10 +640,7 @@ export function canDeliverCompanionDecision(
 
   if (daily.day !== today) {
     writeDailyCounter({ day: today, count: 0 });
-  } else if (
-    daily.count >= settings.maxDailyNudges &&
-    decision.priority !== "urgent"
-  ) {
+  } else if (daily.count >= settings.maxDailyNudges) {
     return { ok: false, reason: "daily-limit-reached" };
   }
 

@@ -6302,6 +6302,7 @@ export default function DashboardPage() {
     if (!dashboardIdentityReady) return;
     if (!attentionSignal.active || !attentionSignal.shouldShow) return;
     if (attentionQuietActive) return;
+    if (isPhone) return;
     if (!attentionAutoOpenAllowed) {
       return;
     }
@@ -6333,6 +6334,7 @@ export default function DashboardPage() {
     attentionQuietActive,
     attentionAutoOpenAllowed,
     dashboardIdentityReady,
+    isPhone,
   ]);
 
 

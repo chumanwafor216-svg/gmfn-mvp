@@ -126,24 +126,7 @@ def notification_attention_actionable(
         return False
 
     if kind == "approval_request":
-        request_id = _join_request_id_from_action_url(notification.action_url)
-        if request_id <= 0:
-            # Historic review notices did not always identify one exact request.
-            return True
-
-        request = db.get(ClanJoinRequest, int(request_id))
-        if not request or _safe_str(getattr(request, "status", None)).lower() != "pending":
-            return False
-
-        existing_vote = (
-            db.query(ClanJoinVote.id)
-            .filter(
-                ClanJoinVote.join_request_id == int(request_id),
-                ClanJoinVote.voter_user_id == int(notification.user_id),
-            )
-            .first()
-        )
-        return existing_vote is None
+        return _join_review_notification_actionable(db, notification)
 
     if kind != "demand_tagged":
         return True
@@ -215,6 +198,102 @@ def _rosca_run_id_from_action_url(action_url: Any) -> int:
         if run_id > 0:
             return run_id
     return 0
+
+
+def _join_request_clan_id_from_action_url(action_url: Any) -> int:
+    raw = _safe_str(action_url)
+    if not raw or "join-requests" not in raw:
+        return 0
+
+    parts = [part for part in urlparse(raw).path.split("/") if part]
+    for index, part in enumerate(parts):
+        if part != "community" or index + 1 >= len(parts):
+            continue
+        try:
+            clan_id = int(parts[index + 1])
+        except (TypeError, ValueError):
+            continue
+        if clan_id > 0:
+            return clan_id
+    return 0
+
+
+def _join_review_notification_actionable(
+    db: Session,
+    notification: Notification,
+    *,
+    active_clan_ids: List[int] | None = None,
+) -> bool:
+    request_id = _join_request_id_from_action_url(notification.action_url)
+    reviewer_user_id = int(notification.user_id)
+
+    if request_id > 0:
+        request = db.get(ClanJoinRequest, int(request_id))
+        if not request or _safe_str(getattr(request, "status", None)).lower() != "pending":
+            return False
+        if int(getattr(request, "applicant_user_id", 0) or 0) == reviewer_user_id:
+            return False
+        if active_clan_ids is not None and int(request.clan_id) not in {
+            int(clan_id) for clan_id in active_clan_ids
+        }:
+            return False
+
+        existing_vote = (
+            db.query(ClanJoinVote.id)
+            .filter(
+                ClanJoinVote.join_request_id == int(request_id),
+                ClanJoinVote.voter_user_id == reviewer_user_id,
+            )
+            .first()
+        )
+        return existing_vote is None
+
+    # Historic notices sometimes linked only to a community review page. They
+    # must follow the live queue instead of remaining actionable forever.
+    reviewer_clan_ids = [int(clan_id) for clan_id in (active_clan_ids or [])]
+    if active_clan_ids is None:
+        reviewer_clan_ids = [
+            int(row[0])
+            for row in (
+                db.query(ClanMembership.clan_id)
+                .filter(
+                    ClanMembership.user_id == reviewer_user_id,
+                    ClanMembership.left_at.is_(None),
+                )
+                .all()
+            )
+        ]
+
+    target_clan_id = _join_request_clan_id_from_action_url(notification.action_url)
+    if target_clan_id > 0:
+        if target_clan_id not in set(reviewer_clan_ids):
+            return False
+        reviewer_clan_ids = [target_clan_id]
+
+    if not reviewer_clan_ids:
+        return False
+
+    pending_requests = (
+        db.query(ClanJoinRequest)
+        .filter(
+            ClanJoinRequest.clan_id.in_(reviewer_clan_ids),
+            ClanJoinRequest.status == "pending",
+            ClanJoinRequest.applicant_user_id != reviewer_user_id,
+        )
+        .all()
+    )
+    for request in pending_requests:
+        existing_vote = (
+            db.query(ClanJoinVote.id)
+            .filter(
+                ClanJoinVote.join_request_id == int(request.id),
+                ClanJoinVote.voter_user_id == reviewer_user_id,
+            )
+            .first()
+        )
+        if existing_vote is None:
+            return True
+    return False
 
 
 def _rosca_invitation_status_for_notification(
@@ -290,7 +369,11 @@ def _join_request_status_for_notification(
 ) -> Dict[str, Any]:
     request_id = _join_request_id_from_action_url(notification.action_url)
     if request_id <= 0:
-        return {}
+        actionable = _join_review_notification_actionable(db, notification)
+        return {
+            "join_request_status": "pending" if actionable else "resolved",
+            "join_request_resolved": not actionable,
+        }
 
     join_request = db.get(ClanJoinRequest, int(request_id))
     if not join_request:
@@ -538,32 +621,11 @@ def _retire_stale_join_review_notifications(
     now = _now_utc()
 
     for row in rows:
-        request_id = _join_request_id_from_action_url(row.action_url)
-        if request_id <= 0:
-            continue
-
-        join_request = db.get(ClanJoinRequest, int(request_id))
-        status = _safe_str(getattr(join_request, "status", None)).lower()
-        request_clan_id = int(getattr(join_request, "clan_id", 0) or 0)
-        applicant_user_id = int(getattr(join_request, "applicant_user_id", 0) or 0)
-        reviewer_has_voted = bool(
-            join_request
-            and db.query(ClanJoinVote.id)
-            .filter(
-                ClanJoinVote.join_request_id == int(request_id),
-                ClanJoinVote.voter_user_id == int(reviewer_user_id),
-            )
-            .first()
-        )
-        still_actionable = bool(
-            join_request
-            and status == "pending"
-            and request_clan_id in active_ids
-            and applicant_user_id != int(reviewer_user_id)
-            and not reviewer_has_voted
-        )
-
-        if still_actionable:
+        if _join_review_notification_actionable(
+            db,
+            row,
+            active_clan_ids=list(active_ids),
+        ):
             continue
 
         row.is_read = True

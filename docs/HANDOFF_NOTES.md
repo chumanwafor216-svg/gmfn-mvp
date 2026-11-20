@@ -6962,3 +6962,13 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Voluntary community search asks for community, identity and verified phone only. The optional joining note is removed from the screen and request payload. Every active, non-system community remains searchable; discovery still does not force admission, and inactive, dormant, closed or internal default communities remain excluded.
 - Verification passed: focused ESLint, entry-flow, entry/auth, entry-copy and existing-community invite audits; the Pixel 5 corrected-entry journey including direct Cover invitation routing and a note-free search request; 13 corrected-community-entry backend tests covering instant, voting and bounded admin override; TypeScript; the 328-module production build; and the complete protected-button-freeze suite.
 - Honest residual: the protected browser sweep passes but still logs the unrelated pre-existing duplicate React-key warning.
+
+# Bounded Companion and stale join-review retirement - 2026-11-20
+
+- Owner phone evidence showed one join review occupying three competing Dashboard layers: the blocking Attention Guide, the Action Inbox card, and the fixed Companion alert. The same `Pending join request` could return after the reviewer had already answered it.
+- The backend root cause was a legacy fallback that treated approval notifications without an exact `request_id` as actionable forever. Legacy community-level review notices now follow the live pending queue, active membership and this reviewer's vote. When no personal review remains, the notification is marked read and returned as resolved/non-actionable.
+- The phone Dashboard Attention Guide no longer opens automatically. It stays as a compact reminder until the member chooses to open it, so it cannot repeatedly cover the page or prevent normal scrolling.
+- Dashboard no longer emits a second Companion toast for the same Action Inbox/guidance item. Special community confirmations and notice-board events remain eligible; ordinary actionable reminders continue on other screens.
+- Companion repeat delivery is now bounded to at least two hours for every priority, and the configured daily limit also applies to urgent reminders. Dismissing a specific toast retains the existing 14-day suppression.
+- Verification passed: 86 join-request backend tests, Dashboard action audit, Dashboard attention semantics, Companion interruption audit, TypeScript, the 328-module production build, and the complete protected-button-freeze suite.
+- Honest residual: the protected browser sweep passes but still logs the unrelated pre-existing duplicate React-key warning.

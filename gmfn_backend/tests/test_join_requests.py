@@ -1307,6 +1307,52 @@ def test_notifications_endpoint_retires_join_review_notice_after_request_is_done
         assert notification.read_at is not None
 
 
+def test_notifications_endpoint_retires_legacy_join_review_notice_when_queue_is_clear(
+    client,
+):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            Notification(
+                id=1,
+                user_id=1,
+                kind="approval_request",
+                title="Pending join request",
+                message="A historic request was waiting for community review.",
+                action_url="/app/community/1/join-requests",
+                action_label="Review",
+                is_read=False,
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    def fake_current_user():
+        return SimpleNamespace(
+            id=1,
+            email="admin@example.com",
+            role="admin",
+            hashed_password="hashed",
+        )
+
+    app.dependency_overrides[auth.get_current_user] = fake_current_user
+    try:
+        response = client.get("/notifications/me")
+        assert response.status_code == 200, response.text
+        item = response.json()["items"][0]
+        assert item["is_read"] is True
+        assert item["attention_actionable"] is False
+        assert item["join_request_status"] == "resolved"
+        assert item["join_request_resolved"] is True
+
+        unread = client.get("/notifications/me?unread_only=true")
+        assert unread.status_code == 200, unread.text
+        assert unread.json()["items"] == []
+    finally:
+        app.dependency_overrides.pop(auth.get_current_user, None)
+
+
 def test_notifications_endpoint_limits_visible_items_to_twenty(client):
     with SessionLocal() as db:
         db.add(

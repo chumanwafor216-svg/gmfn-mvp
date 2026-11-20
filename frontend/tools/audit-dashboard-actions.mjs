@@ -227,6 +227,11 @@ assertContains(
 );
 
 assertContains(
+  /if \(!dashboardIdentityReady\) return;[\s\S]*?if \(!attentionSignal\.active \|\| !attentionSignal\.shouldShow\) return;[\s\S]*?if \(attentionQuietActive\) return;[\s\S]*?if \(isPhone\) return;[\s\S]*?setAttentionPopupVisible\(true\)/,
+  "Dashboard Attention Guide must stay collapsed on phone until the user opens it."
+);
+
+assertContains(
   /debugId="dashboard\.attention-popup\.secondary"[\s\S]*?openAttentionTarget\([\s\S]*?event,[\s\S]*?attentionDisplaySignal\.secondaryCtaTo \|\| ""[\s\S]*?\)[\s\S]*?\{attentionDisplaySignal\.secondaryCtaLabel\}/,
   "Dashboard attention popup secondary CTA must keep routing through openAttentionTarget with the engine-provided notifications target."
 );
