@@ -407,7 +407,11 @@ function welcomeShouldRedirectToCover(url) {
   const entryFrom = String(url.searchParams.get("entry_from") || "")
     .trim()
     .toLowerCase();
-  return url.pathname === "/welcome" && entryFrom !== "cover";
+  return (
+    url.pathname === "/welcome" &&
+    entryFrom !== "cover" &&
+    entryFrom !== "login"
+  );
 }
 
 function coverRedirectLocation(url) {

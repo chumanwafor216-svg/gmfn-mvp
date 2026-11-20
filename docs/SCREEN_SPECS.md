@@ -41,6 +41,8 @@ Must show:
 - Continue button
 - About GSN & I button
 - Secure / Verified / Global badges
+- one compact persistent `Save GSN on your phone` launcher that opens the
+  established three manual phone steps without competing with Continue
 
 Must not show:
 - bottom navigation
@@ -143,14 +145,20 @@ Rules:
   `/cover?source=pwa` first. Cover then continues to Welcome. If a valid signed-in
   session is already present, the normal public-entry guard may carry the member
   onward to the authenticated app instead of trapping them on entry screens.
+- On Cover, the shortcut launcher is persistent for an ordinary browser visit,
+  begins as one slim row, and expands only after a deliberate tap. It is not a
+  timed pop-up and does not appear when GSN is already running as an installed
+  home-screen experience.
 - Cover and Welcome must remain free to view for ordinary public browsing, but
   they must not trap signed-in PWA users away from the real app shell.
 - The prompt must not show competing install buttons. Use one clear button that
   opens three short manual steps.
 - Do not cache private API responses or uploaded user data in the service
   worker.
-- The prompt may appear on Welcome, Sign In, invite/public access, and other
-  entry surfaces where installation does not compete with the page's main job.
+- The prompt may appear on Cover, Sign In, invite/public access, and other entry
+  surfaces where installation does not compete with the page's main job.
+- Welcome must remain focused on Create, Find a community, and Sign in; do not
+  add phone-install guidance there.
 - The prompt must stay compact, must not replace the main page action, and must
   disappear when GSN is already running from a home-screen install.
 - On Sign In, the unopened phone-shortcut reminder is transient: it disappears
@@ -560,6 +568,15 @@ Must not show:
 
 Rules:
 - Sign in stays the only primary action in the default view.
+- A browser that has previously received a valid GSN ID may remember only a
+  privacy-safe returning-member flag and route a plain Cover visit directly to
+  Sign In. It must not retain or reveal the phone number or GSN ID for this
+  convenience. Explicit Create, invitation, activation, and public Cover links
+  retain their own journeys. This recognition is same-browser/device only; GSN
+  cannot recognise a person on a new device before sign-in or a trusted link.
+- Sign In Back opens Welcome deliberately. Welcome Back opens an explicit
+  public Cover view, so a recognised returning device is not trapped in a
+  redirect loop.
 - Sign in appears immediately after the identity and password fields.
 - Owner-approved 2026-11-17 text-first correction: the identity field,
   password field, and `Sign in to GSN` button use no decorative ID-card or

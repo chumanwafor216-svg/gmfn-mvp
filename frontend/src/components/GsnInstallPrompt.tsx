@@ -16,6 +16,8 @@ type GsnInstallPromptProps = {
   surface?: string;
   autoDismissMs?: number;
   dismissible?: boolean;
+  title?: string;
+  collapsedLauncher?: boolean;
 };
 
 type InstallState = {
@@ -117,6 +119,8 @@ export default function GsnInstallPrompt({
   surface = "general",
   autoDismissMs,
   dismissible = false,
+  title = "Keep GSN nearby",
+  collapsedLauncher = false,
 }: GsnInstallPromptProps) {
   const [state, setState] = useState<InstallState>(() => readInstallState());
   const [manualOpen, setManualOpen] = useState(false);
@@ -180,9 +184,72 @@ export default function GsnInstallPrompt({
   const describedBy = `gsn-install-${surface.replace(/[^a-z0-9-]+/gi, "-")}`;
   const steps = manualSteps(isIos);
 
+  if (collapsedLauncher && !manualOpen) {
+    return (
+      <section
+        aria-label={title}
+        data-gsn-install-surface={surface}
+        style={{ width: '100%', maxWidth: '100%' }}
+      >
+        <SubtleButton
+          type='button'
+          onClick={handleInstall}
+          stableHeight={52}
+          debugId={`gsn-install.${surface}.setup`}
+          aria-expanded={false}
+          style={{
+            width: '100%',
+            minHeight: 52,
+            height: 52,
+            padding: '7px 12px',
+            borderRadius: 18,
+            border:
+              tone === 'dark'
+                ? '1px solid rgba(243,208,106,0.28)'
+                : '1px solid rgba(13,95,168,0.14)',
+            background:
+              tone === 'dark'
+                ? 'linear-gradient(180deg, rgba(15,37,58,0.94) 0%, rgba(7,22,38,0.96) 100%)'
+                : 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(238,246,255,0.96) 100%)',
+            boxShadow:
+              '0 16px 34px rgba(0,8,18,0.30), inset 0 1px 0 rgba(255,255,255,0.14)',
+            color: tone === 'dark' ? '#F8FBFF' : '#0B1F33',
+            display: 'grid',
+            gridTemplateColumns: '38px minmax(0, 1fr) auto',
+            alignItems: 'center',
+            gap: 10,
+            textAlign: 'left',
+          }}
+        >
+          <img
+            src='/gsn-app-icon-ios-180-v14.png'
+            alt=''
+            style={{ width: 38, height: 38, objectFit: 'contain' }}
+          />
+          <span
+            style={{
+              minWidth: 0,
+              fontSize: 13.5,
+              fontWeight: 1000,
+              lineHeight: 1.15,
+            }}
+          >
+            {title}
+          </span>
+          <span
+            aria-hidden='true'
+            style={{ color: '#F3D06A', fontSize: 12, fontWeight: 1000 }}
+          >
+            3 steps
+          </span>
+        </SubtleButton>
+      </section>
+    );
+  }
+
   return (
     <section
-      aria-label="Keep GSN on this phone"
+      aria-label={title}
       style={outerCardStyle(tone, compact)}
       data-gsn-install-surface={surface}
     >
@@ -218,7 +285,7 @@ export default function GsnInstallPrompt({
               lineHeight: 1.18,
             }}
           >
-            Keep GSN nearby
+            {title}
           </div>
           <p id={describedBy} style={helperTextStyle(tone, compact)}>
             {isIos

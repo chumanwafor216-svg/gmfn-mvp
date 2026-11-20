@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 import { useLocation, useNavigate } from "react-router-dom";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
+import GsnInstallPrompt from "../components/GsnInstallPrompt";
 import { PrimaryButton, SecondaryButton } from "../components/StableButton";
 import { routeForInvitation } from "../lib/entryFlow";
 
@@ -1572,6 +1573,25 @@ export default function CoverPage() {
           <div style={artworkPolishFrameStyle()} />
 
           <div style={artworkBottomVeilStyle()} />
+
+          <div
+            style={{
+              position: 'absolute',
+              top: 18,
+              left: '50%',
+              width: 'min(calc(100% - 36px), 360px)',
+              transform: 'translateX(-50%)',
+              zIndex: 5,
+            }}
+          >
+            <GsnInstallPrompt
+              tone='dark'
+              compact
+              surface='cover'
+              title='Save GSN on your phone'
+              collapsedLauncher
+            />
+          </div>
 
           <div
             style={{

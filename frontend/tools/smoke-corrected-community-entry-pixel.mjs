@@ -1,4 +1,4 @@
-/* global console, document, process, sessionStorage, URL, window */
+/* global console, document, localStorage, process, sessionStorage, URL, window */
 
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
@@ -21,6 +21,47 @@ async function newPixel(browser) {
   const context = await browser.newContext({ ...devices["Pixel 5"] });
   const page = await context.newPage();
   return { context, page };
+}
+
+async function runCoverShortcutAndReturningEntry(browser, baseUrl) {
+  const { context, page } = await newPixel(browser);
+  await page.route("**/api/**", async (route) => {
+    const path = new URL(route.request().url()).pathname.replace(/^\/api/, "");
+    if (path === "/auth/me") {
+      return json(route, { detail: "Not authenticated" }, 401);
+    }
+    return json(route, { ok: true });
+  });
+
+  await page.goto(`${baseUrl}/cover?entry=general`, {
+    waitUntil: "domcontentloaded",
+  });
+  const shortcutLauncher = page.locator(
+    '[data-cta-id="gsn-install.cover.setup"]'
+  );
+  await expect(shortcutLauncher).toContainText("Save GSN on your phone");
+  await shortcutLauncher.click();
+  await expect(page.getByRole("button", { name: "Hide steps" })).toBeVisible();
+  await expect(page.getByText("Open the browser menu.", { exact: true })).toBeVisible();
+  await page.screenshot({
+    path: resolve(screenshotDir, "00-cover-phone-shortcut-steps.png"),
+    fullPage: true,
+  });
+
+  await page.evaluate(() => {
+    localStorage.setItem("gsn_recognised_returning_member", "yes");
+  });
+  await page.goto(`${baseUrl}/cover`, { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/\/login\?force=1$/);
+
+  await page.getByRole("link", { name: "Back" }).click();
+  await expect(page).toHaveURL(/\/welcome\?entry_from=login$/);
+  await expect(page.getByText("Create community", { exact: true }).first()).toBeVisible();
+
+  await page.getByRole("link", { name: "Back" }).click();
+  await expect(page).toHaveURL(/\/cover\?entry=general$/);
+  await expect(page.locator('[data-cta-id="cover.continue"]')).toBeVisible();
+  await context.close();
 }
 
 async function installJoinMocks(page) {
@@ -343,6 +384,7 @@ async function main() {
   if (!baseUrl) throw new Error("Vite smoke URL was not available.");
   const browser = await chromium.launch();
   try {
+    await runCoverShortcutAndReturningEntry(browser, baseUrl);
     await runInvitationBypass(browser, baseUrl);
     await runJoinJourney(browser, baseUrl);
     await runExistingAccountSignIn(browser, baseUrl);

@@ -126,6 +126,18 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CoverPage.tsx",
+  /<GsnInstallPrompt[\s\S]*?surface=['"]cover['"][\s\S]*?title=['"]Save GSN on your phone['"][\s\S]*?collapsedLauncher/,
+  "Cover must keep one persistent, compact phone-shortcut launcher that opens the existing manual steps."
+);
+
+assertContains(
+  "src/App.tsx",
+  /function ReturningMemberCoverGate[\s\S]*?isRecognisedReturningMember\(\)[\s\S]*?hasExplicitCoverJourney\(location\.search\)[\s\S]*?\/login\?force=1[\s\S]*?<ReturningMemberCoverGate>[\s\S]*?<CoverPage \/>/,
+  "Recognised same-device members must open Sign In while explicit public, create, and invitation journeys keep their dedicated entry behavior."
+);
+
+assertContains(
   "src/pages/WelcomePage.tsx",
   /function intentNeutralSearch[\s\S]*?\["entry", "entry_from", "flow", "mode", "intent"\][\s\S]*?routeForCreate\(neutralSearch\)[\s\S]*?routeForJoin\(neutralSearch\)/,
   "Switching gateway intent must clear stale lane markers before opening Create or Join."
@@ -187,8 +199,8 @@ entryPages.forEach((file) => {
 });
 
 [
-  ["src/pages/WelcomePage.tsx", /<EntryBackLink to="\/cover" \/>/],
-  ["src/pages/LoginPage.tsx", /<EntryBackLink to="\/welcome" \/>/],
+  ["src/pages/WelcomePage.tsx", /<EntryBackLink to="\/cover\?entry=general" \/>/],
+  ["src/pages/LoginPage.tsx", /<EntryBackLink to="\/welcome\?entry_from=login" \/>/],
   ["src/pages/FindCommunityJoinPage.tsx", /backTo="\/welcome"[\s\S]*?backLabel="Back to welcome"/],
   ["src/components/CommunityEntryShell.tsx", /exitTo = "\/cover"[\s\S]*?<OriginLink to=\{exitTo\}/],
   ["src/pages/JoinEntryPage.tsx", /<EntryBackLink to="\/welcome" \/>/],

@@ -58,9 +58,13 @@
           }
 
           if (window.location.hostname.toLowerCase() !== "frontend.onrender.com") {
+            var openedFromCover =
+              entryFrom === "cover" && coverWelcomeSession === "active";
+            var openedFromLogin = entryFrom === "login";
             if (
               window.location.pathname === "/welcome" &&
-              (entryFrom !== "cover" || coverWelcomeSession !== "active")
+              !openedFromCover &&
+              !openedFromLogin
             ) {
               params.delete("entry_from");
               window.location.replace(

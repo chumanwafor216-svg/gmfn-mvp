@@ -112,6 +112,18 @@ assertContains(
 );
 
 assertContains(
+  "src/lib/returningMember.ts",
+  /RECOGNISED_RETURNING_MEMBER_KEY[\s\S]*?markRecognisedReturningMember[\s\S]*?isRecognisedReturningMember/,
+  "Returning-member recognition must use a dedicated same-device marker rather than retaining a phone number or GSN ID after logout."
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /setStoredGmfnId\(value: unknown\)[\s\S]*?if \(gmfnId\) markRecognisedReturningMember\(\);/,
+  "Receiving a valid GSN ID must mark the browser as a recognised returning-member device."
+);
+
+assertContains(
   "src/lib/api.ts",
   /function normalizeApiBaseUrl\(raw: unknown\): string \{[\s\S]*?if \(path\.toLowerCase\(\) === "\/api"\) \{[\s\S]*?return url\.origin;[\s\S]*?function resolveApiBaseUrl\(raw: unknown\): string \{[\s\S]*?const normalized = normalizeApiBaseUrl\(raw\);/,
   "Production API bases such as https://gmfn-api.onrender.com/api must normalize to the backend origin before login appends /auth/login."
@@ -161,8 +173,8 @@ assertContains(
 
 assertContains(
   "index.html",
-  /var params = new URLSearchParams\(window\.location\.search\);[\s\S]*?entryFrom[\s\S]*?coverWelcomeSession[\s\S]*?window\.sessionStorage\.getItem\("gmfn_cover_welcome_session"\)[\s\S]*?window\.location\.pathname === "\/welcome"[\s\S]*?entryFrom !== "cover" \|\| coverWelcomeSession !== "active"[\s\S]*?params\.delete\("entry_from"\)[\s\S]*?window\.location\.replace\([\s\S]*?"\/cover"/,
-  "The production HTML shell must redirect bare or restored /welcome to Cover before the React bundle loads."
+  /var params = new URLSearchParams\(window\.location\.search\);[\s\S]*?entryFrom[\s\S]*?coverWelcomeSession[\s\S]*?window\.sessionStorage\.getItem\("gmfn_cover_welcome_session"\)[\s\S]*?openedFromCover[\s\S]*?openedFromLogin[\s\S]*?window\.location\.pathname === "\/welcome"[\s\S]*?!openedFromCover[\s\S]*?!openedFromLogin[\s\S]*?params\.delete\("entry_from"\)[\s\S]*?window\.location\.replace\([\s\S]*?"\/cover"/,
+  "The production HTML shell must redirect bare or restored /welcome to Cover while allowing an intentional return from Sign In."
 );
 
 assertContains(

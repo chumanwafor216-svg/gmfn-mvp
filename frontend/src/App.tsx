@@ -22,6 +22,7 @@ import {
 } from "./lib/publishRecovery";
 import { gmfnBrand } from "./styles/gmfnBrand";
 import BackgroundSessionGuard from "./components/BackgroundSessionGuard";
+import { isRecognisedReturningMember } from "./lib/returningMember";
 
 const CoverPage = React.lazy(() => import("./pages/CoverPage"));
 const IdentityFirstCreateCommunityPage = React.lazy(
@@ -510,6 +511,49 @@ function PublicEntryGuard(props: { children: React.ReactNode }) {
   return <>{props.children}</>;
 }
 
+function hasExplicitCoverJourney(search: string): boolean {
+  const params = new URLSearchParams(search);
+  const recognisedValues = new Set([
+    'general',
+    'public',
+    'welcome',
+    'create',
+    'founder',
+    'public-create',
+    'new',
+    'invite',
+    'invited',
+    'join',
+    'get-invite',
+    'approved',
+    'activate',
+    'activation',
+  ]);
+
+  return ['entry', 'flow', 'mode', 'intent'].some((key) =>
+    recognisedValues.has(String(params.get(key) || '').trim().toLowerCase())
+  );
+}
+
+function ReturningMemberCoverGate(props: { children: React.ReactNode }) {
+  const location = useLocation();
+
+  if (
+    !isRecognisedReturningMember() ||
+    hasExplicitCoverJourney(location.search)
+  ) {
+    return <>{props.children}</>;
+  }
+
+  return (
+    <Navigate
+      to={mergeTargetWithCurrent('/login?force=1', location.search, location.hash)}
+      replace
+      state={{ recoveredFrom: currentRoutePath(location) }}
+    />
+  );
+}
+
 function routeStateFromTarget(target: string): {
   pathname: string;
   search?: string;
@@ -625,6 +669,16 @@ function hasCoverWelcomeSession(): boolean {
 
 function WelcomeEntryGate(props: { children: React.ReactNode }) {
   const location = useLocation();
+  const loginEntryFrom = String(
+    new URLSearchParams(location.search).get('entry_from') || ''
+  )
+    .trim()
+    .toLowerCase();
+
+  if (loginEntryFrom === 'login') {
+    return <>{props.children}</>;
+  }
+
   const params = new URLSearchParams(location.search);
   const entryFrom = String(params.get("entry_from") || "")
     .trim()
@@ -766,7 +820,9 @@ export default function App() {
         path="/cover"
         element={
           <PublicEntryGuard>
-            <CoverPage />
+            <ReturningMemberCoverGate>
+              <CoverPage />
+            </ReturningMemberCoverGate>
           </PublicEntryGuard>
         }
       />

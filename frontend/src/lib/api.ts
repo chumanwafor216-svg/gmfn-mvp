@@ -1,4 +1,5 @@
 import { configuredPublicApiOrigin, isPrivateFrontendHost } from "./publicLinks";
+import { markRecognisedReturningMember } from "./returningMember";
 
 const API_BASE_URL_RAW: string =
   (typeof import.meta !== "undefined" &&
@@ -346,6 +347,7 @@ export function getStoredGmfnId(): string | null {
 export function setStoredGmfnId(value: unknown): void {
   const gmfnId = normalizeGmfnId(value);
   writeStorage(GMFN_CURRENT_ID_KEY, gmfnId || null);
+  if (gmfnId) markRecognisedReturningMember();
 }
 
 function rememberGmfnIdFrom(value: unknown): void {

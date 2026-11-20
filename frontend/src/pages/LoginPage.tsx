@@ -988,7 +988,7 @@ export default function LoginPage() {
             }}
           >
             <div style={{ display: "flex", justifyContent: "flex-start" }}>
-              <EntryBackLink to="/welcome" />
+              <EntryBackLink to="/welcome?entry_from=login" />
             </div>
 
             <div style={{ textAlign: "center", display: "grid", gap: 6 }}>

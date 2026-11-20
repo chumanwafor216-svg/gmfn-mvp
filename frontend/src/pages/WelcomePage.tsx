@@ -274,7 +274,7 @@ export default function WelcomePage() {
             }}
           >
           <div style={{ display: "flex", justifyContent: "flex-start" }}>
-            <EntryBackLink to="/cover" />
+            <EntryBackLink to="/cover?entry=general" />
           </div>
 
           <div style={{ textAlign: "center", display: "grid", gap: 8, justifyItems: "center" }}>
