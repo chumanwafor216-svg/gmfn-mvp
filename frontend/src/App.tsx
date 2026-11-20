@@ -59,6 +59,9 @@ const ClansPage = React.lazy(() => import("./pages/ClansPage"));
 const LoansPage = React.lazy(() => import("./pages/LoansPage"));
 const MarketplacePage = React.lazy(() => import("./pages/MarketplacePage"));
 const ShopGalleryPage = React.lazy(() => import("./pages/ShopGalleryPage"));
+const PublicMerchantDiscoveryPage = React.lazy(
+  () => import("./pages/PublicMerchantDiscoveryPage")
+);
 const TrustScorePage = React.lazy(() => import("./pages/TrustScorePage"));
 const TrustSlipPage = React.lazy(() => import("./pages/TrustSlipPage"));
 const TrustTimelinePage = React.lazy(() => import("./pages/TrustTimelinePage"));
@@ -159,6 +162,9 @@ const RevenueAllocationPage = React.lazy(
   () => import("./pages/RevenueAllocationPage")
 );
 const ShopControlPage = React.lazy(() => import("./pages/ShopControlPage"));
+const PublicDiscoveryControlPage = React.lazy(
+  () => import("./pages/PublicDiscoveryControlPage")
+);
 const ShopAssetsPage = React.lazy(() => import("./pages/ShopAssetsPage"));
 const VaultControlPage = React.lazy(() => import("./pages/VaultControlPage"));
 const SubscriptionSpotlightPage = React.lazy(
@@ -1072,6 +1078,7 @@ export default function App() {
       />
       <Route path="/verify/community/:communityKey" element={<CommunityVerifyPage />} />
       <Route path="/shop/:gmfnId" element={<ShopGalleryPage />} />
+      <Route path="/discover" element={<PublicMerchantDiscoveryPage />} />
       <Route path="/shop-gallery/:gmfnId" element={<RedirectPublicShopAlias />} />
       <Route path="/open-shop/:gmfnId" element={<RedirectPublicShopAlias />} />
 
@@ -1235,6 +1242,10 @@ export default function App() {
         <Route path="open-demand" element={<PreserveRedirect to={APP_ROUTES.DEMAND_BOX} />} />
 
         <Route path="shop-control" element={<ShopControlPage />} />
+        <Route
+          path="shop-control/public-discovery"
+          element={<PublicDiscoveryControlPage />}
+        />
         <Route
           path="spotlight"
           element={<PreserveRedirect to={APP_ROUTES.FREE_SPOTLIGHT} />}

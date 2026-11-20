@@ -5146,6 +5146,12 @@ export default function ShopControlPage() {
   ];
   const progressiveOwnerTools = [
     {
+      label: "Public discovery",
+      detail: "Choose which products people outside your communities may find.",
+      to: "/app/shop-control/public-discovery",
+      debugId: "shop-control.more.public-discovery",
+    },
+    {
       label: "Shop details",
       detail: "Name, contact details and description.",
       to: routes.shopDetails,

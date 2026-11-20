@@ -3224,3 +3224,60 @@ Primary action:
 ```text
 Copy Bulletin Message
 ```
+
+## PublicMerchantDiscoveryPage
+
+Route: `/discover`.
+
+Purpose:
+Let any visitor search only the shop products that an owner explicitly confirmed
+for wider public discovery. This screen is not the authenticated community
+Marketplace, a member directory, or a public TrustSlip search.
+
+Must show:
+- one compact search area for product/shop terms, category and general service area
+- only privacy-approved, active and currently available owner-confirmed publications
+- safe result cards with shop name, offer name, public media, price, category,
+  broad service area, availability and whether a public contact route exists
+- a direct link to the existing public shop
+- clear empty and temporarily-unavailable states
+
+Rules:
+- No bottom navigation.
+- Do not expose community membership, private contacts, exact home location,
+  TrustSlip evidence, private requests, Vault content or administration data.
+- Legacy products without an explicit publication record do not appear.
+- Counts, pagination and suggestions must be calculated after every privacy and
+  availability exclusion.
+- The route fails closed when the discovery feature or shop privacy authority is
+  disabled.
+- Search responses are not publicly cacheable.
+
+Primary action:
+
+```text
+Find products and services
+```
+
+## PublicDiscoveryControlPage
+
+Route: `/app/shop-control/public-discovery`.
+
+Purpose:
+Give the shop owner a truthful preview and product-by-product decision before any
+legacy product enters wider public discovery.
+
+Must show:
+- discovery and privacy-authority readiness
+- the legacy-product notice
+- each product's effective publication state
+- Publish, Pause, Hide and Withdraw controls
+- the direct-shop-link boundary
+
+Rules:
+- Publishing requires an explicit current-version confirmation.
+- Pausing, hiding, withdrawing or expiry removes the product from wider search
+  but does not disable its existing direct shop link.
+- Private Vault products, inactive products and inactive/private shops cannot be
+  published.
+- This screen must not activate payments, Pipeline Credits or Spotlight.

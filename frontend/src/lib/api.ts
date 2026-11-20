@@ -7303,6 +7303,83 @@ export async function getMarketplaceShopFollowStatus(shopId: number): Promise<an
   );
 }
 
+export type PublicDiscoveryResult = {
+  publication_id: string;
+  shop_path: string;
+  shop_gsn_id: string;
+  shop_name: string;
+  shop_description?: string | null;
+  offer_id: number;
+  offer_name: string;
+  offer_description?: string | null;
+  price?: string | null;
+  currency?: string | null;
+  image_url?: string | null;
+  video_url?: string | null;
+  categories: string[];
+  capability_terms: string[];
+  service_areas: string[];
+  remote_available: boolean;
+  availability: "available" | "on_request" | "unspecified";
+  contact_available: boolean;
+  expires_at?: string | null;
+};
+
+export async function searchPublicMerchantDiscovery(params: {
+  q?: string;
+  category?: string;
+  area?: string;
+  cursor?: number;
+  limit?: number;
+}): Promise<{
+  items: PublicDiscoveryResult[];
+  count: number;
+  total: number;
+  next_cursor?: number | null;
+  suggestions: string[];
+  scan_limit_reached: boolean;
+}> {
+  return httpJson(
+    `/marketplace/public-discovery${buildQuery({
+      q: params.q || undefined,
+      category: params.category || undefined,
+      area: params.area || undefined,
+      cursor: params.cursor ?? 0,
+      limit: params.limit ?? 20,
+    })}`,
+    "GET",
+    undefined,
+    { includeAuth: false, header_clan_id: null, quiet: true }
+  );
+}
+
+export async function getPublicDiscoveryOwnerPreview(): Promise<any> {
+  return httpJson(
+    "/marketplace/public-discovery/owner/preview",
+    "GET",
+    undefined,
+    { header_clan_id: null }
+  );
+}
+
+export async function updatePublicDiscoveryPublication(
+  productId: number,
+  payload: {
+    state: "published" | "hidden" | "paused" | "withdrawn";
+    confirm_publication?: boolean;
+    authority_version?: string;
+    notice_version?: string;
+    expires_at?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/marketplace/public-discovery/owner/products/${encodeURIComponent(String(productId))}`,
+    "PUT",
+    payload,
+    { header_clan_id: null }
+  );
+}
+
 const MARKETPLACE_ATTENTION_SESSION_KEY = "gsn_marketplace_attention_session_v1";
 
 function marketplaceAttentionSessionKey(): string {

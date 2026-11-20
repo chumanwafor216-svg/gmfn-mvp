@@ -7156,3 +7156,18 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Corrected the commercial register so the 10/10/10 allocation remains settled while the exact `Europe/London` clock boundaries remain a proposed paid-pilot setting requiring resolution.
 - Existing audit facts and no-release verdict remain valid: public cross-community shop/offer search and the complete canonical paid Spotlight chain are not implemented, and live payment remains unapproved.
 - Security boundary: the supplied attachment contained a live account/session export after the protocol. It was excluded completely. The product owner should revoke the exposed session, remove unsafe copies and sign in again before treating the account as secure.
+
+# 2026-11-20 — Public merchant discovery Slice 1 candidate
+
+- Implemented the authorized public merchant discovery slice as a separate explicit publication authority. Legacy products receive no publication row and remain excluded until their owner confirms them product by product.
+- Added anonymous `GET /marketplace/public-discovery`, owner preview and owner publication-state endpoints. Search fails closed unless both `GSN_PUBLIC_MERCHANT_DISCOVERY_V1_ENABLED` and `GSN_SHOP_PRIVACY_AUTHORITY_V1_ENABLED` are enabled.
+- Added `/discover` outside the authenticated shell and `/app/shop-control/public-discovery` inside Shop Control. No pre-auth bottom navigation was introduced.
+- Safe results exclude community membership, private contacts, exact locality, TrustSlip evidence, private requests, Vault content and administration data. Counts, suggestions and pagination are computed only after privacy and availability projection.
+- Added migration `20261120_public_merchant_discovery` with no backfill: one explicit publication table and one privacy-minimised search-evidence table.
+- Existing public-shop analytics now retain the `public-discovery` source for shop visits, qualified product opens and contact taps. No second analytics engine was added.
+- Payments, Pipeline Credits, Spotlight, TrustSlip, direct public shop links and authenticated community Marketplace behavior were not changed.
+- Defaults remain safe: the discovery gate is off; no environment was changed; no live indexing, owner notice, outreach, payment activation or deployment occurred.
+- Verification passed: 11 combined shop-privacy/discovery tests, the production frontend build, route-fallthrough audit, Shop Control button inventory and Public Shop button inventory.
+- Honest limits: the candidate scans at most 500 published authority rows before full projection; seller-response/purchase outcomes are not inferable and remain unimplemented; broader scale needs an indexed projection.
+- Honest residual: the broad link-contract audit remains red on six unrelated existing assertions in PWA install, Shop Assets and older Public Shop link/copy focus behavior. The new route audit and both directly affected shop inventories pass.
+- Full response examples, defaults, migration and rollback are recorded in `docs/GSN_PUBLIC_MERCHANT_DISCOVERY_SLICE_1_IMPLEMENTATION_REPORT_2026-11-20.md`.

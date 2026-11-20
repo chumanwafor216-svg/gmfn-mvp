@@ -3694,6 +3694,102 @@ class MarketplaceProduct(Base):
     )
 
 
+class MarketplacePublicDiscoveryPublication(Base):
+    __tablename__ = "marketplace_public_discovery_publications"
+
+    __table_args__ = (
+        UniqueConstraint("product_id", name="uq_marketplace_public_discovery_product_v1"),
+        CheckConstraint(
+            "state IN ('published', 'hidden', 'paused', 'withdrawn')",
+            name="ck_marketplace_public_discovery_state_v1",
+        ),
+        CheckConstraint(
+            "authority_source = 'owner_confirmed'",
+            name="ck_marketplace_public_discovery_authority_v1",
+        ),
+        Index("ix_marketplace_public_discovery_state_expiry_v1", "state", "expires_at"),
+        Index("ix_marketplace_public_discovery_shop_state_v1", "shop_id", "state"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    public_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    shop_id: Mapped[int] = mapped_column(
+        ForeignKey("marketplace_shops.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("marketplace_products.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    owner_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    state: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="hidden", server_default="hidden", index=True
+    )
+    authority_version: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+        default="public-discovery-v1",
+        server_default="public-discovery-v1",
+    )
+    authority_source: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="owner_confirmed",
+        server_default="owner_confirmed",
+    )
+    notice_version: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+        default="legacy-confirmation-v1",
+        server_default="legacy-confirmation-v1",
+    )
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    state_changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class MarketplacePublicDiscoverySearchEvent(Base):
+    __tablename__ = "marketplace_public_discovery_search_events"
+
+    __table_args__ = (
+        Index("ix_marketplace_public_discovery_search_created_v1", "created_at"),
+        Index("ix_marketplace_public_discovery_search_zero_v1", "zero_result", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    query_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    result_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    excluded_unavailable_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    zero_result: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="0"
+    )
+    has_category_filter: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="0"
+    )
+    has_area_filter: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="0"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
+    )
+
+
 class ShopDiaryEntry(Base):
     __tablename__ = "shop_diary_entries"
 

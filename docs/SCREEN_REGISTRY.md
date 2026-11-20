@@ -42,6 +42,7 @@ No bottom navigation on these screens.
 No bottom navigation on these screens.
 
 1. ShopAccessPage (`/vault/:token`; bearer-link Vault content access that consumes an allowed view before rendering private content)
+2. PublicMerchantDiscoveryPage (`/discover`; anonymous, privacy-filtered search of only owner-confirmed public product publications; no community membership, private evidence, exact location, or private contact disclosure)
 
 ## Authenticated Screens
 
@@ -81,6 +82,7 @@ Bottom navigation is allowed here.
 30. SystemOperationsPage (`/app/command-center/system-operations`; platform-admin live queue triage with one state-aware first action and closed operational details; reviewed 2026-10-26)
 31. VaultControlPage (`/app/vault-control`; frozen owner-side two-slot private-offer activation, content, and block-scoped link control)
 32. PipelineCreditPricingPage (`/app/command-center/pipeline-credit-pricing`; platform-admin-only Pipeline Credit conversion and versioned GSN service-price control)
+33. PublicDiscoveryControlPage (`/app/shop-control/public-discovery`; owner-only product-by-product public publication preview, confirmation, pause, hide, withdrawal, and expiry control; direct shop links remain separate)
 
 ## Current Repo Name Notes
 

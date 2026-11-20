@@ -1920,6 +1920,8 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
 export default function ShopGalleryPage() {
   const { gmfnId } = useParams();
   const location = useLocation();
+  const openedFromPublicDiscovery =
+    new URLSearchParams(location.search).get("source") === "public-discovery";
   const navigate = useNavigate();
   const routeProductId = useMemo(() => {
     const query = new URLSearchParams(location.search);
@@ -3490,9 +3492,15 @@ export default function ShopGalleryPage() {
     if (!shopId) return;
 
     trackMarketplaceAttention("shop_visit", {
-      source: "public_shop_gallery",
+      source: openedFromPublicDiscovery ? "public_discovery_shop" : "public_shop_gallery",
     });
-  }, [effectiveShop?.id, error, loading, trackMarketplaceAttention]);
+  }, [
+    effectiveShop?.id,
+    error,
+    loading,
+    openedFromPublicDiscovery,
+    trackMarketplaceAttention,
+  ]);
 
   useEffect(() => {
     if (loading || error || openProductId === null) return;
@@ -3541,7 +3549,9 @@ export default function ShopGalleryPage() {
       );
       void trackMarketplaceAttention("product_open", {
         product_id: productId,
-        source: "public_shop_product_visible",
+        source: openedFromPublicDiscovery
+          ? "public_discovery_offer"
+          : "public_shop_product_visible",
         visible_ms: visibleMs,
         visible_ratio: Math.min(1, Math.max(visibleRatio, 0)),
         document_visible: true,
@@ -3619,7 +3629,14 @@ export default function ShopGalleryPage() {
       observer?.disconnect();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [error, loading, openProductId, products, trackMarketplaceAttention]);
+  }, [
+    error,
+    loading,
+    openProductId,
+    openedFromPublicDiscovery,
+    products,
+    trackMarketplaceAttention,
+  ]);
 
   const handleFollowShop = useCallback(async () => {
     const shopId = positiveNumber(effectiveShop?.id);
@@ -5097,7 +5114,11 @@ export default function ShopGalleryPage() {
   }
 
   function callOwnerPhone() {
-    trackMarketplaceAttention("contact_tap", { source: "public_shop_phone_contact" });
+    trackMarketplaceAttention("contact_tap", {
+      source: openedFromPublicDiscovery
+        ? "public_discovery_contact"
+        : "public_shop_phone_contact",
+    });
 
     const phoneUrl = buildPhoneCallUrl(effectiveShop?.whatsapp);
     if (!phoneUrl || typeof window === "undefined") {
@@ -5117,7 +5138,11 @@ export default function ShopGalleryPage() {
   }
 
   async function contactOwnerByWhatsApp() {
-    trackMarketplaceAttention("contact_tap", { source: "public_shop_whatsapp_contact" });
+    trackMarketplaceAttention("contact_tap", {
+      source: openedFromPublicDiscovery
+        ? "public_discovery_contact"
+        : "public_shop_whatsapp_contact",
+    });
 
     const shopTitle = firstMeaningful(
       effectiveShop?.shopName,
