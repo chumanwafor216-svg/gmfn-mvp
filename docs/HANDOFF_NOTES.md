@@ -1,5 +1,28 @@
 # Active Handoff Notes
 
+## Notification badge acknowledgement repaired - 2026-11-20
+
+- Opening `/app/notifications` now acknowledges the current user's unread
+  notification rows once before loading the inbox, then forces the shared app
+  badge service to refresh. The Menu and drawer badge therefore falls from
+  `99+` to zero after the notification centre is opened instead of remaining
+  indefinitely.
+- The existing explicit `Clear badge` control remains as a recovery action if
+  the automatic acknowledgement request fails.
+- Concurrent bulk-read calls are coalesced in the shared API helper, preventing
+  React development Strict Mode from submitting the same acknowledgement twice.
+- Read state no longer falsely classifies a still-pending community join
+  review as resolved in shared guidance. Pending work remains visible until
+  the backend reports that the join request itself is no longer pending.
+- Scope is limited to notification acknowledgement, shared badge refresh, and
+  the read-versus-resolved guidance boundary. Notification creation, delivery,
+  permissions, community decisions, routes, and the frozen Dashboard Market
+  Wisdom presentation are unchanged.
+- Verification passed: the Notifications inventory contract, the phone Action
+  Inbox smoke path, the 328-module production build, the full protected
+  frontend freeze suite, and scoped diff checks. The protected suite still
+  logs its unrelated existing duplicate React-key browser warning.
+
 ## Community Domain Vault contract audit repaired - 2026-11-19
 
 - The Community Domain product contract audit no longer expects the retired

@@ -124,6 +124,16 @@ function assertGuidanceContains(
   });
 }
 
+function assertGuidanceNotContains(pattern, message) {
+  if (!pattern.test(guidanceSource)) return;
+  findings.push({
+    file: guidanceFile,
+    line: 1,
+    message,
+    text: "Action Inbox guidance retained a forbidden read/resolution coupling.",
+  });
+}
+
 function assertApiContains(
   pattern,
   message,
@@ -341,12 +351,24 @@ assertContains(
   "Notifications phone must keep secondary groups behind one small More row and compact opened bucket rows."
 );
 assertApiContains(
-  /export async function markAllNotificationsRead\(\): Promise<any> \{[\s\S]*?\/notifications\/me\/read-all[\s\S]*?clearStartupSectionCacheByLabel\("getMyUnreadNotificationCount"\)/,
-  "Action Inbox must clear the real server unread rows and invalidate the shell badge cache."
+  /let markAllNotificationsReadInFlight: Promise<any> \| null = null;[\s\S]*?export async function markAllNotificationsRead\(\): Promise<any> \{[\s\S]*?if \(markAllNotificationsReadInFlight\)[\s\S]*?\/notifications\/me\/read-all[\s\S]*?clearStartupSectionCacheByLabel\("getMyUnreadNotificationCount"\)[\s\S]*?markAllNotificationsReadInFlight = null/,
+  "Action Inbox must coalesce bulk acknowledgement, clear the real server unread rows, and invalidate the shell badge cache."
 );
 assertContains(
   /async function clearUnreadNotifications\(\)[\s\S]*?markAllNotificationsRead\(\)[\s\S]*?markGuidanceSnapshotAllReadLocally[\s\S]*?refreshGsnAppBadge\(\{ force: true \}\)[\s\S]*?Notification badge cleared\./,
   "Action Inbox Clear badge must update server truth, local rows, and the shared shell badge."
+);
+assertContains(
+  /let openingAcknowledgement: Promise<void> \| null = null;[\s\S]*?function acknowledgeOpenedNotifications\(\): Promise<void>[\s\S]*?await markAllNotificationsRead\(\);[\s\S]*?await refreshGsnAppBadge\(\{ force: true \}\);[\s\S]*?async function loadAll\(\)[\s\S]*?await acknowledgeOpenedNotifications\(\);[\s\S]*?getMyNotifications\(20, false, \{ fresh: true \}\)/,
+  "Opening Notifications must acknowledge server unread rows once before loading and refresh the shared drawer badge."
+);
+assertGuidanceContains(
+  /function isResolvedJoinReviewNotification\(raw: any\): boolean \{[\s\S]*?raw\?\.join_request_resolved === true[\s\S]*?status && status !== "pending"/,
+  "Pending join-review work must remain visible until live request status says it is resolved."
+);
+assertGuidanceNotContains(
+  /function isResolvedJoinReviewNotification\(raw: any\): boolean \{[\s\S]{0,260}?attention_actionable === false/,
+  "Reading a pending join-review notification must not falsely resolve the underlying work."
 );
 assertApiContains(
   /export async function getMyNotifications\([\s\S]*?limit: number = 20,/,

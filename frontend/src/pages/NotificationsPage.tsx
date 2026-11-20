@@ -1156,12 +1156,31 @@ export default function NotificationsPage() {
   useEffect(() => {
     let alive = true;
     let intervalId: number | null = null;
+    let openingAcknowledgement: Promise<void> | null = null;
+
+    function acknowledgeOpenedNotifications(): Promise<void> {
+      if (openingAcknowledgement) return openingAcknowledgement;
+
+      openingAcknowledgement = (async () => {
+        try {
+          await markAllNotificationsRead();
+          if (!alive) return;
+          await refreshGsnAppBadge({ force: true });
+        } catch {
+          // Keep the visible Clear badge fallback when acknowledgement fails.
+        }
+      })();
+
+      return openingAcknowledgement;
+    }
 
     async function loadAll() {
       setGuidanceLoading(true);
       setRawLoading(true);
 
       try {
+        await acknowledgeOpenedNotifications();
+
         const [settingsRes, guidanceRes, rawRes] = await Promise.all([
           getMySettings().catch(() => null),
           buildGuidanceSnapshot().catch(() => null),

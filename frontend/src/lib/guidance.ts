@@ -1078,7 +1078,6 @@ function isResolvedJoinReviewNotification(raw: any): boolean {
   const kind = safeStr(raw?.kind).toLowerCase();
   if (kind !== "approval_request") return false;
 
-  if (raw?.attention_actionable === false) return true;
   if (raw?.join_request_resolved === true) return true;
 
   const status = firstTruthy(

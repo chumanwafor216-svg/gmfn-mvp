@@ -6548,11 +6548,28 @@ export async function markNotificationRead(notificationId: number): Promise<any>
   return updated;
 }
 
+let markAllNotificationsReadInFlight: Promise<any> | null = null;
+
 export async function markAllNotificationsRead(): Promise<any> {
-  const updated = await httpJson("/notifications/me/read-all", "POST");
-  clearStartupSectionCacheByLabel("getMyNotifications");
-  clearStartupSectionCacheByLabel("getMyUnreadNotificationCount");
-  return updated;
+  if (markAllNotificationsReadInFlight) {
+    return markAllNotificationsReadInFlight;
+  }
+
+  const request = (async () => {
+    const updated = await httpJson("/notifications/me/read-all", "POST");
+    clearStartupSectionCacheByLabel("getMyNotifications");
+    clearStartupSectionCacheByLabel("getMyUnreadNotificationCount");
+    return updated;
+  })();
+
+  markAllNotificationsReadInFlight = request;
+  try {
+    return await request;
+  } finally {
+    if (markAllNotificationsReadInFlight === request) {
+      markAllNotificationsReadInFlight = null;
+    }
+  }
 }
 
 export async function seedAssistantNotifications(): Promise<any> {

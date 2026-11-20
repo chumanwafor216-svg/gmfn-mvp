@@ -136,8 +136,9 @@ async function run() {
     assert(visibleDescriptionCount === 0, "Long notification description leaked onto the phone first surface.");
     assert((await page.getByText("Other items", { exact: true }).count()) === 0, "Old secondary heading is still rendered.");
     const menuBadge = page.locator('[data-gsn-shell-notification-badge="menu"]');
-    await menuBadge.waitFor();
-    assert((await menuBadge.textContent())?.trim() === "99+", "The shell did not show the truthful capped unread backlog.");
+    assert((await menuBadge.count()) === 0, "The shell badge remained after opening Notifications.");
+    assert(apiState.getClearRequests() === 1, "Opening Notifications did not acknowledge the unread backlog exactly once.");
+    assert((await more.getByRole("button", { name: "Clear badge", exact: true }).count()) === 0, "Clear badge remained after automatic acknowledgement.");
 
     const geometry = await page.evaluate(() => {
       const focusNode = document.querySelector('[data-gsn-action-inbox-phone-focus="true"]');
@@ -156,11 +157,6 @@ async function run() {
     assert(!geometry.pageOverflows, "Action Inbox overflows horizontally on phone.");
     assert((await page.locator('[data-cta-id^="notifications.bucket."]').count()) === 0, "More groups opened from obsolete saved state.");
 
-    await more.getByRole("button", { name: "Clear badge", exact: true }).click();
-    await menuBadge.waitFor({ state: "detached" });
-    assert(apiState.getClearRequests() === 1, "Clear badge did not call the server bulk-read endpoint exactly once.");
-    assert((await more.getByRole("button", { name: "Clear badge", exact: true }).count()) === 0, "Clear badge remained after the unread total reached zero.");
-
     await more.getByRole("button", { name: "Open", exact: true }).click();
     const bucketRows = page.locator('[data-cta-id^="notifications.bucket."]');
     assert((await bucketRows.count()) === 4, "More must reveal exactly four compact groups.");
@@ -173,7 +169,7 @@ async function run() {
     }
 
     await page.close();
-    console.log("Action Inbox phone smoke passed: truthful 99+ backlog, server-backed Clear badge to zero, one short task, compact groups, and no stale disclosure state.");
+    console.log("Action Inbox phone smoke passed: opening Notifications acknowledged the unread backlog once, cleared the shell badge, preserved the task, kept compact groups, and ignored stale disclosure state.");
   } finally {
     await browser?.close();
     await server?.close();
