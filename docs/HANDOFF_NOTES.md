@@ -7006,3 +7006,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Verification passed: focused ESLint, media-quality and Shop Assets slot audits, TypeScript, the 328-module production build, both 390 px Shop Assets/public Shop Gallery browser smokes with no horizontal overflow, and the complete protected-button-freeze suite.
 - Honest residual: the screenshots do not expose the failed request status or selected file size, and Render log access had no confirmed workspace in this session. The exact production request failure therefore remains unproven; the reported handset/file should be retried after deployment to confirm the live network path.
 - The protected browser sweep passes but still logs the unrelated pre-existing duplicate React-key warning.
+
+# Free foundation and chosen paid value reconciliation - 2026-11-20
+
+- Owner supplied a commercial memo proposing that ordinary useful participation remain free while GSN charges only for a clear additional benefit the customer chooses to buy.
+- The tracked revenue truth map now records Paid Spotlight/governed Repost and Community Domain organisation management as the two strongest propositions to test, while keeping Vault and Merchant Verification as supporting candidates.
+- A real stale contradiction was corrected: the revenue map still described paid Shop capacity, but the later owner-approved runtime contract includes all 12 public Shop spaces and blocks new `extra_shop_blocks` purchases. Historical evidence remains readable but is not current revenue.
+- The amendment does not approve the memo's proposed 50p Spotlight amount, restart paused Community Domain billing, activate a data product, change Pipeline Credit values, or change any frontend/backend behavior.
+- Raw personal-data sale is not adopted as a business model. Any future research or information service requires a named buyer, purpose, lawful permissions, bounded output, delivery cost and approved price.
+- Competitor comparisons and linked figures from the supplied memo remain contextual research until independently verified for external publication.
