@@ -1,5 +1,19 @@
 # Active Handoff Notes
 
+## Discovery completion and Spotlight Slice 2 candidate - 2026-11-20
+
+- Candidate baseline is `3ce16134e1b6a07b040099dbe7faad5bc626f7d3`; implementation stays on `codex/public-shop-audio-fallback` and does not promote or deploy.
+- Public discovery now consumes `next_cursor`, appends deduplicated results with the active filters, and distinguishes complete from partial coverage. Partial counts use `at least`; partial zero-result copy does not falsely claim that no older match exists.
+- Discovery search evidence now stores coverage completeness, scan-limit state and scanned-publication count so partial scans can be excluded or segmented in usefulness analysis. Publication authority, privacy exclusions, owner controls and direct Shop behavior are unchanged.
+- Added the default-off `GSN_SPOTLIGHT_SLICE2_SIMULATION_V1_ENABLED` admin simulation. It uses protocol `1.3` and parameter set `spotlight-slice2-sim-v1`; it never collects money, debits credits, persists bookings, activates campaigns, changes capacity or creates a customer promise.
+- The existing GSN campaign Command Centre page now has a programme board plus accessible list for selected advert/media, authorised audience, region/timezone, dates/dayparts/expiry, allocation, capacity/conflicts, funding class, actual delivery, shortfall/remedy and interrupted-batch recovery.
+- The simulation preserves GBP 0.50 per Pipeline Credit, 30 opportunities split 10/10/10, no five-person target or ceiling, and a five-view same-advert recognised-viewer daily cap that survives booking/community changes. Selection consideration is never counted as supplied opportunity.
+- Reference evidence includes one 30/30 fulfilled merchant booking, one 29/30 sponsor shortfall with a simulated one-credit restoration retaining sponsor classification, and a three-item interrupted batch recovered with three unique bookings and zero duplicates.
+- The existing live `2 + 1 Demand Box override` lifetime frequency rule is deliberately unchanged. It remains a required live-service decision before paid serving, as do audience pricing, service clock, remedy, live capacity, reporting privacy and accounting terms.
+- Full boundaries, scenarios and remaining decisions are recorded in `docs/GSN_DISCOVERY_COMPLETION_AND_SPOTLIGHT_SLICE_2_IMPLEMENTATION_REPORT_2026-11-20.md`.
+- The completed Slice 1 discovery audit was not repeated. Its documented six unrelated broad link-contract failures remain baseline failures outside this candidate.
+- Focused verification passed: 63 public-discovery/new-simulation/existing-house/frequency/presentation backend tests, the Command Centre campaign contract audit, Python compilation, single Alembic head `20261120_public_discovery_coverage`, and the 331-module production frontend build. Initial temp-directory and esbuild failures were Windows sandbox restrictions; the unchanged commands passed with isolated writable/process access.
+
 ## Commercial decision register reconciled - 2026-11-20
 
 - Added docs/GSN_COMMERCIAL_DECISION_RECONCILIATION_2026-11-20.md so settled decisions, implementation work, recommendations and evidence questions are no longer mixed together.

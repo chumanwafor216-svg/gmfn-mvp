@@ -34,10 +34,14 @@ const routesFile = "src/lib/appRoutes.ts";
 const commandFile = "src/pages/TrustCommandCentrePage.tsx";
 const registryFile = "../docs/SCREEN_REGISTRY.md";
 const specsFile = "../docs/SCREEN_SPECS.md";
+const protocolFile =
+  "../docs/GSN_PUBLIC_DISCOVERY_SPOTLIGHT_MERCHANT_PILOT_CORRECTED_IMPLEMENTATION_PROTOCOL_2026-11-20.md";
 const backendFile = "../gmfn_backend/app/api/routes/marketplace.py";
 const eligibilityFile =
   "../gmfn_backend/app/services/spotlight_opportunity_eligibility_service.py";
 const pacingFile = "../gmfn_backend/app/services/spotlight_pacing_state_service.py";
+const simulationFile =
+  "../gmfn_backend/app/services/spotlight_slice2_simulation_service.py";
 
 const app = read(appFile);
 const page = read(pageFile);
@@ -46,9 +50,11 @@ const routes = read(routesFile);
 const command = read(commandFile);
 const registry = read(registryFile);
 const specs = read(specsFile);
+const protocol = read(protocolFile);
 const backend = read(backendFile);
 const eligibility = read(eligibilityFile);
 const pacing = read(pacingFile);
+const simulation = read(simulationFile);
 
 const commandRoutes = section(
   app,
@@ -90,8 +96,64 @@ for (const endpoint of [
   "/marketplace/admin/gsn-house-campaigns/media/discard",
   "/destinations/${encodeURIComponent(String(clanId))}/stop",
   "/stop",
+  "/marketplace/admin/gsn-house-campaigns/programme-board",
+  "/marketplace/admin/gsn-house-campaigns/programme-board/preview",
 ]) {
   requireText(apiFile, api, endpoint, "Missing typed API binding for " + endpoint + ".");
+}
+for (const text of [
+  "Campaign schedule · protocol 1.3",
+  "Programme board",
+  "Preview current draft",
+  "Show reference scenarios",
+  "Accessible schedule list",
+  "consideration counts as supplied: <strong>No</strong>",
+  "Interrupted batch recovery",
+  "Pause maps to reversible",
+  "permanent stop maps to",
+  'debugId="admin-gsn-campaign.simulation-preview"',
+]) {
+  requireText(pageFile, page, text, "Missing Spotlight Slice 2 programme-board contract: " + text + ".");
+}
+for (const text of [
+  "SpotlightSimulationProgramme",
+  "SpotlightSimulationBoard",
+  "getAdminSpotlightSimulationProgrammeBoard",
+  "previewAdminSpotlightSimulationProgrammes",
+]) {
+  requireText(apiFile, api, text, "Missing Spotlight Slice 2 typed API contract: " + text + ".");
+}
+for (const text of [
+  'SPOTLIGHT_SLICE2_PROTOCOL_VERSION = "1.3"',
+  'SPOTLIGHT_SLICE2_PARAMETER_VERSION = "spotlight-slice2-sim-v1"',
+  'PIPELINE_CREDIT_GBP_PRICE = Decimal("0.50")',
+  "OPPORTUNITIES_PER_CREDIT = 30",
+  "OPPORTUNITIES_PER_DAYPART = 10",
+  "RECOGNISED_VIEWER_DAILY_CAP = 5",
+  '"considered_counts_as_supplied": False',
+  '"booking_and_community_changes_reset_count": False',
+  '"selection_does_not_multiply_entitlement": True',
+  '"live_pipeline_credit_debit": "0.00"',
+  '"booking_persisted_live": False',
+  '"campaign_activated_live": False',
+  "simulate_interrupted_batch_recovery",
+]) {
+  requireText(simulationFile, simulation, text, "Missing isolated simulation contract: " + text + ".");
+}
+for (const text of [
+  "Spotlight Slice 2 isolated simulation:",
+  "A considered advert is not a supplied opportunity.",
+  "Reversible pause must map to the existing correction-hold authority.",
+]) {
+  requireText(specsFile, specs, text, "Missing Spotlight Slice 2 screen rule: " + text + ".");
+}
+for (const text of [
+  "Version: 1.3",
+  "9.4 Command Centre Campaign Schedule",
+  "Selecting several media items or communities must not multiply one booking's entitlement.",
+  "Keep reversible pause distinct from permanent stop.",
+]) {
+  requireText(protocolFile, protocol, text, "Missing corrected protocol 1.3 contract: " + text + ".");
 }
 
 for (const text of [
@@ -293,6 +355,8 @@ for (const functionName of [
   "def stop_gsn_house_campaign",
   "def stop_gsn_house_campaign_destination",
   "def discard_gsn_house_campaign_review_media",
+  "def get_spotlight_simulation_programme_board",
+  "def preview_spotlight_simulation_programme_board",
 ]) {
   const functionBlock = section(backend, functionName, "@router");
   requireText(

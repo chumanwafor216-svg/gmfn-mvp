@@ -120,16 +120,19 @@ def search_public_merchants(
             status_code=503,
         )
 
-    publications = (
+    publication_scan = (
         db.query(MarketplacePublicDiscoveryPublication)
         .filter(MarketplacePublicDiscoveryPublication.state == "published")
         .order_by(
             MarketplacePublicDiscoveryPublication.published_at.desc(),
             MarketplacePublicDiscoveryPublication.id.desc(),
         )
-        .limit(PUBLIC_DISCOVERY_SCAN_LIMIT)
+        .limit(PUBLIC_DISCOVERY_SCAN_LIMIT + 1)
         .all()
     )
+    scan_limit_reached = len(publication_scan) > PUBLIC_DISCOVERY_SCAN_LIMIT
+    publications = publication_scan[:PUBLIC_DISCOVERY_SCAN_LIMIT]
+    coverage_complete = not scan_limit_reached
     query_text = normalized_text(q)
     category_text = normalized_text(category)
     area_text = normalized_text(area)
@@ -195,6 +198,9 @@ def search_public_merchants(
                 zero_result=total == 0,
                 has_category_filter=bool(category_text),
                 has_area_filter=bool(area_text),
+                coverage_complete=coverage_complete,
+                scan_limit_reached=scan_limit_reached,
+                scanned_publication_count=len(publications),
             )
         )
         db.commit()
@@ -208,7 +214,11 @@ def search_public_merchants(
             "total": total,
             "next_cursor": next_cursor,
             "suggestions": suggestion_values,
-            "scan_limit_reached": len(publications) >= PUBLIC_DISCOVERY_SCAN_LIMIT,
+            "scan_limit_reached": scan_limit_reached,
+            "coverage_complete": coverage_complete,
+            "total_is_complete": coverage_complete,
+            "scanned_publication_count": len(publications),
+            "scan_limit": PUBLIC_DISCOVERY_SCAN_LIMIT,
         }
     )
 

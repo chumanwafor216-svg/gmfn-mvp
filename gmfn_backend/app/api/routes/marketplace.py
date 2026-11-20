@@ -135,6 +135,12 @@ from app.services.spotlight_lifecycle_service import (
     replace_content,
     row_is_serving,
 )
+from app.services.spotlight_slice2_simulation_service import (
+    SpotlightSlice2SimulationError,
+    preview_programmes as preview_spotlight_simulation_programmes,
+    simulation_programme_board,
+    spotlight_slice2_simulation_enabled,
+)
 router = APIRouter(prefix="/marketplace", tags=["marketplace"])
 
 COMMUNITY_GOVERNANCE_PROFILE_SELECTED_EVENT = "community.governance_profile_selected"
@@ -4243,6 +4249,23 @@ class GsnHouseCampaignDestinationStopIn(BaseModel):
 
 class GsnHouseCampaignMediaDiscardIn(BaseModel):
     media_url: str = Field(min_length=1, max_length=4000)
+
+
+class SpotlightSimulationProgrammeIn(BaseModel):
+    plan_id: str = Field(min_length=1, max_length=96)
+    advert_id: str = Field(min_length=1, max_length=160)
+    media_ids: list[str] = Field(default_factory=list, max_length=12)
+    community_ids: list[int] = Field(min_length=1, max_length=100)
+    credits: int = Field(default=1, ge=1, le=100)
+    funding_classification: Literal["paid", "sponsored", "gifted", "waived", "house"]
+    service_date: str = Field(min_length=10, max_length=10)
+    timezone: str = Field(default="Europe/London", min_length=3, max_length=80)
+    region: str = Field(default="GB-SCT", min_length=2, max_length=80)
+
+
+class SpotlightSimulationPreviewIn(BaseModel):
+    programmes: list[SpotlightSimulationProgrammeIn] = Field(min_length=1, max_length=20)
+    existing_reservations: dict[str, int] = Field(default_factory=dict)
 
 
 class SpotlightPresentationQualificationIn(BaseModel):
@@ -8357,6 +8380,48 @@ def list_gsn_house_campaigns(
             "by GSN. No playback, completion, sales, or verified-human reach is inferred."
         ),
     }
+
+
+def _require_spotlight_slice2_simulation() -> None:
+    if not spotlight_slice2_simulation_enabled():
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "spotlight_slice2_simulation_disabled",
+                "message": (
+                    "The Spotlight Slice 2 programme board is an isolated simulation "
+                    "and is not enabled in this environment."
+                ),
+            },
+        )
+
+
+@router.get("/admin/gsn-house-campaigns/programme-board")
+def get_spotlight_simulation_programme_board(
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_platform_admin(current_user)
+    _require_spotlight_slice2_simulation()
+    return simulation_programme_board()
+
+
+@router.post("/admin/gsn-house-campaigns/programme-board/preview")
+def preview_spotlight_simulation_programme_board(
+    payload: SpotlightSimulationPreviewIn,
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_platform_admin(current_user)
+    _require_spotlight_slice2_simulation()
+    try:
+        return preview_spotlight_simulation_programmes(
+            [item.model_dump() for item in payload.programmes],
+            existing_reservations=payload.existing_reservations,
+        )
+    except SpotlightSlice2SimulationError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
 
 
 @router.post("/admin/gsn-house-campaigns/media/discard")

@@ -3085,6 +3085,20 @@ Rules:
 - An official campaign expires at its persisted admin-selected advert-group timestamp. For normal rotation, quotation-only chargeable days are the rounded-up calendar-day span from campaign start to expiry; timed campaigns continue to quote their explicit scheduled opportunities. Actual payment remains outside this publisher and must not be inferred from the expiry. Its explicit advertiser phone is a public contact route only; it must not create a member shop, seller trust claim, member endorsement, or Community Domain endorsement.
 - The pilot rail rotates automatically every five seconds without adding manual next, previous, pause, or fast-forward controls. Existing qualification, hidden-tab, reduced-motion, Dashboard Market Wisdom, Marketplace, Public Shop, Community Home, and Owner Shop Control boundaries otherwise remain unchanged.
 
+Spotlight Slice 2 isolated simulation:
+- The existing Command Centre campaign page may expose a feature-gated `Campaign schedule · protocol 1.3` programme board. This is an operator simulation inside the existing page, not a new screen, scheduler, purchase route, or serving engine.
+- The simulation must be platform-admin only and default off behind `GSN_SPOTLIGHT_SLICE2_SIMULATION_V1_ENABLED`. It must not collect payment, debit Pipeline Credits, persist a live booking, activate a live campaign, change live capacity, or create a customer promise.
+- The board must show the selected advert and media, authorised communities, region and timezone, service date, morning/afternoon/evening windows, expiry, purchased allocation, capacity/conflicts, funding classification, and actual delivery.
+- The accessible list view must expose the same programme facts as the visual board. Cards alone are not sufficient.
+- One Pipeline Credit is quoted at GBP 0.50 and models 30 scheduled opportunities: 10 morning, 10 afternoon, and 10 evening. Selecting several media items or communities must not multiply one booking's entitlement.
+- The board must keep scheduled entitlement, supplied opportunities, qualifying impressions, recognised reach, and selection-system considerations separate. A considered advert is not a supplied opportunity.
+- Reference scenarios must include one fulfilled booking, one GSN-caused shortfall with a clearly simulated remedy that retains the original funding classification, and one idempotently recovered interrupted batch with no duplicate booking.
+- The simulation frequency proof must key the five-view limit by recognised viewer, advert, and authoritative service day. Additional bookings, overlapping communities, and duplicate batches must not reset the count; the sixth automatic presentation is suppressed.
+- House campaigns, merchant purchases, and sponsor-funded programmes must remain visibly classified. Their funding labels must not be inferred from delivery counts.
+- Reversible pause must map to the existing correction-hold authority. Permanent stop must map to the existing withdrawn authority. The page must not present these as the same action.
+- `Europe/London`, the proposed daypart clock windows, the one-community-per-credit audience scope, the simulated capacity value, and the whole-package restoration remedy are versioned test parameters only. They remain explicit live-service decisions.
+- The existing live GSN-HOUSE operations, destination exclusions, emergency stop, publication controls, pacing, and delivery reports remain authoritative and unchanged by this simulation.
+
 Primary action:
 
 ```text

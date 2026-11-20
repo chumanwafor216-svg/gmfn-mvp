@@ -2,10 +2,10 @@
 Company: Global Support Network Ltd
 Prepared for: Chuma Nwafor and Codex
 Date: 20 November 2026
-Version: 1.1 — corrected against the agreed brainstorming and completed code audit
+Version: 1.3 — discovery-completion and Command Centre schedule revision
 Status: Implementation handoff following the audit; preparation of this document does not activate product changes or the pilot.
 
-Repository adoption note: this file contains only the safe protocol text through its stated definition of done. An unrelated account/session export appended to the supplied source was excluded completely. The repository adopted this protocol at checkout `87bc51b57a9a16da4f9bfc9518b25aff966a6f33`; the limited revision check found no post-audit changes to the relevant discovery, Pipeline Credit, payment-policy, Spotlight pacing, Spotlight frequency, advertising-settlement, Community Domain or Demand Box backend owners.
+Repository adoption note: this file contains only the safe protocol text through its stated definition of done. An unrelated account/session export appended to the supplied source was excluded completely. Version 1.3 uses `3ce16134e1b6a07b040099dbe7faad5bc626f7d3` as the public-discovery candidate baseline. It adds the bounded discovery-completion requirements and Command Centre Campaign Schedule in Section 9.4 without authorising deployment, production activation, real payments, outreach or owner notices.
 
 Corrections governing this version
 Use the agreed brainstorming for the intended commercial promise and the completed audit for evidence of existing code. An absence from code does not make an agreed management decision disappear. A recommendation in an audit does not automatically become an adopted price, policy or live setting.
@@ -18,6 +18,8 @@ Domain pricing	Retain £24/month and £40/month as future candidates. The audite
 Demand Box	Retain free pilot use and existing operational safeguards. Do not introduce superseded per-response charging.
 Remedies	Verify precision and capabilities in the canonical Pipeline Credit service. Do not infer them from the separate integer member-credit test path.
 Delivery evidence	Report entitlement, genuinely supplied opportunities, impressions, shortfall and remedy separately and traceably.
+Discovery completion	Connect the existing `next_cursor` contract. When the scan limit applies, show partial coverage, minimum counts and truthful zero-result wording, and retain coverage state in search-usefulness evidence.
+Command Centre schedule	Within the existing campaign page, show a protocol 1.3 programme board and accessible list that reconcile planning, booking, schedule, delivery and financial treatment without creating another scheduler or purchase route.
 
 
 This version corrects conflicting language in the audit while preserving its factual implementation findings and its verdict that the proposed paid offer is not ready for launch.
@@ -251,6 +253,29 @@ Before publishing the paid offer, return exact terms covering:
 If proportional restoration cannot be represented, propose an explicit supported pilot policy, such as restoring the affected whole package, rather than silently rounding away the entitlement or inventing a new credit system. This example is a proposal, not an approved refund rule. Do not automatically treat credit restoration as resolving every possible cash-refund obligation.
 
 Check precision, funding-source treatment and supported adjustment operations in the canonical Pipeline Credit implementation itself. The separate member-credit test writer's integer balance is not evidence that the canonical ledger has the same limitation. For a whole-package pilot remedy, specify whether one or several basic allocations are affected; several missed turns in one basic package must not trigger repeated one-credit awards. Retries must restore once, with a trace to the original obligation.
+
+9.4 Command Centre Campaign Schedule
+Extend the existing Command Centre campaign page rather than creating a second scheduler or purchase route. The schedule is an operator planning and reconciliation surface over the existing campaign, permission, pacing, lifecycle, Pipeline Credit and reporting authorities.
+
+The programme board and its accessible list view must show:
+- the selected advert and selected media;
+- the authorised community audience, without inventing a fixed-person target or ceiling;
+- region, authoritative timezone, service date and daypart windows;
+- expiry, purchased allocation and per-daypart allocation;
+- capacity reservation, conflicts and unresolved scope choices;
+- funding classification and quote treatment;
+- supplied opportunities, qualifying impressions, recognised reach, shortfall and remedy;
+- selection-system considerations separately, never as supplied opportunities.
+
+Support individual and batch planning with a preview of each programme's outcome. Selecting several media items or communities must not multiply one booking's entitlement. A scope that is not supported by the current versioned test parameter must produce an explicit conflict rather than hidden multiplication.
+
+Keep existing house campaigns, merchant purchases and sponsor-funded programmes visibly distinct. Preserve paid, sponsored, gifted, waived and house funding classifications through any simulated remedy. A sponsor payment and the resulting merchant use must not become two sales.
+
+Keep reversible pause distinct from permanent stop. Reversible pause must use the existing correction-hold lifecycle authority. Permanent stop must use the existing withdrawn authority and preserve its historical evidence. Do not create a competing lifecycle.
+
+For the bounded Slice 2 implementation, the board may use explicit, labelled simulation parameters for audience scope, capacity, timezone, clock windows, late booking and remedy. The simulation must default off, remain platform-admin only, and make clear that it does not collect payment, debit Pipeline Credits, persist a live booking, activate a live campaign, change live capacity or create a customer promise.
+
+Return at least one fulfilled booking, one shortfall with its corresponding remedy, and one safely resumed interrupted batch without duplicate bookings. The booking, schedule, delivery record and financial treatment must reconcile in the same inspectable chain.
 10 Advertiser delivery report
 For each booking and service day, show:
 Report field	Required meaning

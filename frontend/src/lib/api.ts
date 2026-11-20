@@ -7338,6 +7338,10 @@ export async function searchPublicMerchantDiscovery(params: {
   next_cursor?: number | null;
   suggestions: string[];
   scan_limit_reached: boolean;
+  coverage_complete: boolean;
+  total_is_complete: boolean;
+  scanned_publication_count: number;
+  scan_limit: number;
 }> {
   return httpJson(
     `/marketplace/public-discovery${buildQuery({
@@ -7875,6 +7879,106 @@ export type GsnHouseCampaignOperations = {
   reporting_boundary: string;
 };
 
+export type SpotlightSimulationProgramme = {
+  plan_id: string;
+  booking_id: string;
+  advert: {
+    advert_id: string;
+    media_ids: string[];
+    selected_media_count: number;
+    one_advert_identity: boolean;
+  };
+  authorised_audience: {
+    community_ids: number[];
+    selected_community_count: number;
+    fixed_person_target?: number | null;
+    fixed_person_ceiling?: number | null;
+  };
+  quote: {
+    quote_id: string;
+    service_code: string;
+    protocol_version: string;
+    credits: number;
+    unit_price_gbp: string;
+    quoted_amount_gbp: string;
+    funding_classification: "paid" | "sponsored" | "gifted" | "waived" | "house";
+    collection_status: string;
+    live_pipeline_credit_debit: string;
+    simulated_pipeline_credit_commitment: string;
+  };
+  entitlement: {
+    total_opportunities: number;
+    by_daypart: Record<string, number>;
+    selection_does_not_multiply_entitlement: boolean;
+    per_media_outcomes: Array<{
+      media_id: string;
+      allocated_opportunities: number;
+      by_daypart: Record<string, number>;
+    }>;
+  };
+  schedule: {
+    service_date: string;
+    timezone: string;
+    region: string;
+    starts_at: string;
+    expires_at: string;
+    dayparts: Array<{
+      code: string;
+      starts_at: string;
+      ends_at: string;
+      allocated_opportunities: number;
+    }>;
+  };
+  capacity: {
+    status: string;
+    has_conflict: boolean;
+    by_daypart: Record<string, any>;
+    conflicts: Array<{ code: string; message: string }>;
+    live_capacity_changed: boolean;
+  };
+  lifecycle: {
+    state: string;
+    reversible_pause_authority: string;
+    serving_authority: string;
+    permanent_stop_authority: string;
+    pause_is_permanent_stop: boolean;
+  };
+  actual_delivery?: {
+    state: string;
+    purchased_opportunities: number;
+    supplied_opportunities: number;
+    supplied_by_daypart?: Record<string, number>;
+    considered_by_selection_system?: number;
+    considered_counts_as_supplied?: boolean;
+    missed_opportunities?: number;
+    missed_by_daypart?: Record<string, number>;
+    shortfall_reason?: string | null;
+    qualifying_impressions: number;
+    recognised_unique_reach: number;
+    remedy?: Record<string, any>;
+    reporting_equation_balanced?: boolean;
+    note?: string;
+  };
+};
+
+export type SpotlightSimulationBoard = {
+  ok: boolean;
+  simulation: boolean;
+  settings: Record<string, any>;
+  programmes: SpotlightSimulationProgramme[];
+  batch_summary: Record<string, any>;
+  programme_board?: {
+    view: string;
+    accessible_list: SpotlightSimulationProgramme[];
+    programme_count: number;
+    source_classifications: string[];
+  };
+  interrupted_batch_recovery?: Record<string, any>;
+  frequency_continuity_proof?: Record<string, any>;
+  authority_reuse?: Record<string, string>;
+  remaining_live_decisions?: string[];
+};
+
 export async function listAdminGsnHouseCampaigns(
   limit = 20
 ): Promise<GsnHouseCampaignOperations> {
@@ -8317,6 +8421,37 @@ export async function getCommunityPipelineCreditProviderGates(payload: {
       clan_id: payload.clan_id,
     })}`,
     "GET"
+  );
+}
+
+export async function getAdminSpotlightSimulationProgrammeBoard(): Promise<SpotlightSimulationBoard> {
+  return httpJson(
+    "/marketplace/admin/gsn-house-campaigns/programme-board",
+    "GET",
+    undefined,
+    { header_clan_id: null }
+  );
+}
+
+export async function previewAdminSpotlightSimulationProgrammes(payload: {
+  programmes: Array<{
+    plan_id: string;
+    advert_id: string;
+    media_ids: string[];
+    community_ids: number[];
+    credits: number;
+    funding_classification: "paid" | "sponsored" | "gifted" | "waived" | "house";
+    service_date: string;
+    timezone: string;
+    region: string;
+  }>;
+  existing_reservations?: Record<string, number>;
+}): Promise<SpotlightSimulationBoard> {
+  return httpJson(
+    "/marketplace/admin/gsn-house-campaigns/programme-board/preview",
+    "POST",
+    payload,
+    { header_clan_id: null }
   );
 }
 

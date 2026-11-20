@@ -12,6 +12,12 @@ import {
 import { StableButton, StableCtaLink } from "../components/StableButton";
 import { brandInnerCard, brandHelperText, gmfnBrand } from "../styles/gmfnBrand";
 
+type SearchFilters = {
+  q: string;
+  category: string;
+  area: string;
+};
+
 function errorMessage(error: any): string {
   const detail = error?.detail || error?.response?.detail;
   return String(detail?.message || detail || error?.message || "Public discovery is not available.");
@@ -98,41 +104,65 @@ export default function PublicMerchantDiscoveryPage() {
   const [items, setItems] = useState<PublicDiscoveryResult[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [total, setTotal] = useState(0);
+  const [nextCursor, setNextCursor] = useState<number | null>(null);
+  const [coverageComplete, setCoverageComplete] = useState(true);
+  const [scannedPublicationCount, setScannedPublicationCount] = useState(0);
+  const [activeFilters, setActiveFilters] = useState<SearchFilters>({ q: "", category: "", area: "" });
   const [busy, setBusy] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searched, setSearched] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  async function runSearch() {
-    setBusy(true);
+  async function runSearch(filters: SearchFilters, cursor = 0, append = false) {
+    if (append) setLoadingMore(true);
+    else setBusy(true);
     setNotice(null);
     try {
       const response = await searchPublicMerchantDiscovery({
-        q: query.trim(),
-        category: category.trim(),
-        area: area.trim(),
+        ...filters,
+        cursor,
       });
-      setItems(Array.isArray(response?.items) ? response.items : []);
+      const responseItems = Array.isArray(response?.items) ? response.items : [];
+      setItems((current) => {
+        if (!append) return responseItems;
+        const known = new Set(current.map((item) => item.publication_id));
+        return [...current, ...responseItems.filter((item) => !known.has(item.publication_id))];
+      });
       setSuggestions(Array.isArray(response?.suggestions) ? response.suggestions : []);
       setTotal(Number(response?.total || 0));
+      setNextCursor(response?.next_cursor == null ? null : Number(response.next_cursor));
+      setCoverageComplete(response?.coverage_complete !== false);
+      setScannedPublicationCount(Number(response?.scanned_publication_count || 0));
+      setActiveFilters(filters);
       setSearched(true);
     } catch (error) {
-      setItems([]);
-      setSuggestions([]);
-      setTotal(0);
+      if (!append) {
+        setItems([]);
+        setSuggestions([]);
+        setTotal(0);
+        setNextCursor(null);
+        setCoverageComplete(true);
+        setScannedPublicationCount(0);
+      }
       setSearched(true);
       setNotice(errorMessage(error));
     } finally {
-      setBusy(false);
+      if (append) setLoadingMore(false);
+      else setBusy(false);
     }
   }
 
   useEffect(() => {
-    void runSearch();
+    void runSearch({ q: "", category: "", area: "" });
   }, []);
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    void runSearch();
+    void runSearch({
+      q: query.trim(),
+      category: category.trim(),
+      area: area.trim(),
+    });
   }
 
   return (
@@ -201,7 +231,17 @@ export default function PublicMerchantDiscoveryPage() {
       {!notice && searched && !busy && items.length === 0 ? (
         <div style={{ marginTop: 14 }}>
           <EntryNotice>
-            No published product matched this search. Try fewer words, another category, or a wider area.
+            {coverageComplete
+              ? "No published product matched this search. Try fewer words, another category, or a wider area."
+              : `No match was found among the ${scannedPublicationCount} most recent published offers checked. Older published offers may still exist; try fewer words, another category, or a wider area.`}
+          </EntryNotice>
+        </div>
+      ) : null}
+
+      {!notice && searched && !coverageComplete ? (
+        <div style={{ marginTop: 14 }}>
+          <EntryNotice tone="info">
+            Search coverage is incomplete. GSN checked the {scannedPublicationCount} most recent published offers, so the result count is a minimum rather than a complete total.
           </EntryNotice>
         </div>
       ) : null}
@@ -215,11 +255,24 @@ export default function PublicMerchantDiscoveryPage() {
       {items.length ? (
         <section style={{ display: "grid", gap: 12, marginTop: 16 }}>
           <div style={{ color: gmfnBrand.colors.inkSoft, fontWeight: 850 }}>
-            {total} {total === 1 ? "published result" : "published results"}
+            Showing {items.length} of {coverageComplete ? "" : "at least "}{total} {total === 1 ? "published result" : "published results"}
           </div>
           {items.map((item) => (
             <ResultCard key={item.publication_id} item={item} />
           ))}
+          {nextCursor !== null ? (
+            <StableButton
+              type="button"
+              kind="secondary"
+              fullWidth
+              busy={loadingMore}
+              busyLabel="Loading more..."
+              onClick={() => void runSearch(activeFilters, nextCursor, true)}
+              debugId="public-discovery.load-more"
+            >
+              Show more results
+            </StableButton>
+          ) : null}
         </section>
       ) : null}
     </CommunityEntryShell>

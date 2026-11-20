@@ -6,9 +6,11 @@ import VideoSoundEditor from "../components/VideoSoundEditor";
 import {
   createAdminGsnHouseCampaign,
   discardAdminGsnHouseCampaignReviewMedia,
+  getAdminSpotlightSimulationProgrammeBoard,
   listAdminGsnHouseCampaigns,
   listAdminGsnHouseCampaignDestinations,
   previewAdminGsnHouseCampaign,
+  previewAdminSpotlightSimulationProgrammes,
   stopAdminGsnHouseCampaign,
   stopAdminGsnHouseCampaignDestination,
   uploadMarketplaceImageFile,
@@ -19,6 +21,8 @@ import {
   type GsnHouseCampaignPublication,
   type GsnHouseCampaignReport,
   type MarketplaceVideoSoundOptions,
+  type SpotlightSimulationBoard,
+  type SpotlightSimulationProgramme,
 } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
 import {
@@ -162,6 +166,29 @@ function scheduleProblem(input: {
 function safeStr(value: unknown, fallback = ""): string {
   const text = String(value ?? "").trim();
   return text || fallback;
+}
+
+function nextSimulationServiceDate(): string {
+  const next = new Date();
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString().slice(0, 10);
+}
+
+function simulationFundingLabel(value: string): string {
+  const labels: Record<string, string> = {
+    paid: "Merchant purchase",
+    sponsored: "Sponsor-funded",
+    gifted: "Gifted",
+    waived: "Waived",
+    house: "GSN house campaign",
+  };
+  return labels[value] || stateLabel(value);
+}
+
+function simulationDaypartLabel(programme: SpotlightSimulationProgramme): string {
+  return programme.schedule.dayparts
+    .map((row) => `${stateLabel(row.code)} ${row.allocated_opportunities}`)
+    .join(" · ");
 }
 
 function pageShell(): React.CSSProperties {
@@ -392,6 +419,11 @@ export default function AdminGsnHouseCampaignPage() {
   const [publication, setPublication] = useState<BatchPublication | null>(null);
   const [publishingProgress, setPublishingProgress] = useState("");
   const [operations, setOperations] = useState<GsnHouseCampaignOperations | null>(null);
+  const [simulationBoard, setSimulationBoard] = useState<SpotlightSimulationBoard | null>(null);
+  const [simulationPreview, setSimulationPreview] = useState<SpotlightSimulationBoard | null>(null);
+  const [simulationNotice, setSimulationNotice] = useState("");
+  const [simulationFunding, setSimulationFunding] = useState<"paid" | "sponsored" | "gifted" | "waived" | "house">("house");
+  const [simulationCredits, setSimulationCredits] = useState("1");
   const [stopReason, setStopReason] = useState("");
   const [stopConfirmed, setStopConfirmed] = useState(false);
   const [destinationStopTarget, setDestinationStopTarget] = useState<{
@@ -411,6 +443,7 @@ export default function AdminGsnHouseCampaignPage() {
   } | null>(null);
   const [loadingCatalogue, setLoadingCatalogue] = useState(false);
   const [loadingOperations, setLoadingOperations] = useState(false);
+  const [loadingSimulation, setLoadingSimulation] = useState(false);
   const [preparingMedia, setPreparingMedia] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -436,6 +469,8 @@ export default function AdminGsnHouseCampaignPage() {
   const publishedCount = publication?.results.length || 0;
   const stagedReviewCount = mediaQueue.filter((item) => stagedReviewMedia[item.key]).length;
   const draftBusy = preparingMedia || reviewing || publishing;
+  const displayedSimulation = simulationPreview || simulationBoard;
+  const simulationProgrammes = displayedSimulation?.programmes || [];
   const reviewBlockers = useMemo(() => {
     const blockers: string[] = [];
     const expiryProblem = campaignExpiryProblem(expiryInput);
@@ -547,6 +582,23 @@ export default function AdminGsnHouseCampaignPage() {
     }
   }, []);
 
+  const loadSimulationBoard = useCallback(async () => {
+    setLoadingSimulation(true);
+    try {
+      setSimulationBoard(await getAdminSpotlightSimulationProgrammeBoard());
+      setSimulationNotice("");
+    } catch (error: any) {
+      const code = safeStr(error?.detail?.code || error?.response?.detail?.code);
+      setSimulationNotice(
+        code === "spotlight_slice2_simulation_disabled"
+          ? "The v1.3 programme board is safely off in this environment. Enable the isolated simulation flag only in a review environment."
+          : campaignRequestError(error, "The isolated Spotlight programme board could not be loaded.")
+      );
+    } finally {
+      setLoadingSimulation(false);
+    }
+  }, []);
+
   const loadDestinations = useCallback(async (search = "") => {
     setLoadingCatalogue(true);
     setFeedback(null);
@@ -574,7 +626,45 @@ export default function AdminGsnHouseCampaignPage() {
   useEffect(() => {
     void loadDestinations("");
     void loadOperations();
-  }, [loadDestinations, loadOperations]);
+    void loadSimulationBoard();
+  }, [loadDestinations, loadOperations, loadSimulationBoard]);
+
+  async function previewSimulationDraft() {
+    if (selectedRows.length === 0 || mediaQueue.length === 0) {
+      setSimulationNotice("Choose at least one eligible community and one media item before previewing this draft schedule.");
+      return;
+    }
+    const credits = Math.max(Math.floor(Number(simulationCredits) || 0), 1);
+    setLoadingSimulation(true);
+    setSimulationNotice("");
+    try {
+      const result = await previewAdminSpotlightSimulationProgrammes({
+        programmes: [
+          {
+            plan_id: "command-centre-draft",
+            advert_id: "command-centre-draft-advert",
+            media_ids: mediaQueue.map((_, index) => `draft-media-${index + 1}`),
+            community_ids: selectedRows.map((row) => row.clan_id),
+            credits,
+            funding_classification: simulationFunding,
+            service_date: nextSimulationServiceDate(),
+            timezone: "Europe/London",
+            region: "GB-SCT",
+          },
+        ],
+      });
+      setSimulationPreview(result);
+      setSimulationNotice(
+        result.programmes[0]?.capacity.has_conflict
+          ? "The preview found a capacity or audience-scope conflict. No live booking or credit movement occurred."
+          : "The draft schedule balances in simulation. No live booking, payment, credit or delivery record was created."
+      );
+    } catch (error) {
+      setSimulationNotice(campaignRequestError(error, "The draft could not be previewed in the isolated simulation."));
+    } finally {
+      setLoadingSimulation(false);
+    }
+  }
 
   useEffect(() => {
     if (typeof window === "undefined" || !operations?.active.length) return;
@@ -1492,7 +1582,211 @@ export default function AdminGsnHouseCampaignPage() {
           </div>
         </section>
 
-        <section style={{ ...card(), order: 1 }} aria-label="GSN campaign operations">
+        <section style={{ ...card("#F8FBFF"), order: 1 }} aria-label="Command Centre campaign schedule simulation">
+          <div style={{ display: "flex", gap: 12, alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap" }}>
+            <div style={{ flex: "1 1 300px" }}>
+              <div style={sectionLabel()}>Campaign schedule · protocol 1.3</div>
+              <h2 style={{ margin: "8px 0 0", color: "#0B1F33", fontSize: 24 }}>
+                Programme board
+              </h2>
+              <p style={{ margin: "8px 0 0", ...helper() }}>
+                Inspect booking, 10/10/10 allocation, capacity, delivery and financial treatment together. This board is isolated test data: it cannot collect money, spend credits, activate a campaign or promise service.
+              </p>
+            </div>
+            <span style={{ borderRadius: 999, padding: "7px 11px", background: "#E8F3FF", color: "#174C84", fontSize: 12, fontWeight: 900 }}>
+              Simulation only
+            </span>
+          </div>
+
+          <div style={{ marginTop: 14, ...institutionalInnerCard("#FFFFFF"), display: "grid", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+              <label>
+                <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>Funding classification</span>
+                <select
+                  value={simulationFunding}
+                  onChange={(event) => setSimulationFunding(event.target.value as typeof simulationFunding)}
+                  style={fieldStyle()}
+                  data-gmfn-field="admin-gsn-campaign.simulation-funding"
+                >
+                  <option value="house">GSN house campaign</option>
+                  <option value="paid">Merchant purchase</option>
+                  <option value="sponsored">Sponsor-funded</option>
+                  <option value="gifted">Gifted</option>
+                  <option value="waived">Waived</option>
+                </select>
+              </label>
+              <label>
+                <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>Pipeline Credits in this booking</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  step={1}
+                  value={simulationCredits}
+                  onChange={(event) => setSimulationCredits(event.target.value)}
+                  style={fieldStyle()}
+                  data-gmfn-field="admin-gsn-campaign.simulation-credits"
+                />
+              </label>
+            </div>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <StableButton
+                busy={loadingSimulation}
+                busyLabel="Checking schedule"
+                onClick={() => void previewSimulationDraft()}
+                debugId="admin-gsn-campaign.simulation-preview"
+              >
+                Preview current draft
+              </StableButton>
+              <StableButton
+                busy={loadingSimulation}
+                busyLabel="Loading examples"
+                onClick={() => {
+                  setSimulationPreview(null);
+                  void loadSimulationBoard();
+                }}
+                debugId="admin-gsn-campaign.simulation-examples"
+              >
+                Show reference scenarios
+              </StableButton>
+            </div>
+            <div style={{ ...helper(), fontSize: 13 }}>
+              Several media items or communities remain one booking selection. They do not multiply the booking entitlement; added credits are the only input that increases 30 opportunities.
+            </div>
+          </div>
+
+          {simulationNotice ? (
+            <div role="status" style={{ marginTop: 12, ...statusPanel(simulationProgrammes.length ? "info" : "error") }}>
+              {simulationNotice}
+            </div>
+          ) : null}
+
+          {loadingSimulation && simulationProgrammes.length === 0 ? (
+            <div style={{ marginTop: 14, ...softCard() }}>Loading the isolated programme board…</div>
+          ) : null}
+
+          {simulationProgrammes.length > 0 ? (
+            <>
+              <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+                {simulationProgrammes.map((programme) => {
+                  const delivery = programme.actual_delivery;
+                  return (
+                    <article key={programme.plan_id} style={institutionalInnerCard("#FFFFFF")}>
+                      <div style={{ display: "flex", gap: 8, justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap" }}>
+                        <div>
+                          <div style={sectionLabel()}>{simulationFundingLabel(programme.quote.funding_classification)}</div>
+                          <h3 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 18 }}>
+                            {programme.plan_id}
+                          </h3>
+                        </div>
+                        <span style={{ borderRadius: 999, padding: "6px 9px", background: programme.capacity.has_conflict ? "#FFF1F2" : "#ECFDF3", color: programme.capacity.has_conflict ? "#9F1239" : "#166534", fontSize: 11, fontWeight: 900 }}>
+                          {programme.capacity.has_conflict ? "Conflict" : stateLabel(programme.lifecycle.state)}
+                        </span>
+                      </div>
+                      <div style={{ marginTop: 12, display: "grid", gap: 7, ...helper(), fontSize: 13 }}>
+                        <div><strong>Advert:</strong> {programme.advert.advert_id} · {programme.advert.selected_media_count} media item{programme.advert.selected_media_count === 1 ? "" : "s"}</div>
+                        <div><strong>Authorised audience:</strong> {programme.authorised_audience.community_ids.map((id) => `Community ${id}`).join(", ")}</div>
+                        <div><strong>Region / clock:</strong> {programme.schedule.region} · {programme.schedule.timezone}</div>
+                        <div><strong>Service date:</strong> {programme.schedule.service_date}</div>
+                        <div><strong>Dayparts:</strong> {simulationDaypartLabel(programme)}</div>
+                        <div><strong>Expiry:</strong> {dateTimeLabel(programme.schedule.expires_at)}</div>
+                        <div><strong>Allocation:</strong> {programme.entitlement.total_opportunities} opportunities for {programme.quote.credits} credit{programme.quote.credits === 1 ? "" : "s"}</div>
+                        <div><strong>Capacity:</strong> {stateLabel(programme.capacity.status)}</div>
+                        <div><strong>Financial treatment:</strong> £{programme.quote.quoted_amount_gbp} quoted · {stateLabel(programme.quote.collection_status)} · live debit £{programme.quote.live_pipeline_credit_debit}</div>
+                      </div>
+                      {programme.capacity.conflicts.length ? (
+                        <div style={{ marginTop: 10, ...statusPanel("error"), fontSize: 13 }}>
+                          {programme.capacity.conflicts.map((conflict) => conflict.message).join(" ")}
+                        </div>
+                      ) : null}
+                      {delivery ? (
+                        <div style={{ marginTop: 12, ...softCard(delivery.missed_opportunities ? "#FFF7ED" : "#F0FDF4") }}>
+                          <div style={sectionLabel()}>Actual delivery record</div>
+                          <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                            {[
+                              ["Purchased", delivery.purchased_opportunities],
+                              ["Supplied", delivery.supplied_opportunities],
+                              ["Impressions", delivery.qualifying_impressions],
+                              ["Recognised reach", delivery.recognised_unique_reach],
+                            ].map(([label, value]) => (
+                              <div key={String(label)} style={institutionalInnerCard("#FFFFFF")}>
+                                <div style={{ color: "#64778B", fontSize: 10, fontWeight: 900, textTransform: "uppercase" }}>{label}</div>
+                                <div style={{ marginTop: 4, color: "#0B1F33", fontSize: 17, fontWeight: 900 }}>{value}</div>
+                              </div>
+                            ))}
+                          </div>
+                          {delivery.considered_by_selection_system != null ? (
+                            <div style={{ marginTop: 8, ...helper(), fontSize: 12 }}>
+                              Considered {delivery.considered_by_selection_system} times; consideration counts as supplied: <strong>No</strong>.
+                            </div>
+                          ) : null}
+                          {delivery.remedy?.status === "simulated_applied" ? (
+                            <div style={{ marginTop: 8, color: "#8A4B12", fontSize: 13, lineHeight: 1.55, fontWeight: 800 }}>
+                              Shortfall: {delivery.missed_opportunities} · simulated remedy: restore {delivery.remedy.restored_pipeline_credits} Pipeline Credit once, retaining {simulationFundingLabel(delivery.remedy.funding_classification)} classification.
+                            </div>
+                          ) : null}
+                          {delivery.note ? <div style={{ marginTop: 8, ...helper(), fontSize: 12 }}>{delivery.note}</div> : null}
+                        </div>
+                      ) : null}
+                      <div style={{ marginTop: 10, color: "#496277", fontSize: 12, lineHeight: 1.55 }}>
+                        Pause maps to reversible <strong>{programme.lifecycle.reversible_pause_authority}</strong>; permanent stop maps to <strong>{programme.lifecycle.permanent_stop_authority}</strong>. They are not the same action.
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+
+              <details style={{ marginTop: 14, ...softCard("#FFFFFF") }}>
+                <StableDisclosureSummary
+                  debugId="admin-gsn-campaign.simulation-accessible-list.summary"
+                  stableHeight={44}
+                  style={{ color: "#0B1F33", fontWeight: 900 }}
+                >
+                  Accessible schedule list ({simulationProgrammes.length})
+                </StableDisclosureSummary>
+                <ul aria-label="Spotlight simulation programme schedule" style={{ margin: "12px 0 0", paddingLeft: 22, display: "grid", gap: 12, color: "#0B1F33", lineHeight: 1.6 }}>
+                  {simulationProgrammes.map((programme) => (
+                    <li key={`list-${programme.plan_id}`}>
+                      <strong>{programme.plan_id}</strong>: {simulationFundingLabel(programme.quote.funding_classification)}; advert {programme.advert.advert_id}; communities {programme.authorised_audience.community_ids.join(", ")}; {programme.schedule.service_date} in {programme.schedule.timezone}; {simulationDaypartLabel(programme)}; {programme.entitlement.total_opportunities} total; capacity {stateLabel(programme.capacity.status)}; supplied {programme.actual_delivery?.supplied_opportunities ?? "not started"}; impressions {programme.actual_delivery?.qualifying_impressions ?? "not started"}; reach {programme.actual_delivery?.recognised_unique_reach ?? "not started"}.
+                    </li>
+                  ))}
+                </ul>
+              </details>
+
+              {simulationBoard?.interrupted_batch_recovery ? (
+                <details style={{ marginTop: 12, ...softCard("#FFFFFF") }}>
+                  <StableDisclosureSummary
+                    debugId="admin-gsn-campaign.simulation-recovery.summary"
+                    stableHeight={44}
+                    style={{ color: "#0B1F33", fontWeight: 900 }}
+                  >
+                    Interrupted batch recovery
+                  </StableDisclosureSummary>
+                  <div style={{ marginTop: 10, ...helper() }}>
+                    Interrupted after {simulationBoard.interrupted_batch_recovery.interruption_after} item; resumed to {simulationBoard.interrupted_batch_recovery.final_unique_booking_count} unique bookings with {simulationBoard.interrupted_batch_recovery.duplicate_booking_count} duplicates. Existing completed work replayed idempotently rather than buying entitlement again.
+                  </div>
+                </details>
+              ) : null}
+
+              {simulationBoard?.remaining_live_decisions?.length ? (
+                <details style={{ marginTop: 12, ...softCard("#FFFDF6") }}>
+                  <StableDisclosureSummary
+                    debugId="admin-gsn-campaign.simulation-live-decisions.summary"
+                    stableHeight={44}
+                    style={{ color: "#0B1F33", fontWeight: 900 }}
+                  >
+                    Decisions still required before live service
+                  </StableDisclosureSummary>
+                  <ul style={{ margin: "10px 0 0", paddingLeft: 22, color: "#496277", lineHeight: 1.65 }}>
+                    {simulationBoard.remaining_live_decisions.map((decision) => <li key={decision}>{decision}</li>)}
+                  </ul>
+                </details>
+              ) : null}
+            </>
+          ) : null}
+        </section>
+
+        <section style={{ ...card(), order: 2 }} aria-label="GSN campaign operations">
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 280px" }}>
               <div style={sectionLabel()}>Campaign operations</div>

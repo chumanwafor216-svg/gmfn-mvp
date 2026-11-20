@@ -271,6 +271,9 @@ def test_anonymous_search_only_projects_eligible_publications(client, monkeypatc
         assert event.zero_result is False
         assert event.has_category_filter is True
         assert event.has_area_filter is True
+        assert event.coverage_complete is True
+        assert event.scan_limit_reached is False
+        assert event.scanned_publication_count == 3
 
 
 def test_counts_suggestions_and_zero_results_exclude_protected_inventory(
@@ -291,6 +294,100 @@ def test_counts_suggestions_and_zero_results_exclude_protected_inventory(
         event = db.query(MarketplacePublicDiscoverySearchEvent).one()
         assert event.zero_result is True
         assert event.result_count == 0
+        assert event.coverage_complete is True
+
+
+def test_pagination_and_partial_coverage_are_truthful(
+    client,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv(DISCOVERY_FLAG, "true")
+    monkeypatch.setenv(PRIVACY_FLAG, "true")
+    _seed_discovery_case()
+    monkeypatch.setattr(
+        "app.api.routes.marketplace_public_discovery.PUBLIC_DISCOVERY_SCAN_LIMIT",
+        1,
+    )
+    with SessionLocal() as db:
+        visible = (
+            db.query(MarketplacePublicDiscoveryPublication)
+            .filter_by(public_id="pd_visible")
+            .one()
+        )
+        visible.published_at = datetime.now(timezone.utc) + timedelta(seconds=1)
+        db.commit()
+
+    first = client.get(
+        "/marketplace/public-discovery",
+        params={"limit": 1},
+    )
+    assert first.status_code == 200, first.text
+    payload = first.json()
+    assert payload["count"] == 1
+    assert payload["total"] == 1
+    assert payload["next_cursor"] is None
+    assert payload["scan_limit_reached"] is True
+    assert payload["coverage_complete"] is False
+    assert payload["total_is_complete"] is False
+    assert payload["scanned_publication_count"] == 1
+    assert payload["scan_limit"] == 1
+
+    with SessionLocal() as db:
+        event = db.query(MarketplacePublicDiscoverySearchEvent).one()
+        assert event.result_count == 1
+        assert event.zero_result is False
+        assert event.coverage_complete is False
+        assert event.scan_limit_reached is True
+        assert event.scanned_publication_count == 1
+
+
+def test_existing_cursor_pages_without_repeating_results(client, monkeypatch) -> None:
+    monkeypatch.setenv(DISCOVERY_FLAG, "true")
+    monkeypatch.setenv(PRIVACY_FLAG, "true")
+    _seed_discovery_case()
+    with SessionLocal() as db:
+        first = db.query(MarketplacePublicDiscoveryPublication).filter_by(product_id=1).one()
+        product = MarketplaceProduct(
+            id=6,
+            clan_id=1,
+            shop_id=1,
+            seller_user_id=1,
+            name="Tablet repair",
+            description="Tablet screen repair",
+            visibility_mode="community_visible",
+            is_active=True,
+        )
+        db.add(product)
+        db.flush()
+        db.add(
+            MarketplacePublicDiscoveryPublication(
+                public_id="pd_tablet",
+                shop_id=1,
+                product_id=6,
+                owner_user_id=1,
+                state="published",
+                published_at=first.published_at - timedelta(seconds=1),
+            )
+        )
+        db.commit()
+
+    page_one = client.get("/marketplace/public-discovery", params={"q": "repair", "limit": 1})
+    assert page_one.status_code == 200
+    first_payload = page_one.json()
+    assert first_payload["total"] == 2
+    assert first_payload["count"] == 1
+    assert first_payload["next_cursor"] == 1
+
+    page_two = client.get(
+        "/marketplace/public-discovery",
+        params={"q": "repair", "limit": 1, "cursor": first_payload["next_cursor"]},
+    )
+    assert page_two.status_code == 200
+    second_payload = page_two.json()
+    assert second_payload["total"] == 2
+    assert second_payload["count"] == 1
+    assert second_payload["next_cursor"] is None
+    assert first_payload["items"][0]["publication_id"] != second_payload["items"][0]["publication_id"]
 
 
 def test_owner_controls_require_confirmation_and_preserve_direct_shop(
