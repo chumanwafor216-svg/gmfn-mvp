@@ -31,6 +31,13 @@ from app.services.pipeline_credit_service import (
     pipeline_credit_balance,
     serialize_pipeline_credit_account,
 )
+from app.services.spotlight_commercial_service import (
+    SpotlightCommercialError,
+    booking_report as spotlight_booking_report,
+    reserve_spotlight_booking,
+    spotlight_commercial_enabled,
+    validate_spotlight_quote_context,
+)
 from app.services.vault_domain_service import (
     activate_vault_order_from_pipeline_credit,
     ensure_vault_blocks,
@@ -57,7 +64,7 @@ SERVICE_DEFINITIONS: dict[str, dict[str, Any]] = {
         "unit_label": "day",
         "duration_days": 1,
         "max_quantity": 365,
-        "connected": False,
+        "connected": True,
     },
     "paid_repost.reach": {
         "label": "Paid Repost",
@@ -370,10 +377,13 @@ def _pricing_policy_out(row: Optional[PipelineCreditPricingPolicy]) -> Optional[
 
 
 def _service_out(row: Optional[PipelineCreditServiceVersion], definition: dict[str, Any], service_code: str) -> dict[str, Any]:
+    connected = bool(definition.get("connected"))
+    if service_code == "paid_spotlight.day":
+        connected = connected and spotlight_commercial_enabled()
     return {
         "service_code": service_code,
         "service_label": definition["label"],
-        "connected": bool(definition.get("connected")),
+        "connected": connected,
         "max_quantity": int(definition["max_quantity"]),
         "configured": row is not None,
         "version": int(row.version) if row else None,
@@ -643,6 +653,23 @@ def _validate_service_context(
             "invalid_quantity",
             f"Quantity must be between 1 and {int(definition['max_quantity'])}",
         )
+    if service_code == "paid_spotlight.day":
+        try:
+            safe_context = validate_spotlight_quote_context(
+                db,
+                actor_user_id=int(actor_user_id),
+                quantity=int(quantity),
+                context=context,
+            )
+        except SpotlightCommercialError as exc:
+            raise PipelineCreditCommerceError(exc.code, str(exc)) from exc
+        control_metadata = context.get("_pipeline_credit_control")
+        if isinstance(control_metadata, dict):
+            safe_context["_pipeline_credit_control"] = {
+                "version": control_metadata.get("version"),
+                "lifecycle_status": control_metadata.get("lifecycle_status"),
+            }
+        return safe_context
     if service_code != "vault.slot":
         if not bool(definition.get("connected")):
             raise PipelineCreditCommerceError(
@@ -929,6 +956,23 @@ def spend_service_quote(
     db.add(order)
     db.flush()
 
+    context = json.loads(quote.context_json or "{}")
+    service = db.get(PipelineCreditServiceVersion, int(quote.service_version_id))
+    if not service:
+        raise PipelineCreditCommerceError("service_version_missing", "The quoted service version is unavailable")
+    spotlight_booking = None
+    if quote.service_code == "paid_spotlight.day":
+        try:
+            spotlight_booking = reserve_spotlight_booking(
+                db,
+                quote=quote,
+                order=order,
+                actor_user_id=int(actor_user_id),
+                context=context,
+            )
+        except SpotlightCommercialError as exc:
+            raise PipelineCreditCommerceError(exc.code, str(exc)) from exc
+
     ledger = None
     if not pilot_waived:
         require_payment_operations_enabled()
@@ -956,39 +1000,46 @@ def spend_service_quote(
         except PipelineCreditError as exc:
             raise PipelineCreditCommerceError("credit_debit_failed", str(exc)) from exc
 
-    context = json.loads(quote.context_json or "{}")
-    service = db.get(PipelineCreditServiceVersion, int(quote.service_version_id))
-    if not service:
-        raise PipelineCreditCommerceError("service_version_missing", "The quoted service version is unavailable")
-    if quote.service_code != "vault.slot":
+    if quote.service_code == "paid_spotlight.day":
+        if spotlight_booking is None:
+            raise PipelineCreditCommerceError("spotlight_booking_missing", "The Spotlight reservation was not created")
+        delivery = spotlight_booking_report(db, booking_id=int(spotlight_booking.id))
+        delivery["commercial_status"] = quoted_commercial_status
+        delivery["charge_mode"] = "pilot_waived" if pilot_waived else "credit_debit"
+        delivery["quoted_credit_cost"] = f"{Decimal(str(quote.total_credit_cost)).quantize(CREDIT_QUANT):.2f}"
+        delivery["charged_credit_cost"] = f"{Decimal(str(charged_credit_cost)).quantize(CREDIT_QUANT):.2f}"
+        delivery_reference_type = "spotlight_commercial_booking"
+        delivery_reference_id = str(int(spotlight_booking.id))
+    elif quote.service_code != "vault.slot":
         raise PipelineCreditCommerceError("service_not_connected", "This service delivery is not connected yet")
-
-    delivery = activate_vault_order_from_pipeline_credit(
-        db,
-        shop_id=int(context.get("shop_id") or 0),
-        owner_user_id=int(actor_user_id),
-        clan_id=int(context.get("clan_id") or 0) or None,
-        slot_count=int(quote.quantity),
-        total_credit_cost=charged_credit_cost,
-        service_version=int(service.version),
-        payment_reference=(
-            f"PC-PILOT-WAIVER-{int(order.id)}"
-            if pilot_waived
-            else f"PC-SPEND-{int(order.id)}"
-        ),
-        duration_days=int(service.duration_days),
-        charge_mode="pilot_waived" if pilot_waived else "credit_debit",
-    )
-
-    delivery["commercial_status"] = quoted_commercial_status
-    delivery["charge_mode"] = "pilot_waived" if pilot_waived else "credit_debit"
-    delivery["quoted_credit_cost"] = f"{Decimal(str(quote.total_credit_cost)).quantize(CREDIT_QUANT):.2f}"
-    delivery["charged_credit_cost"] = f"{Decimal(str(charged_credit_cost)).quantize(CREDIT_QUANT):.2f}"
+    else:
+        delivery = activate_vault_order_from_pipeline_credit(
+            db,
+            shop_id=int(context.get("shop_id") or 0),
+            owner_user_id=int(actor_user_id),
+            clan_id=int(context.get("clan_id") or 0) or None,
+            slot_count=int(quote.quantity),
+            total_credit_cost=charged_credit_cost,
+            service_version=int(service.version),
+            payment_reference=(
+                f"PC-PILOT-WAIVER-{int(order.id)}"
+                if pilot_waived
+                else f"PC-SPEND-{int(order.id)}"
+            ),
+            duration_days=int(service.duration_days),
+            charge_mode="pilot_waived" if pilot_waived else "credit_debit",
+        )
+        delivery["commercial_status"] = quoted_commercial_status
+        delivery["charge_mode"] = "pilot_waived" if pilot_waived else "credit_debit"
+        delivery["quoted_credit_cost"] = f"{Decimal(str(quote.total_credit_cost)).quantize(CREDIT_QUANT):.2f}"
+        delivery["charged_credit_cost"] = f"{Decimal(str(charged_credit_cost)).quantize(CREDIT_QUANT):.2f}"
+        delivery_reference_type = "vault_order"
+        delivery_reference_id = str(delivery["vault_order_id"])
 
     order.status = "completed"
     order.ledger_entry_id = int(ledger.id) if ledger is not None else None
-    order.delivery_reference_type = "vault_order"
-    order.delivery_reference_id = str(delivery["vault_order_id"])
+    order.delivery_reference_type = delivery_reference_type
+    order.delivery_reference_id = delivery_reference_id
     order.result_json = _json(delivery)
     order.completed_at = _now()
     quote.status = "spent"

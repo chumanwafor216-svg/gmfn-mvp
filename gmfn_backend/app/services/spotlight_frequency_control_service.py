@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Iterable, Optional
 
 from sqlalchemy import func
@@ -16,6 +17,7 @@ from app.services.spotlight_opportunity_candidate_service import (
     SPOTLIGHT_CANDIDATE_BAND_DEMANDBOX_MATCH,
     SpotlightOpportunityCandidate,
 )
+from app.services.spotlight_commercial_service import commercial_frequency_policy
 
 SPOTLIGHT_VIEWER_CAMPAIGN_FREQUENCY_CAP = 2
 SPOTLIGHT_DEMANDBOX_FREQUENCY_OVERRIDE_EXTRA = 1
@@ -115,6 +117,7 @@ def apply_spotlight_frequency_control(
     viewer_campaign_frequency_cap: int = SPOTLIGHT_VIEWER_CAMPAIGN_FREQUENCY_CAP,
     demandbox_frequency_override_extra: int = SPOTLIGHT_DEMANDBOX_FREQUENCY_OVERRIDE_EXTRA,
     campaign_qualifying_impression_cap: Optional[int] = SPOTLIGHT_CAMPAIGN_QUALIFYING_IMPRESSION_CAP,
+    at: Optional[datetime] = None,
 ) -> SpotlightFrequencyControlResult:
     viewer_id = int(viewer_user_id or 0)
     candidate_list = list(diversity_result.candidates or ())
@@ -133,12 +136,24 @@ def apply_spotlight_frequency_control(
     prelim: list[dict[str, Any]] = []
     for original_rank, candidate in enumerate(candidate_list):
         campaign_id = int(candidate.campaign_id)
-        prior_count = int(viewer_counts.get(campaign_id, 0))
+        commercial_policy = commercial_frequency_policy(
+            db,
+            campaign_id=campaign_id,
+            viewer_user_id=viewer_id,
+            at=at,
+        )
+        prior_count = int(
+            commercial_policy["prior_qualifying_impressions"]
+            if commercial_policy is not None
+            else viewer_counts.get(campaign_id, 0)
+        )
+        candidate_viewer_cap = int(commercial_policy["cap"]) if commercial_policy is not None else safe_viewer_cap
+        candidate_override_extra = 0 if commercial_policy is not None else safe_override_extra
         campaign_count = int(campaign_counts.get(campaign_id, 0))
         is_demandbox = candidate.priority_band == SPOTLIGHT_CANDIDATE_BAND_DEMANDBOX_MATCH
-        frequency_state = frequency_state_for_prior_count(prior_count, viewer_campaign_frequency_cap=safe_viewer_cap)
-        remaining_viewer = max(safe_viewer_cap - prior_count, 0)
-        override_available = max((safe_viewer_cap + safe_override_extra) - prior_count, 0) if is_demandbox else 0
+        frequency_state = frequency_state_for_prior_count(prior_count, viewer_campaign_frequency_cap=candidate_viewer_cap)
+        remaining_viewer = max(candidate_viewer_cap - prior_count, 0)
+        override_available = max((candidate_viewer_cap + candidate_override_extra) - prior_count, 0) if is_demandbox else 0
         override_used = False
         suppressed = False
         suppressed_reason: Optional[str] = None
@@ -148,8 +163,11 @@ def apply_spotlight_frequency_control(
             if campaign_count >= safe_campaign_cap:
                 suppressed = True
                 suppressed_reason = SPOTLIGHT_FREQUENCY_SUPPRESSION_CAMPAIGN_QUOTA_EXHAUSTED
-        if not suppressed and prior_count >= safe_viewer_cap:
-            if is_demandbox and prior_count < safe_viewer_cap + safe_override_extra:
+        if commercial_policy is not None and not bool(commercial_policy.get("supply_available")):
+            suppressed = True
+            suppressed_reason = SPOTLIGHT_FREQUENCY_SUPPRESSION_CAMPAIGN_QUOTA_EXHAUSTED
+        if not suppressed and prior_count >= candidate_viewer_cap:
+            if is_demandbox and prior_count < candidate_viewer_cap + candidate_override_extra:
                 override_used = True
             elif is_demandbox:
                 suppressed = True
@@ -169,6 +187,8 @@ def apply_spotlight_frequency_control(
                 "override_used": override_used,
                 "override_available": override_available,
                 "campaign_remaining_quota": campaign_remaining_quota,
+                "viewer_cap": candidate_viewer_cap,
+                "override_extra": candidate_override_extra,
                 "suppressed": suppressed,
                 "suppressed_reason": suppressed_reason,
             }
@@ -193,7 +213,7 @@ def apply_spotlight_frequency_control(
                 priority_rank=int(row["candidate"].priority_rank),
                 viewer_prior_qualifying_impressions=int(row["prior_count"]),
                 frequency_state=str(row["frequency_state"]),
-                viewer_frequency_cap=safe_viewer_cap,
+                viewer_frequency_cap=int(row["viewer_cap"]),
                 remaining_viewer_impressions=int(row["remaining_viewer"]),
                 demandbox_override_used=bool(row["override_used"]),
                 demandbox_override_available=int(row["override_available"]),

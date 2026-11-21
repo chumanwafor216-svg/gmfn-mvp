@@ -15,6 +15,7 @@ import SpotlightMediaFrame, {
 import { PrimaryButton, SecondaryButton, StableCtaLink, StableDisclosureSummary } from "../components/StableButton";
 import ExistingWorkflowPlusLink from '../components/ExistingWorkflowPlusLink';
 import {
+  acknowledgeSpotlightPresentationSupply,
   createMarketplaceShop,
   followMarketplaceShop,
   getAccessToken,
@@ -1993,6 +1994,7 @@ export default function ShopGalleryPage() {
   const spotlightQualificationTimerRef = useRef<number | null>(null);
   const spotlightQualifiedKeysRef = useRef<Set<string>>(new Set());
   const spotlightQualificationInFlightKeysRef = useRef<Set<string>>(new Set());
+  const spotlightSuppliedKeysRef = useRef<Set<string>>(new Set());
   const productMediaQualifiedKeysRef = useRef<Set<string>>(new Set());
   const productMediaQualificationInFlightKeysRef = useRef<Set<string>>(new Set());
   const spotlightNextRequestPendingRef = useRef(false);
@@ -2908,6 +2910,7 @@ export default function ShopGalleryPage() {
     setSpotlightPresentationActivated(false);
     spotlightQualifiedKeysRef.current.clear();
     spotlightQualificationInFlightKeysRef.current.clear();
+    spotlightSuppliedKeysRef.current.clear();
     spotlightNextRequestPendingRef.current = false;
     spotlightNextEmptyUntilRef.current = 0;
     spotlightRefreshRetryCountRef.current = 0;
@@ -4357,6 +4360,22 @@ export default function ShopGalleryPage() {
       if (spotlightVisibleRatioRef.current < PUBLIC_SHOP_SPOTLIGHT_MIN_VISIBLE_RATIO) {
         visibleSince = 0;
         return;
+      }
+
+      if (
+        activeSpotlight.isCanonicalOpportunity &&
+        activeSpotlight.opportunityPresentationToken &&
+        !spotlightSuppliedKeysRef.current.has(presentationKey)
+      ) {
+        spotlightSuppliedKeysRef.current.add(presentationKey);
+        void acknowledgeSpotlightPresentationSupply({
+          presentation_token: activeSpotlight.opportunityPresentationToken,
+          visible_ratio: spotlightVisibleRatioRef.current,
+          document_visible: currentDocumentVisible(),
+          owner_preview: false,
+        }).catch(() => {
+          if (alive) spotlightSuppliedKeysRef.current.delete(presentationKey);
+        });
       }
 
       if (visibleSince <= 0) visibleSince = Date.now();

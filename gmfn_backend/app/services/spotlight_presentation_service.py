@@ -40,6 +40,7 @@ from app.services.spotlight_pacing_state_service import (
     spotlight_delivery_round_blocked_reason,
 )
 from app.services.spotlight_lifecycle_service import authorized_expiry, row_is_serving
+from app.services.spotlight_commercial_service import acknowledge_supplied_presentation
 
 SPOTLIGHT_PRESENTATION_TOKEN_TYPE = "spotlight_presentation_v1"
 SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP = "public_shop_spotlight_rail"
@@ -688,6 +689,7 @@ def select_spotlight_presentation(
         db,
         viewer_user_id=viewer_id,
         diversity_result=diversity,
+        at=current_time,
     )
     frequency_suppressed_campaign_ids = tuple(
         int(control.campaign_id)
@@ -1134,6 +1136,56 @@ def record_spotlight_presentation_qualification(
     )
 
 
+def record_spotlight_presentation_supply(
+    db: Session,
+    *,
+    viewer_user_id: int,
+    presentation_token: str,
+    event_at: Optional[datetime] = None,
+    surface: str = SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
+    visible_ratio: float = 0.0,
+    document_visible: bool = False,
+    owner_preview: bool = False,
+) -> dict[str, Any]:
+    policy = presentation_policy()
+    if owner_preview:
+        return {"ok": False, "recorded": False, "rejection_code": PRESENTATION_REJECTION_OWNER_PREVIEW}
+    if not document_visible:
+        return {"ok": False, "recorded": False, "rejection_code": "document_hidden"}
+    if float(visible_ratio or 0.0) < float(policy.minimum_visible_ratio):
+        return {"ok": False, "recorded": False, "rejection_code": "viewport_ratio_below_threshold"}
+    current_time = _as_aware_utc(event_at) or _now_utc()
+    payload = _decode_presentation_token(presentation_token)
+    if payload is None or payload.get("expired") is True:
+        return {"ok": False, "recorded": False, "rejection_code": PRESENTATION_REJECTION_INVALID_TOKEN}
+    if str(payload.get("typ") or "") != SPOTLIGHT_PRESENTATION_TOKEN_TYPE:
+        return {"ok": False, "recorded": False, "rejection_code": PRESENTATION_REJECTION_INVALID_TOKEN}
+    token_viewer_id = int(payload.get("viewer_user_id") or 0)
+    presentation_id = str(payload.get("sid") or "").strip()
+    token_surface = str(payload.get("surface") or "").strip()
+    if token_viewer_id != int(viewer_user_id or 0):
+        return {"ok": False, "recorded": False, "rejection_code": PRESENTATION_REJECTION_WRONG_VIEWER}
+    if token_surface != surface:
+        return {"ok": False, "recorded": False, "rejection_code": PRESENTATION_REJECTION_WRONG_SURFACE}
+    lease = (
+        db.query(SpotlightPresentationLease)
+        .filter(SpotlightPresentationLease.presentation_id == presentation_id)
+        .filter(SpotlightPresentationLease.viewer_user_id == token_viewer_id)
+        .with_for_update()
+        .one_or_none()
+    )
+    invalid_reason = _lease_invalid_reason(db, lease=lease, now=current_time)
+    if invalid_reason is not None:
+        return {"ok": False, "recorded": False, "rejection_code": invalid_reason}
+    commercial = acknowledge_supplied_presentation(db, lease=lease, supplied_at=current_time)
+    return {
+        "ok": True,
+        "presentation_id": presentation_id,
+        "counts_as_impression": False,
+        **commercial,
+    }
+
+
 def revalidate_spotlight_presentation(
     db: Session,
     *,
@@ -1368,6 +1420,7 @@ def _current_presentable_candidate(
         db,
         viewer_user_id=int(viewer_user_id),
         diversity_result=diversity,
+        at=now,
     )
     for candidate in frequency.candidates:
         if int(candidate.campaign_id) == int(campaign_id):

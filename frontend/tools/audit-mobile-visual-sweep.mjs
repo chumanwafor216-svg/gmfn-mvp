@@ -27,6 +27,7 @@ const routes = [
   "/app/notifications",
   "/app/shop/me",
   "/app/shop-control",
+  "/app/shop-control/public-discovery",
   "/app/shop-control#shop-control-spotlight",
   "/app/shop-control/subscription-spotlight",
   "/app/shop-assets",

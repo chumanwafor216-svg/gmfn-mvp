@@ -111,6 +111,7 @@ from app.services.spotlight_presentation_service import (
     list_spotlight_presentation_visibility,
     presentation_policy,
     record_spotlight_presentation_qualification,
+    record_spotlight_presentation_supply,
     revalidate_spotlight_presentation,
     select_spotlight_presentation,
 )
@@ -140,6 +141,18 @@ from app.services.spotlight_slice2_simulation_service import (
     preview_programmes as preview_spotlight_simulation_programmes,
     simulation_programme_board,
     spotlight_slice2_simulation_enabled,
+)
+from app.services.spotlight_commercial_service import (
+    SpotlightCommercialError,
+    apply_remedy as apply_spotlight_commercial_remedy,
+    booking_report as spotlight_commercial_booking_report,
+    capacity_preview as spotlight_commercial_capacity_preview,
+    programme_board as spotlight_commercial_programme_board,
+    record_capacity_evidence as record_spotlight_capacity_evidence,
+    reconcile_booking as reconcile_spotlight_commercial_booking,
+    set_booking_lifecycle as set_spotlight_commercial_booking_lifecycle,
+    spotlight_commercial_enabled,
+    validate_spotlight_quote_context,
 )
 router = APIRouter(prefix="/marketplace", tags=["marketplace"])
 
@@ -4275,10 +4288,50 @@ class SpotlightSimulationPreviewIn(BaseModel):
     existing_reservations: dict[str, int] = Field(default_factory=dict)
 
 
+class SpotlightCommercialCapacityEvidenceIn(BaseModel):
+    clan_id: int = Field(gt=0)
+    region_code: str = Field(min_length=2, max_length=80)
+    timezone: str = Field(min_length=3, max_length=80)
+    service_date: str = Field(min_length=10, max_length=10)
+    observed_morning: int = Field(ge=0, le=1000000)
+    observed_afternoon: int = Field(ge=0, le=1000000)
+    observed_evening: int = Field(ge=0, le=1000000)
+    safety_factor_bps: int = Field(default=8000, ge=1, le=10000)
+    evidence_source: str = Field(min_length=3, max_length=120)
+    evidence: dict[str, Any] = Field(default_factory=dict)
+
+
+class SpotlightCommercialPreviewIn(BaseModel):
+    campaign_id: int = Field(gt=0)
+    clan_id: int = Field(gt=0)
+    quantity: int = Field(default=1, ge=1, le=100)
+    funding_classification: Literal["merchant_paid", "sponsor_funded", "gifted", "waived", "house"] = "merchant_paid"
+    region_code: str = Field(min_length=2, max_length=80)
+    timezone: str = Field(min_length=3, max_length=80)
+    service_date: str = Field(min_length=10, max_length=10)
+    expires_at: Optional[datetime] = None
+    booking_key: Optional[str] = Field(default=None, max_length=120)
+
+
+class SpotlightCommercialLifecycleIn(BaseModel):
+    reason: str = Field(min_length=5, max_length=500)
+
+
+class SpotlightCommercialReconcileIn(BaseModel):
+    at: Optional[datetime] = None
+
+
 class SpotlightPresentationQualificationIn(BaseModel):
     presentation_token: str = Field(..., min_length=20, max_length=4000)
     qualification_key: Optional[str] = Field(default=None, max_length=120)
     visible_ms: int = Field(default=0, ge=0, le=600000)
+    visible_ratio: float = Field(default=0.0, ge=0.0, le=1.0)
+    document_visible: bool = False
+    owner_preview: bool = False
+
+
+class SpotlightPresentationSupplyIn(BaseModel):
+    presentation_token: str = Field(..., min_length=20, max_length=4000)
     visible_ratio: float = Field(default=0.0, ge=0.0, le=1.0)
     document_visible: bool = False
     owner_preview: bool = False
@@ -5946,6 +5999,23 @@ def qualify_spotlight_presentation(
         surface=SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
     )
     return result.to_public_dict()
+
+
+@router.post("/spotlight-presentations/supplied")
+def supplied_spotlight_presentation(
+    payload: SpotlightPresentationSupplyIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    return record_spotlight_presentation_supply(
+        db,
+        viewer_user_id=int(current_user.id),
+        presentation_token=payload.presentation_token,
+        visible_ratio=float(payload.visible_ratio or 0.0),
+        document_visible=bool(payload.document_visible),
+        owner_preview=bool(payload.owner_preview),
+        surface=SPOTLIGHT_PRESENTATION_SURFACE_PUBLIC_SHOP,
+    )
 
 @router.post("/shops")
 def create_marketplace_shop(
@@ -8429,6 +8499,127 @@ def preview_spotlight_simulation_programme_board(
             status_code=400,
             detail={"code": exc.code, "message": exc.message},
         ) from exc
+
+
+def _raise_spotlight_commercial_error(exc: SpotlightCommercialError) -> None:
+    status_code = 503 if exc.code == "paid_spotlight_disabled" else 409
+    if exc.code.endswith("_not_found"):
+        status_code = 404
+    raise HTTPException(status_code=status_code, detail={"code": exc.code, "message": str(exc)}) from exc
+
+
+@router.get("/admin/gsn-house-campaigns/programme-board/commercial")
+def get_spotlight_commercial_board(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_platform_admin(current_user)
+    return spotlight_commercial_programme_board(db)
+
+
+@router.post("/admin/gsn-house-campaigns/programme-board/commercial/capacity-evidence")
+def put_spotlight_commercial_capacity_evidence(
+    payload: SpotlightCommercialCapacityEvidenceIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_platform_admin(current_user)
+    try:
+        rows = record_spotlight_capacity_evidence(
+            db,
+            clan_id=payload.clan_id,
+            region_code=payload.region_code,
+            timezone_name=payload.timezone,
+            service_date=payload.service_date,
+            observed_supplied_opportunities={
+                "morning": payload.observed_morning,
+                "afternoon": payload.observed_afternoon,
+                "evening": payload.observed_evening,
+            },
+            safety_factor_bps=payload.safety_factor_bps,
+            evidence_source=payload.evidence_source,
+            evidence=payload.evidence,
+            actor_user_id=int(current_user.id),
+        )
+    except SpotlightCommercialError as exc:
+        db.rollback()
+        _raise_spotlight_commercial_error(exc)
+    return {"ok": True, "capacity_window_ids": [int(row.id) for row in rows]}
+
+
+@router.post("/admin/gsn-house-campaigns/programme-board/commercial/preview")
+def preview_spotlight_commercial_programme(
+    payload: SpotlightCommercialPreviewIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_platform_admin(current_user)
+    try:
+        context = validate_spotlight_quote_context(
+            db,
+            actor_user_id=int(current_user.id),
+            quantity=int(payload.quantity),
+            context={
+                "campaign_id": payload.campaign_id,
+                "clan_id": payload.clan_id,
+                "funding_classification": payload.funding_classification,
+                "region_code": payload.region_code,
+                "timezone": payload.timezone,
+                "service_date": payload.service_date,
+                "expires_at": payload.expires_at.isoformat() if payload.expires_at else None,
+                "booking_key": payload.booking_key,
+            },
+        )
+        return {"ok": True, "context": context, "capacity": spotlight_commercial_capacity_preview(db, quantity=payload.quantity, context=context)}
+    except SpotlightCommercialError as exc:
+        db.rollback()
+        _raise_spotlight_commercial_error(exc)
+
+
+@router.post("/admin/gsn-house-campaigns/programme-board/commercial/{booking_id}/lifecycle/{action}")
+def change_spotlight_commercial_booking_lifecycle(
+    booking_id: int,
+    action: Literal["hold", "resume", "withdraw"],
+    payload: SpotlightCommercialLifecycleIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_platform_admin(current_user)
+    try:
+        booking = set_spotlight_commercial_booking_lifecycle(
+            db,
+            booking_id=booking_id,
+            action=action,
+            reason=payload.reason,
+            actor_user_id=int(current_user.id),
+        )
+        return {"ok": True, "booking": spotlight_commercial_booking_report(db, booking_id=int(booking.id))}
+    except SpotlightCommercialError as exc:
+        db.rollback()
+        _raise_spotlight_commercial_error(exc)
+
+
+@router.post("/admin/gsn-house-campaigns/programme-board/commercial/{booking_id}/reconcile")
+def reconcile_spotlight_commercial_programme(
+    booking_id: int,
+    payload: SpotlightCommercialReconcileIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_platform_admin(current_user)
+    booking = reconcile_spotlight_commercial_booking(db, booking_id=booking_id, now=payload.at)
+    return {"ok": True, "booking": spotlight_commercial_booking_report(db, booking_id=int(booking.id))}
+
+
+@router.post("/admin/gsn-house-campaigns/programme-board/commercial/remedies/{remedy_id}/apply")
+def apply_spotlight_commercial_programme_remedy(
+    remedy_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_platform_admin(current_user)
+    remedy = apply_spotlight_commercial_remedy(db, remedy_id=remedy_id, actor_user_id=int(current_user.id))
+    return {"ok": True, "remedy_id": int(remedy.id), "status": remedy.status, "ledger_entry_id": remedy.ledger_entry_id}
 
 
 @router.post("/admin/gsn-house-campaigns/media/discard")

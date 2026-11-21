@@ -25,6 +25,7 @@ import app.db.identity_models  # noqa: F401
 import app.db.models  # noqa: F401
 import app.db.notification_models  # noqa: F401
 import app.db.pipeline_credit_models  # noqa: F401
+import app.db.spotlight_commercial_models  # noqa: F401
 import app.db.member_credit_models  # noqa: F401
 import app.db.verification_models  # noqa: F401
 
@@ -45,6 +46,10 @@ from app.services.marketplace_media_cleanup_service import (
 )
 from app.services.reconciliation_service import reconcile_batch
 from app.services.spotlight_retention_service import compact_expired_spotlight_payloads
+from app.services.spotlight_commercial_service import (
+    reconcile_due_bookings,
+    spotlight_commercial_enabled,
+)
 
 
 def _truthy(value: str | None) -> bool:
@@ -76,6 +81,10 @@ def _spotlight_retention_loop_enabled() -> bool:
     if raw is not None and str(raw).strip() != "":
         return _truthy(raw)
     return False
+
+
+def _spotlight_commercial_reconciliation_loop_enabled() -> bool:
+    return spotlight_commercial_enabled()
 
 
 def _spotlight_retention_interval_seconds() -> int:
@@ -263,6 +272,27 @@ async def _spotlight_retention_loop() -> None:
         await asyncio.sleep(_spotlight_retention_interval_seconds())
 
 
+def _reconcile_due_spotlight_bookings_once() -> None:
+    db: Session = SessionLocal()
+    try:
+        result = reconcile_due_bookings(db, limit=100)
+        if _runtime_memory_logging_enabled():
+            log_runtime_event("spotlight_commercial_reconciliation_complete", **result)
+    finally:
+        db.close()
+
+
+async def _spotlight_commercial_reconciliation_loop() -> None:
+    await asyncio.sleep(30)
+    while True:
+        try:
+            await asyncio.to_thread(_reconcile_due_spotlight_bookings_once)
+        except Exception:
+            print("[GSN paid Spotlight reconciliation] failed")
+            print(traceback.format_exc())
+        await asyncio.sleep(60)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ---- Startup ----
@@ -289,11 +319,28 @@ async def lifespan(app: FastAPI):
     else:
         app.state.spotlight_retention_task = None
 
+    spotlight_commercial_reconciliation_task: Optional[asyncio.Task] = None
+    if _spotlight_commercial_reconciliation_loop_enabled():
+        try:
+            spotlight_commercial_reconciliation_task = asyncio.create_task(
+                _spotlight_commercial_reconciliation_loop()
+            )
+            app.state.spotlight_commercial_reconciliation_task = (
+                spotlight_commercial_reconciliation_task
+            )
+        except Exception:
+            app.state.spotlight_commercial_reconciliation_task = None
+    else:
+        app.state.spotlight_commercial_reconciliation_task = None
+
     if _runtime_memory_logging_enabled():
         log_runtime_event(
             "startup",
             reconciliation_enabled=_reconciliation_loop_enabled(),
             spotlight_retention_enabled=_spotlight_retention_loop_enabled(),
+            spotlight_commercial_reconciliation_enabled=(
+                _spotlight_commercial_reconciliation_loop_enabled()
+            ),
             spotlight_retention_startup_delay_seconds=(
                 _spotlight_retention_startup_delay_seconds()
             ),
@@ -306,7 +353,11 @@ async def lifespan(app: FastAPI):
     yield
 
     # ---- Shutdown ----
-    for task_name in ("reconciliation_task", "spotlight_retention_task"):
+    for task_name in (
+        "reconciliation_task",
+        "spotlight_retention_task",
+        "spotlight_commercial_reconciliation_task",
+    ):
         task = getattr(app.state, task_name, None)
         if task is not None:
             task.cancel()

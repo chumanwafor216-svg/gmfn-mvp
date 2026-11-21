@@ -7,10 +7,12 @@ import {
   createAdminGsnHouseCampaign,
   discardAdminGsnHouseCampaignReviewMedia,
   getAdminSpotlightSimulationProgrammeBoard,
+  getAdminSpotlightCommercialProgrammeBoard,
   listAdminGsnHouseCampaigns,
   listAdminGsnHouseCampaignDestinations,
   previewAdminGsnHouseCampaign,
   previewAdminSpotlightSimulationProgrammes,
+  previewAdminSpotlightCommercialProgramme,
   stopAdminGsnHouseCampaign,
   stopAdminGsnHouseCampaignDestination,
   uploadMarketplaceImageFile,
@@ -22,6 +24,7 @@ import {
   type GsnHouseCampaignReport,
   type MarketplaceVideoSoundOptions,
   type SpotlightSimulationBoard,
+  type SpotlightCommercialBoard,
   type SpotlightSimulationProgramme,
 } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
@@ -420,6 +423,11 @@ export default function AdminGsnHouseCampaignPage() {
   const [publishingProgress, setPublishingProgress] = useState("");
   const [operations, setOperations] = useState<GsnHouseCampaignOperations | null>(null);
   const [simulationBoard, setSimulationBoard] = useState<SpotlightSimulationBoard | null>(null);
+  const [commercialBoard, setCommercialBoard] = useState<SpotlightCommercialBoard | null>(null);
+  const [commercialCampaignId, setCommercialCampaignId] = useState("");
+  const [commercialPreview, setCommercialPreview] = useState<any | null>(null);
+  const [commercialPreviewFingerprint, setCommercialPreviewFingerprint] = useState("");
+  const [commercialNotice, setCommercialNotice] = useState("");
   const [simulationPreview, setSimulationPreview] = useState<SpotlightSimulationBoard | null>(null);
   const [simulationPreviewInputFingerprint, setSimulationPreviewInputFingerprint] = useState("");
   const [simulationNotice, setSimulationNotice] = useState("");
@@ -491,6 +499,18 @@ export default function AdminGsnHouseCampaignPage() {
       simulationServiceDate,
       simulationTimezone,
     ]
+  );
+  const commercialDraftFingerprint = useMemo(
+    () => JSON.stringify({
+      campaignId: commercialCampaignId,
+      clanId: selectedRows[0]?.clan_id || null,
+      quantity: simulationCredits,
+      funding: simulationFunding,
+      serviceDate: simulationServiceDate,
+      timezone: simulationTimezone,
+      region: simulationRegion,
+    }),
+    [commercialCampaignId, selectedRows, simulationCredits, simulationFunding, simulationRegion, simulationServiceDate, simulationTimezone]
   );
   const previewMediaIndex = useMemo(
     () => mediaQueue.findIndex((item) => item.key === mediaPreviewKey),
@@ -641,6 +661,14 @@ export default function AdminGsnHouseCampaignPage() {
     }
   }, []);
 
+  const loadCommercialBoard = useCallback(async () => {
+    try {
+      setCommercialBoard(await getAdminSpotlightCommercialProgrammeBoard());
+    } catch {
+      setCommercialBoard(null);
+    }
+  }, []);
+
   const loadDestinations = useCallback(async (search = "") => {
     setLoadingCatalogue(true);
     setFeedback(null);
@@ -669,7 +697,8 @@ export default function AdminGsnHouseCampaignPage() {
     void loadDestinations("");
     void loadOperations();
     void loadSimulationBoard();
-  }, [loadDestinations, loadOperations, loadSimulationBoard]);
+    void loadCommercialBoard();
+  }, [loadCommercialBoard, loadDestinations, loadOperations, loadSimulationBoard]);
 
   useEffect(() => {
     if (!visibleSimulationProgrammes.length) {
@@ -680,6 +709,52 @@ export default function AdminGsnHouseCampaignPage() {
       setSelectedSimulationPlanId(visibleSimulationProgrammes[0].plan_id);
     }
   }, [selectedSimulationPlanId, visibleSimulationProgrammes]);
+
+  useEffect(() => {
+    if (!commercialPreview || commercialPreviewFingerprint === commercialDraftFingerprint) return;
+    setCommercialPreview(null);
+    setCommercialPreviewFingerprint("");
+    setCommercialNotice("The advert, audience or schedule changed, so the earlier commercial capacity preview was cleared.");
+  }, [commercialDraftFingerprint, commercialPreview, commercialPreviewFingerprint]);
+
+  async function previewCommercialDraft() {
+    const campaignId = Math.floor(Number(commercialCampaignId));
+    const clanId = selectedRows[0]?.clan_id;
+    if (!campaignId || !clanId) {
+      setCommercialNotice("Enter an existing Spotlight campaign ID and select one eligible community first.");
+      return;
+    }
+    const fundingMap = {
+      paid: "merchant_paid",
+      sponsored: "sponsor_funded",
+      gifted: "gifted",
+      waived: "waived",
+      house: "house",
+    } as const;
+    try {
+      const result = await previewAdminSpotlightCommercialProgramme({
+        campaign_id: campaignId,
+        clan_id: clanId,
+        quantity: Math.max(1, Math.floor(Number(simulationCredits) || 1)),
+        funding_classification: fundingMap[simulationFunding],
+        region_code: simulationRegion,
+        timezone: simulationTimezone,
+        service_date: simulationServiceDate,
+        booking_key: `command-centre-${campaignId}-${clanId}-${simulationServiceDate}`,
+      });
+      setCommercialPreview(result);
+      setCommercialPreviewFingerprint(commercialDraftFingerprint);
+      setCommercialNotice(
+        result?.capacity?.available
+          ? "Measured capacity can reserve this 10/10/10 package. This preview did not spend credits or create a booking."
+          : "Measured capacity is missing or already committed. This preview did not spend credits or create a booking."
+      );
+    } catch (error) {
+      setCommercialPreview(null);
+      setCommercialPreviewFingerprint("");
+      setCommercialNotice(campaignRequestError(error, "The commercial capacity preview could not be completed."));
+    }
+  }
 
   useEffect(() => {
     if (!simulationPreview || !simulationPreviewInputFingerprint) return;
@@ -1651,18 +1726,81 @@ export default function AdminGsnHouseCampaignPage() {
         <section style={{ ...card("#F8FBFF"), order: 1 }} aria-label="Command Centre campaign schedule simulation">
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 300px" }}>
-              <div style={sectionLabel()}>Campaign schedule · protocol 1.3</div>
+              <div style={sectionLabel()}>Campaign schedule · protocol 1.3 · paid_spotlight.day.v1</div>
               <h2 style={{ margin: "8px 0 0", color: "#0B1F33", fontSize: 24 }}>
                 Programme board
               </h2>
               <p style={{ margin: "8px 0 0", ...helper() }}>
-                Inspect booking, 10/10/10 allocation, capacity, delivery and financial treatment together. This board is isolated test data: it cannot collect money, spend credits, activate a campaign or promise service.
+                Inspect booking, 10/10/10 allocation, measured capacity, supplied opportunities, impressions and financial treatment together. Production collection and spending remain disabled.
               </p>
             </div>
             <span style={{ borderRadius: 999, padding: "7px 11px", background: "#E8F3FF", color: "#174C84", fontSize: 12, fontWeight: 900 }}>
-              Simulation only
+              Commercial path disabled
             </span>
           </div>
+
+          {commercialBoard ? (
+            <div style={{ marginTop: 14, ...institutionalInnerCard(commercialBoard.enabled ? "#FFF8E6" : "#EFF6FF") }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <div>
+                  <div style={sectionLabel()}>Production-capable contract</div>
+                  <strong style={{ display: "block", marginTop: 5, color: "#0B1F33" }}>
+                    {commercialBoard.enabled ? "Controlled test flag enabled" : "Safely disabled"}
+                  </strong>
+                </div>
+                <span style={{ color: commercialBoard.enabled ? "#8A4B12" : "#174C84", fontWeight: 900 }}>
+                  {commercialBoard.bookings.length} booking{commercialBoard.bookings.length === 1 ? "" : "s"}
+                </span>
+              </div>
+              <div style={{ marginTop: 9, ...helper(), fontSize: 13 }}>
+                Real collection: <strong>No</strong>. Capacity must be calibrated from measured supplied opportunities for each community, region, local date and daypart before a booking can reserve inventory.
+              </div>
+              {commercialBoard.enabled ? (
+                <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                  <label>
+                    <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>Existing Spotlight campaign ID</span>
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={commercialCampaignId}
+                      onChange={(event) => setCommercialCampaignId(event.target.value)}
+                      style={fieldStyle()}
+                      data-gmfn-field="admin-gsn-campaign.commercial-campaign-id"
+                    />
+                  </label>
+                  <StableButton type="button" onClick={() => void previewCommercialDraft()} debugId="admin-gsn-campaign.commercial-preview">
+                    Preview measured capacity
+                  </StableButton>
+                  {commercialNotice ? <div role="status" style={{ ...helper(), fontSize: 13 }}>{commercialNotice}</div> : null}
+                  {commercialPreview?.capacity?.dayparts ? (
+                    <ul aria-label="Commercial capacity preview by daypart" style={{ margin: 0, paddingLeft: 22, color: "#0B1F33", lineHeight: 1.6 }}>
+                      {commercialPreview.capacity.dayparts.map((row: any) => (
+                        <li key={row.daypart}>{stateLabel(row.daypart)}: {row.required} required, {row.available} available · {stateLabel(row.status)}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              ) : null}
+              {commercialBoard.bookings.length ? (
+                <details style={{ marginTop: 10 }}>
+                  <StableDisclosureSummary debugId="admin-gsn-campaign.commercial-bookings.summary" stableHeight={44}>
+                    Accessible commercial schedule and audit ({commercialBoard.bookings.length})
+                  </StableDisclosureSummary>
+                  <ul aria-label="Paid Spotlight commercial booking schedule" style={{ margin: "10px 0 0", paddingLeft: 22, display: "grid", gap: 10, color: "#0B1F33", lineHeight: 1.6 }}>
+                    {commercialBoard.bookings.map((booking) => (
+                      <li key={booking.booking_id}>
+                        <strong>{booking.booking_key}</strong>: {stateLabel(booking.funding_classification)}; community {booking.schedule.community_id}; {booking.schedule.service_date} in {booking.schedule.timezone}; {booking.opportunities.purchased} purchased, {booking.opportunities.supplied} supplied, {booking.opportunities.missed} missed; {booking.measurement.qualifying_impressions} qualifying impressions; reach {booking.measurement.reach_privacy_suppressed ? "privacy protected" : booking.measurement.recognised_unique_viewers}; status {stateLabel(booking.status)}.
+                      </li>
+                    ))}
+                  </ul>
+                  <div style={{ marginTop: 10, ...helper(), fontSize: 12 }}>
+                    Audit events: {commercialBoard.audit_history.length}. Hold is reversible; withdrawal is permanent. Shop opens and contacts are never reported as sales.
+                  </div>
+                </details>
+              ) : null}
+            </div>
+          ) : null}
 
           <div style={{ marginTop: 14, ...institutionalInnerCard("#FFFFFF"), display: "grid", gap: 12 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>

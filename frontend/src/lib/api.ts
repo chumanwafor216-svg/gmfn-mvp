@@ -8026,6 +8026,27 @@ export type SpotlightSimulationBoard = {
   remaining_live_decisions?: string[];
 };
 
+export type SpotlightCommercialBoard = {
+  ok: boolean;
+  enabled: boolean;
+  live_collection_enabled: boolean;
+  contract_version: string;
+  bookings: Array<{
+    booking_id: number;
+    booking_key: string;
+    campaign_id: number;
+    funding_classification: string;
+    status: string;
+    schedule: { community_id: number; region_code: string; timezone: string; service_date: string; starts_at: string; ends_at: string };
+    opportunities: { purchased: number; reserved: number; supplied: number; missed: number; outstanding: number };
+    measurement: { qualifying_impressions: number; recognised_unique_viewers: number | null; reach_privacy_suppressed: boolean; no_sales_claim: string };
+    finance: Record<string, any>;
+    remedy?: Record<string, any> | null;
+  }>;
+  audit_history: Array<{ id: number; booking_id?: number | null; event_type: string; actor_user_id?: number | null; detail: Record<string, any>; created_at: string }>;
+  boundaries: Record<string, string>;
+};
+
 export async function listAdminGsnHouseCampaigns(
   limit = 20
 ): Promise<GsnHouseCampaignOperations> {
@@ -8471,11 +8492,52 @@ export async function getCommunityPipelineCreditProviderGates(payload: {
   );
 }
 
+export async function acknowledgeSpotlightPresentationSupply(payload: {
+  presentation_token: string;
+  visible_ratio: number;
+  document_visible: boolean;
+  owner_preview?: boolean;
+}): Promise<any> {
+  return httpJson(
+    "/marketplace/spotlight-presentations/supplied",
+    "POST",
+    payload,
+    { header_clan_id: null, keepalive: true, quiet: true, timeoutMs: 8000 }
+  );
+}
+
 export async function getAdminSpotlightSimulationProgrammeBoard(): Promise<SpotlightSimulationBoard> {
   return httpJson(
     "/marketplace/admin/gsn-house-campaigns/programme-board",
     "GET",
     undefined,
+    { header_clan_id: null }
+  );
+}
+
+export async function getAdminSpotlightCommercialProgrammeBoard(): Promise<SpotlightCommercialBoard> {
+  return httpJson(
+    "/marketplace/admin/gsn-house-campaigns/programme-board/commercial",
+    "GET",
+    undefined,
+    { header_clan_id: null }
+  );
+}
+
+export async function previewAdminSpotlightCommercialProgramme(payload: {
+  campaign_id: number;
+  clan_id: number;
+  quantity: number;
+  funding_classification: "merchant_paid" | "sponsor_funded" | "gifted" | "waived" | "house";
+  region_code: string;
+  timezone: string;
+  service_date: string;
+  booking_key?: string | null;
+}): Promise<any> {
+  return httpJson(
+    "/marketplace/admin/gsn-house-campaigns/programme-board/commercial/preview",
+    "POST",
+    payload,
     { header_clan_id: null }
   );
 }
