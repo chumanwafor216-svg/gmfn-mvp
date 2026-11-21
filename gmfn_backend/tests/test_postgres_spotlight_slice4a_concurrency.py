@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import os
 from concurrent.futures import ThreadPoolExecutor
@@ -132,11 +132,9 @@ def clean_postgres(postgres_engine, monkeypatch):
     available = set(inspect(postgres_engine).get_table_names())
     selected = [name for name in tables if name in available]
     if selected:
-        quoted = ", ".join(f'"{name}"' for name in selected)
         with postgres_engine.begin() as connection:
-            connection.exec_driver_sql(
-                f"TRUNCATE TABLE {quoted} RESTART IDENTITY CASCADE"
-            )
+            for table_name in selected:
+                connection.exec_driver_sql(f'DELETE FROM "{table_name}"')
 
 
 def _sessions(postgres_engine):

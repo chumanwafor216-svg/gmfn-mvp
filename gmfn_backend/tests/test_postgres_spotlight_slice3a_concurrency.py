@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import os
 from concurrent.futures import ThreadPoolExecutor
@@ -14,6 +14,7 @@ from alembic.config import Config
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker
 
+from app.db.bank_models import ExpectedPayment
 from app.db.spotlight_commercial_models import (
     SpotlightCommercialBooking,
     SpotlightCommercialRemedy,
@@ -21,16 +22,19 @@ from app.db.spotlight_commercial_models import (
 from app.services.pipeline_credit_commerce_service import (
     PipelineCreditCommerceError,
     issue_service_quote,
+    set_acquisition_pack,
     set_commercial_control,
     set_pricing_policy,
     set_service_price,
     spend_service_quote,
 )
+from app.services.pipeline_credit_acquisition_service import create_acquisition_instruction
 from app.services.pipeline_credit_service import (
     ACCOUNT_PURPOSE_CUSTOMER,
-    allocate_pipeline_credits,
     pipeline_credit_balance,
 )
+from app.services.reconciliation_service import create_bank_event, reconcile_batch
+from app.services.spotlight_commercial_access_service import grant_spotlight_pilot_entitlement
 from app.services.spotlight_commercial_service import (
     apply_remedy,
     reconcile_booking,
@@ -75,8 +79,18 @@ def postgres_engine():
 def clean_postgres(postgres_engine, monkeypatch):
     monkeypatch.setenv("GSN_PAID_SPOTLIGHT_V1_ENABLED", "1")
     monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
+    monkeypatch.setenv("GSN_PAID_SPOTLIGHT_PAYMENT_OPERATIONS_ENABLED", "1")
     available_tables = set(inspect(postgres_engine).get_table_names())
     owned_tables = (
+        "advertising_campaign_settlements",
+        "pipeline_credit_acquisition_refunds",
+        "pipeline_credit_acquisition_applications",
+        "pipeline_credit_acquisition_orders",
+        "spotlight_commercial_pilot_entitlements",
+        "bank_credits",
+        "expected_payments",
+        "bank_events",
+        "pipeline_credit_acquisition_pack_versions",
         "spotlight_commercial_service_credit_applications",
         "spotlight_commercial_service_credit_obligations",
         "spotlight_commercial_presentation_attributions",
@@ -212,18 +226,54 @@ def _seed(postgres_engine) -> None:
             actor_user_id=1,
         )
         for buyer_id in (1, 2):
-            allocate_pipeline_credits(
+            grant_spotlight_pilot_entitlement(
                 db,
-                owner_type="user",
-                owner_user_id=buyer_id,
-                account_purpose=ACCOUNT_PURPOSE_CUSTOMER,
-                pricing_region="global",
-                currency="PC",
-                amount="2.00",
-                workflow_key="test.slice3a.postgres.funding",
-                idempotency_key=f"slice3a-pg-funding-{buyer_id}",
-                created_by_user_id=1,
+                user_id=buyer_id,
+                clan_id=1,
+                entitlement_role="merchant",
+                granted_by_user_id=1,
+                decision_note="Slice 3A PostgreSQL compatibility entitlement",
             )
+        pack = set_acquisition_pack(
+            db,
+            profile_code="gb-slice3a-pg",
+            profile_label="Slice 3A PostgreSQL compatibility pack",
+            country_codes=["GB"],
+            currency="GBP",
+            pack_code="slice3a-pg-1",
+            credit_quantity="2.00",
+            cash_amount="1.00",
+            lifecycle_status="enforced",
+            decision_note="Canonical cash backing for Slice 3A PostgreSQL tests",
+            actor_user_id=1,
+        )
+        for buyer_id in (1, 2):
+            acquisition = create_acquisition_instruction(
+                db,
+                purchaser_user_id=buyer_id,
+                beneficiary_user_id=buyer_id,
+                clan_id=1,
+                pack_version_id=int(pack.id),
+                funding_classification="merchant_paid",
+                idempotency_key=f"slice3a-pg-acquisition-{buyer_id}",
+            )
+            expected = db.get(ExpectedPayment, int(acquisition.expected_payment_id))
+            create_bank_event(
+                db,
+                clan_id=1,
+                source_type="webhook_api",
+                source_id=f"SLICE3A-PG-CASH-{buyer_id}",
+                direction="credit",
+                amount=Decimal("1.00"),
+                currency="GBP",
+                reference_raw=expected.reference_display,
+                description_raw="Slice 3A canonical cash backing",
+                bank_txn_id=f"SLICE3A-PG-CASH-{buyer_id}",
+                posted_at=None,
+                value_at=None,
+                meta={"fixture": "slice3a-postgres"},
+            )
+        reconcile_batch(db, clan_id=1, limit=50)
 
 
 def _capacity(
