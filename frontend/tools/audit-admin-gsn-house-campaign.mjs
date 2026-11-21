@@ -29,6 +29,7 @@ function section(source, startText, endText) {
 
 const appFile = "src/App.tsx";
 const pageFile = "src/pages/AdminGsnHouseCampaignPage.tsx";
+const pageStylesFile = "src/pages/AdminGsnHouseCampaignPage.css";
 const apiFile = "src/lib/api.ts";
 const routesFile = "src/lib/appRoutes.ts";
 const commandFile = "src/pages/TrustCommandCentrePage.tsx";
@@ -45,6 +46,7 @@ const simulationFile =
 
 const app = read(appFile);
 const page = read(pageFile);
+const pageStyles = read(pageStylesFile);
 const api = read(apiFile);
 const routes = read(routesFile);
 const command = read(commandFile);
@@ -192,8 +194,8 @@ for (const text of [
   "Publish GSN campaign",
   "idempotencyKey: makeIdempotencyKey()",
   "idempotency_key: item.idempotencyKey",
-  "Preparation and review do not publish anything",
-  "Current draft",
+  "Nothing publishes before review",
+  "Current campaign draft",
   "Active inventory and truthful delivery report",
   'debugId="admin-gsn-campaign.current-report.summary"',
   "Open delivery report and campaign controls",
@@ -216,7 +218,7 @@ for (const text of [
   "showing {previewMediaIndex + 1} of {mediaQueue.length}",
   "setStagedReviewMedia((current) => ({",
   "media items remain safely prepared on GSN",
-  "Continue final check · ${stagedReviewCount} of ${mediaQueue.length} prepared",
+  "Continue review and publish · ${stagedReviewCount} of ${mediaQueue.length} prepared",
   "the completed uploads will not be repeated",
   "nextExpiry - Date.now() + 250",
   "Do not publish again. Check the connection, then tap Refresh status.",
@@ -230,6 +232,25 @@ for (const text of [
   "restored_credits_in_active_replacement",
 ]) {
   requireText(pageFile, page, text, "Missing screen contract: " + text + ".");
+}
+for (const text of [
+  'import "./AdminGsnHouseCampaignPage.css"',
+  'aria-label="Campaign preparation progress"',
+  'className="gsn-house-publisher__audience"',
+  'className="gsn-house-publisher__compose"',
+  '"Review and publish"',
+]) {
+  requireText(pageFile, page, text, "Missing polished publisher workflow contract: " + text + ".");
+}
+for (const text of [
+  ".gsn-house-publisher__hero",
+  ".gsn-house-publisher__identity",
+  ".gsn-house-publisher__steps",
+  ".gsn-house-publisher__audience",
+  ".gsn-house-publisher__compose",
+  "@media (max-width: 720px)",
+]) {
+  requireText(pageStylesFile, pageStyles, text, "Missing mobile publisher presentation contract: " + text + ".");
 }
 requireText(
   specsFile,

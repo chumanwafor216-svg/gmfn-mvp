@@ -7288,3 +7288,13 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Rehearsed the old production application against the candidate schema in a disposable database: health returned `200` and the historical house-settlement query succeeded. Rollback remains application-first; automatic schema downgrade is not authorised.
 - Added a fourteen-day CSV evidence register and daily report template under `docs/templates/`. The documents explicitly prevent observed leases, presentations or impressions from being represented as genuinely supplied paid scheduling opportunities.
 - No deployment, production environment change, payment activity, paid booking, customer publication, merchant contact, public-discovery activation or `main` promotion occurred. Ticket remains NO-GO until its eight named blockers are closed under separate authorisation.
+
+# 2026-11-21 - Command Centre official publisher mobile polish
+
+- Enhanced the existing platform-admin route `/app/command-center/gsn-campaigns` without changing its backend, permission, publication, exclusion, schedule, payment or audit contracts.
+- Reworked the phone-first hierarchy around the approved reference: compact Official Publisher hero, explicit GSN-HOUSE authorship, current audience/media/delivery summary and a three-step Audience / Message / Schedule progress strip.
+- Moved the primary preparation journey ahead of inventory and simulation detail: choose communities, prepare the announcement, then use the single `Review and publish` action. Existing review-before-publish, batch recovery and idempotent publication behavior is unchanged.
+- Kept campaign operations, the protocol 1.3 programme board and governance available after the primary workflow rather than allowing them to dominate the first surface.
+- Added route-scoped responsive CSS with compact cards, stable mobile fields, navy/gold/cyan styling and 390px handling. No shared design system or frozen Dashboard Market Wisdom styling changed.
+- Updated the focused publisher audit to lock the new hierarchy and responsive stylesheet. Verification passed: focused campaign audit, TypeScript no-emit check, production frontend build, protected-button freeze audit and diff check.
+- Honest limitation: the authenticated admin route was not exercised as a phone screenshot in this pass; source, type, contract and production-build verification all passed.

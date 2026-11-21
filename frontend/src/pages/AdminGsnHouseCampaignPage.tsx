@@ -44,6 +44,7 @@ import {
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
 } from "../lib/spotlightPilot";
 import { structuredErrorMessage } from "../lib/structuredErrors";
+import "./AdminGsnHouseCampaignPage.css";
 
 type PreparedMedia = {
   key: string;
@@ -576,6 +577,14 @@ export default function AdminGsnHouseCampaignPage() {
     scheduleTimezone,
     selectedRows.length,
   ]);
+  const publisherSteps = [
+    { label: "Audience", ready: selectedRows.length > 0 },
+    { label: "Message", ready: message.trim().length >= 2 && mediaQueue.length > 0 },
+    { label: "Schedule", ready: !campaignExpiryProblem(expiryInput) },
+  ];
+  const currentPublisherStep = review || publication
+    ? 3
+    : publisherSteps.findIndex((step) => !step.ready) + 1 || 3;
 
   useEffect(() => {
     reviewRef.current = review;
@@ -1665,12 +1674,12 @@ export default function AdminGsnHouseCampaignPage() {
   }
 
   return (
-    <main style={pageShell()} data-screen="admin-gsn-house-campaign">
-      <div style={contentWrap()}>
+    <main className="gsn-house-publisher" style={pageShell()} data-screen="admin-gsn-house-campaign">
+      <div className="gsn-house-publisher__layout" style={contentWrap()}>
         <PageTopNav
-          sectionLabel="Platform administration"
-          title="GSN Spotlight publisher"
-          subtitle="Build a central inventory of official GSN promotions for active communities, while respecting recorded advertising exclusions."
+          sectionLabel="Command Centre"
+          title="Admin Tools"
+          subtitle="Official GSN publishing"
           homeTo={APP_ROUTES.ADMIN_COMMAND}
           homeLabel="Command Centre"
           backTo={APP_ROUTES.ADMIN_COMMAND}
@@ -1678,6 +1687,7 @@ export default function AdminGsnHouseCampaignPage() {
         />
 
         <section
+          className="gsn-house-publisher__hero"
           style={{
             ...card("#071A2D"),
             color: "#FFFFFF",
@@ -1688,6 +1698,7 @@ export default function AdminGsnHouseCampaignPage() {
         >
           <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
             <div
+              className="gsn-house-publisher__mark"
               style={{
                 width: 66,
                 height: 66,
@@ -1702,28 +1713,58 @@ export default function AdminGsnHouseCampaignPage() {
             </div>
             <div style={{ flex: "1 1 280px", minWidth: 0 }}>
               <div style={{ color: "#F4D77E", fontSize: 12, fontWeight: 900, textTransform: "uppercase" }}>
-                Official system publisher
+                Official Publisher
               </div>
               <h1 style={{ margin: "7px 0 0", fontSize: "clamp(26px, 5vw, 40px)", lineHeight: 1.08 }}>
-                Global Support Network
+                Publish one clear GSN message
               </h1>
               <p style={{ margin: "10px 0 0", color: "#D7E3EF", lineHeight: 1.65, maxWidth: 760 }}>
-                GSN-HOUSE publishes the message. Your admin account stays in the audit trail; no member, shop, or community is presented as the author.
+                Choose the audience, prepare the message, then review before anything goes live.
               </p>
             </div>
           </div>
-          <div style={{ marginTop: 18, ...institutionalInnerCard("rgba(255,255,255,0.08)"), borderColor: "rgba(255,255,255,0.13)" }}>
-            <div style={{ color: "#BFD0E0", fontSize: 11, fontWeight: 900, textTransform: "uppercase" }}>Current draft</div>
-            <div style={{ marginTop: 7, color: "#FFFFFF", fontSize: 15, fontWeight: 900, lineHeight: 1.55 }}>
-              {selectedRows.length} communit{selectedRows.length === 1 ? "y" : "ies"} selected · {mediaQueue.length} media prepared · {scheduleMode === "timed" ? `Every ${scheduleIntervalMinutes || "?"} min` : "Normal rotation"}
+          <div className="gsn-house-publisher__identity">
+            <div className="gsn-house-publisher__identity-seal" aria-hidden="true">GSN</div>
+            <div>
+              <strong>GSN-HOUSE · Official message</strong>
+              <span>Sent by GSN. Your admin identity remains in the audit record.</span>
             </div>
-            <div style={{ marginTop: 4, color: "#D7E3EF", fontSize: 13, lineHeight: 1.5 }}>
-              Draft expiry: {dateTimeLabel(campaignExpiryIso(expiryInput))}
+          </div>
+          <div className="gsn-house-publisher__draft" aria-label="Current campaign draft">
+            <div className="gsn-house-publisher__draft-item">
+              <span>Audience</span>
+              <strong>{selectedRows.length} selected</strong>
+            </div>
+            <div className="gsn-house-publisher__draft-item">
+              <span>Media</span>
+              <strong>{mediaQueue.length} prepared</strong>
+            </div>
+            <div className="gsn-house-publisher__draft-item">
+              <span>Delivery</span>
+              <strong>{scheduleMode === "timed" ? `Every ${scheduleIntervalMinutes || "?"} min` : "Normal rotation"}</strong>
             </div>
           </div>
         </section>
 
-        <section style={{ ...card("#F8FBFF"), order: 1 }} aria-label="Command Centre campaign schedule simulation">
+        <nav className="gsn-house-publisher__steps" aria-label="Campaign preparation progress">
+          {publisherSteps.map((step, index) => {
+            const stepNumber = index + 1;
+            const active = currentPublisherStep === stepNumber;
+            return (
+              <div
+                key={step.label}
+                className={`gsn-house-publisher__step${active ? " is-active" : ""}${step.ready ? " is-ready" : ""}`}
+                data-complete={step.ready ? "true" : "false"}
+                aria-current={active ? "step" : undefined}
+              >
+                <span className="gsn-house-publisher__step-number">{step.ready ? "✓" : stepNumber}</span>
+                <strong>{step.label}</strong>
+              </div>
+            );
+          })}
+        </nav>
+
+        <section className="gsn-house-publisher__advanced" style={{ ...card("#F8FBFF"), order: 8 }} aria-label="Command Centre campaign schedule simulation">
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 300px" }}>
               <div style={sectionLabel()}>Campaign schedule · protocol 1.3 · paid_spotlight.day.v1</div>
@@ -2179,7 +2220,7 @@ export default function AdminGsnHouseCampaignPage() {
           ) : null}
         </section>
 
-        <section style={{ ...card(), order: 2 }} aria-label="GSN campaign operations">
+        <section className="gsn-house-publisher__operations" style={{ ...card(), order: 7 }} aria-label="GSN campaign operations">
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 280px" }}>
               <div style={sectionLabel()}>Campaign operations</div>
@@ -2402,7 +2443,7 @@ export default function AdminGsnHouseCampaignPage() {
         </section>
 
         {review ? (
-          <section style={{ ...card("#FFFDF6"), order: 5 }} aria-label="Read-only campaign review">
+          <section className="gsn-house-publisher__review" style={{ ...card("#FFFDF6"), order: 3 }} aria-label="Read-only campaign review">
             <div style={sectionLabel()}>3. Read-only review</div>
             <h2 style={{ margin: "8px 0 0", color: "#0B1F33", fontSize: 22 }}>
               Nothing is published yet
@@ -2540,7 +2581,7 @@ export default function AdminGsnHouseCampaignPage() {
         ) : null}
 
         {publication ? (
-          <section style={{ ...card("#ECFDF3"), order: 6 }}>
+          <section className="gsn-house-publisher__result" style={{ ...card("#ECFDF3"), order: 4 }}>
             <div style={sectionLabel()}>Publication result</div>
             <h2 style={{ margin: "8px 0 0", color: "#14532D", fontSize: 24 }}>
               {publication.complete
@@ -2595,7 +2636,7 @@ export default function AdminGsnHouseCampaignPage() {
           </section>
         ) : null}
 
-        <details style={{ ...card(), order: 7 }}>
+        <details className="gsn-house-publisher__governance" style={{ ...card(), order: 9 }}>
           <StableDisclosureSummary
             debugId="admin-gsn-campaign.governance.summary"
             stableHeight={44}
@@ -2616,13 +2657,13 @@ export default function AdminGsnHouseCampaignPage() {
         </details>
         {feedback ? <div role="status" style={{ ...statusPanel(feedback.tone), order: 2 }}>{feedback.text}</div> : null}
 
-        <section style={{ ...card(), order: 3 }}>
-          <div style={sectionLabel()}>1. Choose communities</div>
+        <section className="gsn-house-publisher__audience" style={{ ...card(), order: 1 }}>
+          <div style={sectionLabel()}>1. Audience</div>
           <h2 style={{ margin: "8px 0 0", color: "#0B1F33", fontSize: 22 }}>
-            Where should this official campaign appear?
+            Choose communities
           </h2>
           <p style={{ margin: "8px 0 0", ...helper() }}>
-            Active free communities are available by default. A Community Domain is blocked only when its lifecycle, Spotlight policy, or recorded advertising exclusion prevents delivery. Blocked rows stay visible so the reason is clear.
+            Select where this official message may appear. Blocked communities remain visible with the reason.
           </p>
 
           <form
@@ -2718,13 +2759,13 @@ export default function AdminGsnHouseCampaignPage() {
           ) : null}
         </section>
 
-        <section style={{ ...card(), order: 4 }}>
-          <div style={sectionLabel()}>2. Message and media</div>
+        <section className="gsn-house-publisher__compose" style={{ ...card(), order: 2 }}>
+          <div style={sectionLabel()}>2. Message and schedule</div>
           <h2 style={{ margin: "8px 0 0", color: "#0B1F33", fontSize: 22 }}>
-            Prepare the compact billboard
+            Prepare the announcement
           </h2>
           <p style={{ margin: "8px 0 0", ...helper() }}>
-            Use one short official message and add up to {MAX_GSN_HOUSE_BATCH_MEDIA} pictures or short videos. Each media item becomes one promotion. Preparation and review do not publish anything.
+            Add one short message, its contact, media and delivery timing. Nothing publishes before review.
           </p>
 
           {operations?.active_count ? (
@@ -2934,12 +2975,12 @@ export default function AdminGsnHouseCampaignPage() {
                 busyLabel={preparingMedia ? "Preparing media" : "Preparing final check"}
                 onClick={handleReview}
                 debugId="admin-gsn-campaign.review"
-                aria-label="Open final campaign check"
+                aria-label="Open final check and review campaign"
                 aria-describedby="admin-gsn-campaign-review-readiness"
               >
                 {stagedReviewCount > 0
-                  ? `Continue final check · ${stagedReviewCount} of ${mediaQueue.length} prepared`
-                  : `Open final check${mediaQueue.length > 0 ? ` for ${mediaQueue.length} promotion${mediaQueue.length === 1 ? "" : "s"}` : ""}`}
+                  ? `Continue review and publish · ${stagedReviewCount} of ${mediaQueue.length} prepared`
+                  : "Review and publish"}
               </StableButton>
             </div>
           ) : null}
