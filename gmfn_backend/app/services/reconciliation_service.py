@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import hashlib
 import json
@@ -463,6 +463,7 @@ def reconcile_one_event(
         exp = (
             db.query(ExpectedPayment)
             .filter(ExpectedPayment.id == int(exp.id))
+            .populate_existing()
             .with_for_update()
             .one()
         )

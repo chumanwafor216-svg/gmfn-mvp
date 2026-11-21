@@ -1,4 +1,4 @@
-# Active Handoff Notes
+﻿# Active Handoff Notes
 
 ## Discovery completion and Spotlight Slice 2 candidate - 2026-11-20
 
@@ -7130,7 +7130,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Honest residual: the screenshots do not expose the failed request status or selected file size, and Render log access had no confirmed workspace in this session. The exact production request failure therefore remains unproven; the reported handset/file should be retried after deployment to confirm the live network path.
 - The protected browser sweep passes but still logs the unrelated pre-existing duplicate React-key warning.
 
-# 2026-11-20 — Brainstorming record reconciled with canonical commercial summary
+# 2026-11-20 â€” Brainstorming record reconciled with canonical commercial summary
 
 - Reconciled the supplied `GSN Brainstorming Summary and Working Decision Record` against the existing commercial, Spotlight, financial-engine, and TrustSlip records.
 - Added `docs/GSN_BRAINSTORMING_RECONCILIATION_AND_WORKING_DECISION_RECORD_2026-11-20.md` as the consolidated management record.
@@ -7141,7 +7141,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 - No product behaviour, payment state, schema, forecast, external communication, or deployment changed.
 - Security boundary: the supplied attachment included an unrelated session/account dump. It was excluded completely and no sensitive material was copied into the repository. The exposed session should be revoked by the product owner.
 
-# 2026-11-20 — Public discovery, Spotlight and merchant-pilot current-revision audit
+# 2026-11-20 â€” Public discovery, Spotlight and merchant-pilot current-revision audit
 
 - Audited the supplied Public Discovery, Spotlight and Merchant Pilot Protocol against revision `cabbfb04048e418a86ef16390c32cfa685dead5c` without changing product behavior, payment state, environment, forecast, external communication or deployment.
 - Added `docs/GSN_PUBLIC_DISCOVERY_SPOTLIGHT_MERCHANT_PILOT_CURRENT_REVISION_AUDIT_2026-11-20.md` with a preservation map, proposed decision defaults, minimal implementation sequence, test advertiser report, metric dictionary, negative purchase/remedy trace, Community Domain service sheet, Demand Box recommendation, Scottish pilot design and sponsor boundary.
@@ -7161,7 +7161,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Updated the frozen screen specification and freeze policy to supersede the earlier owner numbered-position presentation detail without changing the twelve-space capacity or exact write target.
 - Verification passed: focused ESLint, Public Shop button inventory audit, the focused 390x844 progressive-shelf browser smoke, TypeScript and the 329-module production build, the isolated Dashboard passport guard, and the complete protected-button-freeze suite. The protected browser sweep still logs its unrelated pre-existing duplicate React-key warning while passing.
 
-# 2026-11-20 — Corrected Public Discovery, Spotlight and Merchant Pilot implementation protocol
+# 2026-11-20 â€” Corrected Public Discovery, Spotlight and Merchant Pilot implementation protocol
 
 - Added `docs/GSN_PUBLIC_DISCOVERY_SPOTLIGHT_MERCHANT_PILOT_CORRECTED_IMPLEMENTATION_PROTOCOL_2026-11-20.md` as the sanitized version 1.1 implementation handoff.
 - The protocol corrects commercial interpretation without rewriting the completed source audit: GBP 0.50 buys one Pipeline Credit and 30 genuine scheduled opportunities split 10/10/10; mere consideration is not supplied delivery; the five-view founder threshold is preserved; entitlement, genuine supply, impressions, shortfall and remedy remain separate evidence.
@@ -7171,7 +7171,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Existing audit facts and no-release verdict remain valid: public cross-community shop/offer search and the complete canonical paid Spotlight chain are not implemented, and live payment remains unapproved.
 - Security boundary: the supplied attachment contained a live account/session export after the protocol. It was excluded completely. The product owner should revoke the exposed session, remove unsafe copies and sign in again before treating the account as secure.
 
-# 2026-11-20 — Public merchant discovery Slice 1 candidate
+# 2026-11-20 â€” Public merchant discovery Slice 1 candidate
 
 - Implemented the authorized public merchant discovery slice as a separate explicit publication authority. Legacy products receive no publication row and remain excluded until their owner confirms them product by product.
 - Added anonymous `GET /marketplace/public-discovery`, owner preview and owner publication-state endpoints. Search fails closed unless both `GSN_PUBLIC_MERCHANT_DISCOVERY_V1_ENABLED` and `GSN_SHOP_PRIVACY_AUTHORITY_V1_ENABLED` are enabled.
@@ -7266,6 +7266,6 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Preserved the global payment emergency stop and proved the Spotlight-scoped gate cannot enable unrelated operations. Paid Spotlight still requires both gates plus active merchant/operator entitlement at acquisition, payment application, quote, spend and booking boundaries. Honest caveat: changing the global gate is intentionally broad and must be reviewed separately.
 - Serialized expected-payment confirmation, aligned acquisition/refund/spend lock order and preserved confirmed late cash on an explicit permission hold. Safe retry allocates once; refund classification remains distinct from bank disbursement.
 - Added explicit pending-policy statuses for processing cost, direct delivery cost and community allocation. Merchant/sponsor reports return unknown amounts while policy is pending; historical house settlement remains recorded.
-- Local full backend verification passed outside the Windows restricted-token temp-directory defect: 1,861 passed and 36 infrastructure-dependent skips. Alembic has one head, `20261121_spotlight_slice4a_completion`. PostgreSQL acceptance still requires the candidate GitHub job to report exactly 12 passed and zero skipped.
+- Local full backend verification passed outside the Windows restricted-token temp-directory defect: 1,861 passed and 36 infrastructure-dependent skips. Alembic has one head, `20261121_spotlight_slice4a_completion`. PostgreSQL acceptance is determined only by the candidate GitHub job reporting exactly 12 passed and zero skipped; local infrastructure skips do not count as evidence.
 - Release boundary preserved: no deployment, live payment, production flags, public-discovery activation, owner notice, outreach or `main` promotion.
 - Full implementation, gate matrix, telemetry examples, policy choices and rollback: `docs/GSN_SPOTLIGHT_SLICE4A_COMPLETION_REPORT_2026-11-21.md`.
