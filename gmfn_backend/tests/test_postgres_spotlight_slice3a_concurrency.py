@@ -75,17 +75,33 @@ def postgres_engine():
 def clean_postgres(postgres_engine, monkeypatch):
     monkeypatch.setenv("GSN_PAID_SPOTLIGHT_V1_ENABLED", "1")
     monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
-    tables = [
-        name
-        for name in inspect(postgres_engine).get_table_names()
-        if name != "alembic_version"
-    ]
-    if tables:
-        quoted = ", ".join(f'"{name}"' for name in tables)
-        with postgres_engine.begin() as connection:
-            connection.execute(
-                text(f"TRUNCATE TABLE {quoted} RESTART IDENTITY CASCADE")
-            )
+    available_tables = set(inspect(postgres_engine).get_table_names())
+    owned_tables = (
+        "spotlight_commercial_service_credit_applications",
+        "spotlight_commercial_service_credit_obligations",
+        "spotlight_commercial_presentation_attributions",
+        "spotlight_commercial_audit_events",
+        "spotlight_commercial_remedies",
+        "spotlight_commercial_opportunities",
+        "spotlight_commercial_allocations",
+        "spotlight_commercial_bookings",
+        "spotlight_commercial_capacity_windows",
+        "pipeline_credit_service_spend_orders",
+        "pipeline_credit_service_quotes",
+        "pipeline_credit_ledger_entries",
+        "pipeline_credit_service_versions",
+        "pipeline_credit_pricing_policies",
+        "pipeline_credit_commercial_control_versions",
+        "spotlight_campaigns",
+        "clan_memberships",
+        "clans",
+        "pipeline_credit_accounts",
+        "users",
+    )
+    with postgres_engine.begin() as connection:
+        for table_name in owned_tables:
+            if table_name in available_tables:
+                connection.exec_driver_sql(f'DELETE FROM "{table_name}"')
 
 
 def _sessions(postgres_engine):
