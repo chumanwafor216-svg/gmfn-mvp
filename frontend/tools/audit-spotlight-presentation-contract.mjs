@@ -567,6 +567,12 @@ assertContains(
 
 assertContains(
   'frontend/tools/smoke-spotlight-owner-visibility.mjs',
+  /async function openOwnerSpotlight[^]*?data-public-shop-more=secondary[^]*?shop-gallery.more.compact-toggle[^]*?hasAttribute\('open'\)[^]*?data-owner-spotlight-inspection=live[^]*?return[^]*?const summary/,
+  'The owner-reopen smoke must follow the normal mobile compact Spotlight control before using the shared-update summary fallback.'
+);
+
+assertContains(
+  'frontend/tools/smoke-spotlight-owner-visibility.mjs',
   /testDuplicateCanonicalRefillUsesCooldown[^]*?waitForTimeout\(8_000\)[^]*?consumed Spotlight remained painted[^]*?canonicalCalls !== 2[^]*?qualifyCalls !== 1/,
   'Focused browser coverage must prove duplicate refill cooldown removes the consumed occurrence without duplicating accounting.'
 );

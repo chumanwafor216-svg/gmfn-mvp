@@ -7318,3 +7318,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Verification passed: TypeScript no-emit, Spotlight system-feed audit, Spotlight presentation-contract audit, four focused Playwright scenarios, production frontend build, protected-button freeze audit and diff check.
 - Honest unrelated test status: the legacy owner-reopen full-suite scenario currently stops before rotation because its helper waits for a hidden More summary. That stale fixture was not rewritten as part of this bounded rotation fix.
 - No backend selector, payment, settlement, capacity, permission, database or public-discovery contract changed.
+
+# 2026-11-21 - Spotlight owner-reopen smoke fixture correction
+
+- Resolved the legacy owner-reopen limitation recorded above. The production route was already correct: normal phone shops use the visible compact Spotlight action, while the nested summary is intentionally reserved for shared Shop Update presentation.
+- Updated the Playwright helper to use the compact action when the Spotlight disclosure is closed, retain the shared-update summary as fallback and reuse an already-open disclosure without waiting on a hidden control.
+- Removed the obsolete resume assertion that demanded an already-consumed owner inspection be reinserted after visibility refresh. The scenario now verifies owner-status revalidation and governed member delivery without undoing the fairness fix.
+- The complete owner-reopen scenario now passes with 11 owner-status reads, five canonical calls, four qualifying presentations, four impressions, no legacy feed calls and ordered visibility windows 0 through 4.
+- The adjacent owner-refresh fairness scenario still passes without owner reinsertion. TypeScript and both Spotlight contract audits pass.
+- No production source, backend, route, permission, payment, database or UI behavior changed; this correction is limited to the focused smoke fixture and its static audit guard.

@@ -497,6 +497,31 @@ async function installMocks(page, scenario) {
 }
 
 async function openOwnerSpotlight(page) {
+  const gate = page.locator('[data-public-shop-more=secondary]');
+  if ((await gate.getAttribute('open')) === null) {
+    const compactToggle = page.locator(
+      'button[data-cta-id=shop-gallery.more.compact-toggle]'
+    );
+    if (await compactToggle.isVisible()) {
+      await compactToggle.click();
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[data-public-shop-more=secondary]')?.hasAttribute('open'),
+        null,
+        { timeout: 15_000 }
+      );
+    }
+  }
+  if ((await gate.getAttribute('open')) !== null) {
+    await page
+      .locator('[data-owner-spotlight-inspection=live]')
+      .waitFor({ state: 'visible', timeout: 15_000 });
+    await page.getByText('Owner saved Spotlight', { exact: true }).waitFor({
+      state: 'visible',
+      timeout: 15_000,
+    });
+    return;
+  }
   const summary = page.locator('[data-public-shop-more="secondary"] > summary');
   await summary.waitFor({ state: "visible", timeout: 15_000 });
   if ((await page.locator('[data-public-shop-more="secondary"]').getAttribute("open")) === null) {
@@ -764,10 +789,7 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
     state = "visible";
     document.dispatchEvent(new Event("visibilitychange"));
   });
-  await page.getByText("Your Spotlight · Live", { exact: true }).first().waitFor({
-    state: "visible",
-    timeout: 15_000,
-  });
+  await page.waitForTimeout(1_200);
 
   if (scenario.canonicalCalls < 1 || scenario.legacyBroadcastCalls !== 0) {
     throw new Error(
