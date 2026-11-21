@@ -1,9 +1,13 @@
 # GSN Spotlight Slice 3A completion report
 
-Date: 2026-11-21  
-Authorised baseline: `58506d0c60d27f773a1dd70099ab1bfaa309e9a4`  
-Verified implementation revision: `f243d2685b7c4732b40d3c8861e81d03ba55e0e6`  
-Working branch: `codex/public-shop-audio-fallback`  
+Date: 2026-11-21
+
+Authorised baseline: `58506d0c60d27f773a1dd70099ab1bfaa309e9a4`
+
+Verified implementation revision: `f243d2685b7c4732b40d3c8861e81d03ba55e0e6`
+
+Working branch: `codex/public-shop-audio-fallback`
+
 Release state: production-capable path remains disabled; not deployed and not promoted to `main`
 
 ## Outcome
