@@ -1,4 +1,4 @@
-﻿# Active Handoff Notes
+# Active Handoff Notes
 
 ## Discovery completion and Spotlight Slice 2 candidate - 2026-11-20
 
@@ -7269,3 +7269,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Local full backend verification passed outside the Windows restricted-token temp-directory defect: 1,861 passed and 36 infrastructure-dependent skips. Alembic has one head, `20261121_spotlight_slice4a_completion`. PostgreSQL acceptance is determined only by the candidate GitHub job reporting exactly 12 passed and zero skipped; local infrastructure skips do not count as evidence.
 - Release boundary preserved: no deployment, live payment, production flags, public-discovery activation, owner notice, outreach or `main` promotion.
 - Full implementation, gate matrix, telemetry examples, policy choices and rollback: `docs/GSN_SPOTLIGHT_SLICE4A_COMPLETION_REPORT_2026-11-21.md`.
+
+# 2026-11-21 - Spotlight post-Slice 4A operational-readiness proposal
+
+- Accepted exact tested candidate `3256ad8dfe18873cd70b64ea9496b1196541a2b4` without reopening completed payment, booking, settlement, reconciliation or concurrency work.
+- Added `docs/GSN_SPOTLIGHT_POST_SLICE4A_OPERATIONAL_READINESS_2026-11-21.md`, defining the smallest measurement-only production proposal: backend-only deployment, current Alembic head, all financial/commercial/write/discovery flags explicitly off, one admin-only daily aggregate report and no acquisition, entitlement, booking or capacity seeds.
+- Recorded the honest boundary that viewer-triggered leases and visible/qualifying presentations are evidence inputs, not automatically sellable capacity or supplied paid opportunities. Fourteen valid local days, separated into overnight/morning/afternoon/evening, are required before a separate capacity decision.
+- Defined daily evidence files, hashes, report columns, quality checks, named operator roles, stop conditions, deployment and conservative rollback. A dedicated measurement-route flag does not exist; immediate access control is admin-session revocation plus application rollback.
+- Identified remaining commercial, accounting, privacy, advertising-recognition and customer-contract decisions. No deployment, environment change, migration execution, payment activation, customer-term publication, outreach, public-discovery activation or `main` promotion was performed.
