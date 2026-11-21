@@ -238,6 +238,10 @@ for (const text of [
   'aria-label="Campaign preparation progress"',
   'className="gsn-house-publisher__audience"',
   'className="gsn-house-publisher__compose"',
+  'className="gsn-house-publisher__community-list"',
+  'aria-label="Community result pages"',
+  'DESTINATION_PAGE_SIZE = 20',
+  'response.next_offset',
   '"Review and publish"',
 ]) {
   requireText(pageFile, page, text, "Missing polished publisher workflow contract: " + text + ".");
@@ -248,6 +252,9 @@ for (const text of [
   ".gsn-house-publisher__steps",
   ".gsn-house-publisher__audience",
   ".gsn-house-publisher__compose",
+  ".gsn-house-publisher__community-option",
+  ".gsn-house-publisher__community-pagination",
+  'input:not([type="checkbox"])',
   "@media (max-width: 720px)",
 ]) {
   requireText(pageStylesFile, pageStyles, text, "Missing mobile publisher presentation contract: " + text + ".");

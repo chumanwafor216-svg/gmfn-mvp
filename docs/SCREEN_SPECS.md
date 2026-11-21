@@ -3056,6 +3056,7 @@ Rules:
 - Publication identity is the reserved non-login system publisher `GSN-HOUSE`; the signed-in admin remains the audit actor.
 - On phone, keep the first surface compact: show one draft summary plus the current campaign state and expiry. Keep the live message, delivery figures, destination controls, and emergency stop inside one clearly named delivery-report disclosure. Refresh status must remain immediately available, and the disclosure label must make the campaign controls discoverable.
 - Destination discovery and selection must use human-readable community names/codes; raw internal ids must not be the primary operator-facing label.
+- Destination discovery must remain usable with thousands of communities: use bounded server-side pages, retain selections across searches and pages, and render compact rows rather than a full card for every community. Result counts must distinguish all matches from eligible and blocked communities on the current page.
 - An explicitly selected active free community is eligible by default. It does not need a Community Domain record before GSN advertising can enter available Spotlight space.
 - A linked Community Domain may block GSN house campaigns by recording `domain.central_advertising.allow_gsn_house_campaigns: false`. An inactive community/domain or a Domain Spotlight mode of `off` also blocks delivery.
 - Blocked or explicitly excluded destinations must be visible but not selectable.

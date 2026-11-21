@@ -205,6 +205,168 @@
   font-weight: 900;
 }
 
+.gsn-house-publisher__community-search {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.gsn-house-publisher__community-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  color: var(--publisher-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.gsn-house-publisher__community-list {
+  max-height: 360px;
+  overflow-y: auto;
+  margin-top: 12px;
+  border: 1px solid rgba(17, 42, 68, 0.13);
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.gsn-house-publisher__community-option {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 58px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(17, 42, 68, 0.09);
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.gsn-house-publisher__community-option:last-child {
+  border-bottom: 0;
+}
+
+.gsn-house-publisher__community-option[data-selected="true"] {
+  background: #eff6ff;
+}
+
+.gsn-house-publisher__community-option[data-eligible="false"] {
+  background: #f8fafc;
+  cursor: not-allowed;
+  opacity: 0.84;
+}
+
+.gsn-house-publisher__community-checkbox {
+  width: 18px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  margin: 0;
+  accent-color: #0b63d1;
+}
+
+.gsn-house-publisher__community-copy,
+.gsn-house-publisher__community-name,
+.gsn-house-publisher__community-code,
+.gsn-house-publisher__community-reason {
+  display: block;
+  min-width: 0;
+}
+
+.gsn-house-publisher__community-name {
+  overflow: hidden;
+  color: var(--publisher-ink);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gsn-house-publisher__community-code {
+  overflow: hidden;
+  margin-top: 2px;
+  color: var(--publisher-muted);
+  font-size: 11px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gsn-house-publisher__community-reason {
+  margin-top: 3px;
+  color: #8a4b12;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.gsn-house-publisher__community-status {
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.gsn-house-publisher__community-option[data-eligible="false"] .gsn-house-publisher__community-status {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.gsn-house-publisher__community-pagination {
+  display: grid;
+  grid-template-columns: minmax(90px, auto) minmax(0, 1fr) minmax(90px, auto);
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.gsn-house-publisher__community-pagination span {
+  color: var(--publisher-muted);
+  font-size: 12px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.gsn-house-publisher__selected-communities {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(23, 76, 132, 0.16);
+  border-radius: 15px;
+  background: #f8fbff;
+}
+
+.gsn-house-publisher__selected-list {
+  display: grid;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.gsn-house-publisher__selected-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 42px;
+  padding: 6px 8px 6px 10px;
+  border-radius: 11px;
+  background: #ffffff;
+  color: #174c84;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.gsn-house-publisher__selected-row > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 720px) {
   .gsn-house-publisher {
     padding: 10px 10px 118px !important;
@@ -301,8 +463,26 @@
 
   .gsn-house-publisher__compose input,
   .gsn-house-publisher__compose select,
-  .gsn-house-publisher__audience input {
+  .gsn-house-publisher__audience input:not([type="checkbox"]) {
     min-height: 48px !important;
+  }
+
+  .gsn-house-publisher__community-list {
+    max-height: 330px;
+  }
+
+  .gsn-house-publisher__community-option {
+    min-height: 54px;
+    padding: 7px 8px;
+  }
+
+  .gsn-house-publisher__community-pagination {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .gsn-house-publisher__community-pagination span {
+    grid-column: 1 / -1;
+    grid-row: 1;
   }
 }
 

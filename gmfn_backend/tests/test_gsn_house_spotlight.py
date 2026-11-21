@@ -296,6 +296,14 @@ def test_house_campaign_destination_catalogue_is_named_and_governed(
         "/marketplace/admin/gsn-house-campaigns/destinations",
         params={"q": "GMFN-C-000009"},
     )
+    first_page = client.get(
+        "/marketplace/admin/gsn-house-campaigns/destinations",
+        params={"limit": 2, "offset": 0},
+    )
+    second_page = client.get(
+        "/marketplace/admin/gsn-house-campaigns/destinations",
+        params={"limit": 2, "offset": 2},
+    )
 
     assert all_destinations.status_code == 200, all_destinations.text
     all_body = all_destinations.json()
@@ -337,6 +345,80 @@ def test_house_campaign_destination_catalogue_is_named_and_governed(
         assert missing_body["items"][0]["community_code"] == "GMFN-C-000009"
         assert missing_body["items"][0]["eligible"] is True
         assert missing_body["items"][0]["reason_code"] == "eligible_free_community"
+
+    assert first_page.status_code == 200, first_page.text
+    assert second_page.status_code == 200, second_page.text
+    first_page_body = first_page.json()
+    second_page_body = second_page.json()
+    assert first_page_body["matching_total"] == 5
+    assert first_page_body["returned_count"] == 2
+    assert first_page_body["offset"] == 0
+    assert first_page_body["limit"] == 2
+    assert first_page_body["has_more"] is True
+    assert first_page_body["next_offset"] == 2
+    assert first_page_body["previous_offset"] is None
+    assert second_page_body["matching_total"] == 5
+    assert second_page_body["returned_count"] == 2
+    assert second_page_body["offset"] == 2
+    assert second_page_body["next_offset"] == 4
+    assert second_page_body["previous_offset"] == 0
+    assert {
+        row["clan_id"] for row in first_page_body["items"]
+    }.isdisjoint({row["clan_id"] for row in second_page_body["items"]})
+
+
+def test_house_campaign_destination_catalogue_bounds_large_directory(
+    client,
+    override_current_user,
+) -> None:
+    _seed_house_campaign_destinations()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (
+                    id, name, marketplace_name, community_code, invite_code,
+                    status, invite_uses, created_at
+                ) VALUES (
+                    :id, :name, :marketplace_name, :community_code, :invite_code,
+                    'active', 0, CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            [
+                {
+                    "id": 1000 + index,
+                    "name": f"Scale Community {index:04d}",
+                    "marketplace_name": f"Scale Market {index:04d}",
+                    "community_code": f"GSN-SCALE-{index:04d}",
+                    "invite_code": f"SCALE-{index:04d}",
+                }
+                for index in range(2000)
+            ],
+        )
+
+    first_page = client.get(
+        "/marketplace/admin/gsn-house-campaigns/destinations",
+        params={"limit": 20, "offset": 0},
+    )
+    final_page = client.get(
+        "/marketplace/admin/gsn-house-campaigns/destinations",
+        params={"limit": 20, "offset": 2000},
+    )
+
+    assert first_page.status_code == 200, first_page.text
+    assert final_page.status_code == 200, final_page.text
+    first_body = first_page.json()
+    final_body = final_page.json()
+    assert first_body["matching_total"] == 2005
+    assert first_body["returned_count"] == 20
+    assert first_body["has_more"] is True
+    assert first_body["next_offset"] == 20
+    assert final_body["matching_total"] == 2005
+    assert final_body["returned_count"] == 5
+    assert final_body["has_more"] is False
+    assert final_body["next_offset"] is None
+    assert final_body["previous_offset"] == 1980
 
 
 def test_house_campaign_preview_defaults_free_communities_and_respects_exclusions(

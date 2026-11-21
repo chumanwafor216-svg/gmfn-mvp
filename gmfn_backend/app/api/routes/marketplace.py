@@ -971,6 +971,7 @@ def _gsn_house_destination_catalogue(
     *,
     query: Optional[str],
     limit: int,
+    offset: int = 0,
 ) -> dict[str, Any]:
     # Begin with communities, not Community Domains. An active community that
     # has not completed Community Domain setup is still a valid search result;
@@ -1003,6 +1004,7 @@ def _gsn_house_destination_catalogue(
             func.lower(func.coalesce(Clan.marketplace_name, Clan.name)).asc(),
             Clan.id.asc(),
         )
+        .offset(int(offset))
         .limit(int(limit))
         .all()
     )
@@ -1016,6 +1018,15 @@ def _gsn_house_destination_catalogue(
         "matching_total": int(matching_total),
         "eligible_count": sum(1 for row in decisions if bool(row["eligible"])),
         "excluded_count": sum(1 for row in decisions if not bool(row["eligible"])),
+        "offset": int(offset),
+        "limit": int(limit),
+        "has_more": int(offset) + len(decisions) < int(matching_total),
+        "next_offset": (
+            int(offset) + len(decisions)
+            if int(offset) + len(decisions) < int(matching_total)
+            else None
+        ),
+        "previous_offset": max(0, int(offset) - int(limit)) if int(offset) > 0 else None,
         "query": cleaned_query or None,
         "governance_boundary": _gsn_house_governance_boundary(),
     }
@@ -8969,11 +8980,17 @@ def stop_gsn_house_campaign_destination(
 def list_gsn_house_campaign_destinations(
     q: Optional[str] = Query(default=None, max_length=120),
     limit: int = Query(default=100, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     _require_platform_admin(current_user)
-    return _gsn_house_destination_catalogue(db, query=q, limit=int(limit))
+    return _gsn_house_destination_catalogue(
+        db,
+        query=q,
+        limit=int(limit),
+        offset=int(offset),
+    )
 
 
 @router.post("/admin/gsn-house-campaigns/preview")

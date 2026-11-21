@@ -7758,6 +7758,11 @@ export type GsnHouseCampaignDestinationCatalogue = {
   matching_total: number;
   eligible_count: number;
   excluded_count: number;
+  offset: number;
+  limit: number;
+  has_more: boolean;
+  next_offset?: number | null;
+  previous_offset?: number | null;
   query?: string | null;
   governance_boundary?: GsnHouseCampaignGovernanceBoundary;
 };
@@ -8126,11 +8131,13 @@ export async function discardAdminGsnHouseCampaignReviewMedia(
 export async function listAdminGsnHouseCampaignDestinations(params?: {
   q?: string | null;
   limit?: number;
+  offset?: number;
 }): Promise<GsnHouseCampaignDestinationCatalogue> {
   const out = await httpJson(
     `/marketplace/admin/gsn-house-campaigns/destinations${buildQuery({
       q: String(params?.q || "").trim() || undefined,
       limit: params?.limit ?? 100,
+      offset: params?.offset ?? 0,
     })}`,
     "GET",
     undefined,

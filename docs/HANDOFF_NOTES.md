@@ -7327,3 +7327,14 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The complete owner-reopen scenario now passes with 11 owner-status reads, five canonical calls, four qualifying presentations, four impressions, no legacy feed calls and ordered visibility windows 0 through 4.
 - The adjacent owner-refresh fairness scenario still passes without owner reinsertion. TypeScript and both Spotlight contract audits pass.
 - No production source, backend, route, permission, payment, database or UI behavior changed; this correction is limited to the focused smoke fixture and its static audit guard.
+
+# 2026-11-21 - Command Centre community selector scale correction
+
+- Corrected `/app/command-center/gsn-campaigns` after phone review showed that community destinations were rendered as oversized cards and the route silently stopped at the first 100 records.
+- Added bounded server-side pagination to the existing platform-admin destination catalogue. The page now requests 20 communities at a time, exposes truthful match and current-page eligibility counts, and supports Previous/Next navigation without loading the whole directory.
+- Replaced destination cards with compact selectable rows in a bounded scroll area. The mobile 48px field rule now excludes checkboxes, preventing each row from being inflated by field styling.
+- Selections persist across searches and pages. The selected audience is kept behind one compact disclosure with per-community removal, so selecting many destinations does not create a second giant card wall.
+- Added stale-response protection so a slower earlier search cannot replace a newer page or query result.
+- Preserved the existing 100-community publication cap, backend eligibility recheck, blocked-community reasons, Community Domain exclusions, review-before-publish flow, schedule, payment and audit contracts.
+- Added backend pagination coverage plus a 2,005-community regression proving a 20-row first page and a bounded final page. Verification passed: 19 house-campaign tests, focused Command Centre audit, TypeScript no-emit, production frontend build and the complete protected-button freeze audit.
+- No migration was required. The frontend and API must deploy from the same revision because the compact chooser consumes the new pagination metadata.

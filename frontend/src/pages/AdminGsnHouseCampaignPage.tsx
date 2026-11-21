@@ -84,6 +84,7 @@ type BatchPublication = {
 };
 
 const MAX_GSN_HOUSE_BATCH_MEDIA = 10;
+const DESTINATION_PAGE_SIZE = 20;
 const GSN_HOUSE_DEFAULT_LIFETIME_MS = 24 * 60 * 60 * 1000;
 const GSN_HOUSE_MIN_SCHEDULE_INTERVAL_MINUTES = 5;
 
@@ -402,6 +403,12 @@ export default function AdminGsnHouseCampaignPage() {
     matchingTotal: 0,
     eligibleCount: 0,
     excludedCount: 0,
+    offset: 0,
+    limit: DESTINATION_PAGE_SIZE,
+    nextOffset: null as number | null,
+    previousOffset: null as number | null,
+    hasMore: false,
+    query: "",
   });
   const [selected, setSelected] = useState<Record<number, GsnHouseCampaignDestination>>({});
   const [expiryInput, setExpiryInput] = useState(defaultExpiryInputValue);
@@ -474,6 +481,7 @@ export default function AdminGsnHouseCampaignPage() {
   const reviewRef = useRef<CampaignReview | null>(null);
   const publicationRef = useRef<BatchPublication | null>(null);
   const stagedReviewMediaRef = useRef<Record<string, CampaignReviewMedia>>({});
+  const destinationRequestIdRef = useRef(0);
 
   const selectedRows = useMemo(
     () => Object.values(selected).sort((a, b) => destinationTitle(a).localeCompare(destinationTitle(b))),
@@ -678,27 +686,40 @@ export default function AdminGsnHouseCampaignPage() {
     }
   }, []);
 
-  const loadDestinations = useCallback(async (search = "") => {
+  const loadDestinations = useCallback(async (search = "", offset = 0) => {
+    const requestId = destinationRequestIdRef.current + 1;
+    destinationRequestIdRef.current = requestId;
     setLoadingCatalogue(true);
     setFeedback(null);
     try {
       const response = await listAdminGsnHouseCampaignDestinations({
         q: search,
-        limit: 100,
+        limit: DESTINATION_PAGE_SIZE,
+        offset,
       });
+      if (destinationRequestIdRef.current !== requestId) return;
       setCatalogue(response.items);
       setCatalogueMeta({
         matchingTotal: Number(response.matching_total || 0),
         eligibleCount: Number(response.eligible_count || 0),
         excludedCount: Number(response.excluded_count || 0),
+        offset: Number(response.offset || 0),
+        limit: Number(response.limit || DESTINATION_PAGE_SIZE),
+        nextOffset: response.next_offset == null ? null : Number(response.next_offset),
+        previousOffset: response.previous_offset == null ? null : Number(response.previous_offset),
+        hasMore: Boolean(response.has_more),
+        query: safeStr(response.query),
       });
     } catch (error) {
+      if (destinationRequestIdRef.current !== requestId) return;
       setFeedback({
         tone: "error",
         text: campaignRequestError(error, "Community destinations could not be loaded."),
       });
     } finally {
-      setLoadingCatalogue(false);
+      if (destinationRequestIdRef.current === requestId) {
+        setLoadingCatalogue(false);
+      }
     }
   }, []);
 
@@ -2669,9 +2690,9 @@ export default function AdminGsnHouseCampaignPage() {
           <form
             onSubmit={(event) => {
               event.preventDefault();
-              void loadDestinations(query.trim());
+              void loadDestinations(query.trim(), 0);
             }}
-            style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}
+            className="gsn-house-publisher__community-search"
           >
             <label style={{ flex: "1 1 280px" }}>
               <span style={{ ...sectionLabel(), display: "block", marginBottom: 7 }}>Search by community or domain name/code</span>
@@ -2681,6 +2702,8 @@ export default function AdminGsnHouseCampaignPage() {
                 placeholder="Example: Pillar of Hope or GSN-C-..."
                 maxLength={120}
                 style={fieldStyle()}
+                type="search"
+                data-gmfn-field="admin-gsn-campaign.community-search"
               />
             </label>
             <StableButton
@@ -2695,11 +2718,17 @@ export default function AdminGsnHouseCampaignPage() {
             </StableButton>
           </form>
 
-          <div style={{ marginTop: 12, ...helper() }}>
-            Showing {catalogue.length} of {catalogueMeta.matchingTotal} matches · {catalogueMeta.eligibleCount} eligible · {catalogueMeta.excludedCount} blocked
+          <div className="gsn-house-publisher__community-meta" aria-live="polite">
+            <strong>{catalogueMeta.matchingTotal.toLocaleString()} matching communities</strong>
+            <span>
+              {catalogueMeta.matchingTotal > 0
+                ? `Showing ${catalogueMeta.offset + 1}-${catalogueMeta.offset + catalogue.length}`
+                : "No results"}
+              {` · This page: ${catalogueMeta.eligibleCount} eligible, ${catalogueMeta.excludedCount} blocked`}
+            </span>
           </div>
 
-          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+          <div className="gsn-house-publisher__community-list" aria-busy={loadingCatalogue}>
             {catalogue.length === 0 && !loadingCatalogue ? (
               <div style={softCard()}>No matching communities were found.</div>
             ) : null}
@@ -2708,36 +2737,29 @@ export default function AdminGsnHouseCampaignPage() {
               return (
                 <label
                   key={row.clan_id}
-                  style={{
-                    ...softCard(row.eligible ? (checked ? "#EFF6FF" : "#FFFFFF") : "#F8FAFC"),
-                    display: "flex",
-                    gap: 12,
-                    alignItems: "flex-start",
-                    cursor: row.eligible ? "pointer" : "not-allowed",
-                    opacity: row.eligible ? 1 : 0.82,
-                  }}
+                  className="gsn-house-publisher__community-option"
+                  data-selected={checked ? "true" : "false"}
+                  data-eligible={row.eligible ? "true" : "false"}
                 >
                   <input
                     type="checkbox"
                     checked={checked}
                     disabled={!row.eligible || draftBusy || publishedCount > 0}
                     onChange={() => toggleDestination(row)}
-                    style={{ width: 20, height: 20, marginTop: 2, accentColor: "#0B63D1" }}
+                    className="gsn-house-publisher__community-checkbox"
                   />
-                  <span style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: "block", color: "#0B1F33", fontWeight: 900, fontSize: 16 }}>
+                  <span className="gsn-house-publisher__community-copy">
+                    <span className="gsn-house-publisher__community-name">
                       {destinationTitle(row)}
                     </span>
                     {destinationContext(row) ? (
-                      <span style={{ display: "block", marginTop: 3, color: "#60758A", fontSize: 13 }}>
+                      <span className="gsn-house-publisher__community-code">
                         {destinationContext(row)}
                       </span>
                     ) : null}
-                    <span style={{ display: "block", marginTop: 7, color: row.eligible ? "#166534" : "#8A4B12", fontSize: 13, lineHeight: 1.5 }}>
-                      {row.reason}
-                    </span>
+                    {!row.eligible ? <span className="gsn-house-publisher__community-reason">{row.reason}</span> : null}
                   </span>
-                  <span style={{ borderRadius: 999, padding: "6px 9px", background: row.eligible ? "#DCFCE7" : "#FFF7ED", color: row.eligible ? "#166534" : "#9A3412", fontSize: 11, fontWeight: 900, whiteSpace: "nowrap" }}>
+                  <span className="gsn-house-publisher__community-status">
                     {row.eligible ? "Eligible" : "Blocked"}
                   </span>
                 </label>
@@ -2745,17 +2767,53 @@ export default function AdminGsnHouseCampaignPage() {
             })}
           </div>
 
+          {catalogueMeta.matchingTotal > catalogueMeta.limit ? (
+            <nav className="gsn-house-publisher__community-pagination" aria-label="Community result pages">
+              <StableButton
+                type="button"
+                onClick={() => void loadDestinations(catalogueMeta.query, catalogueMeta.previousOffset || 0)}
+                disabled={catalogueMeta.previousOffset == null || loadingCatalogue}
+                debugId="admin-gsn-campaign.communities-previous"
+              >
+                Previous
+              </StableButton>
+              <span>
+                Page {Math.floor(catalogueMeta.offset / catalogueMeta.limit) + 1} of {Math.ceil(catalogueMeta.matchingTotal / catalogueMeta.limit)}
+              </span>
+              <StableButton
+                type="button"
+                onClick={() => void loadDestinations(catalogueMeta.query, catalogueMeta.nextOffset || 0)}
+                disabled={!catalogueMeta.hasMore || catalogueMeta.nextOffset == null || loadingCatalogue}
+                debugId="admin-gsn-campaign.communities-next"
+              >
+                Next
+              </StableButton>
+            </nav>
+          ) : null}
+
           {selectedRows.length > 0 ? (
-            <div style={{ marginTop: 16, ...softCard("#F8FBFF") }}>
-              <div style={sectionLabel()}>Selected destinations ({selectedRows.length})</div>
-              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <details className="gsn-house-publisher__selected-communities">
+              <StableDisclosureSummary debugId="admin-gsn-campaign.selected-communities.summary">
+                {selectedRows.length} selected {selectedRows.length === 1 ? "community" : "communities"}
+              </StableDisclosureSummary>
+              <div className="gsn-house-publisher__selected-list">
                 {selectedRows.map((row) => (
-                  <span key={row.clan_id} style={{ borderRadius: 999, background: "#E6F0FF", color: "#174C84", padding: "7px 10px", fontSize: 13, fontWeight: 850 }}>
-                    {destinationTitle(row)}{row.community_code ? ` · ${row.community_code}` : ""}
-                  </span>
+                  <div key={row.clan_id} className="gsn-house-publisher__selected-row">
+                    <span>{destinationTitle(row)}{row.community_code ? ` · ${row.community_code}` : ""}</span>
+                    <StableButton
+                      type="button"
+                      onClick={() => toggleDestination(row)}
+                      disabled={draftBusy || publishedCount > 0}
+                      stableHeight={34}
+                      debugId={`admin-gsn-campaign.selected-remove.${row.clan_id}`}
+                      style={{ padding: "6px 10px", fontSize: 11 }}
+                    >
+                      Remove
+                    </StableButton>
+                  </div>
                 ))}
               </div>
-            </div>
+            </details>
           ) : null}
         </section>
 
