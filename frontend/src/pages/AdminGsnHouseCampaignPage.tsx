@@ -421,6 +421,7 @@ export default function AdminGsnHouseCampaignPage() {
   const [operations, setOperations] = useState<GsnHouseCampaignOperations | null>(null);
   const [simulationBoard, setSimulationBoard] = useState<SpotlightSimulationBoard | null>(null);
   const [simulationPreview, setSimulationPreview] = useState<SpotlightSimulationBoard | null>(null);
+  const [simulationPreviewInputFingerprint, setSimulationPreviewInputFingerprint] = useState("");
   const [simulationNotice, setSimulationNotice] = useState("");
   const [simulationFunding, setSimulationFunding] = useState<"paid" | "sponsored" | "gifted" | "waived" | "house">("house");
   const [simulationCredits, setSimulationCredits] = useState("1");
@@ -468,6 +469,28 @@ export default function AdminGsnHouseCampaignPage() {
   const selectedRows = useMemo(
     () => Object.values(selected).sort((a, b) => destinationTitle(a).localeCompare(destinationTitle(b))),
     [selected]
+  );
+  const simulationDraftFingerprint = useMemo(
+    () => JSON.stringify({
+      reviewMedia: (review?.media || []).map((item) => item.idempotencyKey),
+      reviewExpiry: review?.expiresAt || null,
+      communities: selectedRows.map((row) => row.clan_id),
+      credits: simulationCredits,
+      funding: simulationFunding,
+      serviceDate: simulationServiceDate,
+      timezone: simulationTimezone,
+      region: simulationRegion,
+      permittedWindows: ["morning", "afternoon", "evening"],
+    }),
+    [
+      review,
+      selectedRows,
+      simulationCredits,
+      simulationFunding,
+      simulationRegion,
+      simulationServiceDate,
+      simulationTimezone,
+    ]
   );
   const previewMediaIndex = useMemo(
     () => mediaQueue.findIndex((item) => item.key === mediaPreviewKey),
@@ -658,9 +681,19 @@ export default function AdminGsnHouseCampaignPage() {
     }
   }, [selectedSimulationPlanId, visibleSimulationProgrammes]);
 
+  useEffect(() => {
+    if (!simulationPreview || !simulationPreviewInputFingerprint) return;
+    if (simulationPreviewInputFingerprint === simulationDraftFingerprint) return;
+    setSimulationPreview(null);
+    setSimulationPreviewInputFingerprint("");
+    setSimulationNotice(
+      "The schedule inputs changed, so the earlier preview was cleared. Preview the validated draft again before relying on capacity or allocation."
+    );
+  }, [simulationDraftFingerprint, simulationPreview, simulationPreviewInputFingerprint]);
+
   async function previewSimulationDraft() {
-    if (selectedRows.length === 0 || mediaQueue.length === 0) {
-      setSimulationNotice("Choose at least one eligible community and one media item before previewing this draft schedule.");
+    if (!review) {
+      setSimulationNotice("Complete the read-only campaign review first. The schedule preview only accepts the validated media, audience and expiry from that review.");
       return;
     }
     const credits = Math.max(Math.floor(Number(simulationCredits) || 0), 1);
@@ -670,19 +703,23 @@ export default function AdminGsnHouseCampaignPage() {
       const result = await previewAdminSpotlightSimulationProgrammes({
         programmes: [
           {
-            plan_id: "command-centre-draft",
-            advert_id: "command-centre-draft-advert",
-            media_ids: mediaQueue.map((_, index) => `draft-media-${index + 1}`),
+            plan_id: `command-centre-${review.media[0].idempotencyKey.slice(0, 48)}`,
+            advert_id: review.media[0].idempotencyKey,
+            media_ids: review.media.map((item) => item.idempotencyKey),
             community_ids: selectedRows.map((row) => row.clan_id),
             credits,
             funding_classification: simulationFunding,
             service_date: simulationServiceDate,
             timezone: simulationTimezone,
             region: simulationRegion,
+            draft_reference: review.media.map((item) => item.idempotencyKey).join(":").slice(0, 160),
+            permitted_windows: ["morning", "afternoon", "evening"],
+            expires_at: review.expiresAt,
           },
         ],
       });
       setSimulationPreview(result);
+      setSimulationPreviewInputFingerprint(simulationDraftFingerprint);
       setSimulationNotice(
         result.programmes[0]?.capacity.has_conflict
           ? "The preview found a capacity or audience-scope conflict. No live booking or credit movement occurred."
@@ -1706,6 +1743,7 @@ export default function AdminGsnHouseCampaignPage() {
                 busyLabel="Loading examples"
                 onClick={() => {
                   setSimulationPreview(null);
+                  setSimulationPreviewInputFingerprint("");
                   void loadSimulationBoard();
                 }}
                 debugId="admin-gsn-campaign.simulation-examples"
@@ -1768,31 +1806,33 @@ export default function AdminGsnHouseCampaignPage() {
                   </div>
                   <div role="group" aria-label="Schedule view" style={{ display: "flex", gap: 8 }}>
                     {(["day", "week"] as const).map((view) => (
-                      <button
+                      <StableButton
                         key={view}
                         type="button"
                         onClick={() => setSimulationView(view)}
                         aria-pressed={simulationView === view}
+                        debugId={`admin-gsn-campaign.schedule-view.${view}`}
                         style={{ border: "1px solid #B8C9D9", borderRadius: 999, padding: "8px 12px", background: simulationView === view ? "#0B5CC5" : "#FFFFFF", color: simulationView === view ? "#FFFFFF" : "#174C84", fontWeight: 900 }}
                       >
                         {stateLabel(view)} view
-                      </button>
+                      </StableButton>
                     ))}
                   </div>
                 </div>
                 <div style={{ marginTop: 12, display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
                   {visibleSimulationProgrammes.map((programme) => (
-                    <button
+                    <StableButton
                       key={`tray-${programme.plan_id}`}
                       type="button"
                       onClick={() => setSelectedSimulationPlanId(programme.plan_id)}
                       aria-pressed={selectedSimulationProgramme?.plan_id === programme.plan_id}
+                      debugId={`admin-gsn-campaign.programme-tray.${programme.plan_id}`}
                       style={{ flex: "0 0 auto", minWidth: 190, textAlign: "left", border: selectedSimulationProgramme?.plan_id === programme.plan_id ? "2px solid #0B5CC5" : "1px solid #CAD6E2", borderRadius: 16, padding: 12, background: "#F8FBFF", color: "#0B1F33" }}
                     >
                       <strong style={{ display: "block" }}>{programme.plan_id}</strong>
                       <span style={{ display: "block", marginTop: 4, color: "#496277", fontSize: 12 }}>{simulationFundingLabel(programme.quote.funding_classification)} Â· {stateLabel(programme.lifecycle.state)}</span>
                       <span style={{ display: "block", marginTop: 4, color: "#496277", fontSize: 12 }}>Expires {dateTimeLabel(programme.schedule.expires_at)}</span>
-                    </button>
+                    </StableButton>
                   ))}
                 </div>
                 {!visibleSimulationProgrammes.length ? (
@@ -1846,11 +1886,19 @@ export default function AdminGsnHouseCampaignPage() {
                       <div><strong>Audience:</strong> {selectedSimulationProgramme.authorised_audience.community_ids.map((id) => `Community ${id}`).join(", ")}</div>
                       <div><strong>Region / timezone:</strong> {selectedSimulationProgramme.schedule.region} Â· {selectedSimulationProgramme.schedule.timezone}</div>
                       <div><strong>Service:</strong> {selectedSimulationProgramme.schedule.service_date} to {dateTimeLabel(selectedSimulationProgramme.schedule.expires_at)}</div>
+                      <div><strong>Permitted windows:</strong> {(selectedSimulationProgramme.schedule.permitted_windows || ["morning", "afternoon", "evening"]).map(stateLabel).join(", ")}</div>
                       <div><strong>Funding:</strong> {simulationFundingLabel(selectedSimulationProgramme.quote.funding_classification)}</div>
                       <div><strong>Programme type:</strong> {stateLabel(selectedSimulationProgramme.programme_type)}</div>
                       <div><strong>Quote:</strong> Â£{selectedSimulationProgramme.quote.quoted_amount_gbp}; live debit Â£{selectedSimulationProgramme.quote.live_pipeline_credit_debit}</div>
                       <div><strong>Capacity:</strong> {stateLabel(selectedSimulationProgramme.capacity.status)}</div>
                       <div><strong>Delivery:</strong> {selectedSimulationProgramme.actual_delivery?.supplied_opportunities ?? "not started"} supplied; {selectedSimulationProgramme.actual_delivery?.qualifying_impressions ?? "not started"} impressions; {selectedSimulationProgramme.actual_delivery?.recognised_unique_reach ?? "not started"} recognised reach</div>
+                    </div>
+                    <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
+                      {selectedSimulationProgramme.entitlement.per_media_outcomes.map((item) => (
+                        <div key={item.media_id} style={{ ...softCard("#F8FBFF"), fontSize: 12 }}>
+                          <strong>{item.media_id}</strong>: {item.allocated_opportunities} opportunities ({Object.entries(item.by_daypart).map(([daypart, count]) => `${stateLabel(daypart)} ${count}`).join(" Â· ")})
+                        </div>
+                      ))}
                     </div>
                     <div style={{ marginTop: 10, ...statusPanel("info"), fontSize: 12 }}>
                       The programme timezone is authoritative. Browser or device timezone changes do not alter this booking.

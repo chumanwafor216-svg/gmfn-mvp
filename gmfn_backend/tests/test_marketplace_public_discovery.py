@@ -329,7 +329,8 @@ def test_pagination_and_partial_coverage_are_truthful(
     assert payload["scan_limit_reached"] is True
     assert payload["coverage_complete"] is False
     assert payload["total_is_complete"] is False
-    assert payload["scanned_publication_count"] == 1
+    assert payload["scanned_publication_count"] == 2
+    assert payload["evaluated_publication_count"] == 1
     assert payload["scan_limit"] == 1
 
     with SessionLocal() as db:
@@ -338,7 +339,9 @@ def test_pagination_and_partial_coverage_are_truthful(
         assert event.zero_result is False
         assert event.coverage_complete is False
         assert event.scan_limit_reached is True
-        assert event.scanned_publication_count == 1
+        assert event.scanned_publication_count == 2
+        assert event.evaluated_publication_count == 1
+        assert event.coverage_known is True
 
 
 def test_existing_cursor_pages_without_repeating_results(client, monkeypatch) -> None:

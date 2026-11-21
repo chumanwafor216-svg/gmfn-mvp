@@ -7341,6 +7341,7 @@ export async function searchPublicMerchantDiscovery(params: {
   coverage_complete: boolean;
   total_is_complete: boolean;
   scanned_publication_count: number;
+  evaluated_publication_count: number;
   scan_limit: number;
 }> {
   return httpJson(
@@ -7882,6 +7883,7 @@ export type GsnHouseCampaignOperations = {
 export type SpotlightSimulationProgramme = {
   plan_id: string;
   booking_id: string;
+  draft_reference?: string | null;
   programme_type: "house_campaign" | "merchant_purchase" | "sponsor_programme";
   advert: {
     advert_id: string;
@@ -7923,6 +7925,8 @@ export type SpotlightSimulationProgramme = {
     region: string;
     starts_at: string;
     expires_at: string;
+    service_ends_at?: string;
+    permitted_windows?: string[];
     dayparts: Array<{
       code: string;
       starts_at: string;
@@ -7977,6 +7981,7 @@ export type SpotlightSimulationProgramme = {
 export type SpotlightSimulationBoard = {
   ok: boolean;
   simulation: boolean;
+  preview_fingerprint?: string;
   settings: Record<string, any>;
   programmes: SpotlightSimulationProgramme[];
   batch_summary: Record<string, any>;
@@ -8486,6 +8491,9 @@ export async function previewAdminSpotlightSimulationProgrammes(payload: {
     service_date: string;
     timezone: string;
     region: string;
+    draft_reference?: string | null;
+    permitted_windows?: Array<"morning" | "afternoon" | "evening">;
+    expires_at?: string | null;
   }>;
   existing_reservations?: Record<string, number>;
 }): Promise<SpotlightSimulationBoard> {

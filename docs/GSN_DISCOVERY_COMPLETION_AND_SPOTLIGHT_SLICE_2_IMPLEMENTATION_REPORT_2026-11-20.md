@@ -2,7 +2,7 @@
 
 Date: 2026-11-20
 
-Candidate baseline: `3ce16134e1b6a07b040099dbe7faad5bc626f7d3`
+Candidate baseline: `ec9eae347a35d04db1d366dc7d371d1d9c424867`
 
 Candidate revision: the working-branch commit containing this report
 
@@ -14,8 +14,8 @@ The bounded candidate is connected and reviewable without activating a live paid
 
 - Public discovery now consumes its existing cursor contract and distinguishes complete from partial search coverage.
 - The existing Command Centre campaign page now has a protocol 1.3 programme board and accessible list view when the isolated simulation flag is enabled.
-- The simulation joins quote, funding class, capacity reservation, booking, schedule, opportunity supply, measurement, shortfall, remedy, and interrupted-batch recovery into one inspectable record.
-- No real payment is collected, no Pipeline Credit is debited, no live booking is persisted, no live campaign is activated, and no live capacity is changed.
+- The reference board remains a clearly labelled deterministic contract demonstration. A separate test-only rehearsal now joins canonical Pipeline Credit, pacing, exposure and reporting services into inspectable stateful records.
+- No real payment is collected, no production Pipeline Credit is debited, no live booking is persisted, no live campaign is activated, and no live capacity is changed. The rehearsal mutates only isolated test-database records.
 - Existing publication authority, privacy exclusions, owner controls, direct Shop behavior, GSN-HOUSE live operations, and permanent-stop controls remain authoritative.
 
 ## 1. Discovery completion
@@ -34,12 +34,15 @@ The response now includes:
 - `total_is_complete`;
 - `scan_limit_reached`;
 - `scanned_publication_count`;
+- `evaluated_publication_count`;
 - `scan_limit`;
 - `next_cursor`.
 
 When coverage is incomplete, the interface reports counts as `at least` the returned total and says that older matching offers may exist. A zero-result partial scan says that no match was found among the most recently checked public offers; it does not claim that no matching offer exists anywhere.
 
-Search evidence records `coverage_complete`, `scan_limit_reached`, and `scanned_publication_count`, so incomplete scans can be separated when analysing search usefulness and zero-result rates.
+`scanned_publication_count` is the raw authority-row scan count, including the one-row sentinel used to prove that the limit was reached. `evaluated_publication_count` is the number of rows actually evaluated for the returned search. Search evidence records both counts plus `coverage_complete`, `coverage_known` and `scan_limit_reached`, so incomplete scans can be separated when analysing search usefulness and zero-result rates.
+
+The migration inspects whether search evidence already exists. Pre-existing evidence is marked `coverage_known = false` and `coverage_complete = false` because its historical scan extent cannot be reconstructed honestly. A clean install and new measured records retain `coverage_known = true`.
 
 ### Preserved boundaries
 
@@ -180,6 +183,46 @@ The first sandboxed pytest attempt could not create the existing house-campaign 
 
 The completed Slice 1 discovery audit was not repeated. Its documented broad `audit:link-contracts` baseline remains red on six unrelated pre-existing assertions in PWA install, Shop Assets, and older Public Shop link/copy/focus behavior. This candidate does not modify those surfaces and does not claim to fix them.
 
+### Completion-pass verification
+
+- `python -m pytest tests/test_marketplace_public_discovery.py tests/test_spotlight_slice2_simulation.py tests/test_spotlight_slice2_stateful_rehearsal.py -q` - `14 passed`;
+- `python -m pytest --basetemp .pytest-slice2-elevated tests/test_public_discovery_coverage_migration.py -q` - `1 passed`;
+- `npm run audit:admin-gsn-house-campaign` - passed;
+- `npm run audit:action-response-protocol` - passed;
+- `npm run audit:trust-actions` - passed;
+- `npm run build` in `frontend` - passed, 331 modules transformed;
+- `python -m alembic heads` - one head: `20261120_public_discovery_coverage`;
+- focused `py_compile` and `git diff --check` - passed.
+
+The full protected-button gate now passes every changed Command Centre control, including global raw-action enforcement. It remains red only because the earlier Slice 1 route `/app/shop-control/public-discovery` is still absent from the broad mobile visual route-coverage manifest. The run also logs the already documented unrelated duplicate React-key warning. Neither baseline item was introduced by this completion pass.
+
+## 5.1 Stateful rehearsal record trace
+
+The isolated rehearsal derives its totals from canonical service records rather than inserting final report totals:
+
+1. A canonical customer Pipeline Credit account receives 10 test credits.
+2. Two idempotent booking debits record one paid and one sponsored rehearsal booking, leaving 8 credits.
+3. The fulfilled campaign consumes 30 canonical pacing rounds from controlled clock inputs and reports 10/10/10 supplied opportunities.
+4. Five qualifying impressions are written through the exposure ledger. The fifth remains eligible and the sixth is suppressed by the explicit five-view same-advert boundary.
+5. The shortfall campaign attempts 30 opportunities. The controlled provider refuses one afternoon opportunity, producing 29 supplied and one missed from workflow records.
+6. Before remedy, the report says `outstanding`. One canonical credit restoration then changes the report to `applied`; retrying the same remedy returns the same ledger entry and does not allocate a second credit.
+7. A two-credit reservation against an evening daypart already holding 299 of 300 units is rejected. No morning or afternoon staging survives the rejected programme, proving atomic capacity retention.
+8. An interrupted three-item batch commits its first item. A fresh database session replays that key and books the remaining two; the replay reuses the first ledger entry and the final batch has three unique entries.
+9. The final canonical test balance is 6 credits: `10 - 2 bookings + 1 remedy - 3 unique batch bookings = 6`.
+
+## 5.2 Actual operator scheduling walkthrough
+
+The Command Centre draft/preview path now follows the operator's validated inputs rather than the earlier fixed tomorrow/Scotland/London example:
+
+1. The operator completes the existing read-only campaign review and selects the validated media items.
+2. The operator selects the authorised community audience, service date, IANA timezone, region and funding classification.
+3. The preview payload carries the review draft reference, selected media idempotency keys, review expiry and explicit morning/afternoon/evening permitted windows.
+4. The backend validates one complete service day, expiry, audience scope and capacity, then returns per-item 10/10/10 allocation and one preview fingerprint.
+5. The programme tray, board, inspector and accessible list render that returned schedule, including expiry, permitted windows, capacity and actual simulated delivery.
+6. If selected media, audience, credits, funding, date, timezone, region, windows or expiry changes, the client invalidates the old preview and requires a new validated preview. A stale preview cannot be treated as the current operator plan.
+
+The original hard-coded reference programmes remain available only as labelled contract demonstrations. They are not represented as persisted operator bookings.
+
 ## 6. Remaining live-service decisions
 
 1. Approve the one-community-per-credit audience term or replace it with a priced multi-community term.
@@ -192,6 +235,8 @@ The completed Slice 1 discovery audit was not repeated. Its documented broad `au
 8. Approve accounting, VAT, sponsor-funded and gifted-credit treatment before collection.
 9. Define the operational evidence that proves a scheduled opportunity was genuinely supplied when no qualifying impression occurs.
 10. Decide whether a genuine general pause/resume lifecycle is needed. The existing correction-hold authority is not represented as that customer promise.
+11. Change the live absolute-window pacing rule before a paid promise: the existing scheduler may advance past a missed slot, while the commercial contract requires a genuine supplied opportunity or an explicit shortfall. The rehearsal deliberately records provider refusal as missed rather than consumed.
+12. Add `/app/shop-control/public-discovery` to the broad mobile visual route-coverage fixture before claiming the entire protected suite is green.
 
 ## 7. Release boundary
 

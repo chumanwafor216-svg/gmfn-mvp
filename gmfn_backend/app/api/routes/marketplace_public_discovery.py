@@ -200,7 +200,9 @@ def search_public_merchants(
                 has_area_filter=bool(area_text),
                 coverage_complete=coverage_complete,
                 scan_limit_reached=scan_limit_reached,
-                scanned_publication_count=len(publications),
+                scanned_publication_count=len(publication_scan),
+                evaluated_publication_count=len(publications),
+                coverage_known=True,
             )
         )
         db.commit()
@@ -217,7 +219,8 @@ def search_public_merchants(
             "scan_limit_reached": scan_limit_reached,
             "coverage_complete": coverage_complete,
             "total_is_complete": coverage_complete,
-            "scanned_publication_count": len(publications),
+            "scanned_publication_count": len(publication_scan),
+            "evaluated_publication_count": len(publications),
             "scan_limit": PUBLIC_DISCOVERY_SCAN_LIMIT,
         }
     )

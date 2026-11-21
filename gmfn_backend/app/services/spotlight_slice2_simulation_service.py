@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections import Counter
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
+import hashlib
+import json
 import os
 from typing import Any, Iterable, Optional
 from zoneinfo import ZoneInfo
@@ -115,12 +117,13 @@ def preview_programmes(
     *,
     existing_reservations: Optional[dict[str, int]] = None,
 ) -> dict[str, Any]:
+    raw_programmes = [dict(item) for item in programmes]
     reservation_state = {
         str(key): max(int(value or 0), 0)
         for key, value in dict(existing_reservations or {}).items()
     }
     previews: list[dict[str, Any]] = []
-    for index, raw in enumerate(programmes):
+    for index, raw in enumerate(raw_programmes):
         previews.append(
             _preview_programme(
                 raw,
@@ -131,6 +134,13 @@ def preview_programmes(
     return {
         "ok": True,
         "simulation": True,
+        "preview_fingerprint": _fingerprint(
+            {
+                "programmes": raw_programmes,
+                "existing_reservations": dict(existing_reservations or {}),
+                "parameter_version": SPOTLIGHT_SLICE2_PARAMETER_VERSION,
+            }
+        ),
         "settings": simulation_settings(),
         "programmes": previews,
         "batch_summary": {
@@ -178,6 +188,16 @@ def _preview_programme(
     timezone_name = _clean(raw.get("timezone")) or SIMULATION_TIMEZONE
     region = _clean(raw.get("region")) or SIMULATION_REGION
     timezone = _timezone(timezone_name)
+    permitted_windows = _unique_text(
+        raw.get("permitted_windows") or [code for code, _, _ in DAYPARTS]
+    )
+    required_windows = [code for code, _, _ in DAYPARTS]
+    window_conflict = set(permitted_windows) != set(required_windows)
+    service_ends_at = datetime.combine(
+        service_date + timedelta(days=1), time(0, 0), tzinfo=timezone
+    )
+    requested_expiry = _datetime(raw.get("expires_at")) or service_ends_at
+    expiry_conflict = requested_expiry.astimezone(timezone) < service_ends_at
 
     total_entitlement = credits * OPPORTUNITIES_PER_CREDIT
     daypart_entitlement = {
@@ -186,7 +206,8 @@ def _preview_programme(
     scope_conflict = len(community_ids) > credits
     daypart_capacity: dict[str, dict[str, Any]] = {}
     capacity_conflict = False
-    if not scope_conflict:
+    staged_reservations: dict[str, int] = {}
+    if not scope_conflict and not window_conflict and not expiry_conflict:
         for daypart, _, _ in DAYPARTS:
             required_by_community = Counter(
                 community_ids[credit_index % len(community_ids)]
@@ -195,21 +216,27 @@ def _preview_programme(
             rows: list[dict[str, Any]] = []
             for community_id, required in sorted(required_by_community.items()):
                 key = _capacity_key(service_date, timezone_name, community_id, daypart)
-                already_reserved = reservation_state.get(key, 0)
+                already_reserved = staged_reservations.get(
+                    key,
+                    reservation_state.get(key, 0),
+                )
                 available_before = max(
                     SIMULATION_ALLOCATION_CAPACITY_PER_COMMUNITY_DAYPART - already_reserved,
                     0,
                 )
                 accepted = required <= available_before
                 capacity_conflict = capacity_conflict or not accepted
+                proposed_reserved_after = already_reserved + required
                 if accepted:
-                    reservation_state[key] = already_reserved + required
+                    staged_reservations[key] = proposed_reserved_after
                 rows.append(
                     {
                         "community_id": community_id,
                         "required_basic_allocations": required,
                         "available_before": available_before,
-                        "reserved_after": reservation_state.get(key, already_reserved),
+                        "reserved_before": reservation_state.get(key, 0),
+                        "proposed_reserved_after": proposed_reserved_after,
+                        "reserved_after": reservation_state.get(key, 0),
                         "accepted": accepted,
                     }
                 )
@@ -218,6 +245,17 @@ def _preview_programme(
                 "community_reservations": rows,
                 "accepted": all(row["accepted"] for row in rows),
             }
+
+    if not scope_conflict and not capacity_conflict:
+        reservation_state.update(staged_reservations)
+        for daypart in daypart_capacity.values():
+            for row in daypart["community_reservations"]:
+                row["reserved_after"] = row["proposed_reserved_after"]
+    elif capacity_conflict:
+        for daypart in daypart_capacity.values():
+            daypart["accepted"] = False
+            for row in daypart["community_reservations"]:
+                row["accepted"] = False
 
     conflicts: list[dict[str, str]] = []
     if scope_conflict:
@@ -228,6 +266,20 @@ def _preview_programme(
                     "The v1.3 test setting allows one named community rotation per credit. "
                     "Select fewer communities or explicitly add credits; communities do not multiply entitlement."
                 ),
+            }
+        )
+    if window_conflict:
+        conflicts.append(
+            {
+                "code": "basic_offer_requires_all_dayparts",
+                "message": "The basic offer requires morning, afternoon and evening windows to preserve 10/10/10.",
+            }
+        )
+    if expiry_conflict:
+        conflicts.append(
+            {
+                "code": "expiry_before_complete_service_day",
+                "message": "The advert expiry must cover the complete selected service day.",
             }
         )
     if capacity_conflict:
@@ -243,9 +295,9 @@ def _preview_programme(
         "timezone": timezone_name,
         "region": region,
         "starts_at": datetime.combine(service_date, time(5, 0), tzinfo=timezone).isoformat(),
-        "expires_at": datetime.combine(
-            service_date + timedelta(days=1), time(0, 0), tzinfo=timezone
-        ).isoformat(),
+        "service_ends_at": service_ends_at.isoformat(),
+        "expires_at": requested_expiry.isoformat(),
+        "permitted_windows": permitted_windows,
         "dayparts": [
             {
                 "code": code,
@@ -277,6 +329,7 @@ def _preview_programme(
     booking_id = f"sim-booking-{plan_id}"
     return {
         "plan_id": plan_id,
+        "draft_reference": _clean(raw.get("draft_reference")) or None,
         "booking_id": booking_id,
         "programme_type": _programme_type(funding),
         "advert": {
@@ -626,7 +679,13 @@ def _delivery_report(
             "cash_refund_status": "not_executed_requires_live_terms",
         }
     return {
-        "state": "fulfilled" if missing_total == 0 else "shortfall_remedied_in_simulation",
+        "state": (
+            "fulfilled"
+            if missing_total == 0
+            else "shortfall_remedied_in_simulation"
+            if apply_test_remedy
+            else "shortfall_outstanding"
+        ),
         "purchased_opportunities": sum(purchased.values()),
         "purchased_by_daypart": purchased,
         "supplied_opportunities": supplied_total,
@@ -824,6 +883,11 @@ def _unique_positive_ints(values: Iterable[Any]) -> list[int]:
 
 def _clean(value: Any) -> str:
     return str(value or "").strip()
+
+
+def _fingerprint(value: Any) -> str:
+    encoded = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _programme_type(funding_classification: str) -> str:

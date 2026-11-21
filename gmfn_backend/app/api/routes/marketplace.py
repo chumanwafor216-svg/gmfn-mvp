@@ -4261,6 +4261,13 @@ class SpotlightSimulationProgrammeIn(BaseModel):
     service_date: str = Field(min_length=10, max_length=10)
     timezone: str = Field(default="Europe/London", min_length=3, max_length=80)
     region: str = Field(default="GB-SCT", min_length=2, max_length=80)
+    draft_reference: Optional[str] = Field(default=None, max_length=160)
+    permitted_windows: list[Literal["morning", "afternoon", "evening"]] = Field(
+        default_factory=lambda: ["morning", "afternoon", "evening"],
+        min_length=1,
+        max_length=3,
+    )
+    expires_at: Optional[datetime] = None
 
 
 class SpotlightSimulationPreviewIn(BaseModel):

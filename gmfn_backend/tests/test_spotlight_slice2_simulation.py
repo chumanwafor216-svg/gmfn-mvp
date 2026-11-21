@@ -49,6 +49,45 @@ def test_preview_keeps_one_booking_entitlement_across_media_and_communities() ->
     assert preview["batch_summary"]["selection_does_not_multiply_entitlement"] is True
 
 
+def test_rejected_programme_does_not_retain_partial_capacity() -> None:
+    service_date = _service_date()
+    reservations = {
+        f"{service_date}|Europe/London|10|evening": 299,
+    }
+    preview = preview_programmes(
+        [
+            {
+                "plan_id": "rejected-first",
+                "advert_id": "offer-rejected",
+                "community_ids": [10],
+                "credits": 2,
+                "funding_classification": "paid",
+                "service_date": service_date,
+                "timezone": "Europe/London",
+                "region": "GB-SCT",
+            },
+            {
+                "plan_id": "accepted-second",
+                "advert_id": "offer-accepted",
+                "community_ids": [10],
+                "credits": 1,
+                "funding_classification": "paid",
+                "service_date": service_date,
+                "timezone": "Europe/London",
+                "region": "GB-SCT",
+            },
+        ],
+        existing_reservations=reservations,
+    )
+
+    rejected, accepted = preview["programmes"]
+    assert rejected["capacity"]["has_conflict"] is True
+    assert rejected["capacity"]["by_daypart"]["morning"]["community_reservations"][0]["reserved_after"] == 0
+    assert accepted["capacity"]["has_conflict"] is False
+    assert accepted["capacity"]["by_daypart"]["morning"]["community_reservations"][0]["reserved_after"] == 1
+    assert accepted["capacity"]["by_daypart"]["evening"]["community_reservations"][0]["reserved_after"] == 300
+
+
 def test_daily_frequency_continues_across_bookings_and_communities() -> None:
     service_date = date.today() + timedelta(days=1)
     timezone = ZoneInfo("Europe/London")
@@ -174,6 +213,33 @@ def test_programme_clock_is_authoritative_and_browser_timezone_is_ignored() -> N
     assert schedule["dayparts"][0]["starts_at"].endswith("+01:00")
     assert schedule["inactive_windows"][0]["policy"] == "no_active_allocation_policy"
     assert schedule["inactive_windows"][0]["allocated_opportunities"] == 0
+
+
+def test_preview_validates_basic_windows_and_expiry() -> None:
+    preview = preview_programmes(
+        [
+            {
+                "plan_id": "invalid-window-expiry",
+                "advert_id": "offer-001",
+                "community_ids": [10],
+                "credits": 1,
+                "funding_classification": "paid",
+                "service_date": "2027-03-28",
+                "timezone": "Europe/London",
+                "region": "GB-SCT",
+                "permitted_windows": ["morning", "afternoon"],
+                "expires_at": "2027-03-28T20:00:00+01:00",
+            }
+        ]
+    )
+
+    programme = preview["programmes"][0]
+    assert programme["capacity"]["has_conflict"] is True
+    assert {row["code"] for row in programme["capacity"]["conflicts"]} == {
+        "basic_offer_requires_all_dayparts",
+        "expiry_before_complete_service_day",
+    }
+    assert preview["preview_fingerprint"]
 
 
 def test_programme_board_route_is_admin_only_and_feature_gated(

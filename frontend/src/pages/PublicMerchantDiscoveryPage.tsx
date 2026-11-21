@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import {
   searchPublicMerchantDiscovery,
   type PublicDiscoveryResult,
@@ -107,13 +107,17 @@ export default function PublicMerchantDiscoveryPage() {
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [coverageComplete, setCoverageComplete] = useState(true);
   const [scannedPublicationCount, setScannedPublicationCount] = useState(0);
+  const [evaluatedPublicationCount, setEvaluatedPublicationCount] = useState(0);
   const [activeFilters, setActiveFilters] = useState<SearchFilters>({ q: "", category: "", area: "" });
   const [busy, setBusy] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searched, setSearched] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const requestSequence = useRef(0);
 
   async function runSearch(filters: SearchFilters, cursor = 0, append = false) {
+    const requestId = requestSequence.current + 1;
+    requestSequence.current = requestId;
     if (append) setLoadingMore(true);
     else setBusy(true);
     setNotice(null);
@@ -122,6 +126,7 @@ export default function PublicMerchantDiscoveryPage() {
         ...filters,
         cursor,
       });
+      if (requestSequence.current !== requestId) return;
       const responseItems = Array.isArray(response?.items) ? response.items : [];
       setItems((current) => {
         if (!append) return responseItems;
@@ -133,9 +138,11 @@ export default function PublicMerchantDiscoveryPage() {
       setNextCursor(response?.next_cursor == null ? null : Number(response.next_cursor));
       setCoverageComplete(response?.coverage_complete !== false);
       setScannedPublicationCount(Number(response?.scanned_publication_count || 0));
+      setEvaluatedPublicationCount(Number(response?.evaluated_publication_count || 0));
       setActiveFilters(filters);
       setSearched(true);
     } catch (error) {
+      if (requestSequence.current !== requestId) return;
       if (!append) {
         setItems([]);
         setSuggestions([]);
@@ -143,10 +150,12 @@ export default function PublicMerchantDiscoveryPage() {
         setNextCursor(null);
         setCoverageComplete(true);
         setScannedPublicationCount(0);
+        setEvaluatedPublicationCount(0);
       }
       setSearched(true);
       setNotice(errorMessage(error));
     } finally {
+      if (requestSequence.current !== requestId) return;
       if (append) setLoadingMore(false);
       else setBusy(false);
     }
@@ -154,6 +163,9 @@ export default function PublicMerchantDiscoveryPage() {
 
   useEffect(() => {
     void runSearch({ q: "", category: "", area: "" });
+    return () => {
+      requestSequence.current += 1;
+    };
   }, []);
 
   function submit(event: FormEvent) {
@@ -233,7 +245,7 @@ export default function PublicMerchantDiscoveryPage() {
           <EntryNotice>
             {coverageComplete
               ? "No published product matched this search. Try fewer words, another category, or a wider area."
-              : `No match was found among the ${scannedPublicationCount} most recent published offers checked. Older published offers may still exist; try fewer words, another category, or a wider area.`}
+              : `No match was found among the ${evaluatedPublicationCount} most recent published offers checked. Older published offers may still exist; try fewer words, another category, or a wider area.`}
           </EntryNotice>
         </div>
       ) : null}
@@ -241,7 +253,7 @@ export default function PublicMerchantDiscoveryPage() {
       {!notice && searched && !coverageComplete ? (
         <div style={{ marginTop: 14 }}>
           <EntryNotice tone="info">
-            Search coverage is incomplete. GSN checked the {scannedPublicationCount} most recent published offers, so the result count is a minimum rather than a complete total.
+            Search coverage is incomplete. GSN evaluated {evaluatedPublicationCount} recent published offers and used {scannedPublicationCount} raw records to detect the scan boundary, so the result count is a minimum rather than a complete total.
           </EntryNotice>
         </div>
       ) : null}
