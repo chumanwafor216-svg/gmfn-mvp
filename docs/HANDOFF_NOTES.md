@@ -7345,3 +7345,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 - On phone, published Bulletin voice uses the existing shared waveform as its compact visual representation, retaining speaker attribution, duration and the quiet sender-only permanent-delete path without another large audio card.
 - No backend route, selected-community policy, review authority, voice storage, notice expiry, public-link behavior or playback contract changed. Focused guards are `frontend/tools/audit-community-home-phone-buttons.mjs`, `frontend/tools/audit-audio-wave-player.mjs`, and `frontend/tools/smoke-community-home-simple-phone.mjs`.
 - The Community Home phone smoke now uses rolling active announcement dates instead of a fixture that expired on 3 November 2026. The smoke, focused audits, full protected-button freeze and production build pass.
+
+# Community Bulletin plus contrast and removed-voice correction - 2026-11-21
+
+- Corrected the phone Bulletin create control after pilot evidence showed that the circular action was present but its shared neon styling left the `+` effectively white on white. The protected action now has an explicit navy-blue background, white `+`, gold border and 42px minimum tap target.
+- Added a browser-level computed-style assertion so the Community Home smoke fails if the `+` is missing, loses its dark gradient, loses its white foreground or drops below 42px.
+- Strengthened the shared live-audio waveform contrast and exposed a testable waveform-graph marker. Live Community Bulletin recordings still use the real shared audio player and load the protected recording only when the member taps play.
+- A permanently deleted recording cannot truthfully remain playable. On phone it now renders as a compact crossed waveform with `Recording removed` instead of the previous large blank explanation card; the written notice and attribution remain.
+- Verification passed: Community Home phone-button audit, audio-waveform audit, Community Home button inventory, production frontend build, real 390px Community Home smoke and the complete protected-button freeze audit.

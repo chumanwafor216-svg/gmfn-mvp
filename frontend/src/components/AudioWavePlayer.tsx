@@ -204,6 +204,7 @@ export default function AudioWavePlayer({
       </StableButton>
       <div style={{ minWidth: 0, display: "grid", gap: 5 }}>
         <div
+          data-gsn-audio-wave-graph="true"
           aria-hidden="true"
           style={{
             height: compact ? 30 : 34,
@@ -226,7 +227,7 @@ export default function AudioWavePlayer({
                   borderRadius: 999,
                   background: active
                     ? "linear-gradient(180deg, #19A7CE 0%, #0B4EA2 100%)"
-                    : "rgba(100,132,160,0.34)",
+                    : "rgba(76,112,146,0.58)",
                   transform: playing && index % 3 === 0 ? "scaleY(1.08)" : "scaleY(1)",
                   transition: "background 140ms ease, transform 160ms ease",
                 }}

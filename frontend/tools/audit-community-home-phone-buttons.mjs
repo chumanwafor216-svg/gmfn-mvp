@@ -131,8 +131,8 @@ assertContains(
   "Community Home phone Bulletin must keep one short Bulletin header without a repeated kind pill."
 );
 assertContains(
-  /canOpenCommunityNoticeComposer \? \([\s\S]*?aria-label=\{communityNoticeSubmitMode === "review" \? "Create announcement for review" : "Create community announcement"\}[\s\S]*?debugId="community-home\.bulletin\.create"[\s\S]*?setNoticeModalOpen\(true\)[\s\S]*?>\s*<span[^>]*>\+<\/span>/,
-  "Community Home Bulletin must expose one obvious plus action that opens the existing announcement composer."
+  /canOpenCommunityNoticeComposer \? \([\s\S]*?aria-label=\{communityNoticeSubmitMode === "review" \? "Create announcement for review" : "Create community announcement"\}[\s\S]*?debugId="community-home\.bulletin\.create"[\s\S]*?setNoticeModalOpen\(true\)[\s\S]*?\.\.\.authenticatedStaticNeonAction\("cyanViolet"\)[\s\S]*?background: "linear-gradient\(180deg, #0F72C8 0%, #073B72 100%\)"[\s\S]*?color: "#FFFFFF"[\s\S]*?>\s*<span[^>]*>\+<\/span>/,
+  "Community Home Bulletin must expose one high-contrast plus action that opens the existing announcement composer."
 );
 assertContains(
   /const phoneNoticeOpen = detailOpen \|\| reactionPanelOpen[\s\S]*?if \(isCompact\) \{[\s\S]*?setNoticeDetailOpenId\(nextOpen \? noticeKey : ""\);[\s\S]*?setNoticeReactionPanelOpenId\(nextOpen \? noticeKey : ""\);[\s\S]*?setNoticePhoneSectionOpenId\(""\);[\s\S]*?phoneNoticeOpen \? "Close notice" : "Open notice"/,

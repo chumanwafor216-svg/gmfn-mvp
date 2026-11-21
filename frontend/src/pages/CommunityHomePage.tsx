@@ -5257,17 +5257,20 @@ export default function CommunityHomePage() {
                     setNoticeModalOpen(true);
                   }}
                   style={{
+                    ...authenticatedStaticNeonAction("cyanViolet"),
                     width: isCompact ? 42 : 44,
                     minWidth: isCompact ? 42 : 44,
                     height: isCompact ? 42 : 44,
                     minHeight: isCompact ? 42 : 44,
                     padding: 0,
                     borderRadius: 999,
+                    border: "2px solid rgba(242,199,102,0.96)",
+                    background: "linear-gradient(180deg, #0F72C8 0%, #073B72 100%)",
                     color: "#FFFFFF",
                     fontSize: isCompact ? 30 : 32,
-                    fontWeight: 500,
+                    fontWeight: 700,
                     lineHeight: 1,
-                    ...authenticatedStaticNeonAction("cyanViolet"),
+                    boxShadow: "0 0 0 4px rgba(52,211,235,0.16), 0 9px 20px rgba(7,59,114,0.28)",
                   }}
                 >
                   <span aria-hidden="true" style={{ transform: "translateY(-1px)" }}>+</span>

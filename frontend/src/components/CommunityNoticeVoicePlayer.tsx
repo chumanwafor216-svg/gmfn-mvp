@@ -3,7 +3,7 @@ import {
   deleteCommunityNoticeVoice,
   fetchCommunityNoticeVoiceBlob,
 } from "../lib/api";
-import AudioWavePlayer from "./AudioWavePlayer";
+import AudioWavePlayer, { AudioWaveSignal } from "./AudioWavePlayer";
 import { GsnLegacyIcon } from "./GsnLegacyIcon";
 import { DangerButton, SecondaryButton, SubtleButton } from "./StableButton";
 
@@ -84,18 +84,59 @@ export default function CommunityNoticeVoicePlayer({
     return (
       <div
         data-gsn-community-notice-voice-deleted="true"
+        data-gsn-community-notice-voice-presentation={compactPresentation ? "compact-removed" : "full-removed"}
+        aria-label="Voice recording removed"
         style={{
-          padding: 12,
-          borderRadius: 16,
+          padding: compactPresentation ? "7px 9px" : 12,
+          borderRadius: compactPresentation ? 13 : 16,
           border: "1px solid rgba(100,116,139,0.18)",
           background: "#F8FAFC",
           color: "#475569",
-          fontSize: 12,
-          lineHeight: 1.5,
+          fontSize: compactPresentation ? 10.5 : 12,
+          lineHeight: compactPresentation ? 1.3 : 1.5,
+          display: compactPresentation ? "grid" : "block",
+          gridTemplateColumns: compactPresentation ? "54px minmax(0, 1fr)" : undefined,
+          alignItems: compactPresentation ? "center" : undefined,
+          gap: compactPresentation ? 8 : undefined,
         }}
       >
-        Voice announcement permanently deleted by its sender. The written notice,
-        sender, and time remain in Community Memory.
+        {compactPresentation ? (
+          <>
+            <span
+              aria-hidden="true"
+              style={{
+                position: "relative",
+                display: "block",
+                width: 54,
+                opacity: 0.72,
+                overflow: "hidden",
+              }}
+            >
+              <AudioWaveSignal mode="inline" />
+              <span
+                style={{
+                  position: "absolute",
+                  left: 7,
+                  right: 7,
+                  top: "50%",
+                  height: 2,
+                  borderRadius: 999,
+                  background: "#9F2424",
+                  transform: "rotate(-28deg)",
+                }}
+              />
+            </span>
+            <span>
+              <strong style={{ display: "block", color: "#334155", fontSize: 11.5 }}>Recording removed</strong>
+              Deleted by its sender. The written notice remains.
+            </span>
+          </>
+        ) : (
+          <>
+            Voice announcement permanently deleted by its sender. The written notice,
+            sender, and time remain in Community Memory.
+          </>
+        )}
       </div>
     );
   }

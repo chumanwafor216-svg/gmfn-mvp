@@ -29,6 +29,7 @@ function forbidPattern(key, pattern, message) {
 }
 
 requirePattern("shared", /data-gsn-audio-wave-player="true"/, "shared playback must expose the waveform contract");
+requirePattern("shared", /data-gsn-audio-wave-graph="true"/, "shared playback must expose a visibly testable waveform graph");
 requirePattern("shared", /const WAVE_HEIGHTS = \[/, "shared playback must keep its compact waveform presentation");
 requirePattern("shared", /<audio[\s\S]*?preload="metadata"/, "shared playback must keep the real hidden audio element");
 forbidPattern("shared", /<audio[^>]*\bcontrols\b/, "shared playback must not expose browser-native controls");
@@ -43,6 +44,7 @@ requirePattern("shop", /<AudioWaveSignal mode="inline" playing=\{playing\}/, "th
 requirePattern("shop", /<AudioWaveSignal mode="symbol" playing=\{playing\}/, "the visitor coming-soon control must show the shared waveform signal");
 forbidPattern("shop", /setCompleted\(|keepVisibleAfterPlayback/, "compact Shop waveform controls must remain available after playback");
 requirePattern("community", /compactPresentation\?: boolean[\s\S]*?data-gsn-community-notice-voice-presentation=\{compactPresentation \? "compact" : "full"\}[\s\S]*?<AudioWavePlayer/, "Community Home voice must support the compact shared waveform presentation without another large audio card");
+requirePattern("community", /data-gsn-community-notice-voice-deleted="true"[\s\S]*?compact-removed[\s\S]*?<AudioWaveSignal mode="inline" \/>[\s\S]*?Recording removed/, "a deleted Community Home recording must keep a compact, clearly disabled waveform marker instead of a blank audio panel");
 
 for (const key of ["community", "demand", "shop"]) {
   requirePattern(key, /debugId=\{debugId \+ "\.delete\.open"\}[\s\S]*?>\s*Delete\s*</, "sender deletion must remain a small labelled action");

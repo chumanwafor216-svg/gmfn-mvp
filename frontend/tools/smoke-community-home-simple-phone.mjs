@@ -640,7 +640,31 @@ async function run() {
     if (await composerDismiss.isVisible().catch(() => false)) {
       await composerDismiss.click();
     }
-    await composerPage.locator('[data-cta-id="community-home.bulletin.create"]').click();
+    const createAnnouncementButton = composerPage.locator('[data-cta-id="community-home.bulletin.create"]');
+    await createAnnouncementButton.waitFor({ state: "visible", timeout: 30000 });
+    const createAnnouncementPresentation = await createAnnouncementButton.evaluate((element) => {
+      const style = window.getComputedStyle(element);
+      const bounds = element.getBoundingClientRect();
+      return {
+        text: element.textContent?.trim(),
+        color: style.color,
+        backgroundImage: style.backgroundImage,
+        width: bounds.width,
+        height: bounds.height,
+      };
+    });
+    if (
+      createAnnouncementPresentation.text !== "+" ||
+      createAnnouncementPresentation.color !== "rgb(255, 255, 255)" ||
+      !createAnnouncementPresentation.backgroundImage.includes("linear-gradient") ||
+      createAnnouncementPresentation.width < 42 ||
+      createAnnouncementPresentation.height < 42
+    ) {
+      console.error("Community Bulletin create action is not an obvious high-contrast plus.", createAnnouncementPresentation);
+      process.exitCode = 1;
+      return;
+    }
+    await createAnnouncementButton.click();
     const composerDialog = composerPage.getByRole("dialog", { name: "Post community notice" });
     await composerDialog.waitFor({ state: "visible", timeout: 30000 });
 
