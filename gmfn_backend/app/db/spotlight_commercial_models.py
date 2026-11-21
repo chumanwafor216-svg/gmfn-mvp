@@ -109,6 +109,8 @@ class SpotlightCommercialOpportunity(Base):
     sequence_number: Mapped[int] = mapped_column(Integer, nullable=False)
     daypart: Mapped[str] = mapped_column(String(16), nullable=False)
     scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    available_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    availability_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     status: Mapped[str] = mapped_column(String(24), nullable=False, default="reserved")
     presentation_id: Mapped[Optional[str]] = mapped_column(String(80), nullable=True, unique=True)
     viewer_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
@@ -119,6 +121,50 @@ class SpotlightCommercialOpportunity(Base):
     __table_args__ = (
         UniqueConstraint("booking_id", "sequence_number", name="uq_spotlight_commercial_opportunity_sequence_v1"),
         Index("ix_spotlight_commercial_opportunity_supply_v1", "booking_id", "daypart", "status"),
+    )
+
+
+class SpotlightCommercialPresentationAttribution(Base):
+    __tablename__ = "spotlight_commercial_presentation_attributions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    presentation_id: Mapped[str] = mapped_column(String(80), nullable=False, unique=True)
+    booking_id: Mapped[int] = mapped_column(
+        ForeignKey("spotlight_commercial_bookings.id", ondelete="CASCADE"), nullable=False
+    )
+    opportunity_id: Mapped[int] = mapped_column(
+        ForeignKey("spotlight_commercial_opportunities.id", ondelete="CASCADE"), nullable=False
+    )
+    campaign_id: Mapped[int] = mapped_column(
+        ForeignKey("spotlight_campaigns.id", ondelete="RESTRICT"), nullable=False
+    )
+    clan_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="RESTRICT"), nullable=False
+    )
+    viewer_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    selected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    visible_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    qualified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    exposure_event_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("spotlight_exposure_events.id", ondelete="SET NULL"), nullable=True, unique=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_now_utc
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_spotlight_commercial_attribution_booking_v1",
+            "booking_id",
+            "selected_at",
+        ),
+        Index(
+            "ix_spotlight_commercial_attribution_opportunity_v1",
+            "opportunity_id",
+            "selected_at",
+        ),
     )
 
 
@@ -137,6 +183,73 @@ class SpotlightCommercialRemedy(Base):
     applied_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (Index("ix_spotlight_commercial_remedy_booking_v1", "booking_id", "status"),)
+
+
+class SpotlightCommercialServiceCreditObligation(Base):
+    __tablename__ = "spotlight_commercial_service_credit_obligations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    remedy_id: Mapped[int] = mapped_column(
+        ForeignKey("spotlight_commercial_remedies.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    account_id: Mapped[int] = mapped_column(
+        ForeignKey("pipeline_credit_accounts.id", ondelete="RESTRICT"), nullable=False
+    )
+    original_booking_id: Mapped[int] = mapped_column(
+        ForeignKey("spotlight_commercial_bookings.id", ondelete="RESTRICT"), nullable=False
+    )
+    credit_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    remaining_credit_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="outstanding")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_now_utc
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_now_utc
+    )
+    fulfilled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index(
+            "ix_spotlight_commercial_credit_obligation_account_v1",
+            "account_id",
+            "status",
+        ),
+    )
+
+
+class SpotlightCommercialServiceCreditApplication(Base):
+    __tablename__ = "spotlight_commercial_service_credit_applications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    obligation_id: Mapped[int] = mapped_column(
+        ForeignKey("spotlight_commercial_service_credit_obligations.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    replacement_booking_id: Mapped[int] = mapped_column(
+        ForeignKey("spotlight_commercial_bookings.id", ondelete="CASCADE"), nullable=False
+    )
+    credit_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_now_utc
+    )
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "obligation_id",
+            "replacement_booking_id",
+            name="uq_spotlight_commercial_credit_application_v1",
+        ),
+        Index(
+            "ix_spotlight_commercial_credit_application_booking_v1",
+            "replacement_booking_id",
+            "status",
+        ),
+    )
 
 
 class SpotlightCommercialAuditEvent(Base):

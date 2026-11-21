@@ -8038,10 +8038,26 @@ export type SpotlightCommercialBoard = {
     funding_classification: string;
     status: string;
     schedule: { community_id: number; region_code: string; timezone: string; service_date: string; starts_at: string; ends_at: string };
-    opportunities: { purchased: number; reserved: number; supplied: number; missed: number; outstanding: number };
-    measurement: { qualifying_impressions: number; recognised_unique_viewers: number | null; reach_privacy_suppressed: boolean; no_sales_claim: string };
+    opportunities: {
+      purchased: number;
+      reserved: number;
+      scheduled: number;
+      supplied: number;
+      made_available: number;
+      visible_presentations: number;
+      missed: number;
+      outstanding: number;
+    };
+    measurement: {
+      qualifying_impressions: number;
+      recognised_unique_viewers: number | null;
+      reach_privacy_suppressed: boolean;
+      no_sales_claim: string;
+      attribution_scope: string;
+    };
     finance: Record<string, any>;
     remedy?: Record<string, any> | null;
+    restored_service_credit_obligations?: Array<Record<string, any>>;
   }>;
   audit_history: Array<{ id: number; booking_id?: number | null; event_type: string; actor_user_id?: number | null; detail: Record<string, any>; created_at: string }>;
   boundaries: Record<string, string>;

@@ -221,6 +221,13 @@ for (const text of [
   "nextExpiry - Date.now() + 250",
   "Do not publish again. Check the connection, then tap Refresh status.",
   "tap Refresh status first",
+  "booking.opportunities.scheduled",
+  "booking.opportunities.made_available",
+  "booking.opportunities.visible_presentations",
+  "booking.opportunities.outstanding",
+  "booking.measurement.qualifying_impressions",
+  "restored_credits_unbooked",
+  "restored_credits_in_active_replacement",
 ]) {
   requireText(pageFile, page, text, "Missing screen contract: " + text + ".");
 }

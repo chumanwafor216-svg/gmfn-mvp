@@ -283,20 +283,54 @@ def plan_persistent_spotlight_delivery_opportunities(
     default_max_delivery_rounds: int = SPOTLIGHT_DEFAULT_MAX_DELIVERY_ROUNDS,
 ) -> SpotlightPersistentPacingResult:
     """Plan presentation reservations without consuming a delivery round."""
+    from app.services.spotlight_commercial_service import commercial_frequency_policy
+
     current_time = _as_aware_utc(now) or _now_utc()
     campaign_ids = [int(candidate.campaign_id) for candidate in frequency_result.candidates]
+    commercial_campaign_ids = {
+        campaign_id
+        for campaign_id in campaign_ids
+        if (
+            (
+                commercial_frequency_policy(
+                    db,
+                    campaign_id=campaign_id,
+                    viewer_user_id=int(viewer_user_id or 0),
+                    at=current_time,
+                )
+                or {}
+            ).get("supply_available")
+            is True
+        )
+    }
     snapshots = get_or_create_spotlight_campaign_pacing_states(
         db,
-        campaign_ids=campaign_ids,
+        campaign_ids=[
+            campaign_id
+            for campaign_id in campaign_ids
+            if campaign_id not in commercial_campaign_ids
+        ],
         now=current_time,
         default_max_delivery_rounds=default_max_delivery_rounds,
+    )
+    pacing_states = [snapshot.to_volatile_state() for snapshot in snapshots.values()]
+    pacing_states.extend(
+        VolatileSpotlightCampaignPacingState(
+            campaign_id=campaign_id,
+            consumed_rounds=0,
+            max_delivery_rounds=1,
+            next_eligible_delivery_at=None,
+            delivery_window_policy=None,
+            pacing_profile=SPOTLIGHT_PACING_PROFILE_NEUTRAL,
+        )
+        for campaign_id in commercial_campaign_ids
     )
     pacing_result = schedule_spotlight_delivery_opportunities(
         db,
         viewer_user_id=viewer_user_id,
         frequency_result=frequency_result,
         requested_delivery_slots=requested_delivery_slots,
-        pacing_states=[snapshot.to_volatile_state() for snapshot in snapshots.values()],
+        pacing_states=pacing_states,
         now=current_time,
     )
     return SpotlightPersistentPacingResult(

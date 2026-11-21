@@ -31,7 +31,13 @@ from app.db.spotlight_commercial_models import (
     SpotlightCommercialBooking,
     SpotlightCommercialCapacityWindow,
     SpotlightCommercialOpportunity,
+    SpotlightCommercialPresentationAttribution,
     SpotlightCommercialRemedy,
+    SpotlightCommercialServiceCreditApplication,
+    SpotlightCommercialServiceCreditObligation,
+)
+from app.services.advertising_revenue_service import (
+    spotlight_commercial_settlement_readiness,
 )
 from app.services.pipeline_credit_service import ACCOUNT_PURPOSE_CUSTOMER, allocate_pipeline_credits
 
@@ -338,6 +344,359 @@ def _reserved_for_capacity(db: Session, capacity_window_id: int) -> int:
     return int(value or 0)
 
 
+def _current_scheduled_opportunity(
+    db: Session,
+    *,
+    booking: SpotlightCommercialBooking,
+    at: datetime,
+    lock_for_update: bool = False,
+) -> tuple[Optional[SpotlightCommercialOpportunity], Optional[datetime]]:
+    allocation_query = (
+        db.query(SpotlightCommercialAllocation)
+        .filter(SpotlightCommercialAllocation.booking_id == int(booking.id))
+        .filter(SpotlightCommercialAllocation.window_starts_at <= at)
+        .filter(SpotlightCommercialAllocation.window_ends_at > at)
+        .order_by(SpotlightCommercialAllocation.window_starts_at.asc())
+    )
+    if lock_for_update:
+        allocation_query = allocation_query.with_for_update()
+    allocation = allocation_query.first()
+    if allocation is None:
+        return None, None
+    opportunity_query = (
+        db.query(SpotlightCommercialOpportunity)
+        .filter(SpotlightCommercialOpportunity.booking_id == int(booking.id))
+        .filter(SpotlightCommercialOpportunity.allocation_id == int(allocation.id))
+        .filter(SpotlightCommercialOpportunity.scheduled_at <= at)
+        .filter(SpotlightCommercialOpportunity.status.in_(("reserved", "available")))
+        .order_by(
+            SpotlightCommercialOpportunity.scheduled_at.desc(),
+            SpotlightCommercialOpportunity.sequence_number.desc(),
+        )
+    )
+    if lock_for_update:
+        opportunity_query = opportunity_query.with_for_update()
+    opportunity = opportunity_query.first()
+    if opportunity is None:
+        return None, None
+    next_scheduled_at = (
+        db.query(func.min(SpotlightCommercialOpportunity.scheduled_at))
+        .filter(SpotlightCommercialOpportunity.allocation_id == int(allocation.id))
+        .filter(SpotlightCommercialOpportunity.scheduled_at > opportunity.scheduled_at)
+        .scalar()
+    )
+    turn_ends_at = _aware(next_scheduled_at or allocation.window_ends_at)
+    if at >= turn_ends_at:
+        return None, None
+    return opportunity, turn_ends_at
+
+
+def _active_campaign_bookings(
+    db: Session,
+    *,
+    campaign_id: int,
+    at: datetime,
+    lock_for_update: bool = False,
+) -> list[SpotlightCommercialBooking]:
+    query = (
+        db.query(SpotlightCommercialBooking)
+        .filter(SpotlightCommercialBooking.campaign_id == int(campaign_id))
+        .filter(SpotlightCommercialBooking.status.in_(tuple(SUPPLY_BOOKING_STATUSES)))
+        .filter(SpotlightCommercialBooking.service_starts_at <= at)
+        .filter(SpotlightCommercialBooking.service_ends_at > at)
+        .order_by(SpotlightCommercialBooking.id.asc())
+    )
+    if lock_for_update:
+        query = query.with_for_update()
+    return list(query.all())
+
+
+def bind_commercial_presentation_lease(
+    db: Session,
+    *,
+    lease: SpotlightPresentationLease,
+    selected_at: Optional[datetime] = None,
+) -> dict[str, Any]:
+    if not spotlight_commercial_enabled():
+        return {"commercial": False, "attributed": False, "reason": "paid_spotlight_disabled"}
+    current_time = _aware(selected_at or _now())
+    existing = (
+        db.query(SpotlightCommercialPresentationAttribution)
+        .filter(
+            SpotlightCommercialPresentationAttribution.presentation_id
+            == str(lease.presentation_id)
+        )
+        .one_or_none()
+    )
+    if existing is not None:
+        return {
+            "commercial": True,
+            "attributed": True,
+            "deduped": True,
+            "booking_id": int(existing.booking_id),
+            "opportunity_id": int(existing.opportunity_id),
+        }
+    bookings = _active_campaign_bookings(
+        db,
+        campaign_id=int(lease.campaign_id),
+        at=current_time,
+        lock_for_update=True,
+    )
+    if not bookings:
+        return {"commercial": False, "attributed": False, "reason": "no_active_commercial_booking"}
+    placement = db.get(MarketplaceBroadcast, int(lease.placement_broadcast_id))
+    if placement is None:
+        return {"commercial": True, "attributed": False, "reason": "commercial_placement_missing"}
+    current_turns: list[
+        tuple[SpotlightCommercialBooking, SpotlightCommercialOpportunity, datetime]
+    ] = []
+    for booking in bookings:
+        if int(booking.clan_id) != int(placement.clan_id):
+            continue
+        opportunity, turn_ends_at = _current_scheduled_opportunity(
+            db,
+            booking=booking,
+            at=current_time,
+            lock_for_update=True,
+        )
+        if opportunity is not None and turn_ends_at is not None:
+            current_turns.append((booking, opportunity, turn_ends_at))
+    if not current_turns:
+        return {
+            "commercial": True,
+            "attributed": False,
+            "reason": "commercial_scheduled_turn_not_due",
+        }
+    booking, opportunity, turn_ends_at = sorted(
+        current_turns,
+        key=lambda row: (
+            0 if row[1].status == "reserved" else 1,
+            row[1].scheduled_at,
+            row[0].id,
+        ),
+    )[0]
+    first_availability = opportunity.status == "reserved"
+    if first_availability:
+        opportunity.status = "available"
+        opportunity.available_at = current_time
+        opportunity.availability_expires_at = turn_ends_at
+        opportunity.presentation_id = str(lease.presentation_id)
+        opportunity.viewer_user_id = int(lease.viewer_user_id)
+        opportunity.supplied_at = current_time
+    attribution = SpotlightCommercialPresentationAttribution(
+        presentation_id=str(lease.presentation_id),
+        booking_id=int(booking.id),
+        opportunity_id=int(opportunity.id),
+        campaign_id=int(lease.campaign_id),
+        clan_id=int(booking.clan_id),
+        viewer_user_id=int(lease.viewer_user_id),
+        selected_at=current_time,
+        created_at=current_time,
+    )
+    db.add(opportunity)
+    db.add(attribution)
+    if first_availability:
+        booking.status = "serving"
+        booking.updated_at = current_time
+        _audit(
+            db,
+            event_type="opportunity.made_available",
+            booking_id=int(booking.id),
+            actor_user_id=int(lease.viewer_user_id),
+            detail={
+                "opportunity_id": int(opportunity.id),
+                "presentation_id": lease.presentation_id,
+                "scheduled_at": _aware(opportunity.scheduled_at).isoformat(),
+                "turn_ends_at": turn_ends_at.isoformat(),
+            },
+        )
+    db.flush()
+    return {
+        "commercial": True,
+        "attributed": True,
+        "deduped": False,
+        "booking_id": int(booking.id),
+        "opportunity_id": int(opportunity.id),
+        "turn_first_made_available": first_availability,
+        "scheduled_at": _aware(opportunity.scheduled_at).isoformat(),
+        "turn_ends_at": turn_ends_at.isoformat(),
+    }
+
+
+def commercial_presentation_attribution(
+    db: Session,
+    *,
+    presentation_id: str,
+) -> Optional[SpotlightCommercialPresentationAttribution]:
+    return (
+        db.query(SpotlightCommercialPresentationAttribution)
+        .filter(
+            SpotlightCommercialPresentationAttribution.presentation_id
+            == str(presentation_id)
+        )
+        .one_or_none()
+    )
+
+
+def record_commercial_qualifying_impression(
+    db: Session,
+    *,
+    presentation_id: str,
+    exposure_event_id: int,
+    qualified_at: datetime,
+) -> Optional[SpotlightCommercialPresentationAttribution]:
+    attribution = commercial_presentation_attribution(
+        db,
+        presentation_id=presentation_id,
+    )
+    if attribution is None:
+        return None
+    if attribution.exposure_event_id is not None:
+        return attribution
+    attribution.exposure_event_id = int(exposure_event_id)
+    attribution.qualified_at = _aware(qualified_at)
+    db.add(attribution)
+    db.flush()
+    return attribution
+
+
+def _apply_restored_service_credit_obligations(
+    db: Session,
+    *,
+    booking: SpotlightCommercialBooking,
+) -> None:
+    remaining_to_apply = Decimal(str(booking.purchased_credits))
+    if remaining_to_apply <= Decimal("0.00"):
+        return
+    obligations = (
+        db.query(SpotlightCommercialServiceCreditObligation)
+        .filter(
+            SpotlightCommercialServiceCreditObligation.account_id
+            == int(booking.account_id)
+        )
+        .filter(
+            SpotlightCommercialServiceCreditObligation.status.in_(
+                ("outstanding", "partially_rebooked")
+            )
+        )
+        .filter(
+            SpotlightCommercialServiceCreditObligation.remaining_credit_amount
+            > Decimal("0.00")
+        )
+        .order_by(
+            SpotlightCommercialServiceCreditObligation.created_at.asc(),
+            SpotlightCommercialServiceCreditObligation.id.asc(),
+        )
+        .with_for_update()
+        .all()
+    )
+    for obligation in obligations:
+        if remaining_to_apply <= Decimal("0.00"):
+            break
+        available = Decimal(str(obligation.remaining_credit_amount))
+        applied = min(available, remaining_to_apply)
+        db.add(
+            SpotlightCommercialServiceCreditApplication(
+                obligation_id=int(obligation.id),
+                replacement_booking_id=int(booking.id),
+                credit_amount=applied,
+                status="active",
+                created_at=_now(),
+            )
+        )
+        obligation.remaining_credit_amount = available - applied
+        obligation.status = (
+            "rebooked"
+            if obligation.remaining_credit_amount == Decimal("0.00")
+            else "partially_rebooked"
+        )
+        obligation.updated_at = _now()
+        db.add(obligation)
+        remaining_to_apply -= applied
+
+
+def _resolve_restored_service_credit_applications(
+    db: Session,
+    *,
+    booking: SpotlightCommercialBooking,
+    outcome: str,
+    resolved_at: datetime,
+) -> None:
+    applications = (
+        db.query(SpotlightCommercialServiceCreditApplication)
+        .filter(
+            SpotlightCommercialServiceCreditApplication.replacement_booking_id
+            == int(booking.id)
+        )
+        .filter(SpotlightCommercialServiceCreditApplication.status == "active")
+        .with_for_update()
+        .all()
+    )
+    for application in applications:
+        application.status = (
+            "fulfilled" if outcome == "fulfilled" else "transferred_to_shortfall"
+        )
+        application.resolved_at = resolved_at
+        obligation = (
+            db.query(SpotlightCommercialServiceCreditObligation)
+            .filter(
+                SpotlightCommercialServiceCreditObligation.id
+                == int(application.obligation_id)
+            )
+            .with_for_update()
+            .one()
+        )
+        if Decimal(str(obligation.remaining_credit_amount)) > Decimal("0.00"):
+            obligation.status = "partially_rebooked"
+        else:
+            obligation.status = (
+                "fulfilled"
+                if outcome == "fulfilled"
+                else "transferred_to_shortfall"
+            )
+            obligation.fulfilled_at = resolved_at if outcome == "fulfilled" else None
+        obligation.updated_at = resolved_at
+        db.add(application)
+        db.add(obligation)
+
+
+def _release_restored_service_credit_applications(
+    db: Session,
+    *,
+    booking: SpotlightCommercialBooking,
+) -> None:
+    applications = (
+        db.query(SpotlightCommercialServiceCreditApplication)
+        .filter(
+            SpotlightCommercialServiceCreditApplication.replacement_booking_id
+            == int(booking.id)
+        )
+        .filter(SpotlightCommercialServiceCreditApplication.status == "active")
+        .with_for_update()
+        .all()
+    )
+    for application in applications:
+        obligation = (
+            db.query(SpotlightCommercialServiceCreditObligation)
+            .filter(
+                SpotlightCommercialServiceCreditObligation.id
+                == int(application.obligation_id)
+            )
+            .with_for_update()
+            .one()
+        )
+        obligation.remaining_credit_amount = (
+            Decimal(str(obligation.remaining_credit_amount))
+            + Decimal(str(application.credit_amount))
+        )
+        obligation.status = "outstanding"
+        obligation.updated_at = _now()
+        application.status = "released"
+        application.resolved_at = _now()
+        db.add(obligation)
+        db.add(application)
+
+
 def reserve_spotlight_booking(
     db: Session,
     *,
@@ -427,6 +786,7 @@ def reserve_spotlight_booking(
         actor_user_id=actor_user_id,
         detail={"quote_id": int(quote.id), "opportunities": int(context["purchased_opportunities"]), "allocation": context["daypart_allocation"]},
     )
+    _apply_restored_service_credit_obligations(db, booking=booking)
     db.flush()
     return booking
 
@@ -440,52 +800,54 @@ def acknowledge_supplied_presentation(
     if not spotlight_commercial_enabled():
         return {"commercial": False, "recorded": False, "reason": "paid_spotlight_disabled"}
     current_time = _aware(supplied_at or _now())
-    existing = db.query(SpotlightCommercialOpportunity).filter(
-        SpotlightCommercialOpportunity.presentation_id == str(lease.presentation_id)
-    ).one_or_none()
-    if existing is not None:
-        return {"commercial": True, "recorded": False, "deduped": True, "opportunity_id": int(existing.id)}
-    placement = db.get(MarketplaceBroadcast, int(lease.placement_broadcast_id))
-    query = (
-        db.query(SpotlightCommercialBooking)
-        .filter(SpotlightCommercialBooking.campaign_id == int(lease.campaign_id))
-        .filter(SpotlightCommercialBooking.status.in_(tuple(SUPPLY_BOOKING_STATUSES)))
-        .filter(SpotlightCommercialBooking.service_starts_at <= current_time)
-        .filter(SpotlightCommercialBooking.service_ends_at > current_time)
-        .order_by(SpotlightCommercialBooking.created_at.asc())
-    )
-    if placement is not None:
-        query = query.filter(SpotlightCommercialBooking.clan_id == int(placement.clan_id))
-    for booking in query.with_for_update().all():
-        opportunity = (
-            db.query(SpotlightCommercialOpportunity)
-            .join(SpotlightCommercialAllocation, SpotlightCommercialAllocation.id == SpotlightCommercialOpportunity.allocation_id)
-            .filter(SpotlightCommercialOpportunity.booking_id == int(booking.id))
-            .filter(SpotlightCommercialOpportunity.status == "reserved")
-            .filter(SpotlightCommercialAllocation.window_starts_at <= current_time)
-            .filter(SpotlightCommercialAllocation.window_ends_at > current_time)
-            .order_by(SpotlightCommercialOpportunity.sequence_number.asc())
-            .with_for_update()
-            .first()
+    attribution = (
+        db.query(SpotlightCommercialPresentationAttribution)
+        .filter(
+            SpotlightCommercialPresentationAttribution.presentation_id
+            == str(lease.presentation_id)
         )
-        if opportunity is None:
-            continue
-        opportunity.status = "supplied"
-        opportunity.presentation_id = str(lease.presentation_id)
-        opportunity.viewer_user_id = int(lease.viewer_user_id)
-        opportunity.supplied_at = current_time
-        booking.status = "serving"
-        booking.updated_at = current_time
+        .with_for_update()
+        .one_or_none()
+    )
+    if attribution is None:
+        active = _active_campaign_bookings(
+            db,
+            campaign_id=int(lease.campaign_id),
+            at=current_time,
+        )
+        return {
+            "commercial": bool(active),
+            "recorded": False,
+            "reason": (
+                "commercial_presentation_not_attributed"
+                if active
+                else "no_active_commercial_booking"
+            ),
+        }
+    recorded = attribution.visible_at is None
+    if recorded:
+        attribution.visible_at = current_time
+        db.add(attribution)
         _audit(
             db,
-            event_type="opportunity.supplied",
-            booking_id=int(booking.id),
+            event_type="presentation.visible",
+            booking_id=int(attribution.booking_id),
             actor_user_id=int(lease.viewer_user_id),
-            detail={"opportunity_id": int(opportunity.id), "presentation_id": lease.presentation_id},
+            detail={
+                "opportunity_id": int(attribution.opportunity_id),
+                "presentation_id": lease.presentation_id,
+            },
         )
         db.commit()
-        return {"commercial": True, "recorded": True, "opportunity_id": int(opportunity.id), "booking_id": int(booking.id)}
-    return {"commercial": True, "recorded": False, "reason": "no_current_reserved_obligation"}
+    return {
+        "commercial": True,
+        "recorded": recorded,
+        "deduped": not recorded,
+        "opportunity_id": int(attribution.opportunity_id),
+        "booking_id": int(attribution.booking_id),
+        "counts_as_supplied_opportunity": False,
+        "counts_as_visible_presentation": recorded,
+    }
 
 
 def reconcile_booking(db: Session, *, booking_id: int, now: Optional[datetime] = None) -> SpotlightCommercialBooking:
@@ -495,6 +857,7 @@ def reconcile_booking(db: Session, *, booking_id: int, now: Optional[datetime] =
         return booking
     opportunities = db.query(SpotlightCommercialOpportunity).filter(SpotlightCommercialOpportunity.booking_id == int(booking.id)).all()
     supplied = sum(1 for row in opportunities if row.status == "supplied")
+    supplied += sum(1 for row in opportunities if row.status == "available")
     for row in opportunities:
         if row.status == "reserved":
             row.status = "missed"
@@ -502,6 +865,12 @@ def reconcile_booking(db: Session, *, booking_id: int, now: Optional[datetime] =
     missed = len(opportunities) - supplied
     booking.status = "fulfilled" if missed == 0 else "shortfall"
     booking.updated_at = current_time
+    _resolve_restored_service_credit_applications(
+        db,
+        booking=booking,
+        outcome=booking.status,
+        resolved_at=current_time,
+    )
     if missed:
         credit_amount = Decimal(str(max(1, math.ceil(missed / OPPORTUNITIES_PER_CREDIT))))
         remedy_key = f"paid-spotlight-shortfall:{int(booking.id)}:v1"
@@ -562,9 +931,16 @@ def reconcile_due_bookings(
 
 def apply_remedy(db: Session, *, remedy_id: int, actor_user_id: int) -> SpotlightCommercialRemedy:
     remedy = db.query(SpotlightCommercialRemedy).filter(SpotlightCommercialRemedy.id == int(remedy_id)).with_for_update().one()
-    if remedy.status == "applied":
-        return remedy
     booking = db.get(SpotlightCommercialBooking, int(remedy.booking_id))
+    existing_obligation = (
+        db.query(SpotlightCommercialServiceCreditObligation)
+        .filter(
+            SpotlightCommercialServiceCreditObligation.remedy_id == int(remedy.id)
+        )
+        .one_or_none()
+    )
+    if remedy.status == "applied" and existing_obligation is not None:
+        return remedy
     ledger = allocate_pipeline_credits(
         db,
         account_purpose=ACCOUNT_PURPOSE_CUSTOMER,
@@ -585,6 +961,19 @@ def apply_remedy(db: Session, *, remedy_id: int, actor_user_id: int) -> Spotligh
     remedy.ledger_entry_id = int(ledger.id)
     remedy.status = "applied"
     remedy.applied_at = _now()
+    if existing_obligation is None:
+        db.add(
+            SpotlightCommercialServiceCreditObligation(
+                remedy_id=int(remedy.id),
+                account_id=int(booking.account_id),
+                original_booking_id=int(booking.id),
+                credit_amount=Decimal(str(remedy.credit_amount)),
+                remaining_credit_amount=Decimal(str(remedy.credit_amount)),
+                status="outstanding",
+                created_at=_now(),
+                updated_at=_now(),
+            )
+        )
     booking.status = "remedied"
     booking.updated_at = _now()
     _audit(db, event_type="remedy.applied", booking_id=int(booking.id), actor_user_id=actor_user_id, detail={"remedy_id": int(remedy.id), "ledger_entry_id": int(ledger.id)})
@@ -631,19 +1020,19 @@ def commercial_frequency_policy(
         .filter(SpotlightExposureEvent.event_at < booking.service_ends_at)
         .scalar()
     )
-    supply_available = (
-        db.query(SpotlightCommercialOpportunity.id)
-        .join(SpotlightCommercialAllocation, SpotlightCommercialAllocation.id == SpotlightCommercialOpportunity.allocation_id)
-        .join(SpotlightCommercialBooking, SpotlightCommercialBooking.id == SpotlightCommercialOpportunity.booking_id)
-        .filter(SpotlightCommercialBooking.campaign_id.in_(related_campaign_ids))
-        .filter(SpotlightCommercialBooking.advert_key == booking.advert_key)
-        .filter(SpotlightCommercialBooking.service_date == booking.service_date)
-        .filter(SpotlightCommercialBooking.status.in_(tuple(SUPPLY_BOOKING_STATUSES)))
-        .filter(SpotlightCommercialOpportunity.status == "reserved")
-        .filter(SpotlightCommercialAllocation.window_starts_at <= current_time)
-        .filter(SpotlightCommercialAllocation.window_ends_at > current_time)
-        .first()
+    supply_available = any(
+        _current_scheduled_opportunity(
+            db,
+            booking=related_booking,
+            at=current_time,
+        )[0]
         is not None
+        for campaign_id in related_campaign_ids
+        for related_booking in _active_campaign_bookings(
+            db,
+            campaign_id=int(campaign_id),
+            at=current_time,
+        )
     )
     return {
         "advert_key": booking.advert_key,
@@ -665,21 +1054,53 @@ def booking_report(db: Session, *, booking_id: int) -> dict[str, Any]:
         .group_by(SpotlightCommercialOpportunity.status)
         .all()
     )
-    impressions = int(
-        db.query(func.count(SpotlightExposureEvent.id))
-        .filter(SpotlightExposureEvent.campaign_id == int(booking.campaign_id))
+    attributed_events = (
+        db.query(SpotlightExposureEvent)
+        .join(
+            SpotlightCommercialPresentationAttribution,
+            SpotlightCommercialPresentationAttribution.exposure_event_id
+            == SpotlightExposureEvent.id,
+        )
+        .filter(
+            SpotlightCommercialPresentationAttribution.booking_id == int(booking.id)
+        )
         .filter(SpotlightExposureEvent.event_type == "qualifying_impression")
-        .filter(SpotlightExposureEvent.event_at >= booking.service_starts_at)
-        .filter(SpotlightExposureEvent.event_at < booking.service_ends_at)
-        .scalar() or 0
+        .all()
     )
-    reach = int(
-        db.query(func.count(func.distinct(SpotlightExposureEvent.viewer_user_id)))
-        .filter(SpotlightExposureEvent.campaign_id == int(booking.campaign_id))
+    legacy_presentation_ids = [
+        str(row[0])
+        for row in (
+            db.query(SpotlightCommercialOpportunity.presentation_id)
+            .filter(
+                SpotlightCommercialOpportunity.booking_id == int(booking.id)
+            )
+            .filter(SpotlightCommercialOpportunity.presentation_id.isnot(None))
+            .all()
+        )
+        if row[0]
+    ]
+    legacy_events = (
+        db.query(SpotlightExposureEvent)
+        .filter(SpotlightExposureEvent.presentation_id.in_(legacy_presentation_ids))
         .filter(SpotlightExposureEvent.event_type == "qualifying_impression")
-        .filter(SpotlightExposureEvent.event_at >= booking.service_starts_at)
-        .filter(SpotlightExposureEvent.event_at < booking.service_ends_at)
-        .scalar() or 0
+        .all()
+        if legacy_presentation_ids
+        else []
+    )
+    event_by_id = {
+        int(row.id): row
+        for row in [*legacy_events, *attributed_events]
+    }
+    impressions = len(event_by_id)
+    reach = len({int(row.viewer_user_id) for row in event_by_id.values()})
+    visible_presentations = int(
+        db.query(func.count(SpotlightCommercialPresentationAttribution.id))
+        .filter(
+            SpotlightCommercialPresentationAttribution.booking_id == int(booking.id)
+        )
+        .filter(SpotlightCommercialPresentationAttribution.visible_at.isnot(None))
+        .scalar()
+        or 0
     )
     remedy = db.query(SpotlightCommercialRemedy).filter(SpotlightCommercialRemedy.booking_id == int(booking.id)).order_by(SpotlightCommercialRemedy.id.desc()).first()
     acquired_credits = Decimal(str(
@@ -688,6 +1109,80 @@ def booking_report(db: Session, *, booking_id: int) -> dict[str, Any]:
         .filter(PipelineCreditLedgerEntry.entry_type == "allocation")
         .scalar() or 0
     ))
+    credit_obligations = (
+        db.query(SpotlightCommercialServiceCreditObligation)
+        .join(
+            SpotlightCommercialRemedy,
+            SpotlightCommercialRemedy.id
+            == SpotlightCommercialServiceCreditObligation.remedy_id,
+        )
+        .filter(SpotlightCommercialRemedy.booking_id == int(booking.id))
+        .order_by(SpotlightCommercialServiceCreditObligation.id.asc())
+        .all()
+    )
+    obligation_rows: list[dict[str, Any]] = []
+    unbooked_restored_credits = Decimal("0.00")
+    active_replacement_credits = Decimal("0.00")
+    for obligation in credit_obligations:
+        applications = (
+            db.query(SpotlightCommercialServiceCreditApplication)
+            .filter(
+                SpotlightCommercialServiceCreditApplication.obligation_id
+                == int(obligation.id)
+            )
+            .order_by(SpotlightCommercialServiceCreditApplication.id.asc())
+            .all()
+        )
+        unbooked_restored_credits += Decimal(
+            str(obligation.remaining_credit_amount)
+        )
+        active_replacement_credits += sum(
+            (
+                Decimal(str(application.credit_amount))
+                for application in applications
+                if application.status == "active"
+            ),
+            Decimal("0.00"),
+        )
+        obligation_rows.append(
+            {
+                "id": int(obligation.id),
+                "status": obligation.status,
+                "credit_amount": f"{Decimal(str(obligation.credit_amount)):.2f}",
+                "remaining_credit_amount": (
+                    f"{Decimal(str(obligation.remaining_credit_amount)):.2f}"
+                ),
+                "applications": [
+                    {
+                        "replacement_booking_id": int(
+                            application.replacement_booking_id
+                        ),
+                        "credit_amount": (
+                            f"{Decimal(str(application.credit_amount)):.2f}"
+                        ),
+                        "status": application.status,
+                    }
+                    for application in applications
+                ],
+            }
+        )
+    original_shortfall_outstanding = bool(
+        remedy is not None and remedy.status != "applied"
+    )
+    supplied_opportunities = int(status_counts.get("supplied", 0)) + int(
+        status_counts.get("available", 0)
+    )
+    settlement = spotlight_commercial_settlement_readiness(
+        funding_classification=booking.funding_classification,
+        booking_status=booking.status,
+        purchased_credits=booking.purchased_credits,
+        supplied_opportunities=supplied_opportunities,
+        missed_opportunities=int(status_counts.get("missed", 0)),
+        original_shortfall_outstanding=original_shortfall_outstanding,
+        restored_service_credits_outstanding=(
+            unbooked_restored_credits + active_replacement_credits
+        ),
+    )
     return {
         "booking_id": int(booking.id),
         "booking_key": booking.booking_key,
@@ -698,7 +1193,10 @@ def booking_report(db: Session, *, booking_id: int) -> dict[str, Any]:
         "opportunities": {
             "purchased": int(booking.purchased_opportunities),
             "reserved": int(booking.reserved_opportunities),
-            "supplied": int(status_counts.get("supplied", 0)),
+            "scheduled": int(booking.reserved_opportunities),
+            "supplied": supplied_opportunities,
+            "made_available": supplied_opportunities,
+            "visible_presentations": visible_presentations,
             "missed": int(status_counts.get("missed", 0)),
             "outstanding": int(status_counts.get("reserved", 0)),
         },
@@ -707,6 +1205,7 @@ def booking_report(db: Session, *, booking_id: int) -> dict[str, Any]:
             "recognised_unique_viewers": reach if reach >= PRIVACY_REACH_THRESHOLD else None,
             "reach_privacy_suppressed": reach < PRIVACY_REACH_THRESHOLD,
             "no_sales_claim": "Opening or contacting a Shop is not reported as a sale.",
+            "attribution_scope": "This booking's presentation attributions only.",
         },
         "finance": {
             "cash_collected": None,
@@ -716,14 +1215,31 @@ def booking_report(db: Session, *, booking_id: int) -> dict[str, Any]:
             "credit_purchase_status": "cash purchase is not inferred from an allocation ledger entry",
             "credits_spent": f"{Decimal(str(booking.purchased_credits)):.2f}",
             "approved_credit_conversion": "GBP 0.50 per Pipeline Credit",
-            "earned_revenue": None,
-            "earned_revenue_status": "requires_separate_delivery_settlement",
-            "delivery_cost": None,
+            "earned_revenue": settlement["earned_revenue_amount"],
+            "earned_revenue_status": settlement["revenue_recognition_status"],
+            "delivery_cost": settlement["direct_cost_amount"],
             "company_overhead": None,
-            "community_allocation": None,
-            "outstanding_service_liability": int(status_counts.get("missed", 0)) if remedy is None or remedy.status != "applied" else 0,
+            "community_allocation": settlement["community_allocation_amount"],
+            "outstanding_service_liability": {
+                "original_shortfall_opportunities": (
+                    int(status_counts.get("missed", 0))
+                    if original_shortfall_outstanding
+                    else 0
+                ),
+                "restored_credits_unbooked": f"{unbooked_restored_credits:.2f}",
+                "restored_credits_in_active_replacement": (
+                    f"{active_replacement_credits:.2f}"
+                ),
+                "double_count_policy": (
+                    "A restored credit moves the obligation from the original "
+                    "shortfall to an unbooked credit or replacement booking; "
+                    "the same obligation is not added twice."
+                ),
+            },
+            "settlement_readiness": settlement,
         },
-        "remedy": None if remedy is None else {"id": int(remedy.id), "type": remedy.remedy_type, "status": remedy.status, "missed_opportunities": int(remedy.missed_opportunities), "credit_amount": f"{Decimal(str(remedy.credit_amount)):.2f}"},
+        "remedy": None if remedy is None else {"id": int(remedy.id), "type": remedy.remedy_type, "status": remedy.status, "missed_opportunities": int(remedy.missed_opportunities), "credit_amount": f"{Decimal(str(remedy.credit_amount)):.2f}", "cash_refund": False, "replacement_campaign": False},
+        "restored_service_credit_obligations": obligation_rows,
     }
 
 
@@ -781,6 +1297,7 @@ def set_booking_lifecycle(
             SpotlightCommercialOpportunity.booking_id == int(booking.id),
             SpotlightCommercialOpportunity.status == "reserved",
         ).update({"status": "cancelled", "failure_code": "operator_withdrawal"}, synchronize_session=False)
+        _release_restored_service_credit_applications(db, booking=booking)
     else:
         raise SpotlightCommercialError("invalid_lifecycle_action", "Unknown booking lifecycle action")
     booking.updated_at = _now()

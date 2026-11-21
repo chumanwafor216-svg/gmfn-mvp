@@ -8,7 +8,17 @@ from sqlalchemy import text
 
 from app.db.database import SessionLocal, engine
 from app.db.models import MarketplaceBroadcast, SpotlightCampaign, SpotlightExposureEvent, SpotlightPresentationLease
-from app.db.spotlight_commercial_models import SpotlightCommercialBooking, SpotlightCommercialOpportunity, SpotlightCommercialRemedy
+from app.db.spotlight_commercial_models import (
+    SpotlightCommercialBooking,
+    SpotlightCommercialOpportunity,
+    SpotlightCommercialPresentationAttribution,
+    SpotlightCommercialRemedy,
+    SpotlightCommercialServiceCreditApplication,
+    SpotlightCommercialServiceCreditObligation,
+)
+from app.services.advertising_revenue_service import (
+    spotlight_commercial_settlement_readiness,
+)
 from app.services.pipeline_credit_commerce_service import (
     PipelineCreditCommerceError,
     issue_service_quote,
@@ -21,17 +31,32 @@ from app.services.pipeline_credit_service import ACCOUNT_PURPOSE_CUSTOMER, alloc
 from app.services.spotlight_commercial_service import (
     acknowledge_supplied_presentation,
     apply_remedy,
+    bind_commercial_presentation_lease,
     booking_report,
     commercial_frequency_policy,
     reconcile_booking,
     reconcile_due_bookings,
+    record_commercial_qualifying_impression,
     record_capacity_evidence,
+)
+from app.services.spotlight_presentation_service import (
+    record_spotlight_presentation_qualification,
+    record_spotlight_presentation_supply,
+    select_spotlight_presentation,
 )
 
 
 def _seed() -> None:
     with engine.begin() as conn:
-        for user_id, role in ((1, "admin"), (2, "user"), (3, "user")):
+        for user_id, role in (
+            (1, "admin"),
+            (2, "user"),
+            (3, "user"),
+            (4, "user"),
+            (5, "user"),
+            (6, "user"),
+            (7, "user"),
+        ):
             conn.execute(
                 text("INSERT INTO users (id, email, hashed_password, role, gmfn_id) VALUES (:id, :email, 'hashed', :role, :gmfn)"),
                 {"id": user_id, "email": f"slice3-{user_id}@example.com", "role": role, "gmfn": f"GSN-S3-{user_id}"},
@@ -155,7 +180,7 @@ def _book(db, *, campaign_id: int, service_date: str, key: str):
     return quote, order, db.get(SpotlightCommercialBooking, int(order.delivery_reference_id))
 
 
-def _supply(db, *, booking: SpotlightCommercialBooking, broadcast: MarketplaceBroadcast, count: int) -> None:
+def _supply(db, *, booking: SpotlightCommercialBooking, broadcast: MarketplaceBroadcast, count: int) -> list[str]:
     opportunities = (
         db.query(SpotlightCommercialOpportunity)
         .filter(SpotlightCommercialOpportunity.booking_id == int(booking.id))
@@ -163,10 +188,12 @@ def _supply(db, *, booking: SpotlightCommercialBooking, broadcast: MarketplaceBr
         .limit(count)
         .all()
     )
+    presentation_ids: list[str] = []
     for index, opportunity in enumerate(opportunities, start=1):
         supplied_at = opportunity.scheduled_at
+        presentation_id = f"slice3-presentation-{booking.id}-{index}"
         lease = SpotlightPresentationLease(
-            presentation_id=f"slice3-presentation-{booking.id}-{index}",
+            presentation_id=presentation_id,
             issuance_key=f"slice3-issuance-{booking.id}-{index}",
             viewer_user_id=2,
             campaign_id=int(booking.campaign_id),
@@ -179,8 +206,78 @@ def _supply(db, *, booking: SpotlightCommercialBooking, broadcast: MarketplaceBr
         )
         db.add(lease)
         db.flush()
+        binding = bind_commercial_presentation_lease(
+            db,
+            lease=lease,
+            selected_at=supplied_at,
+        )
+        assert binding["attributed"] is True
+        assert binding["opportunity_id"] == int(opportunity.id)
         result = acknowledge_supplied_presentation(db, lease=lease, supplied_at=supplied_at)
         assert result["recorded"] is True
+        presentation_ids.append(presentation_id)
+    return presentation_ids
+
+
+def _bind_presentation(
+    db,
+    *,
+    booking: SpotlightCommercialBooking,
+    broadcast: MarketplaceBroadcast,
+    viewer_user_id: int,
+    presentation_id: str,
+    selected_at: datetime,
+) -> dict:
+    lease = SpotlightPresentationLease(
+        presentation_id=presentation_id,
+        issuance_key=f"issuance-{presentation_id}",
+        viewer_user_id=viewer_user_id,
+        campaign_id=int(booking.campaign_id),
+        placement_broadcast_id=int(broadcast.id),
+        content_version=1,
+        surface="public_shop_spotlight_rail",
+        status="issued",
+        issued_at=selected_at,
+        lease_expires_at=selected_at + timedelta(minutes=2),
+    )
+    db.add(lease)
+    db.flush()
+    return bind_commercial_presentation_lease(
+        db,
+        lease=lease,
+        selected_at=selected_at,
+    )
+
+
+def _attribute_impression(
+    db,
+    *,
+    campaign: SpotlightCampaign,
+    broadcast: MarketplaceBroadcast,
+    presentation_id: str,
+    viewer_user_id: int,
+    event_at: datetime,
+) -> None:
+    event = SpotlightExposureEvent(
+        presentation_id=presentation_id,
+        event_type="qualifying_impression",
+        viewer_user_id=viewer_user_id,
+        campaign_id=int(campaign.id),
+        event_at=event_at,
+        allocation_route_type="direct_community",
+        allocation_route_clan_id=1,
+        placement_broadcast_id=int(broadcast.id),
+        idempotency_key=f"qualifying-{presentation_id}",
+        presentation_surface="public_shop_spotlight_rail",
+    )
+    db.add(event)
+    db.flush()
+    record_commercial_qualifying_impression(
+        db,
+        presentation_id=presentation_id,
+        exposure_event_id=int(event.id),
+        qualified_at=event_at,
+    )
 
 
 def test_slice3_paid_service_trace_shortfall_remedy_conflict_and_regions(monkeypatch) -> None:
@@ -194,22 +291,33 @@ def test_slice3_paid_service_trace_shortfall_remedy_conflict_and_regions(monkeyp
         _, order, fulfilled = _book(db, campaign_id=int(campaign.id), service_date="2027-03-28", key="fulfilled-slice3")
         assert order.delivery_reference_type == "spotlight_commercial_booking"
         assert pipeline_credit_balance(db, account_id=int(order.account_id)) == Decimal("9.00")
-        _supply(db, booking=fulfilled, broadcast=broadcast, count=30)
+        fulfilled_presentations = _supply(
+            db,
+            booking=fulfilled,
+            broadcast=broadcast,
+            count=30,
+        )
 
         for index in range(5):
-            db.add(
-                SpotlightExposureEvent(
-                    presentation_id=f"qualified-{index}",
-                    event_type="qualifying_impression",
-                    viewer_user_id=2,
-                    campaign_id=int(campaign.id),
-                    event_at=datetime(2027, 3, 28, 12, index, tzinfo=timezone.utc),
-                    allocation_route_type="direct_community",
-                    allocation_route_clan_id=1,
-                    placement_broadcast_id=int(broadcast.id),
-                    idempotency_key=f"slice3-qualified-{index}",
-                    presentation_surface="public_shop_spotlight_rail",
-                )
+            event = SpotlightExposureEvent(
+                presentation_id=fulfilled_presentations[index],
+                event_type="qualifying_impression",
+                viewer_user_id=2,
+                campaign_id=int(campaign.id),
+                event_at=datetime(2027, 3, 28, 12, index, tzinfo=timezone.utc),
+                allocation_route_type="direct_community",
+                allocation_route_clan_id=1,
+                placement_broadcast_id=int(broadcast.id),
+                idempotency_key=f"slice3-qualified-{index}",
+                presentation_surface="public_shop_spotlight_rail",
+            )
+            db.add(event)
+            db.flush()
+            record_commercial_qualifying_impression(
+                db,
+                presentation_id=fulfilled_presentations[index],
+                exposure_event_id=int(event.id),
+                qualified_at=event.event_at,
             )
         db.commit()
         fifth_boundary = commercial_frequency_policy(
@@ -223,7 +331,16 @@ def test_slice3_paid_service_trace_shortfall_remedy_conflict_and_regions(monkeyp
         fulfilled = reconcile_booking(db, booking_id=int(fulfilled.id), now=datetime(2027, 3, 29, 0, 1, tzinfo=timezone.utc))
         assert fulfilled.status == "fulfilled"
         report = booking_report(db, booking_id=int(fulfilled.id))
-        assert report["opportunities"] == {"purchased": 30, "reserved": 30, "supplied": 30, "missed": 0, "outstanding": 0}
+        assert report["opportunities"] == {
+            "purchased": 30,
+            "reserved": 30,
+            "scheduled": 30,
+            "supplied": 30,
+            "made_available": 30,
+            "visible_presentations": 30,
+            "missed": 0,
+            "outstanding": 0,
+        }
         assert report["measurement"]["qualifying_impressions"] == 5
         assert report["finance"]["cash_collected"] is None
         assert report["finance"]["earned_revenue"] is None
@@ -302,3 +419,312 @@ def test_slice3_paid_service_trace_shortfall_remedy_conflict_and_regions(monkeyp
         assert nigeria_booking.region_code == "NG"
         assert nigeria_booking.timezone_name == "Africa/Lagos"
         assert nigeria_booking.service_starts_at != fulfilled.service_starts_at
+
+
+def test_slice3a_reuses_current_turn_and_attributes_overlapping_bookings(monkeypatch) -> None:
+    monkeypatch.setenv("GSN_PAID_SPOTLIGHT_V1_ENABLED", "1")
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
+    _seed()
+    with SessionLocal() as db:
+        _configure_and_fund(db)
+        campaign, broadcast = _campaign(db, fingerprint="slice3a-overlap")
+        _capacity(db, service_date="2027-04-04")
+        _, _, first_booking = _book(
+            db,
+            campaign_id=int(campaign.id),
+            service_date="2027-04-04",
+            key="slice3a-overlap-first",
+        )
+        _, _, second_booking = _book(
+            db,
+            campaign_id=int(campaign.id),
+            service_date="2027-04-04",
+            key="slice3a-overlap-second",
+        )
+        first_turn = (
+            db.query(SpotlightCommercialOpportunity)
+            .filter(
+                SpotlightCommercialOpportunity.booking_id == int(first_booking.id)
+            )
+            .order_by(SpotlightCommercialOpportunity.sequence_number.asc())
+            .first()
+        )
+        selected_at = first_turn.scheduled_at + timedelta(seconds=1)
+        viewer_ids = (2, 3, 4, 5, 6, 7, 2)
+        bindings = []
+        for index, viewer_user_id in enumerate(viewer_ids, start=1):
+            presentation_id = f"slice3a-overlap-presentation-{index}"
+            binding = _bind_presentation(
+                db,
+                booking=first_booking,
+                broadcast=broadcast,
+                viewer_user_id=viewer_user_id,
+                presentation_id=presentation_id,
+                selected_at=selected_at,
+            )
+            assert binding["attributed"] is True
+            bindings.append(binding)
+            _attribute_impression(
+                db,
+                campaign=campaign,
+                broadcast=broadcast,
+                presentation_id=presentation_id,
+                viewer_user_id=viewer_user_id,
+                event_at=selected_at + timedelta(seconds=index),
+            )
+        db.commit()
+
+        assert bindings[0]["booking_id"] == int(first_booking.id)
+        assert bindings[1]["booking_id"] == int(second_booking.id)
+        assert all(
+            binding["booking_id"] == int(first_booking.id)
+            for binding in bindings[2:]
+        )
+        status_counts = dict(
+            db.query(
+                SpotlightCommercialOpportunity.status,
+                text("count(*)"),
+            )
+            .group_by(SpotlightCommercialOpportunity.status)
+            .all()
+        )
+        assert status_counts["available"] == 2
+        assert status_counts["reserved"] == 58
+
+        first_report = booking_report(db, booking_id=int(first_booking.id))
+        second_report = booking_report(db, booking_id=int(second_booking.id))
+        assert first_report["measurement"]["qualifying_impressions"] == 6
+        assert first_report["measurement"]["recognised_unique_viewers"] == 5
+        assert second_report["measurement"]["qualifying_impressions"] == 1
+        assert second_report["measurement"]["recognised_unique_viewers"] is None
+        assert first_report["opportunities"]["made_available"] == 1
+        assert second_report["opportunities"]["made_available"] == 1
+        assert (
+            db.query(SpotlightCommercialPresentationAttribution)
+            .filter(
+                SpotlightCommercialPresentationAttribution.booking_id
+                == int(first_booking.id)
+            )
+            .count()
+            == 6
+        )
+
+
+def test_slice3a_restored_credit_remains_service_obligation_until_fulfilled(monkeypatch) -> None:
+    monkeypatch.setenv("GSN_PAID_SPOTLIGHT_V1_ENABLED", "1")
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
+    _seed()
+    with SessionLocal() as db:
+        _configure_and_fund(db)
+        campaign, broadcast = _campaign(db, fingerprint="slice3a-remedy")
+        _capacity(db, service_date="2027-04-05")
+        _, _, original = _book(
+            db,
+            campaign_id=int(campaign.id),
+            service_date="2027-04-05",
+            key="slice3a-remedy-original",
+        )
+        _supply(db, booking=original, broadcast=broadcast, count=29)
+        reconcile_booking(
+            db,
+            booking_id=int(original.id),
+            now=datetime(2027, 4, 6, 0, 1, tzinfo=timezone.utc),
+        )
+        remedy = (
+            db.query(SpotlightCommercialRemedy)
+            .filter(SpotlightCommercialRemedy.booking_id == int(original.id))
+            .one()
+        )
+        apply_remedy(db, remedy_id=int(remedy.id), actor_user_id=1)
+        obligation = (
+            db.query(SpotlightCommercialServiceCreditObligation)
+            .filter(
+                SpotlightCommercialServiceCreditObligation.remedy_id
+                == int(remedy.id)
+            )
+            .one()
+        )
+        assert obligation.status == "outstanding"
+        assert obligation.remaining_credit_amount == Decimal("1.00")
+        original_report = booking_report(db, booking_id=int(original.id))
+        assert (
+            original_report["finance"]["outstanding_service_liability"][
+                "restored_credits_unbooked"
+            ]
+            == "1.00"
+        )
+        assert original_report["finance"]["settlement_readiness"][
+            "service_obligation_open"
+        ] is True
+
+        _capacity(db, service_date="2027-04-06")
+        _, _, replacement = _book(
+            db,
+            campaign_id=int(campaign.id),
+            service_date="2027-04-06",
+            key="slice3a-remedy-replacement",
+        )
+        application = (
+            db.query(SpotlightCommercialServiceCreditApplication)
+            .filter(
+                SpotlightCommercialServiceCreditApplication.replacement_booking_id
+                == int(replacement.id)
+            )
+            .one()
+        )
+        db.refresh(obligation)
+        assert application.status == "active"
+        assert obligation.status == "rebooked"
+        assert obligation.remaining_credit_amount == Decimal("0.00")
+        original_report = booking_report(db, booking_id=int(original.id))
+        assert (
+            original_report["finance"]["outstanding_service_liability"][
+                "restored_credits_in_active_replacement"
+            ]
+            == "1.00"
+        )
+
+        _supply(db, booking=replacement, broadcast=broadcast, count=30)
+        reconcile_booking(
+            db,
+            booking_id=int(replacement.id),
+            now=datetime(2027, 4, 7, 0, 1, tzinfo=timezone.utc),
+        )
+        db.refresh(obligation)
+        db.refresh(application)
+        assert application.status == "fulfilled"
+        assert obligation.status == "fulfilled"
+        assert obligation.fulfilled_at is not None
+        final_report = booking_report(db, booking_id=int(original.id))
+        assert (
+            final_report["finance"]["outstanding_service_liability"][
+                "restored_credits_unbooked"
+            ]
+            == "0.00"
+        )
+        assert (
+            final_report["finance"]["outstanding_service_liability"][
+                "restored_credits_in_active_replacement"
+            ]
+            == "0.00"
+        )
+        assert final_report["finance"]["settlement_readiness"][
+            "service_obligation_open"
+        ] is False
+
+
+def test_slice3a_actual_serving_path_reuses_turn_and_enforces_fifth_view(monkeypatch) -> None:
+    monkeypatch.setenv("GSN_PAID_SPOTLIGHT_V1_ENABLED", "1")
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
+    monkeypatch.setenv("SECRET_KEY", "slice3a-serving-test-secret")
+    _seed()
+    with SessionLocal() as db:
+        _configure_and_fund(db)
+        campaign, _ = _campaign(db, fingerprint="slice3a-serving")
+        _capacity(db, service_date="2027-04-07")
+        _, _, booking = _book(
+            db,
+            campaign_id=int(campaign.id),
+            service_date="2027-04-07",
+            key="slice3a-serving-path",
+        )
+        first_turn = (
+            db.query(SpotlightCommercialOpportunity)
+            .filter(
+                SpotlightCommercialOpportunity.booking_id == int(booking.id)
+            )
+            .order_by(SpotlightCommercialOpportunity.sequence_number.asc())
+            .first()
+        )
+        base_time = first_turn.scheduled_at + timedelta(seconds=1)
+        presentation_ids: list[str] = []
+        for index in range(5):
+            issued_at = base_time + timedelta(seconds=index * 3)
+            selection = select_spotlight_presentation(
+                db,
+                viewer_user_id=2,
+                candidate_campaign_ids=[int(campaign.id)],
+                now=issued_at,
+                issuance_key=f"slice3a-serving-issuance-{index}",
+            )
+            assert selection.selected is True
+            presentation_ids.append(str(selection.presentation_id))
+            supplied = record_spotlight_presentation_supply(
+                db,
+                viewer_user_id=2,
+                presentation_token=str(selection.presentation_token),
+                event_at=issued_at + timedelta(milliseconds=500),
+                visible_ratio=1.0,
+                document_visible=True,
+            )
+            assert supplied["recorded"] is True
+            qualification = record_spotlight_presentation_qualification(
+                db,
+                viewer_user_id=2,
+                presentation_token=str(selection.presentation_token),
+                qualification_key=f"slice3a-serving-qualification-{index}",
+                event_at=issued_at + timedelta(milliseconds=1500),
+                visible_ms=1000,
+                visible_ratio=1.0,
+                document_visible=True,
+            )
+            assert qualification.accepted is True
+            assert qualification.delivery_round_consumed is False
+
+        sixth = select_spotlight_presentation(
+            db,
+            viewer_user_id=2,
+            candidate_campaign_ids=[int(campaign.id)],
+            now=base_time + timedelta(seconds=20),
+            issuance_key="slice3a-serving-issuance-sixth",
+        )
+        assert sixth.selected is False
+        assert int(campaign.id) in sixth.frequency_suppressed_campaign_ids
+        report = booking_report(db, booking_id=int(booking.id))
+        assert report["opportunities"]["made_available"] == 1
+        assert report["opportunities"]["visible_presentations"] == 5
+        assert report["measurement"]["qualifying_impressions"] == 5
+        assert report["measurement"]["recognised_unique_viewers"] is None
+        assert (
+            db.query(SpotlightCommercialPresentationAttribution)
+            .filter(
+                SpotlightCommercialPresentationAttribution.presentation_id.in_(
+                    presentation_ids
+                )
+            )
+            .count()
+            == 5
+        )
+
+
+@pytest.mark.parametrize(
+    ("funding", "cash", "expected_status", "expected_revenue"),
+    (
+        ("merchant_paid", None, "unearned_cash_unconfirmed", None),
+        ("sponsor_funded", "0.50", "earned_after_cash_and_delivery", "0.50"),
+        ("gifted", None, "not_customer_revenue", "0.00"),
+        ("waived", None, "not_customer_revenue", "0.00"),
+        ("house", None, "not_customer_revenue", "0.00"),
+    ),
+)
+def test_slice3a_settlement_readiness_preserves_funding_classification(
+    funding,
+    cash,
+    expected_status,
+    expected_revenue,
+) -> None:
+    settlement = spotlight_commercial_settlement_readiness(
+        funding_classification=funding,
+        booking_status="fulfilled",
+        purchased_credits="1.00",
+        supplied_opportunities=30,
+        missed_opportunities=0,
+        original_shortfall_outstanding=False,
+        restored_service_credits_outstanding="0.00",
+        cash_collected_amount=cash,
+    )
+    assert settlement["revenue_recognition_status"] == expected_status
+    assert settlement["earned_revenue_amount"] == expected_revenue
+    assert settlement["credit_restoration_is_cash_refund"] is False
+    assert settlement["replacement_campaign_is_cash_refund"] is False
+    assert settlement["company_overhead_included_as_direct_cost"] is False

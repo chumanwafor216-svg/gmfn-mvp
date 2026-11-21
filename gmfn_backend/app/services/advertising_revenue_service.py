@@ -37,6 +37,9 @@ ACCOUNTING_BOUNDARY = (
     "A payout is released only after reconciled advertiser payment, finalized delivery evidence, "
     "a community-appointed beneficiary, and an externally completed transfer with its reference."
 )
+SPOTLIGHT_COMMERCIAL_FUNDING_CLASSIFICATIONS = frozenset(
+    {"merchant_paid", "sponsor_funded", "gifted", "waived", "house"}
+)
 
 
 class AdvertisingRevenueError(RuntimeError):
@@ -136,6 +139,125 @@ def calculate_settlement_amounts(
             "campaign-specific delivery costs = distributable net; community pool = configured rate x net"
         ),
         "excluded_from_deductions": "General GSN salaries, rent, and unrelated overhead are not deducted.",
+    }
+
+
+def spotlight_commercial_settlement_readiness(
+    *,
+    funding_classification: str,
+    booking_status: str,
+    purchased_credits: Any,
+    supplied_opportunities: int,
+    missed_opportunities: int,
+    original_shortfall_outstanding: bool,
+    restored_service_credits_outstanding: Any,
+    cash_collected_amount: Any = None,
+    cash_refund_amount: Any = None,
+    direct_cost_amount: Any = None,
+    community_allocation_amount: Any = None,
+) -> dict[str, Any]:
+    funding = str(funding_classification or "").strip().lower()
+    if funding not in SPOTLIGHT_COMMERCIAL_FUNDING_CLASSIFICATIONS:
+        raise AdvertisingRevenueError(
+            "invalid_spotlight_funding_classification",
+            "Unknown Spotlight funding classification.",
+        )
+    credits = _money(purchased_credits, field="purchased Pipeline Credits")
+    restored_credits = _money(
+        restored_service_credits_outstanding,
+        field="restored service-credit obligation",
+    )
+    supplied = max(int(supplied_opportunities), 0)
+    missed = max(int(missed_opportunities), 0)
+    service_obligation_open = bool(
+        original_shortfall_outstanding
+        or restored_credits > Decimal("0.00")
+        or str(booking_status or "").strip().lower()
+        not in {"fulfilled", "remedied"}
+    )
+    revenue_capable = funding in {"merchant_paid", "sponsor_funded"}
+    cash_amount = (
+        None
+        if cash_collected_amount is None
+        else _money(cash_collected_amount, field="cash collected")
+    )
+    refund_amount = (
+        None
+        if cash_refund_amount is None
+        else _money(cash_refund_amount, field="cash refund")
+    )
+    direct_cost = (
+        None
+        if direct_cost_amount is None
+        else _money(direct_cost_amount, field="direct delivery cost")
+    )
+    community_allocation = (
+        None
+        if community_allocation_amount is None
+        else _money(community_allocation_amount, field="community allocation")
+    )
+    if not revenue_capable:
+        recognition_status = "not_customer_revenue"
+        earned_revenue = Decimal("0.00")
+        cash_status = "not_applicable"
+    elif cash_amount is None:
+        recognition_status = "unearned_cash_unconfirmed"
+        earned_revenue = None
+        cash_status = "not_connected"
+    elif service_obligation_open:
+        recognition_status = "deferred_service_obligation_open"
+        earned_revenue = Decimal("0.00")
+        cash_status = "confirmed"
+    else:
+        effective_refund = refund_amount or Decimal("0.00")
+        earned_revenue = max(cash_amount - effective_refund, Decimal("0.00"))
+        recognition_status = "earned_after_cash_and_delivery"
+        cash_status = "confirmed"
+    return {
+        "policy_version": "spotlight-commercial-settlement.v1",
+        "funding_classification": funding,
+        "revenue_capable": revenue_capable,
+        "cash_collection_status": cash_status,
+        "cash_collected_amount": (
+            f"{cash_amount:.2f}" if cash_amount is not None else None
+        ),
+        "cash_refund_amount": (
+            f"{refund_amount:.2f}" if refund_amount is not None else None
+        ),
+        "credit_restoration_is_cash_refund": False,
+        "replacement_campaign_is_cash_refund": False,
+        "purchased_credits": f"{credits:.2f}",
+        "supplied_opportunities": supplied,
+        "missed_opportunities": missed,
+        "service_obligation_open": service_obligation_open,
+        "restored_service_credits_outstanding": f"{restored_credits:.2f}",
+        "revenue_recognition_status": recognition_status,
+        "earned_revenue_amount": (
+            f"{earned_revenue:.2f}" if earned_revenue is not None else None
+        ),
+        "direct_cost_amount": (
+            f"{direct_cost:.2f}" if direct_cost is not None else None
+        ),
+        "direct_cost_status": (
+            "recorded" if direct_cost is not None else "policy_or_evidence_unresolved"
+        ),
+        "company_overhead_included_as_direct_cost": False,
+        "community_allocation_amount": (
+            f"{community_allocation:.2f}"
+            if community_allocation is not None
+            else None
+        ),
+        "community_allocation_status": (
+            "recorded"
+            if community_allocation is not None
+            else "policy_or_evidence_unresolved"
+        ),
+        "recognition_rule": (
+            "Merchant or sponsor revenue is earned only after confirmed cash, "
+            "completed authorised delivery, and no unresolved original or restored "
+            "service obligation. Gifted, waived and house activity is not customer revenue."
+        ),
+        "boundary": ACCOUNTING_BOUNDARY,
     }
 
 
