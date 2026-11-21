@@ -165,13 +165,13 @@ def _seed(postgres_engine) -> None:
                     expires_at, authorized_expires_at
                 ) VALUES
                     (
-                        1, 3, 1, 'broadcast_snapshot', :fingerprint_one,
+                        1, 1, 1, 'broadcast_snapshot', :fingerprint_one,
                         'active', 'serving', 'direct_broadcast', 'pipeline_credit',
                         'direct_communities', 'offer', 'product', 'community',
                         'available', :created_at, :created_at, :expires_at, :expires_at
                     ),
                     (
-                        2, 4, 1, 'broadcast_snapshot', :fingerprint_two,
+                        2, 2, 1, 'broadcast_snapshot', :fingerprint_two,
                         'active', 'serving', 'direct_broadcast', 'pipeline_credit',
                         'direct_communities', 'offer', 'product', 'community',
                         'available', :created_at, :created_at, :expires_at, :expires_at
