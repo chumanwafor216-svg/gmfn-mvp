@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.db.advertising_revenue_models import AdvertisingCampaignSettlement
 from app.db.models import (
     Clan,
     MarketplaceBroadcast,
@@ -40,6 +41,10 @@ from app.services.advertising_revenue_service import (
     spotlight_commercial_settlement_readiness,
 )
 from app.services.pipeline_credit_service import ACCOUNT_PURPOSE_CUSTOMER, allocate_pipeline_credits
+from app.services.spotlight_commercial_access_service import (
+    SpotlightCommercialAccessError,
+    require_spotlight_pilot_entitlement,
+)
 
 
 SERVICE_CODE = "paid_spotlight.day"
@@ -133,6 +138,40 @@ def _audit(
         )
     )
 
+
+def _reconcile_related_settlements(
+    db: Session,
+    *,
+    booking: SpotlightCommercialBooking,
+    actor_user_id: Optional[int] = None,
+) -> None:
+    from app.services.advertising_revenue_service import (
+        reconcile_spotlight_booking_settlement,
+    )
+
+    booking_ids = {int(booking.id)}
+    original_ids = (
+        db.query(SpotlightCommercialServiceCreditObligation.original_booking_id)
+        .join(
+            SpotlightCommercialServiceCreditApplication,
+            SpotlightCommercialServiceCreditApplication.obligation_id
+            == SpotlightCommercialServiceCreditObligation.id,
+        )
+        .filter(
+            SpotlightCommercialServiceCreditApplication.replacement_booking_id
+            == int(booking.id)
+        )
+        .distinct()
+        .all()
+    )
+    booking_ids.update(int(row[0]) for row in original_ids)
+    for booking_id in sorted(booking_ids):
+        reconcile_spotlight_booking_settlement(
+            db,
+            booking_id=booking_id,
+            actor_user_id=actor_user_id,
+            commit=True,
+        )
 
 def record_capacity_evidence(
     db: Session,
@@ -256,6 +295,15 @@ def validate_spotlight_quote_context(
         raise SpotlightCommercialError("invalid_funding_classification", "Unknown Spotlight funding classification")
     if funding != "merchant_paid" and not is_admin:
         raise SpotlightCommercialError("funding_authority_required", "Only a platform administrator can approve non-merchant funding")
+    try:
+        require_spotlight_pilot_entitlement(
+            db,
+            user_id=int(actor_user_id),
+            clan_id=clan_id,
+            funding_classification=funding,
+        )
+    except SpotlightCommercialAccessError as exc:
+        raise SpotlightCommercialError(exc.code, str(exc)) from exc
     service_day = _parse_service_date(context.get("service_date"))
     timezone_name = str(context.get("timezone") or "").strip()
     _zone(timezone_name)
@@ -706,6 +754,15 @@ def reserve_spotlight_booking(
     context: dict[str, Any],
 ) -> SpotlightCommercialBooking:
     require_spotlight_commercial_enabled()
+    try:
+        require_spotlight_pilot_entitlement(
+            db,
+            user_id=int(actor_user_id),
+            clan_id=int(context.get("clan_id") or 0),
+            funding_classification=str(context.get("funding_classification") or "merchant_paid"),
+        )
+    except SpotlightCommercialAccessError as exc:
+        raise SpotlightCommercialError(exc.code, str(exc)) from exc
     existing = db.query(SpotlightCommercialBooking).filter(SpotlightCommercialBooking.quote_id == int(quote.id)).one_or_none()
     if existing is not None:
         return existing
@@ -890,6 +947,7 @@ def reconcile_booking(db: Session, *, booking_id: int, now: Optional[datetime] =
     _audit(db, event_type="booking.reconciled", booking_id=int(booking.id), detail={"supplied": supplied, "missed": missed, "status": booking.status})
     db.commit()
     db.refresh(booking)
+    _reconcile_related_settlements(db, booking=booking)
     return booking
 
 
@@ -979,6 +1037,7 @@ def apply_remedy(db: Session, *, remedy_id: int, actor_user_id: int) -> Spotligh
     _audit(db, event_type="remedy.applied", booking_id=int(booking.id), actor_user_id=actor_user_id, detail={"remedy_id": int(remedy.id), "ledger_entry_id": int(ledger.id)})
     db.commit()
     db.refresh(remedy)
+    _reconcile_related_settlements(db, booking=booking, actor_user_id=int(actor_user_id))
     return remedy
 
 
@@ -1172,6 +1231,11 @@ def booking_report(db: Session, *, booking_id: int) -> dict[str, Any]:
     supplied_opportunities = int(status_counts.get("supplied", 0)) + int(
         status_counts.get("available", 0)
     )
+    settlement_record = (
+        db.query(AdvertisingCampaignSettlement)
+        .filter(AdvertisingCampaignSettlement.spotlight_booking_id == int(booking.id))
+        .one_or_none()
+    )
     settlement = spotlight_commercial_settlement_readiness(
         funding_classification=booking.funding_classification,
         booking_status=booking.status,
@@ -1182,6 +1246,10 @@ def booking_report(db: Session, *, booking_id: int) -> dict[str, Any]:
         restored_service_credits_outstanding=(
             unbooked_restored_credits + active_replacement_credits
         ),
+        cash_collected_amount=(settlement_record.gross_received_amount if settlement_record else None),
+        cash_refund_amount=(settlement_record.refund_amount if settlement_record else None),
+        direct_cost_amount=(settlement_record.delivery_cost_amount if settlement_record else None),
+        community_allocation_amount=(settlement_record.community_pool_amount if settlement_record else None),
     )
     return {
         "booking_id": int(booking.id),
@@ -1208,11 +1276,11 @@ def booking_report(db: Session, *, booking_id: int) -> dict[str, Any]:
             "attribution_scope": "This booking's presentation attributions only.",
         },
         "finance": {
-            "cash_collected": None,
-            "cash_collection_status": "not_proven_by_pipeline_credit_spend",
+            "cash_collected": settlement["cash_collected_amount"],
+            "cash_collection_status": settlement["cash_collection_status"],
             "credits_acquired_total": f"{acquired_credits:.2f}",
-            "credits_purchased_from_cash": None,
-            "credit_purchase_status": "cash purchase is not inferred from an allocation ledger entry",
+            "credits_purchased_from_cash": (f"{Decimal(str(booking.purchased_credits)):.2f}" if settlement_record else None),
+            "credit_purchase_status": ("confirmed_acquisition_cash_backing" if settlement_record else "not_cash_backed"),
             "credits_spent": f"{Decimal(str(booking.purchased_credits)):.2f}",
             "approved_credit_conversion": "GBP 0.50 per Pipeline Credit",
             "earned_revenue": settlement["earned_revenue_amount"],
@@ -1310,4 +1378,5 @@ def set_booking_lifecycle(
     )
     db.commit()
     db.refresh(booking)
+    _reconcile_related_settlements(db, booking=booking)
     return booking

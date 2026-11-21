@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -46,6 +46,43 @@ class SpotlightCommercialCapacityWindow(Base):
         ),
     )
 
+
+class SpotlightCommercialPilotEntitlement(Base):
+    __tablename__ = "spotlight_commercial_pilot_entitlements"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    clan_id: Mapped[Optional[int]] = mapped_column(ForeignKey("clans.id", ondelete="CASCADE"), nullable=True)
+    entitlement_role: Mapped[str] = mapped_column(String(24), nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="active", server_default="active")
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_utc)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    granted_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    revoked_by_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    decision_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_utc)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_utc)
+
+    __table_args__ = (
+        Index(
+            "uq_spotlight_pilot_entitlement_scoped_v1",
+            "user_id",
+            "clan_id",
+            "entitlement_role",
+            unique=True,
+            sqlite_where=text("clan_id IS NOT NULL"),
+            postgresql_where=text("clan_id IS NOT NULL"),
+        ),
+        Index(
+            "uq_spotlight_pilot_entitlement_global_v1",
+            "user_id",
+            "entitlement_role",
+            unique=True,
+            sqlite_where=text("clan_id IS NULL"),
+            postgresql_where=text("clan_id IS NULL"),
+        ),
+        Index("ix_spotlight_pilot_entitlement_active_v1", "user_id", "clan_id", "status"),
+    )
 
 class SpotlightCommercialBooking(Base):
     __tablename__ = "spotlight_commercial_bookings"

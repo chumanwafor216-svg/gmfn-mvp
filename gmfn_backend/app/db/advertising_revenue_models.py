@@ -26,7 +26,7 @@ def _now_utc() -> datetime:
 
 
 class AdvertisingCampaignSettlement(Base):
-    """Cash-receipt and explicit-cost record for one GSN house campaign."""
+    """Authoritative cash, delivery, and earned-revenue record for advertising."""
 
     __tablename__ = "advertising_campaign_settlements"
     __table_args__ = (
@@ -39,7 +39,14 @@ class AdvertisingCampaignSettlement(Base):
             "community_pool_bps >= 0 AND community_pool_bps <= 10000",
             name="ck_ad_campaign_settlement_pool_bps_v1",
         ),
-        UniqueConstraint("campaign_id", name="uq_ad_campaign_settlement_campaign_v1"),
+        Index(
+            "uq_ad_campaign_settlement_house_campaign_v2",
+            "campaign_id",
+            unique=True,
+            sqlite_where=text("settlement_scope = 'house_campaign'"),
+            postgresql_where=text("settlement_scope = 'house_campaign'"),
+        ),
+        UniqueConstraint("spotlight_booking_id", name="uq_ad_campaign_settlement_spotlight_booking_v2"),
         UniqueConstraint("expected_payment_id", name="uq_ad_campaign_settlement_expected_v1"),
         UniqueConstraint("bank_event_id", name="uq_ad_campaign_settlement_bank_event_v1"),
         UniqueConstraint("idempotency_key", name="uq_ad_campaign_settlement_idem_v1"),
@@ -47,9 +54,16 @@ class AdvertisingCampaignSettlement(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    settlement_scope: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="house_campaign", server_default="house_campaign"
+    )
     campaign_id: Mapped[int] = mapped_column(
         ForeignKey("spotlight_campaigns.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    spotlight_booking_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("spotlight_commercial_bookings.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    funding_classification: Mapped[Optional[str]] = mapped_column(String(32), nullable=True, index=True)
     payer_user_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
@@ -87,6 +101,15 @@ class AdvertisingCampaignSettlement(Base):
         Numeric(18, 2), nullable=False, default=Decimal("0.00")
     )
 
+    deferred_revenue_amount: Mapped[Decimal] = mapped_column(
+        Numeric(18, 2), nullable=False, default=Decimal("0.00"), server_default=text("0")
+    )
+    earned_revenue_amount: Mapped[Decimal] = mapped_column(
+        Numeric(18, 2), nullable=False, default=Decimal("0.00"), server_default=text("0")
+    )
+    outstanding_service_credit_amount: Mapped[Decimal] = mapped_column(
+        Numeric(18, 2), nullable=False, default=Decimal("0.00"), server_default=text("0")
+    )
     status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="draft", server_default="draft", index=True
     )

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -153,6 +153,117 @@ class PipelineCreditAcquisitionPackVersion(Base):
         ),
     )
 
+
+class PipelineCreditAcquisitionOrder(Base):
+    __tablename__ = "pipeline_credit_acquisition_orders"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    acquisition_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    pack_version_id: Mapped[int] = mapped_column(
+        ForeignKey("pipeline_credit_acquisition_pack_versions.id", ondelete="RESTRICT"), nullable=False
+    )
+    expected_payment_id: Mapped[int] = mapped_column(
+        ForeignKey("expected_payments.id", ondelete="RESTRICT"), nullable=False
+    )
+    bank_event_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("bank_events.id", ondelete="SET NULL"), nullable=True
+    )
+    account_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("pipeline_credit_accounts.id", ondelete="RESTRICT"), nullable=True
+    )
+    purchaser_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    beneficiary_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    clan_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="RESTRICT"), nullable=False
+    )
+    funding_classification: Mapped[str] = mapped_column(String(32), nullable=False)
+    currency: Mapped[str] = mapped_column(String(8), nullable=False)
+    cash_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    credit_quantity: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    allocated_credit_amount: Mapped[Decimal] = mapped_column(
+        Numeric(18, 2), nullable=False, default=Decimal("0.00"), server_default=text("0")
+    )
+    remaining_credit_amount: Mapped[Decimal] = mapped_column(
+        Numeric(18, 2), nullable=False, default=Decimal("0.00"), server_default=text("0")
+    )
+    status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="pending_payment", server_default="pending_payment"
+    )
+    allocation_ledger_entry_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("pipeline_credit_ledger_entries.id", ondelete="SET NULL"), nullable=True
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(160), nullable=False)
+    request_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_utc)
+    allocated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_utc)
+
+    __table_args__ = (
+        UniqueConstraint("acquisition_key", name="uq_pipeline_credit_acquisition_key_v1"),
+        UniqueConstraint("expected_payment_id", name="uq_pipeline_credit_acquisition_expected_v1"),
+        UniqueConstraint("allocation_ledger_entry_id", name="uq_pipeline_credit_acquisition_ledger_v1"),
+        UniqueConstraint("purchaser_user_id", "idempotency_key", name="uq_pipeline_credit_acquisition_idem_v1"),
+        Index("ix_pipeline_credit_acquisition_beneficiary_v1", "beneficiary_user_id", "status"),
+        Index("ix_pipeline_credit_acquisition_clan_v1", "clan_id", "status"),
+    )
+
+
+class PipelineCreditAcquisitionApplication(Base):
+    __tablename__ = "pipeline_credit_acquisition_applications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    acquisition_order_id: Mapped[int] = mapped_column(
+        ForeignKey("pipeline_credit_acquisition_orders.id", ondelete="RESTRICT"), nullable=False
+    )
+    spend_order_id: Mapped[int] = mapped_column(
+        ForeignKey("pipeline_credit_service_spend_orders.id", ondelete="CASCADE"), nullable=False
+    )
+    booking_id: Mapped[int] = mapped_column(
+        ForeignKey("spotlight_commercial_bookings.id", ondelete="CASCADE"), nullable=False
+    )
+    credit_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    cash_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="active", server_default="active")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_utc)
+
+    __table_args__ = (
+        UniqueConstraint("acquisition_order_id", "spend_order_id", name="uq_pipeline_credit_acquisition_application_v1"),
+        Index("ix_pipeline_credit_acquisition_application_spend_v1", "spend_order_id", "status"),
+        Index("ix_pipeline_credit_acquisition_application_booking_v1", "booking_id", "status"),
+    )
+
+
+class PipelineCreditAcquisitionRefund(Base):
+    __tablename__ = "pipeline_credit_acquisition_refunds"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    acquisition_order_id: Mapped[int] = mapped_column(
+        ForeignKey("pipeline_credit_acquisition_orders.id", ondelete="RESTRICT"), nullable=False
+    )
+    cash_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    reversed_credit_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    ledger_entry_id: Mapped[int] = mapped_column(
+        ForeignKey("pipeline_credit_ledger_entries.id", ondelete="RESTRICT"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="recorded_not_disbursed", server_default="recorded_not_disbursed"
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(160), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    created_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_utc)
+
+    __table_args__ = (
+        UniqueConstraint("idempotency_key", name="uq_pipeline_credit_acquisition_refund_idem_v1"),
+        UniqueConstraint("ledger_entry_id", name="uq_pipeline_credit_acquisition_refund_ledger_v1"),
+        Index("ix_pipeline_credit_acquisition_refund_order_v1", "acquisition_order_id", "status"),
+    )
 
 class PipelineCreditServiceQuote(Base):
     __tablename__ = "pipeline_credit_service_quotes"

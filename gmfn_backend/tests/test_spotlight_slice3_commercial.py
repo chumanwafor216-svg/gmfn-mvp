@@ -6,6 +6,7 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import text
 
+from app.db.bank_models import ExpectedPayment
 from app.db.database import SessionLocal, engine
 from app.db.models import MarketplaceBroadcast, SpotlightCampaign, SpotlightExposureEvent, SpotlightPresentationLease
 from app.db.spotlight_commercial_models import (
@@ -19,15 +20,19 @@ from app.db.spotlight_commercial_models import (
 from app.services.advertising_revenue_service import (
     spotlight_commercial_settlement_readiness,
 )
+from app.services.pipeline_credit_acquisition_service import create_acquisition_instruction
 from app.services.pipeline_credit_commerce_service import (
     PipelineCreditCommerceError,
     issue_service_quote,
+    set_acquisition_pack,
     set_commercial_control,
     set_pricing_policy,
     set_service_price,
     spend_service_quote,
 )
-from app.services.pipeline_credit_service import ACCOUNT_PURPOSE_CUSTOMER, allocate_pipeline_credits, pipeline_credit_balance
+from app.services.pipeline_credit_service import pipeline_credit_balance
+from app.services.reconciliation_service import create_bank_event, reconcile_batch
+from app.services.spotlight_commercial_access_service import grant_spotlight_pilot_entitlement
 from app.services.spotlight_commercial_service import (
     acknowledge_supplied_presentation,
     apply_remedy,
@@ -44,6 +49,11 @@ from app.services.spotlight_presentation_service import (
     record_spotlight_presentation_supply,
     select_spotlight_presentation,
 )
+
+
+@pytest.fixture(autouse=True)
+def _slice4_payment_gate(monkeypatch):
+    monkeypatch.setenv("GSN_PAID_SPOTLIGHT_PAYMENT_OPERATIONS_ENABLED", "1")
 
 
 def _seed() -> None:
@@ -129,18 +139,103 @@ def _configure_and_fund(db) -> None:
         decision_note="Slice 3 controlled test",
         actor_user_id=1,
     )
-    allocate_pipeline_credits(
+    grant_spotlight_pilot_entitlement(
         db,
-        owner_type="user",
-        owner_user_id=1,
-        account_purpose=ACCOUNT_PURPOSE_CUSTOMER,
-        pricing_region="global",
-        currency="PC",
-        amount="10.00",
-        workflow_key="test.slice3.funding",
-        idempotency_key="test-slice3-funding",
-        created_by_user_id=1,
+        user_id=1,
+        clan_id=1,
+        entitlement_role="merchant",
+        granted_by_user_id=1,
+        decision_note="Slice 3 compatibility fixture for Slice 4 pilot controls",
     )
+    grant_spotlight_pilot_entitlement(
+        db,
+        user_id=1,
+        clan_id=1,
+        entitlement_role="operator",
+        granted_by_user_id=1,
+        decision_note="Slice 3 sponsor-funding operator fixture",
+    )
+    pack = set_acquisition_pack(
+        db,
+        profile_code="gb-slice3",
+        profile_label="Slice 3 compatibility pack",
+        country_codes=["GB"],
+        currency="GBP",
+        pack_code="slice3-8",
+        credit_quantity="16.00",
+        cash_amount="8.00",
+        lifecycle_status="enforced",
+        decision_note="Cash-backed Slice 3 compatibility fixture",
+        actor_user_id=1,
+    )
+    acquisition = create_acquisition_instruction(
+        db,
+        purchaser_user_id=1,
+        beneficiary_user_id=1,
+        clan_id=1,
+        pack_version_id=int(pack.id),
+        funding_classification="merchant_paid",
+        idempotency_key="slice3-cash-backed-acquisition",
+    )
+    expected = db.get(ExpectedPayment, int(acquisition.expected_payment_id))
+    create_bank_event(
+        db,
+        clan_id=1,
+        source_type="webhook_api",
+        source_id="SLICE3-CASH-BACKING",
+        direction="credit",
+        amount=Decimal("8.00"),
+        currency="GBP",
+        reference_raw=expected.reference_display,
+        description_raw="Slice 3 compatibility acquisition",
+        bank_txn_id="SLICE3-CASH-BACKING",
+        posted_at=None,
+        value_at=None,
+        meta={"test": "slice3-cash-backing"},
+    )
+    reconcile_batch(db, clan_id=1, limit=50)
+
+
+def _fund_sponsor(db) -> None:
+    pack = set_acquisition_pack(
+        db,
+        profile_code="gb-slice3",
+        profile_label="Slice 3 sponsor compatibility pack",
+        country_codes=["GB"],
+        currency="GBP",
+        pack_code="slice3-sponsor-1",
+        credit_quantity="2.00",
+        cash_amount="1.00",
+        lifecycle_status="enforced",
+        decision_note="Cash-backed Slice 3 sponsor fixture",
+        actor_user_id=1,
+    )
+    acquisition = create_acquisition_instruction(
+        db,
+        purchaser_user_id=1,
+        beneficiary_user_id=1,
+        clan_id=1,
+        pack_version_id=int(pack.id),
+        funding_classification="sponsor_funded",
+        idempotency_key="slice3-sponsor-cash-acquisition",
+    )
+    expected = db.get(ExpectedPayment, int(acquisition.expected_payment_id))
+    create_bank_event(
+        db,
+        clan_id=1,
+        source_type="webhook_api",
+        source_id="SLICE3-SPONSOR-CASH",
+        direction="credit",
+        amount=Decimal("1.00"),
+        currency="GBP",
+        reference_raw=expected.reference_display,
+        description_raw="Slice 3 sponsor compatibility acquisition",
+        bank_txn_id="SLICE3-SPONSOR-CASH",
+        posted_at=None,
+        value_at=None,
+        meta={"test": "slice3-sponsor-cash-backing"},
+    )
+    reconcile_batch(db, clan_id=1, limit=50)
 
 
 def _capacity(db, *, service_date: str, region: str = "GB-SCT", timezone_name: str = "Europe/London", observed: int = 100) -> None:
@@ -290,7 +385,7 @@ def test_slice3_paid_service_trace_shortfall_remedy_conflict_and_regions(monkeyp
         _capacity(db, service_date="2027-03-28")
         _, order, fulfilled = _book(db, campaign_id=int(campaign.id), service_date="2027-03-28", key="fulfilled-slice3")
         assert order.delivery_reference_type == "spotlight_commercial_booking"
-        assert pipeline_credit_balance(db, account_id=int(order.account_id)) == Decimal("9.00")
+        assert pipeline_credit_balance(db, account_id=int(order.account_id)) == Decimal("15.00")
         fulfilled_presentations = _supply(
             db,
             booking=fulfilled,
@@ -342,11 +437,11 @@ def test_slice3_paid_service_trace_shortfall_remedy_conflict_and_regions(monkeyp
             "outstanding": 0,
         }
         assert report["measurement"]["qualifying_impressions"] == 5
-        assert report["finance"]["cash_collected"] is None
-        assert report["finance"]["earned_revenue"] is None
-        assert report["finance"]["credits_acquired_total"] == "10.00"
+        assert report["finance"]["cash_collected"] == "0.50"
+        assert report["finance"]["earned_revenue"] == "0.50"
+        assert report["finance"]["credits_acquired_total"] == "16.00"
         assert report["finance"]["credits_spent"] == "1.00"
-        assert report["finance"]["credits_purchased_from_cash"] is None
+        assert report["finance"]["credits_purchased_from_cash"] == "1.00"
 
         fulfilled_quote_key = db.execute(text("SELECT quote_key FROM pipeline_credit_service_quotes WHERE id = :id"), {"id": order.quote_id}).scalar_one()
         with SessionLocal() as fresh_db:
@@ -404,6 +499,7 @@ def test_slice3_paid_service_trace_shortfall_remedy_conflict_and_regions(monkeyp
         )
         assert london[0].window_starts_at != lagos[0].window_starts_at
         assert all(int(row.reservable_opportunities) == 16 for row in london + lagos)
+        _fund_sponsor(db)
         nigeria_quote = issue_service_quote(
             db,
             actor_user_id=1,

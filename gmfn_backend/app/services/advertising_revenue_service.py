@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import Any, Optional
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.advertising_revenue_models import (
@@ -15,6 +16,14 @@ from app.db.advertising_revenue_models import (
     CommunityAdvertisingPayoutMandate,
 )
 from app.db.bank_models import BankEvent, ExpectedPayment
+from app.db.pipeline_credit_models import PipelineCreditAcquisitionApplication
+from app.db.spotlight_commercial_models import (
+    SpotlightCommercialBooking,
+    SpotlightCommercialOpportunity,
+    SpotlightCommercialRemedy,
+    SpotlightCommercialServiceCreditApplication,
+    SpotlightCommercialServiceCreditObligation,
+)
 from app.db.models import (
     Clan,
     FeatureEntitlement,
@@ -261,6 +270,105 @@ def spotlight_commercial_settlement_readiness(
     }
 
 
+def reconcile_spotlight_booking_settlement(
+    db: Session,
+    *,
+    booking_id: int,
+    actor_user_id: Optional[int] = None,
+    commit: bool = True,
+) -> Optional[AdvertisingCampaignSettlement]:
+    booking = db.get(SpotlightCommercialBooking, int(booking_id))
+    if booking is None:
+        raise AdvertisingRevenueError("booking_not_found", "Spotlight booking not found.")
+    funding = str(booking.funding_classification or "").strip().lower()
+    if funding not in {"merchant_paid", "sponsor_funded"}:
+        return None
+    applications = (
+        db.query(PipelineCreditAcquisitionApplication)
+        .filter(PipelineCreditAcquisitionApplication.booking_id == int(booking.id))
+        .filter(PipelineCreditAcquisitionApplication.status == "active")
+        .all()
+    )
+    cash_received = sum((Decimal(str(row.cash_amount)) for row in applications), Decimal("0.00")).quantize(MONEY_QUANT)
+    if cash_received <= Decimal("0.00"):
+        return None
+    remedy = (
+        db.query(SpotlightCommercialRemedy)
+        .filter(SpotlightCommercialRemedy.booking_id == int(booking.id))
+        .order_by(SpotlightCommercialRemedy.id.desc())
+        .first()
+    )
+    obligations = (
+        db.query(SpotlightCommercialServiceCreditObligation)
+        .join(
+            SpotlightCommercialRemedy,
+            SpotlightCommercialRemedy.id == SpotlightCommercialServiceCreditObligation.remedy_id,
+        )
+        .filter(SpotlightCommercialRemedy.booking_id == int(booking.id))
+        .all()
+    )
+    remaining_service_credits = sum(
+        (Decimal(str(row.remaining_credit_amount)) for row in obligations), Decimal("0.00")
+    )
+    obligation_ids = [int(row.id) for row in obligations]
+    if obligation_ids:
+        active_rebooked = (
+            db.query(func.coalesce(func.sum(SpotlightCommercialServiceCreditApplication.credit_amount), 0))
+            .filter(SpotlightCommercialServiceCreditApplication.obligation_id.in_(obligation_ids))
+            .filter(SpotlightCommercialServiceCreditApplication.status == "active")
+            .scalar()
+        )
+        remaining_service_credits += Decimal(str(active_rebooked or 0))
+    shortfall_open = bool(remedy is not None and remedy.status != "applied")
+    service_open = bool(
+        shortfall_open
+        or remaining_service_credits > Decimal("0.00")
+        or str(booking.status or "").lower() not in {"fulfilled", "remedied"}
+    )
+    earned = Decimal("0.00") if service_open else cash_received
+    deferred = cash_received if service_open else Decimal("0.00")
+    row = (
+        db.query(AdvertisingCampaignSettlement)
+        .filter(AdvertisingCampaignSettlement.spotlight_booking_id == int(booking.id))
+        .one_or_none()
+    )
+    if row is None:
+        row = AdvertisingCampaignSettlement(
+            settlement_scope="spotlight_booking",
+            campaign_id=int(booking.campaign_id),
+            spotlight_booking_id=int(booking.id),
+            funding_classification=funding,
+            payer_user_id=int(booking.purchaser_user_id),
+            currency="GBP",
+            idempotency_key=f"spotlight-commercial-booking:{int(booking.id)}",
+            created_by_user_id=int(actor_user_id or booking.purchaser_user_id),
+            created_at=_now(),
+        )
+    row.gross_received_amount = cash_received
+    row.tax_amount = Decimal("0.00")
+    row.refund_amount = Decimal("0.00")
+    row.chargeback_amount = Decimal("0.00")
+    row.processing_fee_amount = Decimal("0.00")
+    row.delivery_cost_amount = Decimal("0.00")
+    row.distributable_net_amount = cash_received
+    row.community_pool_bps = 0
+    row.community_pool_amount = Decimal("0.00")
+    row.deferred_revenue_amount = deferred
+    row.earned_revenue_amount = earned
+    row.outstanding_service_credit_amount = remaining_service_credits.quantize(MONEY_QUANT)
+    row.status = "payment_confirmed" if service_open else "delivery_finalized"
+    row.payment_reference = f"pipeline-credit-cash-backing:{int(booking.id)}"
+    row.confirmed_at = row.confirmed_at or _now()
+    row.delivery_finalized_at = None if service_open else (row.delivery_finalized_at or _now())
+    row.updated_at = _now()
+    db.add(row)
+    if commit:
+        db.commit()
+        db.refresh(row)
+    else:
+        db.flush()
+    return row
+
 def _require_house_campaign(db: Session, campaign_id: int) -> SpotlightCampaign:
     campaign = db.get(SpotlightCampaign, int(campaign_id))
     if campaign is None:
@@ -302,6 +410,7 @@ def save_settlement_draft(
     row = (
         db.query(AdvertisingCampaignSettlement)
         .filter(AdvertisingCampaignSettlement.campaign_id == int(campaign_id))
+        .filter(AdvertisingCampaignSettlement.settlement_scope == "house_campaign")
         .one_or_none()
     )
     if row is not None and row.status not in {"draft", "awaiting_payment"}:
@@ -311,6 +420,7 @@ def save_settlement_draft(
         )
     if row is None:
         row = AdvertisingCampaignSettlement(
+            settlement_scope="house_campaign",
             campaign_id=int(campaign_id),
             created_by_user_id=int(actor_user_id),
             idempotency_key=key,
@@ -354,6 +464,7 @@ def create_campaign_payment_instruction(
     row = (
         db.query(AdvertisingCampaignSettlement)
         .filter(AdvertisingCampaignSettlement.campaign_id == int(campaign_id))
+        .filter(AdvertisingCampaignSettlement.settlement_scope == "house_campaign")
         .one_or_none()
     )
     if row is None:
@@ -553,6 +664,7 @@ def finalize_campaign_delivery(
     settlement = (
         db.query(AdvertisingCampaignSettlement)
         .filter(AdvertisingCampaignSettlement.campaign_id == int(campaign_id))
+        .filter(AdvertisingCampaignSettlement.settlement_scope == "house_campaign")
         .one_or_none()
     )
     if settlement is None or settlement.status != "payment_confirmed":
@@ -903,6 +1015,9 @@ def record_community_payout_paid(
 def settlement_payload(row: AdvertisingCampaignSettlement) -> dict[str, Any]:
     return {
         "id": int(row.id),
+        "settlement_scope": row.settlement_scope,
+        "spotlight_booking_id": int(row.spotlight_booking_id) if row.spotlight_booking_id is not None else None,
+        "funding_classification": row.funding_classification,
         "campaign_id": int(row.campaign_id),
         "payer_user_id": int(row.payer_user_id) if row.payer_user_id is not None else None,
         "expected_payment_id": int(row.expected_payment_id) if row.expected_payment_id is not None else None,
@@ -918,6 +1033,9 @@ def settlement_payload(row: AdvertisingCampaignSettlement) -> dict[str, Any]:
         "community_pool_bps": int(row.community_pool_bps),
         "community_pool_percent": f"{(Decimal(int(row.community_pool_bps)) / Decimal(100)):.2f}",
         "community_pool_amount": str(_money(row.community_pool_amount)),
+        "deferred_revenue_amount": str(_money(row.deferred_revenue_amount)),
+        "earned_revenue_amount": str(_money(row.earned_revenue_amount)),
+        "outstanding_service_credit_amount": str(_money(row.outstanding_service_credit_amount)),
         "status": row.status,
         "payment_reference": row.payment_reference,
         "confirmed_at": row.confirmed_at.isoformat() if row.confirmed_at else None,

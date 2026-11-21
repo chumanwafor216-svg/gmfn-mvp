@@ -716,6 +716,13 @@ def apply_expected_payment_match(
     if expected_type == "pipeline_credit_topup":
         return _apply_pipeline_credit_topup(db, be=be, exp=exp)
 
+    if expected_type == "pipeline_credit_acquisition":
+        from app.services.pipeline_credit_acquisition_service import (
+            apply_confirmed_acquisition,
+        )
+        return apply_confirmed_acquisition(
+            db, bank_event=be, expected_payment=exp
+        )
     if expected_type == "advertising_campaign":
         from app.services.advertising_revenue_service import (
             apply_confirmed_campaign_payment,

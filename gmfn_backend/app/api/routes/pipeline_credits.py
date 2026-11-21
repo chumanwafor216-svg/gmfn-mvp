@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -11,6 +12,21 @@ from app.db.database import get_db
 from app.db.models import ClanMembership, User
 from app.db.pipeline_credit_models import PipelineCreditLedgerEntry
 from app.services.pipeline_credit_spend_gate import provider_spend_gate_catalog
+from app.services.pipeline_credit_acquisition_service import (
+    PipelineCreditAcquisitionError,
+    acquisition_order_out,
+    create_acquisition_instruction,
+    record_acquisition_refund,
+)
+from app.services.spotlight_capacity_measurement_service import (
+    SpotlightCapacityMeasurementError,
+    spotlight_capacity_measurement_report,
+)
+from app.services.spotlight_commercial_access_service import (
+    SpotlightCommercialAccessError,
+    grant_spotlight_pilot_entitlement,
+    revoke_spotlight_pilot_entitlement,
+)
 from app.services.pipeline_credit_service import (
     PIPELINE_CREDIT_BOUNDARY,
     InsufficientPipelineCreditError,
@@ -177,6 +193,32 @@ class PipelineCreditAcquisitionPackIn(BaseModel):
             raise ValueError(f"{info.field_name} must be text")
         return value.strip()
 
+
+class PipelineCreditAcquisitionIn(BaseModel):
+    clan_id: int = Field(..., ge=1)
+    pack_version_id: int = Field(..., ge=1)
+    beneficiary_user_id: Optional[int] = Field(default=None, ge=1)
+    funding_classification: str = Field(default="merchant_paid", min_length=3, max_length=32)
+    idempotency_key: str = Field(..., min_length=8, max_length=160)
+
+
+class PipelineCreditAcquisitionRefundIn(BaseModel):
+    acquisition_order_id: int = Field(..., ge=1)
+    credit_amount: str = Field(..., min_length=1, max_length=32)
+    idempotency_key: str = Field(..., min_length=8, max_length=160)
+    reason: str = Field(..., min_length=3, max_length=500)
+
+
+class SpotlightPilotEntitlementIn(BaseModel):
+    user_id: int = Field(..., ge=1)
+    clan_id: Optional[int] = Field(default=None, ge=1)
+    entitlement_role: str = Field(..., min_length=3, max_length=24)
+    expires_at: Optional[str] = Field(default=None, max_length=40)
+    decision_note: Optional[str] = Field(default=None, max_length=500)
+
+
+class SpotlightPilotRevocationIn(BaseModel):
+    decision_note: str = Field(..., min_length=3, max_length=500)
 
 class PipelineCreditServiceQuoteIn(BaseModel):
     service_code: str = Field(..., min_length=3, max_length=96)
@@ -578,6 +620,133 @@ def pipeline_credit_admin_set_service_price(
         currency=payload.cash_reference_currency,
     )
 
+
+@router.post("/acquisitions", status_code=status.HTTP_201_CREATED)
+def pipeline_credit_create_acquisition(
+    payload: PipelineCreditAcquisitionIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    beneficiary_user_id = int(payload.beneficiary_user_id or current_user.id)
+    try:
+        row = create_acquisition_instruction(
+            db,
+            purchaser_user_id=int(current_user.id),
+            beneficiary_user_id=beneficiary_user_id,
+            clan_id=int(payload.clan_id),
+            pack_version_id=int(payload.pack_version_id),
+            funding_classification=payload.funding_classification,
+            idempotency_key=payload.idempotency_key,
+        )
+    except PipelineCreditAcquisitionError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409 if exc.code in {
+                "idempotency_conflict",
+                "stale_acquisition_pack",
+                "spotlight_payment_operations_suspended",
+                "payment_operations_suspended",
+            } else 422,
+            detail={"code": exc.code, "message": str(exc)},
+        ) from exc
+    return {"ok": True, "acquisition": acquisition_order_out(db, row)}
+
+
+@router.post("/admin/acquisition-refunds", status_code=status.HTTP_201_CREATED)
+def pipeline_credit_admin_record_acquisition_refund(
+    payload: PipelineCreditAcquisitionRefundIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_admin(current_user)
+    try:
+        row = record_acquisition_refund(
+            db,
+            acquisition_order_id=int(payload.acquisition_order_id),
+            credit_amount=payload.credit_amount,
+            idempotency_key=payload.idempotency_key,
+            reason=payload.reason,
+            actor_user_id=int(current_user.id),
+        )
+    except PipelineCreditAcquisitionError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail={"code": exc.code, "message": str(exc)}) from exc
+    return {
+        "ok": True,
+        "refund": {
+            "id": int(row.id),
+            "acquisition_order_id": int(row.acquisition_order_id),
+            "cash_amount": str(row.cash_amount),
+            "reversed_credit_amount": str(row.reversed_credit_amount),
+            "status": row.status,
+            "bank_disbursement_performed": False,
+        },
+    }
+
+
+@router.post("/admin/spotlight-pilot-entitlements", status_code=status.HTTP_201_CREATED)
+def pipeline_credit_admin_grant_spotlight_pilot_entitlement(
+    payload: SpotlightPilotEntitlementIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_admin(current_user)
+    try:
+        expires_at = datetime.fromisoformat(payload.expires_at.replace("Z", "+00:00")) if payload.expires_at else None
+        row = grant_spotlight_pilot_entitlement(
+            db,
+            user_id=int(payload.user_id),
+            clan_id=int(payload.clan_id) if payload.clan_id else None,
+            entitlement_role=payload.entitlement_role,
+            granted_by_user_id=int(current_user.id),
+            expires_at=expires_at,
+            decision_note=payload.decision_note,
+        )
+    except (SpotlightCommercialAccessError, ValueError) as exc:
+        db.rollback()
+        code = exc.code if isinstance(exc, SpotlightCommercialAccessError) else "invalid_expiry"
+        raise HTTPException(status_code=422, detail={"code": code, "message": str(exc)}) from exc
+    return {"ok": True, "entitlement_id": int(row.id), "status": row.status}
+
+
+@router.post("/admin/spotlight-pilot-entitlements/{entitlement_id}/revoke")
+def pipeline_credit_admin_revoke_spotlight_pilot_entitlement(
+    entitlement_id: int,
+    payload: SpotlightPilotRevocationIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_admin(current_user)
+    try:
+        row = revoke_spotlight_pilot_entitlement(
+            db,
+            entitlement_id=int(entitlement_id),
+            revoked_by_user_id=int(current_user.id),
+            decision_note=payload.decision_note,
+        )
+    except SpotlightCommercialAccessError as exc:
+        db.rollback()
+        raise HTTPException(status_code=404, detail={"code": exc.code, "message": str(exc)}) from exc
+    return {"ok": True, "entitlement_id": int(row.id), "status": row.status}
+
+@router.get("/admin/spotlight-capacity-measurement")
+def pipeline_credit_admin_spotlight_capacity_measurement(
+    clan_id: int = Query(..., ge=1),
+    service_date: str = Query(..., min_length=10, max_length=10),
+    timezone_name: str = Query(..., min_length=3, max_length=80),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_admin(current_user)
+    try:
+        return spotlight_capacity_measurement_report(
+            db,
+            clan_id=int(clan_id),
+            service_date=service_date,
+            timezone_name=timezone_name,
+        )
+    except SpotlightCapacityMeasurementError as exc:
+        raise HTTPException(status_code=422, detail={"code": exc.code, "message": str(exc)}) from exc
 
 @router.get("/service-catalogue")
 def pipeline_credit_service_catalogue(

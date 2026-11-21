@@ -7,9 +7,11 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import Any, Optional
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.models import MarketplaceShop
+from app.db.spotlight_commercial_models import SpotlightCommercialServiceCreditApplication
 from app.db.pipeline_credit_models import (
     PipelineCreditAcquisitionPackVersion,
     PipelineCreditCommercialControlVersion,
@@ -18,8 +20,18 @@ from app.db.pipeline_credit_models import (
     PipelineCreditServiceSpendOrder,
     PipelineCreditServiceVersion,
 )
+from app.services.advertising_revenue_service import reconcile_spotlight_booking_settlement
 from app.services.community_domain_feature_policy import require_domain_vault_enabled
 from app.services.payment_operations_policy import require_payment_operations_enabled
+from app.services.pipeline_credit_acquisition_service import (
+    PipelineCreditAcquisitionError,
+    apply_cash_backing_to_spend,
+)
+from app.services.spotlight_commercial_access_service import (
+    SpotlightCommercialAccessError,
+    require_spotlight_payment_operations_enabled,
+    require_spotlight_pilot_entitlement,
+)
 from app.services.pipeline_credit_service import (
     ACCOUNT_PURPOSE_CUSTOMER,
     CUSTOMER_SERVICE_CREDIT_BOUNDARY,
@@ -460,7 +472,7 @@ def pricing_catalogue(
         "services": services,
         "commercial_control": serialize_commercial_control(current_commercial_control(db)),
         "acquisition_packs": latest_acquisition_packs(db),
-        "acquisition_checkout_connected": False,
+        "acquisition_checkout_connected": True,
         "service_region_code": "global",
         "boundary": CUSTOMER_SERVICE_CREDIT_BOUNDARY,
     }
@@ -960,6 +972,17 @@ def spend_service_quote(
     service = db.get(PipelineCreditServiceVersion, int(quote.service_version_id))
     if not service:
         raise PipelineCreditCommerceError("service_version_missing", "The quoted service version is unavailable")
+    if quote.service_code == "paid_spotlight.day" and not pilot_waived:
+        try:
+            require_spotlight_payment_operations_enabled()
+            require_spotlight_pilot_entitlement(
+                db,
+                user_id=int(actor_user_id),
+                clan_id=int(context.get("clan_id") or 0),
+                funding_classification=str(context.get("funding_classification") or "merchant_paid"),
+            )
+        except SpotlightCommercialAccessError as exc:
+            raise PipelineCreditCommerceError(exc.code, str(exc)) from exc
     spotlight_booking = None
     if quote.service_code == "paid_spotlight.day":
         try:
@@ -975,7 +998,8 @@ def spend_service_quote(
 
     ledger = None
     if not pilot_waived:
-        require_payment_operations_enabled()
+        if quote.service_code != "paid_spotlight.day":
+            require_payment_operations_enabled()
         try:
             ledger = debit_pipeline_credits(
                 db,
@@ -1003,6 +1027,33 @@ def spend_service_quote(
     if quote.service_code == "paid_spotlight.day":
         if spotlight_booking is None:
             raise PipelineCreditCommerceError("spotlight_booking_missing", "The Spotlight reservation was not created")
+        if not pilot_waived and str(spotlight_booking.funding_classification) in {"merchant_paid", "sponsor_funded"}:
+            restored_credit_amount = Decimal(str(
+                db.query(func.coalesce(func.sum(SpotlightCommercialServiceCreditApplication.credit_amount), 0))
+                .filter(SpotlightCommercialServiceCreditApplication.replacement_booking_id == int(spotlight_booking.id))
+                .filter(SpotlightCommercialServiceCreditApplication.status == "active")
+                .scalar() or 0
+            )).quantize(CREDIT_QUANT)
+            cash_backed_credit_amount = max(
+                Decimal(str(charged_credit_cost)).quantize(CREDIT_QUANT) - restored_credit_amount,
+                Decimal("0.00"),
+            )
+            if cash_backed_credit_amount > Decimal("0.00"):
+                try:
+                    apply_cash_backing_to_spend(
+                        db,
+                        spend_order=order,
+                        booking=spotlight_booking,
+                        credit_amount=cash_backed_credit_amount,
+                    )
+                except PipelineCreditAcquisitionError as exc:
+                    raise PipelineCreditCommerceError(exc.code, str(exc)) from exc
+        reconcile_spotlight_booking_settlement(
+            db,
+            booking_id=int(spotlight_booking.id),
+            actor_user_id=int(actor_user_id),
+            commit=False,
+        )
         delivery = spotlight_booking_report(db, booking_id=int(spotlight_booking.id))
         delivery["commercial_status"] = quoted_commercial_status
         delivery["charge_mode"] = "pilot_waived" if pilot_waived else "credit_debit"
