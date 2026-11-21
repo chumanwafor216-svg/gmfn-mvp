@@ -110,6 +110,8 @@ function forbidPattern(input, file, pattern, message) {
   [/GSN keeps the request or reply, sender, time, and deletion event/, "voice deletion must explain retained history"],
   [/Delete permanently/, "voice deletion must require a second explicit action"],
   [/data-gsn-demand-voice-deleted="true"/, "deleted voice notes must leave a truthful tombstone"],
+  [/data-gsn-demand-voice-presentation="hero-removed"[^]*?<AudioWaveSignal mode="hero" \/>[^]*?Recording removed/, "deleted voice notes must make the crossed hero waveform their central visual"],
+  [/data-gsn-demand-voice-presentation="hero-live"[^]*?<AudioWavePlayer/, "live voice notes must retain the dominant shared waveform player"],
 ].forEach(([pattern, message]) =>
   requirePattern(protectedVoiceSource, protectedVoiceFile, pattern, message)
 );

@@ -397,10 +397,30 @@ async function verifyViewport(browser, baseURL, viewport) {
   await deleteConfirmation
     .getByRole("button", { name: "Delete permanently", exact: true })
     .click();
-  await freezerCard.locator('[data-gsn-demand-voice-deleted="true"]').waitFor();
+  const removedVoice = freezerCard.locator('[data-gsn-demand-voice-deleted="true"]');
+  await removedVoice.waitFor();
   assert(
-    await freezerCard.locator('[data-gsn-demand-voice-deleted="true"]').isVisible(),
+    await removedVoice.isVisible(),
     "Permanent deletion did not leave the retained-history tombstone."
+  );
+  const removedVoiceGeometry = await removedVoice.evaluate((node) => {
+    const wave = node.querySelector('[data-gsn-audio-wave-bars="true"]');
+    const cardBox = node.getBoundingClientRect();
+    const waveBox = wave?.getBoundingClientRect();
+    return {
+      width: waveBox ? Math.round(waveBox.width) : 0,
+      height: waveBox ? Math.round(waveBox.height) : 0,
+      centreOffset: waveBox
+        ? Math.round(Math.abs((waveBox.left + waveBox.width / 2) - (cardBox.left + cardBox.width / 2)))
+        : null,
+    };
+  });
+  assert(
+    removedVoiceGeometry.width >= 180 &&
+      removedVoiceGeometry.height >= 44 &&
+      removedVoiceGeometry.centreOffset !== null &&
+      removedVoiceGeometry.centreOffset <= 3,
+    "Demand Box removed-audio waveform is not the centred hero visual: " + JSON.stringify(removedVoiceGeometry)
   );
 
   const expandedSearch = freezerCard.locator('[data-gsn-demand-expand-search="true"]');

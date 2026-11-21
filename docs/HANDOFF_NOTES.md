@@ -7360,3 +7360,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - On phone, a deleted recording now places a centered waveform up to 220px wide above the short removal explanation. The red cross remains unmistakable so the prominent visual cannot be confused with playable audio.
 - Extended the real 390px Community Home smoke with a deleted-voice fixture. The test requires the waveform to be at least 180px wide, 44px high and centred within three pixels of its card.
 - Verification passed: focused waveform, Community Home phone and button-inventory audits; production frontend build; exact 390px phone smoke; and the complete protected-button freeze audit.
+
+# Demand Box hero waveform parity - 2026-11-21
+
+- Applied the approved Community Bulletin waveform emphasis to the existing Demand Box protected voice-note surface without changing demand creation, protected audio retrieval, sender deletion, reply privacy or retained-history contracts.
+- Live Demand Box voice notes use the shared dominant waveform player. Permanently deleted notes now show the same centred hero waveform up to 220px wide with a clear red strike and short `Recording removed` explanation.
+- Extended the Demand Box package audit and real phone deletion smoke. After an actual mocked permanent delete, the smoke requires the retained waveform to be at least 180px wide, 44px high and centred within three pixels of its card.
+- Verification passed: shared waveform audit, Demand Box front-package audit, production frontend build, Demand Box phone smoke at 390x844 and 360x780, and the complete protected-button freeze audit.

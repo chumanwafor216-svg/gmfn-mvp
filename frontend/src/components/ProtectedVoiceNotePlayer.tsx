@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { deleteDemandAudio, fetchDemandAudioBlob } from "../lib/api";
-import AudioWavePlayer from "./AudioWavePlayer";
+import AudioWavePlayer, { AudioWaveSignal } from "./AudioWavePlayer";
 import { GsnLegacyIcon } from "./GsnLegacyIcon";
 import {
   DangerButton,
@@ -77,18 +77,52 @@ export default function ProtectedVoiceNotePlayer({
     return (
       <div
         data-gsn-demand-voice-deleted="true"
+        data-gsn-demand-voice-presentation="hero-removed"
+        aria-label="Voice recording removed"
         style={{
-          padding: 12,
-          borderRadius: 16,
-          border: "1px solid rgba(100,116,139,0.18)",
-          background: "#F8FAFC",
+          padding: "12px 14px",
+          borderRadius: 18,
+          border: "2px solid rgba(15,114,200,0.22)",
+          background: "linear-gradient(180deg, #F2F9FF 0%, #FFFFFF 64%, #FFF8E7 100%)",
           color: "#475569",
-          fontSize: 12,
-          lineHeight: 1.5,
+          fontSize: 10.5,
+          lineHeight: 1.3,
+          display: "grid",
+          justifyItems: "center",
+          textAlign: "center",
+          gap: 7,
+          boxShadow: "0 10px 24px rgba(7,59,114,0.10), inset 0 1px 0 rgba(255,255,255,0.96)",
         }}
       >
-        Voice note permanently deleted by its sender. The request or reply,
-        sender, time, and deletion event remain in GSN history.
+        <span
+          aria-hidden="true"
+          style={{
+            position: "relative",
+            display: "block",
+            width: "min(100%, 220px)",
+            opacity: 0.92,
+            overflow: "hidden",
+          }}
+        >
+          <AudioWaveSignal mode="hero" />
+          <span
+            style={{
+              position: "absolute",
+              left: "16%",
+              right: "16%",
+              top: "50%",
+              height: 3,
+              borderRadius: 999,
+              background: "#9F2424",
+              boxShadow: "0 0 0 2px rgba(255,255,255,0.76)",
+              transform: "rotate(-18deg)",
+            }}
+          />
+        </span>
+        <span>
+          <strong style={{ display: "block", color: "#173A59", fontSize: 13 }}>Recording removed</strong>
+          The sender deleted the audio. The request or reply and its history remain.
+        </span>
       </div>
     );
   }
@@ -98,6 +132,7 @@ export default function ProtectedVoiceNotePlayer({
   return (
     <div
       data-gsn-protected-voice-player="true"
+      data-gsn-demand-voice-presentation="hero-live"
       style={{
         padding: 12,
         borderRadius: 16,
