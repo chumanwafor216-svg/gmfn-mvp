@@ -48,6 +48,7 @@ function forbidPattern(input, file, pattern, message) {
   [/htmlFor="demand-box-title"[\s\S]*?Short heading/, "the main form must keep a labelled short heading field"],
   [/DEMAND_CATEGORY_CHOICES[\s\S]*?Transport[\s\S]*?Repairs[\s\S]*?Food[\s\S]*?Books[\s\S]*?Housing[\s\S]*?Other[\s\S]*?data-gsn-demand-category-pictures="true"/, "the main form must keep the six clear category picture choices"],
   [/<VoiceNoteRecorder[\s\S]*?maxSeconds=\{60\}/, "the main form must keep the bounded 60-second voice recorder"],
+  [/debugPrefix="demand-box\.request\.voice"[\s\S]*?compact=\{isCompact\}[\s\S]*?heroWaveform=\{isCompact\}/, "the compact Demand Box composer must make the voice waveform its central recording visual"],
   [/htmlFor="demand-box-area"[\s\S]*?demandCreateFieldLabel\("Area"\)/, "the main form must keep area on the first surface"],
   [/data-gsn-demand-privacy-route="true"[\s\S]*?demand-box\.visibility\.community[\s\S]*?Community[\s\S]*?demand-box\.visibility\.protected-target[\s\S]*?One person/, "the main form must keep an explicit community or one-person choice"],
   [/visibilityScope === DEMAND_VISIBILITY_PROTECTED[\s\S]*?htmlFor="demand-box-person"[\s\S]*?Choose person[\s\S]*?demand-box-gsn-member-handles/, "the person chooser must appear only for the private route"],
@@ -121,6 +122,8 @@ function forbidPattern(input, file, pattern, message) {
   [/onChange\([\s\S]*?new File[\s\S]*?onRecordingChange\?\.\(false\)/, "the recorder must deliver the file before unlocking submission"],
   [/No voice was captured\. Record again before sending\./, "empty recordings must fail visibly"],
   [/data-gsn-voice-recording=\{recording \? "true" : "false"\}/, "the recorder must expose its runtime state for regression checks"],
+  [/heroWaveform\?: boolean/, "the recorder must keep the hero waveform scoped to approved callers"],
+  [/data-gsn-voice-recorder-waveform="hero"[\s\S]*?<AudioWaveSignal mode="hero" playing=\{recording\} \/>[\s\S]*?Tap Record and speak/, "the approved composer must place a large shared waveform above the recording action"],
 ].forEach(([pattern, message]) => requirePattern(recorderSource, recorderFile, pattern, message));
 
 [

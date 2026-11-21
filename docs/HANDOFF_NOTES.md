@@ -7367,3 +7367,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Live Demand Box voice notes use the shared dominant waveform player. Permanently deleted notes now show the same centred hero waveform up to 220px wide with a clear red strike and short `Recording removed` explanation.
 - Extended the Demand Box package audit and real phone deletion smoke. After an actual mocked permanent delete, the smoke requires the retained waveform to be at least 180px wide, 44px high and centred within three pixels of its card.
 - Verification passed: shared waveform audit, Demand Box front-package audit, production frontend build, Demand Box phone smoke at 390x844 and 360x780, and the complete protected-button freeze audit.
+
+# Demand Box composer hero waveform - 2026-11-21
+
+- Promoted the voice waveform inside the compact Demand Box `Post a need` composer so it is the central recording visual rather than a small megaphone beside the Record button.
+- The phone composer now shows a centred 44px shared waveform up to 220px wide, a clear ready/recording status, and one full-width Record or Stop recording action beneath it.
+- Kept the enhancement scoped through the optional `heroWaveform` recorder contract. Community notices, private replies and Shop recorders retain their existing presentation, while the 60-second limit, microphone handling, file creation and submission lock remain unchanged.
+- Separated the Record and Stop stable-button identities after the phone smoke exposed that the shared 360ms tap guard could reject an immediate Stop when React reused the same button instance.
+- Added static and browser guards for the scoped hero contract, minimum 180px waveform width, 44px height, three-pixel centring tolerance and visible ready-to-recording transition.
+- Verification passed: shared audio audit, Demand Box package audit, production frontend build, Demand Box phone smoke at 390x844 and 360x780, and the complete protected-button freeze audit. The protected audit still reports the unrelated pre-existing duplicate React key console warnings while passing all contracts.

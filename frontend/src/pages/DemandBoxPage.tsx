@@ -4155,6 +4155,7 @@ export default function DemandBoxPage() {
                   disabled={creating}
                   debugPrefix="demand-box.request.voice"
                   compact={isCompact}
+                  heroWaveform={isCompact}
                 />
               </div>
 

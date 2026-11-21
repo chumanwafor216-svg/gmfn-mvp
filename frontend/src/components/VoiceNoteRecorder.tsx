@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import AudioWavePlayer from "./AudioWavePlayer";
+import AudioWavePlayer, { AudioWaveSignal } from "./AudioWavePlayer";
 import { GsnLegacyIcon } from "./GsnLegacyIcon";
 import { PrimaryButton, SecondaryButton, SubtleButton } from "./StableButton";
 
@@ -11,6 +11,7 @@ type VoiceNoteRecorderProps = {
   disabled?: boolean;
   debugPrefix: string;
   compact?: boolean;
+  heroWaveform?: boolean;
 };
 
 function preferredMimeType(): string {
@@ -38,6 +39,7 @@ export default function VoiceNoteRecorder({
   disabled = false,
   debugPrefix,
   compact = false,
+  heroWaveform = false,
 }: VoiceNoteRecorderProps) {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -144,6 +146,7 @@ export default function VoiceNoteRecorder({
     <div
       data-gsn-voice-note-recorder="true"
       data-gsn-voice-recording={recording ? "true" : "false"}
+      data-gsn-voice-recorder-presentation={heroWaveform ? "hero" : "standard"}
       style={{
         padding: compact ? 12 : 14,
         borderRadius: 18,
@@ -165,32 +168,85 @@ export default function VoiceNoteRecorder({
         </div>
       </div>
 
-      {recording ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10 }}>
+      {heroWaveform && !value ? (
+        <div
+          data-gsn-voice-recorder-waveform="hero"
+          data-gsn-voice-recorder-waveform-state={recording ? "recording" : "ready"}
+          style={{
+            minHeight: 92,
+            padding: "12px 16px",
+            borderRadius: 18,
+            border: recording
+              ? "2px solid rgba(163,59,22,0.24)"
+              : "2px solid rgba(15,114,200,0.22)",
+            background: recording
+              ? "linear-gradient(135deg, #FFF4EE 0%, #FFFFFF 56%, #FFF8E7 100%)"
+              : "linear-gradient(135deg, #EEF8FF 0%, #FFFFFF 56%, #FFF8E7 100%)",
+            display: "grid",
+            justifyItems: "center",
+            alignContent: "center",
+            gap: 7,
+            boxShadow: recording
+              ? "0 12px 28px rgba(163,59,22,0.10)"
+              : "0 12px 28px rgba(15,114,200,0.10)",
+          }}
+        >
+          <div style={{ width: "min(100%, 220px)" }}>
+            <AudioWaveSignal mode="hero" playing={recording} />
+          </div>
           <div
-            aria-live="polite"
+            aria-live={recording ? "polite" : undefined}
             style={{
-              minHeight: 48,
-              borderRadius: 14,
-              background: "#FFF4EE",
-              color: "#A33B16",
-              display: "flex",
-              alignItems: "center",
-              padding: "0 14px",
+              color: recording ? "#A33B16" : "#0B4EA2",
+              fontSize: 13,
               fontWeight: 900,
+              textAlign: "center",
             }}
           >
-            {seconds}s / {maxSeconds}s
+            {recording ? `${seconds}s / ${maxSeconds}s` : "Tap Record and speak"}
           </div>
+        </div>
+      ) : null}
+
+      {recording ? (
+        heroWaveform ? (
           <PrimaryButton
+            key="stop-recording"
             type="button"
             onClick={stopRecording}
-            stableHeight={48}
+            fullWidth
+            stableHeight={52}
             debugId={`${debugPrefix}.stop`}
           >
-            Stop
+            Stop recording
           </PrimaryButton>
-        </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10 }}>
+            <div
+              aria-live="polite"
+              style={{
+                minHeight: 48,
+                borderRadius: 14,
+                background: "#FFF4EE",
+                color: "#A33B16",
+                display: "flex",
+                alignItems: "center",
+                padding: "0 14px",
+                fontWeight: 900,
+              }}
+            >
+              {seconds}s / {maxSeconds}s
+            </div>
+            <PrimaryButton
+              type="button"
+              onClick={stopRecording}
+              stableHeight={48}
+              debugId={`${debugPrefix}.stop`}
+            >
+              Stop
+            </PrimaryButton>
+          </div>
+        )
       ) : value ? (
         <>
           <AudioWavePlayer
@@ -224,6 +280,7 @@ export default function VoiceNoteRecorder({
         </>
       ) : (
         <PrimaryButton
+          key="start-recording"
           type="button"
           onClick={() => void startRecording()}
           disabled={disabled}

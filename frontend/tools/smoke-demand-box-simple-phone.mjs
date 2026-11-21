@@ -496,6 +496,25 @@ async function verifyViewport(browser, baseURL, viewport) {
     );
   }
   assert(await page.getByRole("button", { name: "Record", exact: true }).isVisible(), "Voice recorder is missing.");
+  const recorderWaveform = form.locator('[data-gsn-voice-recorder-waveform="hero"]');
+  assert(await recorderWaveform.isVisible(), "The DemandBox composer hero waveform is missing.");
+  const recorderWaveformGeometry = await recorderWaveform.evaluate((surface) => {
+    const bars = surface.querySelector('[data-gsn-audio-wave-bars="true"]');
+    const surfaceRect = surface.getBoundingClientRect();
+    const barsRect = bars?.getBoundingClientRect();
+    return {
+      state: surface.getAttribute("data-gsn-voice-recorder-waveform-state"),
+      barsWidth: Math.round(barsRect?.width || 0),
+      barsHeight: Math.round(barsRect?.height || 0),
+      centerOffset: barsRect
+        ? Math.round(Math.abs((barsRect.left + barsRect.width / 2) - (surfaceRect.left + surfaceRect.width / 2)))
+        : 999,
+    };
+  });
+  assert(recorderWaveformGeometry.state === "ready", "The DemandBox composer did not begin in its ready state.");
+  assert(recorderWaveformGeometry.barsWidth >= 180, "The DemandBox composer waveform is not visually dominant.");
+  assert(recorderWaveformGeometry.barsHeight >= 44, "The DemandBox composer waveform is too short.");
+  assert(recorderWaveformGeometry.centerOffset <= 3, "The DemandBox composer waveform is not centred.");
   assert(await page.getByLabel("Short heading").isVisible(), "Short heading field is missing.");
   assert(await page.getByLabel("Area").isVisible(), "Area field is missing.");
   assert(await page.getByRole("button", { name: "Community", exact: true }).isVisible(), "Community visibility choice is missing.");
@@ -534,13 +553,17 @@ async function verifyViewport(browser, baseURL, viewport) {
   await form.getByRole("button", { name: "Transport", exact: true }).click();
   await page.getByLabel("Short heading").fill("Need a taxi");
   await page.getByRole("button", { name: "Record", exact: true }).click();
+  assert(
+    (await recorderWaveform.getAttribute("data-gsn-voice-recorder-waveform-state")) === "recording",
+    "The composer waveform did not visibly enter its recording state."
+  );
   const postButton = page.locator('[data-cta-id="demand-box.post"]');
   assert(await postButton.isDisabled(), "Post need stayed enabled while voice recording was active.");
   assert(
     await postButton.getByText("Stop recording first", { exact: true }).isVisible(),
     "The active recording did not explain why posting was locked."
   );
-  await page.getByRole("button", { name: "Stop", exact: true }).click();
+  await page.getByRole("button", { name: "Stop recording", exact: true }).click();
   await page.getByText("Voice note ready", { exact: true }).waitFor();
   assert(!(await postButton.isDisabled()), "Post need did not unlock after the voice file became ready.");
   await postButton.click();

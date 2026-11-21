@@ -48,6 +48,7 @@ requirePattern("community", /compactPresentation\?: boolean[\s\S]*?data-gsn-comm
 requirePattern("community", /data-gsn-community-notice-voice-deleted="true"[\s\S]*?compact-removed[\s\S]*?width: "min\(100%, 220px\)"[\s\S]*?<AudioWaveSignal mode="hero" \/>[\s\S]*?Recording removed/, "a deleted Community Home recording must make the clearly disabled hero waveform its central visual instead of returning a blank audio panel");
 requirePattern("demand", /data-gsn-demand-voice-deleted="true"[\s\S]*?hero-removed[\s\S]*?width: "min\(100%, 220px\)"[\s\S]*?<AudioWaveSignal mode="hero" \/>[\s\S]*?Recording removed/, "a deleted Demand Box recording must make the clearly disabled hero waveform its central visual instead of returning a text-only tombstone");
 requirePattern("demand", /data-gsn-protected-voice-player="true"[\s\S]*?data-gsn-demand-voice-presentation="hero-live"[\s\S]*?<AudioWavePlayer/, "a live Demand Box recording must retain the dominant shared waveform player");
+requirePattern("recorder", /heroWaveform\?: boolean[\s\S]*?data-gsn-voice-recorder-waveform="hero"[\s\S]*?width: "min\(100%, 220px\)"[\s\S]*?<AudioWaveSignal mode="hero" playing=\{recording\} \/>/, "the recorder must support a scoped hero waveform for the Demand Box composer");
 
 for (const key of ["community", "demand", "shop"]) {
   requirePattern(key, /debugId=\{debugId \+ "\.delete\.open"\}[\s\S]*?>\s*Delete\s*</, "sender deletion must remain a small labelled action");
