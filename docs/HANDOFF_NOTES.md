@@ -7235,3 +7235,13 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Release boundary preserved: no deployment, payment activation, public-discovery activation, owner notice, outreach or `main` promotion.
 - Honest blockers: real cash and settlement posting remain disabled; live headroom still needs production telemetry; direct-cost, community-allocation, cash-refund/customer-remedy and final live-service policies remain unapproved; historical records are preserved without fabricated exact-attribution backfill.
 - Complete trace and rollback: `docs/GSN_SPOTLIGHT_SLICE3A_COMPLETION_REPORT_2026-11-21.md`.
+
+# 2026-11-21 - Spotlight commercial release-readiness package
+
+- Accepted tested revision `f243d2685b7c4732b40d3c8861e81d03ba55e0e6` and final candidate `29b06f02bde92652901dad5c4b9df01fcefd8133` as the disabled Slice 3A engineering baseline. No completed scheduling, credit, frequency, attribution, restoration or Command Centre behavior was reopened.
+- Added `docs/GSN_SPOTLIGHT_COMMERCIAL_RELEASE_READINESS_2026-11-21.md` covering production-capacity measurement, draft commercial terms, cost and liability policy, payment and settlement integration, a bounded Aberdeen merchant pilot, release controls, rollback and a four-part decision register.
+- Honest no-go finding: paid release remains blocked by absent production capacity evidence, a legacy cash-top-up conversion that does not implement two Pipeline Credits per GBP 1, disconnected acquisition checkout, and a persisted settlement authority that remains house-campaign-only.
+- Additional safety findings: `GSN_PAYMENT_OPERATIONS_ENABLED` is broader than Spotlight and the paid-Spotlight flag is not a server-side pilot-cohort control. The package recommends a service-scoped payment gate and explicit cohort entitlement before any live pilot.
+- Recommended capacity default is evidence-driven rather than invented: at least 14 consecutive observation days, conservative lower-tail supply, existing obligations deducted, 50% launch safety factor and initially no more than one paid package per community/day.
+- Proposed pilot remains deliberately small: one Aberdeen community, up to five verified merchants, ten bookings, GBP 5 gross service value, a GBP 5 held remedy reserve, GBP 100 external-spend ceiling and 12 operator/support hours. These are launch recommendations, not observed demand or cost.
+- No runtime code, schema, environment, payment state, production data, customer terms, outreach, deployment, public-discovery activation or `main` branch changed.
