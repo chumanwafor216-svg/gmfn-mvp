@@ -2,7 +2,7 @@
 
 Date: 2026-11-21  
 Authorised baseline: `58506d0c60d27f773a1dd70099ab1bfaa309e9a4`  
-Verified implementation revision: `ad7866438c2ca57e49049f12084a2aace7acf0fc`  
+Verified implementation revision: `f243d2685b7c4732b40d3c8861e81d03ba55e0e6`  
 Working branch: `codex/public-shop-audio-fallback`  
 Release state: production-capable path remains disabled; not deployed and not promoted to `main`
 
@@ -86,7 +86,7 @@ The existing advertising revenue service now has a non-posting Spotlight settlem
 
 ### PostgreSQL simultaneous-booking trace
 
-GitHub Actions run `44849841895`, job `136678323517`, used PostgreSQL and the repository's protected migration/authority-role setup.
+GitHub Actions run `44850607912`, job `136680814165`, used PostgreSQL and the repository's protected migration/authority-role setup.
 
 - Two buyers simultaneously attempt to reserve the final 10/10/10 capacity.
 - Exactly one booking succeeds.
@@ -94,7 +94,7 @@ GitHub Actions run `44849841895`, job `136678323517`, used PostgreSQL and the re
 - The losing request has no completed or pending spend, no abandoned reservation and no debit.
 - Two simultaneous retries of one quote return one order, one booking and one debit.
 - Two simultaneous remedy retries return one restoration ledger entry and one restored-service obligation.
-- Result: `6 passed, 1 warning in 5.69s` across the three established corrected-entry concurrency contracts and the three new Spotlight Slice 3A contracts.
+- Result: `6 passed, 1 warning in 5.44s` across the three established corrected-entry concurrency contracts and the three new Spotlight Slice 3A contracts.
 
 ## Command Centre scheduling walkthrough
 
@@ -128,6 +128,8 @@ A failed turn stays missed after reconciliation. Its original shortfall remains 
 - `gmfn_backend/app/services/spotlight_pacing_state_service.py`
 - `gmfn_backend/app/services/spotlight_presentation_service.py`
 - `gmfn_backend/tests/test_postgres_spotlight_slice3a_concurrency.py`
+- `gmfn_backend/tests/test_commerce_taxonomy_migration.py`
+- `gmfn_backend/tests/test_spotlight_slice2_simulation.py`
 - `gmfn_backend/tests/test_spotlight_slice3_commercial.py`
 - `gmfn_backend/tools/run_spotlight_slice3a_postgres_proof.ps1`
 
@@ -136,12 +138,14 @@ A failed turn stays missed after reconciliation. Its original shortfall remains 
 - `python -m pytest -q tests/test_spotlight_slice3_commercial.py tests/test_spotlight_presentation_contract.py tests/test_spotlight_transaction_safeguards.py`: 36 passed.
 - Actual serving-path contract: five accepted qualifying views, sixth suppressed, one current turn consumed, exact booking attribution passed.
 - Local PostgreSQL test collection without opt-in database: three tests collected and safely skipped.
-- GitHub PostgreSQL run `44849841895`, job `136678323517`: 6 passed, none skipped; the explicit six-test gate passed.
+- GitHub PostgreSQL run `44850607912`, job `136680814165`: 6 passed, none skipped; the explicit six-test gate passed.
+- Affected broad-contract checks for the current Alembic head and connected-but-disabled canonical service: 10 passed locally.
+- GitHub Actions full repository job `136680814498`: 1,850 passed, 30 skipped and 2 warnings.
 - `python -m alembic heads` with `GMFN_DEV_MODE=1`: one head, `20261121_spotlight_slice3a_integrity`.
 - `npm.cmd run audit:admin-gsn-house-campaign`: passed.
 - `npm.cmd run build`: passed.
 - `git diff --check`: passed.
-- The broad audit was not restarted, as instructed.
+- The separate broad product audit was not restarted. The repository's mandatory automated full test job ran once for the final code candidate and passed.
 
 ## Remaining blockers and policy decisions
 
