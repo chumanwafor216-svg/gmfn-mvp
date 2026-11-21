@@ -100,6 +100,15 @@ class AdvertisingCampaignSettlement(Base):
     community_pool_amount: Mapped[Decimal] = mapped_column(
         Numeric(18, 2), nullable=False, default=Decimal("0.00")
     )
+    processing_fee_policy_status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="pending_policy", server_default="pending_policy"
+    )
+    delivery_cost_policy_status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="pending_policy", server_default="pending_policy"
+    )
+    community_allocation_policy_status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="pending_policy", server_default="pending_policy"
+    )
 
     deferred_revenue_amount: Mapped[Decimal] = mapped_column(
         Numeric(18, 2), nullable=False, default=Decimal("0.00"), server_default=text("0")

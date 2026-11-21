@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -16,7 +16,15 @@ import app.db.spotlight_commercial_models  # noqa: F401
 from app.db.advertising_revenue_models import AdvertisingCampaignSettlement
 from app.db.bank_models import BankCredit, ExpectedPayment
 from app.db.base import Base
-from app.db.models import Clan, ClanMembership, MarketplaceBroadcast, SpotlightCampaign, User
+from app.db.models import (
+    Clan,
+    ClanMembership,
+    MarketplaceBroadcast,
+    SpotlightCampaign,
+    SpotlightExposureEvent,
+    SpotlightPresentationLease,
+    User,
+)
 from app.db.pipeline_credit_models import (
     PipelineCreditAccount,
     PipelineCreditAcquisitionApplication,
@@ -31,7 +39,10 @@ from app.db.spotlight_commercial_models import (
     SpotlightCommercialRemedy,
     SpotlightCommercialServiceCreditObligation,
 )
-from app.services.advertising_revenue_service import reconcile_spotlight_booking_settlement
+from app.services.advertising_revenue_service import (
+    reconcile_spotlight_booking_settlement,
+    spotlight_commercial_settlement_readiness,
+)
 from app.services.bank_application_service import apply_expected_payment_match
 from app.services.pipeline_credit_acquisition_service import (
     PipelineCreditAcquisitionError,
@@ -49,7 +60,16 @@ from app.services.pipeline_credit_commerce_service import (
 )
 from app.services.reconciliation_service import create_bank_event, reconcile_batch
 from app.services.spotlight_capacity_measurement_service import spotlight_capacity_measurement_report
-from app.services.spotlight_commercial_access_service import grant_spotlight_pilot_entitlement
+from app.services.payment_operations_policy import (
+    PaymentOperationsSuspended,
+    require_payment_operations_enabled,
+)
+from app.services.spotlight_commercial_access_service import (
+    SpotlightCommercialAccessError,
+    grant_spotlight_pilot_entitlement,
+    require_spotlight_payment_operations_enabled,
+    revoke_spotlight_pilot_entitlement,
+)
 from app.services.spotlight_commercial_service import record_capacity_evidence
 
 
@@ -455,3 +475,219 @@ def test_measurement_only_report_creates_no_paid_commitment(db):
     assert report["safety"]["created_paid_service_commitment"] is False
     assert report["safety"]["selection_is_supplied_turn"] is False
     assert report["observed"]["final_presentations_issued"] == 0
+
+def test_payment_gate_isolation_and_operator_entitlement(db, monkeypatch):
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "0")
+    monkeypatch.setenv("GSN_PAID_SPOTLIGHT_PAYMENT_OPERATIONS_ENABLED", "1")
+    with pytest.raises(PaymentOperationsSuspended):
+        require_payment_operations_enabled()
+    with pytest.raises(SpotlightCommercialAccessError) as global_stop:
+        require_spotlight_payment_operations_enabled()
+    assert global_stop.value.code == "payment_operations_suspended"
+
+    monkeypatch.setenv("GSN_PAYMENT_OPERATIONS_ENABLED", "1")
+    monkeypatch.setenv("GSN_PAID_SPOTLIGHT_PAYMENT_OPERATIONS_ENABLED", "0")
+    require_payment_operations_enabled()
+    with pytest.raises(SpotlightCommercialAccessError) as scoped_stop:
+        require_spotlight_payment_operations_enabled()
+    assert scoped_stop.value.code == "spotlight_payment_operations_suspended"
+
+    monkeypatch.setenv("GSN_PAID_SPOTLIGHT_PAYMENT_OPERATIONS_ENABLED", "1")
+    operator = _entitle(db, role="operator")
+    pack = _pack(db, amount="1.00", credits="2.00", code="operator-sponsored")
+    sponsored = create_acquisition_instruction(
+        db,
+        purchaser_user_id=1,
+        beneficiary_user_id=2,
+        clan_id=1,
+        pack_version_id=int(pack.id),
+        funding_classification="sponsor_funded",
+        idempotency_key="slice4a-operator-sponsored",
+    )
+    assert sponsored.status == "pending_payment"
+    revoke_spotlight_pilot_entitlement(
+        db,
+        entitlement_id=int(operator.id),
+        revoked_by_user_id=1,
+        decision_note="End controlled operator permission",
+    )
+    with pytest.raises(PipelineCreditAcquisitionError) as revoked:
+        create_acquisition_instruction(
+            db,
+            purchaser_user_id=1,
+            beneficiary_user_id=2,
+            clan_id=1,
+            pack_version_id=int(pack.id),
+            funding_classification="sponsor_funded",
+            idempotency_key="slice4a-revoked-operator",
+        )
+    assert revoked.value.code == "spotlight_pilot_not_authorised"
+
+
+def test_late_confirmed_payment_after_revocation_is_held_and_retryable(db):
+    entitlement = _entitle(db)
+    pack = _pack(db, amount="1.00", credits="2.00", code="late-revocation")
+    order = create_acquisition_instruction(
+        db,
+        purchaser_user_id=1,
+        beneficiary_user_id=1,
+        clan_id=1,
+        pack_version_id=int(pack.id),
+        funding_classification="merchant_paid",
+        idempotency_key="slice4a-late-revocation",
+    )
+    revoke_spotlight_pilot_entitlement(
+        db,
+        entitlement_id=int(entitlement.id),
+        revoked_by_user_id=1,
+        decision_note="Permission ended before cash arrived",
+    )
+    event, expected = _pay(db, order=order, amount="1.00", txn="S4A-LATE-REVOKED")
+    db.refresh(order)
+    db.refresh(event)
+    assert expected.status == "confirmed"
+    assert event.status == "confirmed"
+    assert "application_hold:spotlight_pilot_not_authorised" in str(event.status_reason)
+    assert order.status == "payment_received_permission_hold"
+    assert order.allocation_ledger_entry_id is None
+    assert db.query(PipelineCreditLedgerEntry).count() == 0
+
+    _entitle(db)
+    applied = apply_expected_payment_match(
+        db,
+        bank_event_id=int(event.id),
+        expected_payment_id=int(expected.id),
+    )
+    assert applied["applied"] is True
+    db.refresh(order)
+    assert order.status == "allocated"
+    assert order.remaining_credit_amount == Decimal("2.00")
+    assert db.query(PipelineCreditLedgerEntry).count() == 1
+
+
+def _measurement_lease(
+    db,
+    *,
+    broadcast_id: int,
+    campaign_id: int,
+    presentation_id: str,
+    issued_at: datetime,
+    viewer_user_id: int,
+):
+    lease = SpotlightPresentationLease(
+        presentation_id=presentation_id,
+        issuance_key=f"issuance-{presentation_id}",
+        viewer_user_id=viewer_user_id,
+        campaign_id=campaign_id,
+        placement_broadcast_id=broadcast_id,
+        content_version=1,
+        surface="marketplace",
+        status="qualified",
+        issued_at=issued_at,
+        lease_expires_at=issued_at + timedelta(minutes=5),
+        qualified_at=issued_at + timedelta(seconds=5),
+    )
+    db.add(lease)
+    db.add_all(
+        [
+            SpotlightExposureEvent(
+                presentation_id=presentation_id,
+                event_type=event_type,
+                viewer_user_id=viewer_user_id,
+                campaign_id=campaign_id,
+                event_at=issued_at + timedelta(seconds=offset),
+                allocation_route_type="community",
+                allocation_source_kind="broadcast",
+                allocation_source_id=broadcast_id,
+                allocation_route_clan_id=1,
+                placement_broadcast_id=broadcast_id,
+                idempotency_key=f"{presentation_id}-{event_type}",
+                presentation_surface="marketplace",
+            )
+            for event_type, offset in (("served", 1), ("qualifying_impression", 5))
+        ]
+    )
+
+
+def test_capacity_measurement_separates_overnight_and_dst_boundaries(db):
+    campaign = _campaign(db)
+    broadcast = db.query(MarketplaceBroadcast).filter_by(spotlight_campaign_id=int(campaign.id)).one()
+    for code, issued_at in (
+        ("overnight", datetime(2027, 3, 28, 0, 30, tzinfo=timezone.utc)),
+        ("morning", datetime(2027, 3, 28, 4, 30, tzinfo=timezone.utc)),
+        ("afternoon", datetime(2027, 3, 28, 11, 30, tzinfo=timezone.utc)),
+        ("evening", datetime(2027, 3, 28, 17, 30, tzinfo=timezone.utc)),
+    ):
+        _measurement_lease(
+            db,
+            broadcast_id=int(broadcast.id),
+            campaign_id=int(campaign.id),
+            presentation_id=f"slice4a-{code}",
+            issued_at=issued_at,
+            viewer_user_id=1,
+        )
+    db.commit()
+
+    london = spotlight_capacity_measurement_report(
+        db,
+        clan_id=1,
+        service_date="2027-03-28",
+        timezone_name="Europe/London",
+    )
+    starts_at = datetime.fromisoformat(london["utc_window"]["starts_at"])
+    ends_at = datetime.fromisoformat(london["utc_window"]["ends_at"])
+    assert ends_at - starts_at == timedelta(hours=23)
+    for code in ("overnight", "morning", "afternoon", "evening"):
+        assert london["observed"]["dayparts"][code]["final_presentations_issued"] == 1
+        assert london["observed"]["dayparts"][code]["visible_presentations"] == 1
+        assert london["observed"]["dayparts"][code]["qualifying_impressions"] == 1
+    assert london["safety"]["overnight_is_sellable_capacity"] is False
+    assert london["observed"]["scheduled_opportunities"] == 0
+    assert london["observed"]["genuinely_supplied_opportunities"] == 0
+
+    london_fall = spotlight_capacity_measurement_report(
+        db,
+        clan_id=1,
+        service_date="2027-10-31",
+        timezone_name="Europe/London",
+    )
+    fall_start = datetime.fromisoformat(london_fall["utc_window"]["starts_at"])
+    fall_end = datetime.fromisoformat(london_fall["utc_window"]["ends_at"])
+    assert fall_end - fall_start == timedelta(hours=25)
+
+    lagos = spotlight_capacity_measurement_report(
+        db,
+        clan_id=1,
+        service_date="2027-03-28",
+        timezone_name="Africa/Lagos",
+    )
+    lagos_start = datetime.fromisoformat(lagos["utc_window"]["starts_at"])
+    lagos_end = datetime.fromisoformat(lagos["utc_window"]["ends_at"])
+    assert lagos_end - lagos_start == timedelta(hours=24)
+    assert lagos["observed"]["dayparts"]["overnight"]["final_presentations_issued"] == 1
+    assert lagos["observed"]["dayparts"]["morning"]["final_presentations_issued"] == 1
+
+
+def test_spotlight_financial_costs_remain_pending_policy(db):
+    output = spotlight_commercial_settlement_readiness(
+        funding_classification="merchant_paid",
+        booking_status="fulfilled",
+        purchased_credits="1.00",
+        supplied_opportunities=30,
+        missed_opportunities=0,
+        original_shortfall_outstanding=False,
+        restored_service_credits_outstanding="0.00",
+        cash_collected_amount="0.50",
+        processing_cost_amount="0.00",
+        processing_cost_policy_status="pending_policy",
+        direct_cost_amount="0.00",
+        direct_cost_policy_status="pending_policy",
+        community_allocation_amount="0.00",
+        community_allocation_policy_status="pending_policy",
+    )
+    assert output["processing_cost_amount"] is None
+    assert output["processing_cost_status"] == "pending_policy"
+    assert output["direct_cost_amount"] is None
+    assert output["direct_cost_status"] == "pending_policy"
+    assert output["community_allocation_amount"] is None
+    assert output["community_allocation_status"] == "pending_policy"

@@ -13,9 +13,10 @@ from app.db.spotlight_commercial_models import SpotlightCommercialBooking, Spotl
 
 
 DAYPARTS = {
+    "overnight": (time(0, 0), time(5, 0)),
     "morning": (time(5, 0), time(12, 0)),
     "afternoon": (time(12, 0), time(18, 0)),
-    "evening": (time(18, 0), time(0, 0)),
+    "evening": (time(18, 0), time(23, 59, 59, 999999)),
 }
 
 
@@ -41,6 +42,8 @@ def _bounds(service_date: str, timezone_name: str) -> tuple[date, ZoneInfo, date
 
 def _daypart(at: datetime, zone: ZoneInfo) -> str:
     local_time = (at.replace(tzinfo=timezone.utc) if at.tzinfo is None else at).astimezone(zone).time()
+    if local_time < time(5, 0):
+        return "overnight"
     if time(5, 0) <= local_time < time(12, 0):
         return "morning"
     if time(12, 0) <= local_time < time(18, 0):
@@ -84,6 +87,9 @@ def spotlight_capacity_measurement_report(
     dayparts: dict[str, dict[str, int]] = {
         code: {
             "final_presentations_issued": 0,
+            "scheduled_opportunities": 0,
+            "genuinely_supplied_opportunities": 0,
+            "missed_opportunities": 0,
             "visible_presentations": 0,
             "qualifying_impressions": 0,
             "interrupted_or_unqualified": 0,
@@ -115,19 +121,29 @@ def spotlight_capacity_measurement_report(
         .all()
     )
     booking_ids = [int(row.id) for row in commercial_rows]
-    paid_outstanding = (
-        db.query(func.count(SpotlightCommercialOpportunity.id))
+    opportunities = (
+        db.query(SpotlightCommercialOpportunity)
         .filter(SpotlightCommercialOpportunity.booking_id.in_(booking_ids))
-        .filter(SpotlightCommercialOpportunity.status.in_(("reserved", "available")))
-        .scalar()
+        .order_by(SpotlightCommercialOpportunity.scheduled_at.asc())
+        .all()
         if booking_ids
-        else 0
+        else []
+    )
+    for opportunity in opportunities:
+        code = _daypart(opportunity.scheduled_at, zone)
+        dayparts[code]["scheduled_opportunities"] += 1
+        if str(opportunity.status or "").lower() in {"available", "supplied"}:
+            dayparts[code]["genuinely_supplied_opportunities"] += 1
+        if str(opportunity.status or "").lower() == "missed":
+            dayparts[code]["missed_opportunities"] += 1
+    paid_outstanding = sum(
+        1 for row in opportunities if str(row.status or "").lower() in {"reserved", "available"}
     )
     commitments_after = db.query(PipelineCreditServiceSpendOrder).filter(
         PipelineCreditServiceSpendOrder.service_code == "paid_spotlight.day"
     ).count()
     return {
-        "measurement_version": "spotlight-capacity-observation.v1",
+        "measurement_version": "spotlight-capacity-observation.v2",
         "community_id": int(clan_id),
         "service_date": service_day.isoformat(),
         "timezone": str(timezone_name),
@@ -139,6 +155,13 @@ def spotlight_capacity_measurement_report(
             "qualifying_impressions": len(events_by_type.get("qualifying_impression", [])),
             "interrupted_or_unqualified": sum(
                 1 for row in leases if row.qualified_at is None and str(row.status or "").lower() != "qualified"
+            ),
+            "scheduled_opportunities": len(opportunities),
+            "genuinely_supplied_opportunities": sum(
+                1 for row in opportunities if str(row.status or "").lower() in {"available", "supplied"}
+            ),
+            "missed_opportunities": sum(
+                1 for row in opportunities if str(row.status or "").lower() == "missed"
             ),
             "dayparts": dayparts,
         },
@@ -154,9 +177,12 @@ def spotlight_capacity_measurement_report(
             "selection_is_supplied_turn": False,
             "elapsed_time_is_supplied_turn": False,
             "repeated_presentations_are_distinct_scheduled_turns": False,
+            "overnight_is_sellable_capacity": False,
         },
         "limitations": (
             "Final presentations issued are observed viewer-triggered serving activity, not sellable capacity and not supplied paid turns. "
+            "Scheduled opportunities, genuinely supplied opportunities, visible presentations and qualifying impressions remain separate. "
+            "Overnight observations are reported separately and are excluded from the ordinary 10/10/10 sellable dayparts. "
             "Use several representative days, failure rates, existing obligations, and a conservative safety factor before approving capacity."
         ),
     }

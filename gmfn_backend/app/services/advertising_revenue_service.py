@@ -162,8 +162,12 @@ def spotlight_commercial_settlement_readiness(
     restored_service_credits_outstanding: Any,
     cash_collected_amount: Any = None,
     cash_refund_amount: Any = None,
+    processing_cost_amount: Any = None,
+    processing_cost_policy_status: Optional[str] = None,
     direct_cost_amount: Any = None,
+    direct_cost_policy_status: Optional[str] = None,
     community_allocation_amount: Any = None,
+    community_allocation_policy_status: Optional[str] = None,
 ) -> dict[str, Any]:
     funding = str(funding_classification or "").strip().lower()
     if funding not in SPOTLIGHT_COMMERCIAL_FUNDING_CLASSIFICATIONS:
@@ -171,6 +175,20 @@ def spotlight_commercial_settlement_readiness(
             "invalid_spotlight_funding_classification",
             "Unknown Spotlight funding classification.",
         )
+
+    def policy_amount(value: Any, status: Optional[str], *, field: str) -> tuple[Optional[Decimal], str]:
+        resolved = str(status or ("recorded" if value is not None else "pending_policy")).strip().lower()
+        if resolved not in {"recorded", "pending_policy", "legacy_unspecified"}:
+            raise AdvertisingRevenueError(
+                "invalid_financial_policy_status",
+                f"{field} policy status is not recognised.",
+            )
+        if resolved != "recorded":
+            return None, resolved
+        if value is None:
+            return None, "pending_policy"
+        return _money(value, field=field), "recorded"
+
     credits = _money(purchased_credits, field="purchased Pipeline Credits")
     restored_credits = _money(
         restored_service_credits_outstanding,
@@ -195,15 +213,20 @@ def spotlight_commercial_settlement_readiness(
         if cash_refund_amount is None
         else _money(cash_refund_amount, field="cash refund")
     )
-    direct_cost = (
-        None
-        if direct_cost_amount is None
-        else _money(direct_cost_amount, field="direct delivery cost")
+    processing_cost, processing_status = policy_amount(
+        processing_cost_amount,
+        processing_cost_policy_status,
+        field="payment processing cost",
     )
-    community_allocation = (
-        None
-        if community_allocation_amount is None
-        else _money(community_allocation_amount, field="community allocation")
+    direct_cost, direct_cost_status = policy_amount(
+        direct_cost_amount,
+        direct_cost_policy_status,
+        field="direct delivery cost",
+    )
+    community_allocation, community_status = policy_amount(
+        community_allocation_amount,
+        community_allocation_policy_status,
+        field="community allocation",
     )
     if not revenue_capable:
         recognition_status = "not_customer_revenue"
@@ -223,7 +246,7 @@ def spotlight_commercial_settlement_readiness(
         recognition_status = "earned_after_cash_and_delivery"
         cash_status = "confirmed"
     return {
-        "policy_version": "spotlight-commercial-settlement.v1",
+        "policy_version": "spotlight-commercial-settlement.v2",
         "funding_classification": funding,
         "revenue_capable": revenue_capable,
         "cash_collection_status": cash_status,
@@ -244,23 +267,21 @@ def spotlight_commercial_settlement_readiness(
         "earned_revenue_amount": (
             f"{earned_revenue:.2f}" if earned_revenue is not None else None
         ),
+        "processing_cost_amount": (
+            f"{processing_cost:.2f}" if processing_cost is not None else None
+        ),
+        "processing_cost_status": processing_status,
         "direct_cost_amount": (
             f"{direct_cost:.2f}" if direct_cost is not None else None
         ),
-        "direct_cost_status": (
-            "recorded" if direct_cost is not None else "policy_or_evidence_unresolved"
-        ),
+        "direct_cost_status": direct_cost_status,
         "company_overhead_included_as_direct_cost": False,
         "community_allocation_amount": (
             f"{community_allocation:.2f}"
             if community_allocation is not None
             else None
         ),
-        "community_allocation_status": (
-            "recorded"
-            if community_allocation is not None
-            else "policy_or_evidence_unresolved"
-        ),
+        "community_allocation_status": community_status,
         "recognition_rule": (
             "Merchant or sponsor revenue is earned only after confirmed cash, "
             "completed authorised delivery, and no unresolved original or restored "
@@ -269,7 +290,6 @@ def spotlight_commercial_settlement_readiness(
         "boundary": ACCOUNTING_BOUNDARY,
     }
 
-
 def reconcile_spotlight_booking_settlement(
     db: Session,
     *,
@@ -277,7 +297,12 @@ def reconcile_spotlight_booking_settlement(
     actor_user_id: Optional[int] = None,
     commit: bool = True,
 ) -> Optional[AdvertisingCampaignSettlement]:
-    booking = db.get(SpotlightCommercialBooking, int(booking_id))
+    booking = (
+        db.query(SpotlightCommercialBooking)
+        .filter(SpotlightCommercialBooking.id == int(booking_id))
+        .with_for_update()
+        .one_or_none()
+    )
     if booking is None:
         raise AdvertisingRevenueError("booking_not_found", "Spotlight booking not found.")
     funding = str(booking.funding_classification or "").strip().lower()
@@ -349,10 +374,13 @@ def reconcile_spotlight_booking_settlement(
     row.refund_amount = Decimal("0.00")
     row.chargeback_amount = Decimal("0.00")
     row.processing_fee_amount = Decimal("0.00")
+    row.processing_fee_policy_status = "pending_policy"
     row.delivery_cost_amount = Decimal("0.00")
+    row.delivery_cost_policy_status = "pending_policy"
     row.distributable_net_amount = cash_received
     row.community_pool_bps = 0
     row.community_pool_amount = Decimal("0.00")
+    row.community_allocation_policy_status = "pending_policy"
     row.deferred_revenue_amount = deferred
     row.earned_revenue_amount = earned
     row.outstanding_service_credit_amount = remaining_service_credits.quantize(MONEY_QUANT)
@@ -437,10 +465,13 @@ def save_settlement_draft(
     row.refund_amount = amounts["refund_amount"]
     row.chargeback_amount = amounts["chargeback_amount"]
     row.processing_fee_amount = amounts["processing_fee_amount"]
+    row.processing_fee_policy_status = "recorded"
     row.delivery_cost_amount = amounts["delivery_cost_amount"]
+    row.delivery_cost_policy_status = "recorded"
     row.distributable_net_amount = amounts["distributable_net_amount"]
     row.community_pool_bps = amounts["community_pool_bps"]
     row.community_pool_amount = amounts["community_pool_amount"]
+    row.community_allocation_policy_status = "recorded"
     row.updated_at = _now()
     db.add(row)
     db.commit()
@@ -1028,11 +1059,14 @@ def settlement_payload(row: AdvertisingCampaignSettlement) -> dict[str, Any]:
         "refund_amount": str(_money(row.refund_amount)),
         "chargeback_amount": str(_money(row.chargeback_amount)),
         "processing_fee_amount": str(_money(row.processing_fee_amount)),
+        "processing_fee_policy_status": row.processing_fee_policy_status,
         "delivery_cost_amount": str(_money(row.delivery_cost_amount)),
+        "delivery_cost_policy_status": row.delivery_cost_policy_status,
         "distributable_net_amount": str(_money(row.distributable_net_amount)),
         "community_pool_bps": int(row.community_pool_bps),
         "community_pool_percent": f"{(Decimal(int(row.community_pool_bps)) / Decimal(100)):.2f}",
         "community_pool_amount": str(_money(row.community_pool_amount)),
+        "community_allocation_policy_status": row.community_allocation_policy_status,
         "deferred_revenue_amount": str(_money(row.deferred_revenue_amount)),
         "earned_revenue_amount": str(_money(row.earned_revenue_amount)),
         "outstanding_service_credit_amount": str(_money(row.outstanding_service_credit_amount)),

@@ -459,6 +459,14 @@ def reconcile_one_event(
             db.refresh(be)
         return be
 
+    if str(exp.expected_type or "").strip().lower() == "pipeline_credit_acquisition":
+        exp = (
+            db.query(ExpectedPayment)
+            .filter(ExpectedPayment.id == int(exp.id))
+            .with_for_update()
+            .one()
+        )
+
     _ensure_expected_remaining_initialized(exp)
 
     if _already_confirmed_expected(exp) and exp.bank_event_id and int(exp.bank_event_id) != int(be.id):

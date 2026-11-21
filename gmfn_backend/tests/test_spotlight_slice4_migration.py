@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 
 
 PREVIOUS_REVISION = "20261121_spotlight_slice3a_integrity"
-HEAD_REVISION = "20261121_spotlight_slice4_payments"
+HEAD_REVISION = "20261121_spotlight_slice4a_completion"
 
 
 def _config(connection) -> Config:
@@ -59,6 +59,9 @@ def test_spotlight_slice4_migration_round_trip_and_global_allowlist_guard(
                 "deferred_revenue_amount",
                 "earned_revenue_amount",
                 "outstanding_service_credit_amount",
+                "processing_fee_policy_status",
+                "delivery_cost_policy_status",
+                "community_allocation_policy_status",
             }.issubset(settlement_columns)
             entitlement_indexes = {
                 index["name"]

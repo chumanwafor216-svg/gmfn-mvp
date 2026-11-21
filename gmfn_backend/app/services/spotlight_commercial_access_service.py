@@ -164,10 +164,11 @@ def active_spotlight_pilot_roles(
     user_id: int,
     clan_id: Optional[int],
     at: Optional[datetime] = None,
+    lock_rows: bool = False,
 ) -> set[str]:
     current = _aware(at) or _now()
     resolved_clan_id = int(clan_id) if clan_id else -1
-    rows = (
+    query = (
         db.query(SpotlightCommercialPilotEntitlement)
         .filter(SpotlightCommercialPilotEntitlement.user_id == int(user_id))
         .filter(SpotlightCommercialPilotEntitlement.status == "active")
@@ -175,15 +176,16 @@ def active_spotlight_pilot_roles(
             SpotlightCommercialPilotEntitlement.clan_id.is_(None)
             | (SpotlightCommercialPilotEntitlement.clan_id == resolved_clan_id)
         )
-        .all()
     )
+    if lock_rows:
+        query = query.with_for_update()
+    rows = query.all()
     return {
         str(row.entitlement_role)
         for row in rows
         if _aware(row.starts_at) <= current
         and (_aware(row.expires_at) is None or _aware(row.expires_at) > current)
     }
-
 
 def require_spotlight_pilot_entitlement(
     db: Session,
@@ -197,6 +199,7 @@ def require_spotlight_pilot_entitlement(
         db,
         user_id=int(user_id),
         clan_id=clan_id,
+        lock_rows=True,
     )
     required_role = "merchant" if funding == "merchant_paid" else "operator"
     if required_role == "merchant" and "operator" in roles:

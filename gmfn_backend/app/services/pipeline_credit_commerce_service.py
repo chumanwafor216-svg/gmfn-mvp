@@ -996,6 +996,35 @@ def spend_service_quote(
         except SpotlightCommercialError as exc:
             raise PipelineCreditCommerceError(exc.code, str(exc)) from exc
 
+    if quote.service_code == "paid_spotlight.day" and spotlight_booking is None:
+        raise PipelineCreditCommerceError("spotlight_booking_missing", "The Spotlight reservation was not created")
+    if (
+        quote.service_code == "paid_spotlight.day"
+        and spotlight_booking is not None
+        and not pilot_waived
+        and str(spotlight_booking.funding_classification) in {"merchant_paid", "sponsor_funded"}
+    ):
+        restored_credit_amount = Decimal(str(
+            db.query(func.coalesce(func.sum(SpotlightCommercialServiceCreditApplication.credit_amount), 0))
+            .filter(SpotlightCommercialServiceCreditApplication.replacement_booking_id == int(spotlight_booking.id))
+            .filter(SpotlightCommercialServiceCreditApplication.status == "active")
+            .scalar() or 0
+        )).quantize(CREDIT_QUANT)
+        cash_backed_credit_amount = max(
+            Decimal(str(charged_credit_cost)).quantize(CREDIT_QUANT) - restored_credit_amount,
+            Decimal("0.00"),
+        )
+        if cash_backed_credit_amount > Decimal("0.00"):
+            try:
+                apply_cash_backing_to_spend(
+                    db,
+                    spend_order=order,
+                    booking=spotlight_booking,
+                    credit_amount=cash_backed_credit_amount,
+                )
+            except PipelineCreditAcquisitionError as exc:
+                raise PipelineCreditCommerceError(exc.code, str(exc)) from exc
+
     ledger = None
     if not pilot_waived:
         if quote.service_code != "paid_spotlight.day":
@@ -1025,29 +1054,6 @@ def spend_service_quote(
             raise PipelineCreditCommerceError("credit_debit_failed", str(exc)) from exc
 
     if quote.service_code == "paid_spotlight.day":
-        if spotlight_booking is None:
-            raise PipelineCreditCommerceError("spotlight_booking_missing", "The Spotlight reservation was not created")
-        if not pilot_waived and str(spotlight_booking.funding_classification) in {"merchant_paid", "sponsor_funded"}:
-            restored_credit_amount = Decimal(str(
-                db.query(func.coalesce(func.sum(SpotlightCommercialServiceCreditApplication.credit_amount), 0))
-                .filter(SpotlightCommercialServiceCreditApplication.replacement_booking_id == int(spotlight_booking.id))
-                .filter(SpotlightCommercialServiceCreditApplication.status == "active")
-                .scalar() or 0
-            )).quantize(CREDIT_QUANT)
-            cash_backed_credit_amount = max(
-                Decimal(str(charged_credit_cost)).quantize(CREDIT_QUANT) - restored_credit_amount,
-                Decimal("0.00"),
-            )
-            if cash_backed_credit_amount > Decimal("0.00"):
-                try:
-                    apply_cash_backing_to_spend(
-                        db,
-                        spend_order=order,
-                        booking=spotlight_booking,
-                        credit_amount=cash_backed_credit_amount,
-                    )
-                except PipelineCreditAcquisitionError as exc:
-                    raise PipelineCreditCommerceError(exc.code, str(exc)) from exc
         reconcile_spotlight_booking_settlement(
             db,
             booking_id=int(spotlight_booking.id),

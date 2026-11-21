@@ -1248,8 +1248,12 @@ def booking_report(db: Session, *, booking_id: int) -> dict[str, Any]:
         ),
         cash_collected_amount=(settlement_record.gross_received_amount if settlement_record else None),
         cash_refund_amount=(settlement_record.refund_amount if settlement_record else None),
+        processing_cost_amount=(settlement_record.processing_fee_amount if settlement_record else None),
+        processing_cost_policy_status=(settlement_record.processing_fee_policy_status if settlement_record else None),
         direct_cost_amount=(settlement_record.delivery_cost_amount if settlement_record else None),
+        direct_cost_policy_status=(settlement_record.delivery_cost_policy_status if settlement_record else None),
         community_allocation_amount=(settlement_record.community_pool_amount if settlement_record else None),
+        community_allocation_policy_status=(settlement_record.community_allocation_policy_status if settlement_record else None),
     )
     return {
         "booking_id": int(booking.id),
@@ -1285,9 +1289,13 @@ def booking_report(db: Session, *, booking_id: int) -> dict[str, Any]:
             "approved_credit_conversion": "GBP 0.50 per Pipeline Credit",
             "earned_revenue": settlement["earned_revenue_amount"],
             "earned_revenue_status": settlement["revenue_recognition_status"],
+            "processing_cost": settlement["processing_cost_amount"],
+            "processing_cost_status": settlement["processing_cost_status"],
             "delivery_cost": settlement["direct_cost_amount"],
+            "delivery_cost_status": settlement["direct_cost_status"],
             "company_overhead": None,
             "community_allocation": settlement["community_allocation_amount"],
+            "community_allocation_status": settlement["community_allocation_status"],
             "outstanding_service_liability": {
                 "original_shortfall_opportunities": (
                     int(status_counts.get("missed", 0))

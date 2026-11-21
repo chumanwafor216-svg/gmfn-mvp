@@ -143,9 +143,10 @@ jobs:
           python -m pytest -q \
             tests/test_postgres_corrected_community_entry_concurrency.py \
             tests/test_postgres_spotlight_slice3a_concurrency.py \
+            tests/test_postgres_spotlight_slice4a_concurrency.py \
             --junitxml=postgres-concurrency.xml
 
-      - name: Require six passing tests with none skipped
+      - name: Require twelve passing tests with none skipped
         run: |
           python - <<'PY'
           import xml.etree.ElementTree as ET
@@ -156,8 +157,8 @@ jobs:
               name: sum(int(suite.attrib.get(name, 0)) for suite in suites)
               for name in ("tests", "skipped", "failures", "errors")
           }
-          expected = {"tests": 6, "skipped": 0, "failures": 0, "errors": 0}
+          expected = {"tests": 12, "skipped": 0, "failures": 0, "errors": 0}
           if totals != expected:
               raise SystemExit(f"PostgreSQL concurrency requirement not met: {totals}")
-          print("PostgreSQL concurrency requirement met: 3 passed, 0 skipped")
+          print("PostgreSQL concurrency requirement met: 12 passed, 0 skipped")
           PY

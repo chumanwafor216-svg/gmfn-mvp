@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import hashlib
 import json
@@ -62,6 +62,14 @@ def _money(value: Any, *, field: str) -> Decimal:
 def _fingerprint(value: dict[str, Any]) -> str:
     payload = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _json_object(value: Any) -> dict[str, Any]:
+    try:
+        parsed = json.loads(value or "{}")
+    except Exception:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
 
 
 def _reference(*, user_id: int, clan_id: int) -> str:
@@ -229,7 +237,37 @@ def apply_confirmed_acquisition(
             funding_classification=str(order.funding_classification),
         )
     except SpotlightCommercialAccessError as exc:
-        raise PipelineCreditAcquisitionError(exc.code, str(exc)) from exc
+        order.bank_event_id = int(bank_event.id)
+        order.status = "payment_received_permission_hold"
+        order.updated_at = _now()
+
+        expected_meta = _json_object(expected_payment.meta_json)
+
+        expected_meta["pipeline_credit_acquisition_application_status"] = "permission_hold"
+        expected_meta["pipeline_credit_acquisition_application_reason"] = exc.code
+        expected_meta["pipeline_credit_acquisition_application_bank_event_id"] = int(bank_event.id)
+        expected_meta["pipeline_credit_acquisition_application_held_at"] = _now().isoformat()
+        expected_payment.meta_json = json.dumps(expected_meta, ensure_ascii=False)
+        hold_reason = f"application_hold:{exc.code}"
+        current_reason = str(bank_event.status_reason or "").strip()
+        if hold_reason not in current_reason.split("|"):
+            bank_event.status_reason = f"{current_reason}|{hold_reason}".strip("|")
+        db.add(order)
+        db.add(expected_payment)
+        db.add(bank_event)
+        db.commit()
+        db.refresh(order)
+        return {
+            "ok": False,
+            "applied": False,
+            "kind": EXPECTED_TYPE,
+            "reason": exc.code,
+            "cash_preserved": True,
+            "application_status": order.status,
+            "acquisition_order_id": int(order.id),
+            "expected_payment_id": int(expected_payment.id),
+            "bank_event_id": int(bank_event.id),
+        }
     entry = allocate_pipeline_credits(
         db,
         owner_type="user",
@@ -261,6 +299,13 @@ def apply_confirmed_acquisition(
     order.status = "allocated"
     order.allocated_at = _now()
     order.updated_at = _now()
+
+    expected_meta = _json_object(expected_payment.meta_json)
+
+    expected_meta["pipeline_credit_acquisition_application_status"] = "allocated"
+    expected_meta["pipeline_credit_acquisition_application_resolved_at"] = _now().isoformat()
+    expected_payment.meta_json = json.dumps(expected_meta, ensure_ascii=False)
+    db.add(expected_payment)
     db.add(order)
     db.commit()
     db.refresh(order)
@@ -446,6 +491,12 @@ def acquisition_order_out(db: Session, row: PipelineCreditAcquisitionOrder) -> d
         "expected_payment_id": int(row.expected_payment_id),
         "reference": exp.reference_display if exp else None,
         "payment_status": exp.status if exp else None,
+        "application_status": row.status,
+        "payment_exception": (
+            _json_object(exp.meta_json).get("pipeline_credit_acquisition_application_reason")
+            if exp and str(exp.meta_json or "").strip()
+            else None
+        ),
         "cash_amount": f"{Decimal(str(row.cash_amount)):.2f}",
         "currency": row.currency,
         "credit_quantity": f"{Decimal(str(row.credit_quantity)):.2f}",
