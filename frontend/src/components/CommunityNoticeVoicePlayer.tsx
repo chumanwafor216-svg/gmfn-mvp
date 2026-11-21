@@ -87,17 +87,20 @@ export default function CommunityNoticeVoicePlayer({
         data-gsn-community-notice-voice-presentation={compactPresentation ? "compact-removed" : "full-removed"}
         aria-label="Voice recording removed"
         style={{
-          padding: compactPresentation ? "7px 9px" : 12,
-          borderRadius: compactPresentation ? 13 : 16,
-          border: "1px solid rgba(100,116,139,0.18)",
-          background: "#F8FAFC",
+          padding: compactPresentation ? "12px 14px" : 12,
+          borderRadius: compactPresentation ? 18 : 16,
+          border: compactPresentation ? "2px solid rgba(15,114,200,0.22)" : "1px solid rgba(100,116,139,0.18)",
+          background: compactPresentation
+            ? "linear-gradient(180deg, #F2F9FF 0%, #FFFFFF 64%, #FFF8E7 100%)"
+            : "#F8FAFC",
           color: "#475569",
           fontSize: compactPresentation ? 10.5 : 12,
           lineHeight: compactPresentation ? 1.3 : 1.5,
           display: compactPresentation ? "grid" : "block",
-          gridTemplateColumns: compactPresentation ? "54px minmax(0, 1fr)" : undefined,
-          alignItems: compactPresentation ? "center" : undefined,
-          gap: compactPresentation ? 8 : undefined,
+          justifyItems: compactPresentation ? "center" : undefined,
+          textAlign: compactPresentation ? "center" : undefined,
+          gap: compactPresentation ? 7 : undefined,
+          boxShadow: compactPresentation ? "0 10px 24px rgba(7,59,114,0.10), inset 0 1px 0 rgba(255,255,255,0.96)" : undefined,
         }}
       >
         {compactPresentation ? (
@@ -107,28 +110,29 @@ export default function CommunityNoticeVoicePlayer({
               style={{
                 position: "relative",
                 display: "block",
-                width: 54,
-                opacity: 0.72,
+                width: "min(100%, 220px)",
+                opacity: 0.92,
                 overflow: "hidden",
               }}
             >
-              <AudioWaveSignal mode="inline" />
+              <AudioWaveSignal mode="hero" />
               <span
                 style={{
                   position: "absolute",
-                  left: 7,
-                  right: 7,
+                  left: "16%",
+                  right: "16%",
                   top: "50%",
-                  height: 2,
+                  height: 3,
                   borderRadius: 999,
                   background: "#9F2424",
-                  transform: "rotate(-28deg)",
+                  boxShadow: "0 0 0 2px rgba(255,255,255,0.76)",
+                  transform: "rotate(-18deg)",
                 }}
               />
             </span>
             <span>
-              <strong style={{ display: "block", color: "#334155", fontSize: 11.5 }}>Recording removed</strong>
-              Deleted by its sender. The written notice remains.
+              <strong style={{ display: "block", color: "#173A59", fontSize: 13 }}>Recording removed</strong>
+              The sender deleted the audio. The written notice remains.
             </span>
           </>
         ) : (

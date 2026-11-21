@@ -7353,3 +7353,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Strengthened the shared live-audio waveform contrast and exposed a testable waveform-graph marker. Live Community Bulletin recordings still use the real shared audio player and load the protected recording only when the member taps play.
 - A permanently deleted recording cannot truthfully remain playable. On phone it now renders as a compact crossed waveform with `Recording removed` instead of the previous large blank explanation card; the written notice and attribution remain.
 - Verification passed: Community Home phone-button audit, audio-waveform audit, Community Home button inventory, production frontend build, real 390px Community Home smoke and the complete protected-button freeze audit.
+
+# Community Bulletin hero waveform emphasis - 2026-11-21
+
+- Promoted the Community Bulletin waveform from a small supporting mark to the central voice-message visual. The shared audio signal now has a reusable 44px hero mode with all waveform bars, stronger cyan-to-navy contrast and a taller live-player graph.
+- On phone, a deleted recording now places a centered waveform up to 220px wide above the short removal explanation. The red cross remains unmistakable so the prominent visual cannot be confused with playable audio.
+- Extended the real 390px Community Home smoke with a deleted-voice fixture. The test requires the waveform to be at least 180px wide, 44px high and centred within three pixels of its card.
+- Verification passed: focused waveform, Community Home phone and button-inventory audits; production frontend build; exact 390px phone smoke; and the complete protected-button freeze audit.

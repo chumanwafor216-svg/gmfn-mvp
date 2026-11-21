@@ -235,6 +235,10 @@ async function installApiMocks(page, { includeSecondClan = false, canManage = fa
             public_qr_enabled: true,
             public_code: "notice-8-1-public",
             public_path: "/community-notices/notice-8-1-public",
+            voice_attachment_id: 4081,
+            voice_duration_seconds: 18,
+            voice_deleted_at: activeNoticeCreatedAt,
+            voice_speaker_name: "Community coordinator",
             source: "community_notice",
           },
         ],
@@ -330,6 +334,10 @@ async function run() {
       const bulletinHeaderText = document.querySelector('[aria-label="Community announcements"]')?.textContent?.trim() || "";
       const actionSectionStyle = document.querySelector('[data-debug-id="community-home.go-to"]')?.getAttribute("style") || "";
       const phoneStatus = document.querySelector('[data-debug-id="community-home.bulletin.phone-status"]');
+      const removedVoice = document.querySelector('[data-gsn-community-notice-voice-presentation="compact-removed"]');
+      const removedVoiceWave = removedVoice?.querySelector('[data-gsn-audio-wave-bars="true"]');
+      const removedVoiceBox = removedVoice?.getBoundingClientRect();
+      const removedVoiceWaveBox = removedVoiceWave?.getBoundingClientRect();
       const urgencyTones = Array.from(document.querySelectorAll("[data-bulletin-urgency-tone]")).map((node) => node.getAttribute("data-bulletin-urgency-tone"));
       return {
         hasName: identityText.includes("Homeland isa"),
@@ -352,6 +360,11 @@ async function run() {
         phoneStatusCount: phoneStatus ? 1 : 0,
         phoneStatusText: phoneStatus?.textContent?.replace(/\s+/g, " ").trim() || "",
         phoneStatusHeight: phoneStatus instanceof globalThis.HTMLElement ? Math.round(phoneStatus.getBoundingClientRect().height) : null,
+        removedVoiceWaveWidth: removedVoiceWaveBox ? Math.round(removedVoiceWaveBox.width) : 0,
+        removedVoiceWaveHeight: removedVoiceWaveBox ? Math.round(removedVoiceWaveBox.height) : 0,
+        removedVoiceWaveCentreOffset: removedVoiceBox && removedVoiceWaveBox
+          ? Math.round(Math.abs((removedVoiceWaveBox.left + removedVoiceWaveBox.width / 2) - (removedVoiceBox.left + removedVoiceBox.width / 2)))
+          : null,
         urgencyTones,
         attentionCount: document.querySelectorAll('[data-debug-id="community-home.attention"]').length,
         identityBox: document.querySelector('[data-debug-id="community-home.identity-card"]')?.getBoundingClientRect().toJSON() || null,
@@ -404,6 +417,10 @@ async function run() {
       defaultState.phoneStatusText !== "All clear" ||
       defaultState.phoneStatusHeight === null ||
       defaultState.phoneStatusHeight > 36 ||
+      defaultState.removedVoiceWaveWidth < 180 ||
+      defaultState.removedVoiceWaveHeight < 44 ||
+      defaultState.removedVoiceWaveCentreOffset === null ||
+      defaultState.removedVoiceWaveCentreOffset > 3 ||
       defaultState.urgencyTones.join(",") !== "green" ||
       defaultState.attentionCount !== 0 ||
       overflow390.length > 0

@@ -27,11 +27,16 @@ export function AudioWaveSignal({
   mode = "inline",
   playing = false,
 }: {
-  mode?: "inline" | "symbol";
+  mode?: "inline" | "symbol" | "hero";
   playing?: boolean;
 }) {
-  const heights = mode === "symbol" ? WAVE_HEIGHTS.slice(7, 23) : WAVE_HEIGHTS.slice(2, 26);
-  const scale = mode === "symbol" ? 0.56 : 0.5;
+  const hero = mode === "hero";
+  const heights = hero
+    ? WAVE_HEIGHTS
+    : mode === "symbol"
+      ? WAVE_HEIGHTS.slice(7, 23)
+      : WAVE_HEIGHTS.slice(2, 26);
+  const scale = hero ? 1.08 : mode === "symbol" ? 0.56 : 0.5;
 
   return (
     <div
@@ -39,11 +44,11 @@ export function AudioWaveSignal({
       aria-hidden="true"
       style={{
         width: "100%",
-        height: mode === "symbol" ? 22 : 19,
+        height: hero ? 44 : mode === "symbol" ? 22 : 19,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        gap: mode === "symbol" ? 2 : 1,
+        gap: hero ? 2 : mode === "symbol" ? 2 : 1,
         overflow: "hidden",
       }}
     >
@@ -52,11 +57,11 @@ export function AudioWaveSignal({
           key={`${height}-${index}`}
           style={{
             flex: "1 1 2px",
-            minWidth: mode === "symbol" ? 2 : 1,
-            maxWidth: mode === "symbol" ? 3 : 4,
+            minWidth: hero ? 2 : mode === "symbol" ? 2 : 1,
+            maxWidth: hero ? 5 : mode === "symbol" ? 3 : 4,
             height: Math.max(4, height * scale),
             borderRadius: 999,
-            background: mode === "symbol"
+            background: hero || mode === "symbol"
               ? "linear-gradient(180deg, #20C4E6 0%, #0B4EA2 100%)"
               : "rgba(11,78,162,0.54)",
             transform: playing && index % 3 === 0 ? "scaleY(1.12)" : "scaleY(1)",
@@ -207,7 +212,7 @@ export default function AudioWavePlayer({
           data-gsn-audio-wave-graph="true"
           aria-hidden="true"
           style={{
-            height: compact ? 30 : 34,
+            height: compact ? 42 : 38,
             display: "flex",
             alignItems: "center",
             gap: 2,
@@ -223,7 +228,7 @@ export default function AudioWavePlayer({
                   flex: "1 1 2px",
                   minWidth: 2,
                   maxWidth: 4,
-                  height: Math.max(5, compact ? height * 0.78 : height),
+                  height: Math.max(5, height),
                   borderRadius: 999,
                   background: active
                     ? "linear-gradient(180deg, #19A7CE 0%, #0B4EA2 100%)"
