@@ -7221,3 +7221,16 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Release boundary preserved: no deployment, `main` promotion, real payment, production spending, public-discovery activation, outreach, owner notice or promotion.
 - Honest blockers: merchant earned-revenue settlement is not connected because the existing settlement authority is house-only; real cash acquisition is disconnected; safe live headroom still needs production telemetry/PostgreSQL simultaneous-load evidence; delivery-cost, overhead and community-allocation policies remain unapproved.
 - Complete trace, verification and rollback: `docs/GSN_SPOTLIGHT_SLICE3_IMPLEMENTATION_REPORT_2026-11-21.md`.
+
+# 2026-11-21 - Spotlight Slice 3A delivery-integrity completion
+
+- Preserved baseline `58506d0c60d27f773a1dd70099ab1bfaa309e9a4`, the existing `paid_spotlight.day` workflow and the Command Centre theatre. No second scheduler, wallet, impression ledger, settlement route or purchase route was added.
+- Commercial serving now binds final presentation leases only to the currently due scheduled opportunity. Repeated presentations in one turn reuse it; future turns remain reserved; candidate consideration does not count; visible acknowledgement and qualifying impression remain separate evidence.
+- Added exact booking/opportunity attribution for commercial presentations. Overlapping bookings no longer inherit campaign-wide impressions, and recognised reach is deduplicated within the booking report scope with the existing privacy threshold.
+- Pipeline Credit restoration now creates a durable remaining-service obligation. Replacement bookings consume it FIFO, fulfillment closes it, withdrawal releases it, and original shortfall, restored credit, replacement service and cash refund remain distinct.
+- Added non-posting settlement readiness for merchant-paid, sponsor-funded, gifted, waived and house activity. Cash confirmation and closed service obligations are required before revenue can be called earned; direct cost and community allocation remain unresolved rather than defaulting to zero.
+- PostgreSQL simultaneous tests passed: exactly one buyer won final capacity, the loser had no debit or abandoned reservation, same-quote retries created one booking/debit, and remedy retries created one restoration/obligation. GitHub run `44849841895`, job `136678323517`: 6 passed with none skipped.
+- Focused local verification passed: 36 backend contracts, one Alembic head, Command Centre audit, production frontend build and diff check.
+- Release boundary preserved: no deployment, payment activation, public-discovery activation, owner notice, outreach or `main` promotion.
+- Honest blockers: real cash and settlement posting remain disabled; live headroom still needs production telemetry; direct-cost, community-allocation, cash-refund/customer-remedy and final live-service policies remain unapproved; historical records are preserved without fabricated exact-attribution backfill.
+- Complete trace and rollback: `docs/GSN_SPOTLIGHT_SLICE3A_COMPLETION_REPORT_2026-11-21.md`.
