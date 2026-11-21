@@ -7338,3 +7338,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Preserved the existing 100-community publication cap, backend eligibility recheck, blocked-community reasons, Community Domain exclusions, review-before-publish flow, schedule, payment and audit contracts.
 - Added backend pagination coverage plus a 2,005-community regression proving a 20-row first page and a bounded final page. Verification passed: 19 house-campaign tests, focused Command Centre audit, TypeScript no-emit, production frontend build and the complete protected-button freeze audit.
 - No migration was required. The frontend and API must deploy from the same revision because the compact chooser consumes the new pagination metadata.
+# Community Bulletin visible create and compact voice - 2026-11-21
+
+- Community Home now exposes one obvious circular `+` in the Bulletin header for members already authorised to post or submit an announcement for review. It opens the existing composer directly and performs no write on open.
+- The duplicate announcement-creation row was removed from the collapsed Admin area, where ordinary members could not find it and eligible non-admin members could not reach it.
+- On phone, published Bulletin voice uses the existing shared waveform as its compact visual representation, retaining speaker attribution, duration and the quiet sender-only permanent-delete path without another large audio card.
+- No backend route, selected-community policy, review authority, voice storage, notice expiry, public-link behavior or playback contract changed. Focused guards are `frontend/tools/audit-community-home-phone-buttons.mjs`, `frontend/tools/audit-audio-wave-player.mjs`, and `frontend/tools/smoke-community-home-simple-phone.mjs`.
+- The Community Home phone smoke now uses rolling active announcement dates instead of a fixture that expired on 3 November 2026. The smoke, focused audits, full protected-button freeze and production build pass.

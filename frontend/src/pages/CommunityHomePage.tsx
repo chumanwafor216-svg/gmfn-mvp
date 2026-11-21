@@ -4166,6 +4166,7 @@ export default function CommunityHomePage() {
             speakerGmfnId={noticeItem?.voice_speaker_gmfn_id}
             canDelete={Boolean(noticeItem?.voice_can_delete)}
             debugId={`community-home.bulletin.voice.listen.${noticeKey}`}
+            compactPresentation={isCompact}
           />
         ) : null}
 
@@ -5237,11 +5238,42 @@ export default function CommunityHomePage() {
                 {!isCompact ? <span>Community </span> : null}<span style={{ color: isCompact ? "#07172C" : "#F2C766" }}>Bulletin</span>
               </span>
             </div>
-            {!isCompact ? (
-              <span style={announcementBoardPillStyle()}>
-                {communityNoticesLoading ? "Checking board" : primaryCommunityNotice ? noticeKindLabel(primaryCommunityNotice) : "Official notice"}
-              </span>
-            ) : null}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
+              {!isCompact ? (
+                <span style={announcementBoardPillStyle()}>
+                  {communityNoticesLoading ? "Checking board" : primaryCommunityNotice ? noticeKindLabel(primaryCommunityNotice) : "Official notice"}
+                </span>
+              ) : null}
+              {canOpenCommunityNoticeComposer ? (
+                <StableButton
+                  type="button"
+                  aria-label={communityNoticeSubmitMode === "review" ? "Create announcement for review" : "Create community announcement"}
+                  title={communityNoticeSubmitMode === "review" ? "Create announcement for review" : "Create community announcement"}
+                  debugId="community-home.bulletin.create"
+                  stableHeight={isCompact ? 42 : 44}
+                  minWidth={isCompact ? 42 : 44}
+                  onClick={(event) => {
+                    consumeCommunityButtonEvent(event);
+                    setNoticeModalOpen(true);
+                  }}
+                  style={{
+                    width: isCompact ? 42 : 44,
+                    minWidth: isCompact ? 42 : 44,
+                    height: isCompact ? 42 : 44,
+                    minHeight: isCompact ? 42 : 44,
+                    padding: 0,
+                    borderRadius: 999,
+                    color: "#FFFFFF",
+                    fontSize: isCompact ? 30 : 32,
+                    fontWeight: 500,
+                    lineHeight: 1,
+                    ...authenticatedStaticNeonAction("cyanViolet"),
+                  }}
+                >
+                  <span aria-hidden="true" style={{ transform: "translateY(-1px)" }}>+</span>
+                </StableButton>
+              ) : null}
+            </div>
           </div>
 
           <div style={announcementListPanelStyle(isCompact)}>
@@ -5530,14 +5562,6 @@ export default function CommunityHomePage() {
 
             {communityAdminOpen ? (
               <div id={COMMUNITY_NOTICE_SETTINGS_PANEL_ID} style={{ marginTop: 12, display: "grid", gap: 10 }}>
-                {canOpenCommunityNoticeComposer ? (
-                  <StableButton type="button" debugId="community-home.admin.notice.post" onClick={(event) => { consumeCommunityButtonEvent(event); setNoticeModalOpen(true); }} style={communityToolRowStyle()}>
-                    <span style={communityActionIcon(true)}>{communityIconGlyph("megaphone", 30)}</span>
-                    <span style={{ minWidth: 0 }}><span style={{ ...brandClampLines(1), color: "#07172C", fontSize: isCompact ? 14 : 15.5, fontWeight: 950 }}>{communityNoticeSubmitMode === "review" ? "Send announcement for review" : "Post announcement"}</span><span style={{ ...brandClampLines(2), marginTop: 4, color: "#617085", fontSize: isCompact ? 11.5 : 12.5, fontWeight: 720 }}>Write or record an announcement for this community.</span></span>
-                    <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>{">"}</span>
-                  </StableButton>
-                ) : null}
-
                 {canManageCommunityNoticeSettings ? (
                   <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                     <StableButton type="button" debugId="community-home.admin.notice.policy.members" onClick={(event) => updateCommunityNoticePolicy(event, "members")} aria-disabled={communityNoticeSettingsSaving || activeNoticePostingPolicy === "members" ? true : undefined} style={communityActionStyle(activeNoticePostingPolicy === "members" ? "primary" : "soft", communityNoticeSettingsSaving)}>

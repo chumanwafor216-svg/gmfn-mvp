@@ -42,6 +42,7 @@ for (const key of ["community", "demand", "shop", "recorder"]) {
 requirePattern("shop", /<AudioWaveSignal mode="inline" playing=\{playing\}/, "the owner strip must show the shared waveform signal");
 requirePattern("shop", /<AudioWaveSignal mode="symbol" playing=\{playing\}/, "the visitor coming-soon control must show the shared waveform signal");
 forbidPattern("shop", /setCompleted\(|keepVisibleAfterPlayback/, "compact Shop waveform controls must remain available after playback");
+requirePattern("community", /compactPresentation\?: boolean[\s\S]*?data-gsn-community-notice-voice-presentation=\{compactPresentation \? "compact" : "full"\}[\s\S]*?<AudioWavePlayer/, "Community Home voice must support the compact shared waveform presentation without another large audio card");
 
 for (const key of ["community", "demand", "shop"]) {
   requirePattern(key, /debugId=\{debugId \+ "\.delete\.open"\}[\s\S]*?>\s*Delete\s*</, "sender deletion must remain a small labelled action");

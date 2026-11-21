@@ -859,11 +859,13 @@ Must show, in phone-first order:
   - sending opens the device share sheet; clipboard fallback copies the full personalised message
 - Community Bulletin immediately after the identity hero
   - one compact live announcement presentation
+  - one obvious circular `+` in the Bulletin header opens the existing announcement composer for every member currently authorised to post or submit for review. Do not hide creation inside Admin area or duplicate it there. The `+` performs no write until the member completes the existing composer
   - after posting, confirm the exact destination community and say that only members of that community can see the announcement; DemandBox voice-request confirmation must explicitly say it appears in DemandBox, not the Community Bulletin
   - the existing announcement composer may add one optional voice note of no more than 60 seconds. A member may post text, voice, or both; when voice is used without typed text, the compact board summary truthfully says `Voice announcement`
   - voice uses the existing member-posting and officer-review rules. A pending member recording is available only to its sender and authorised community officers; approval moves that same attributed recording onto the published notice without changing its speaker
   - authenticated playback is deliberate through `Listen` for active members of that selected community. Public playback exists only when the creator enabled the existing public announcement link and only while that notice remains unexpired
   - all opened voice-note playback surfaces use the shared compact GSN waveform control instead of browser-native audio controls. Playback is the dominant action; elapsed and total time remain visible without expanding the card
+  - on phone, a posted voice message uses the waveform itself as the compact visual representation. Keep attribution, duration and the quiet sender-only delete action, but do not wrap the waveform in another large labelled audio card
   - the exact voice sender may permanently delete the recording. Playback stops immediately, while the notice text, sender attribution, review record, and Community Memory remain; private media cleanup is bounded and reference-aware
   - sender deletion is a small quiet `Delete` action beside the recording metadata, never a full-width primary-looking row. It must still open the explicit two-step permanent-deletion confirmation
   - on phone, use one short `Bulletin` header without a repeated `Community` prefix or notice-kind pill

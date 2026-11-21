@@ -131,6 +131,10 @@ assertContains(
   "Community Home phone Bulletin must keep one short Bulletin header without a repeated kind pill."
 );
 assertContains(
+  /canOpenCommunityNoticeComposer \? \([\s\S]*?aria-label=\{communityNoticeSubmitMode === "review" \? "Create announcement for review" : "Create community announcement"\}[\s\S]*?debugId="community-home\.bulletin\.create"[\s\S]*?setNoticeModalOpen\(true\)[\s\S]*?>\s*<span[^>]*>\+<\/span>/,
+  "Community Home Bulletin must expose one obvious plus action that opens the existing announcement composer."
+);
+assertContains(
   /const phoneNoticeOpen = detailOpen \|\| reactionPanelOpen[\s\S]*?if \(isCompact\) \{[\s\S]*?setNoticeDetailOpenId\(nextOpen \? noticeKey : ""\);[\s\S]*?setNoticeReactionPanelOpenId\(nextOpen \? noticeKey : ""\);[\s\S]*?setNoticePhoneSectionOpenId\(""\);[\s\S]*?phoneNoticeOpen \? "Close notice" : "Open notice"/,
   "Community Home phone Bulletin must use one Open notice control for the full message and a closed action chooser."
 );
@@ -179,9 +183,10 @@ assertContains(
   "Community Home setup guidance must describe create, join, and First Circle work in direct member language."
 );
 assertContains(
-  /Please confirm you saw this[\s\S]*?Announcements waiting for review[\s\S]*?Manage announcements, join requests, and community settings\.[\s\S]*?Send announcement for review[\s\S]*?Post announcement/s,
+  /Please confirm you saw this[\s\S]*?Announcements waiting for review[\s\S]*?Manage announcements, join requests, and community settings\./s,
   "Community Home attention and admin copy must use direct announcement language."
 );
+assertNotContains(/community-home\.admin\.notice\.post/, "Community Home must not hide a duplicate announcement-creation row inside Admin area.");
 
 assertNotContains(/overflowWrap: "anywhere"/g, "Community Home route-local action styles must not split words anywhere on phone buttons.");
 assertNotContains(/Choose the verification or work evidence|existing-member create lane|join-community lane|Submit bulletin record|Post bulletin record|No bulletin reviews waiting/g, "Community Home must not restore internal workflow language on member-facing guidance.");

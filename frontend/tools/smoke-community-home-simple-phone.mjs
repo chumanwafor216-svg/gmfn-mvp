@@ -13,6 +13,9 @@ function json(body, status = 200) {
   return { status, contentType: "application/json", body: JSON.stringify(body) };
 }
 
+const activeNoticeCreatedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+const activeNoticeExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
 async function installApiMocks(page, { includeSecondClan = false, canManage = false } = {}) {
   const state = { pollRequests: [], pollSelections: [], publicPollRequests: [], noticePosts: [] };
   await page.route("**/*", async (route) => {
@@ -127,8 +130,8 @@ async function installApiMocks(page, { includeSecondClan = false, canManage = fa
           clan_id: 8,
           body: "Choose the best day for the public meeting.",
           full_body: "This longer public announcement explains the meeting purpose, the people invited, the expected preparation, and the practical arrangements. It also includes enough additional detail to prove that a recipient sees only a short preview until they deliberately open the complete message on a phone.",
-          created_at: "2026-10-27T09:00:00Z",
-          expires_at: "2026-11-03T09:00:00Z",
+          created_at: activeNoticeCreatedAt,
+          expires_at: activeNoticeExpiresAt,
           acknowledgement_enabled: false,
           availability_enabled: false,
           poll_enabled: true,
@@ -161,8 +164,8 @@ async function installApiMocks(page, { includeSecondClan = false, canManage = fa
           clan_id: 8,
           body: payload.body,
           full_body: payload.full_body,
-          created_at: "2026-10-27T14:05:00Z",
-          expires_at: "2026-11-03T14:05:00Z",
+          created_at: activeNoticeCreatedAt,
+          expires_at: activeNoticeExpiresAt,
           acknowledgement_enabled: true,
           availability_enabled: Boolean(payload.availability_enabled),
           poll_enabled: true,
@@ -188,8 +191,8 @@ async function installApiMocks(page, { includeSecondClan = false, canManage = fa
                 clan_id: 8,
                 body: state.noticePosts[0].body,
                 full_body: state.noticePosts[0].full_body,
-                created_at: "2026-10-27T14:05:00Z",
-                expires_at: "2026-11-03T14:05:00Z",
+                created_at: activeNoticeCreatedAt,
+                expires_at: activeNoticeExpiresAt,
                 acknowledgement_enabled: true,
                 availability_enabled: Boolean(state.noticePosts[0].availability_enabled),
                 poll_enabled: true,
@@ -210,8 +213,8 @@ async function installApiMocks(page, { includeSecondClan = false, canManage = fa
             clan_id: 8,
             body: "Please read this community update before Wednesday and check the next step.",
             full_body: "Please read this community update before Wednesday. The full response tools belong behind one clear action.",
-            created_at: "2026-10-27T09:00:00Z",
-            expires_at: "2026-11-03T09:00:00Z",
+            created_at: activeNoticeCreatedAt,
+            expires_at: activeNoticeExpiresAt,
             acknowledgement_enabled: false,
             availability_enabled: false,
             poll_enabled: true,
@@ -637,8 +640,7 @@ async function run() {
     if (await composerDismiss.isVisible().catch(() => false)) {
       await composerDismiss.click();
     }
-    await composerPage.locator('[data-cta-id="community-home.admin.toggle"]').click();
-    await composerPage.locator('[data-cta-id="community-home.admin.notice.post"]').click();
+    await composerPage.locator('[data-cta-id="community-home.bulletin.create"]').click();
     const composerDialog = composerPage.getByRole("dialog", { name: "Post community notice" });
     await composerDialog.waitFor({ state: "visible", timeout: 30000 });
 

@@ -18,6 +18,7 @@ type Props = {
   onDeleted?: () => void | Promise<void>;
   debugId: string;
   label?: string;
+  compactPresentation?: boolean;
 };
 
 export default function CommunityNoticeVoicePlayer({
@@ -31,6 +32,7 @@ export default function CommunityNoticeVoicePlayer({
   onDeleted,
   debugId,
   label = "Voice announcement",
+  compactPresentation = false,
 }: Props) {
   const [audioUrl, setAudioUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -103,45 +105,73 @@ export default function CommunityNoticeVoicePlayer({
   return (
     <div
       data-gsn-community-notice-voice-player="waveform"
+      data-gsn-community-notice-voice-presentation={compactPresentation ? "compact" : "full"}
       style={{
-        padding: 11,
-        borderRadius: 18,
-        border: "1px solid rgba(13,95,168,0.16)",
-        background: "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
+        padding: compactPresentation ? 0 : 11,
+        borderRadius: compactPresentation ? 0 : 18,
+        border: compactPresentation ? 0 : "1px solid rgba(13,95,168,0.16)",
+        background: compactPresentation ? "transparent" : "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
         display: "grid",
-        gap: 8,
+        gap: compactPresentation ? 6 : 8,
       }}
     >
-      <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto", alignItems: "center", gap: 9 }}>
-        <GsnLegacyIcon name="audio" size={32} />
-        <div style={{ minWidth: 0 }}>
-          <div style={{ color: "#0B1F33", fontSize: 14, fontWeight: 950, lineHeight: 1.15 }}>
-            {label}
+      {compactPresentation ? (
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: 8, padding: "0 2px" }}>
+          <div style={{ minWidth: 0, color: "#526C84", fontSize: 10.5, fontWeight: 800, lineHeight: 1.25, overflowWrap: "anywhere" }}>
+            {[speakerName, speakerGmfnId].filter(Boolean).join(" · ") || "Voice message"}
           </div>
-          <div style={{ marginTop: 3, color: "#526C84", fontSize: 10.5, fontWeight: 780, lineHeight: 1.25, overflowWrap: "anywhere" }}>
-            {[speakerName, speakerGmfnId].filter(Boolean).join(" · ")}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6 }}>
+            {Number(durationSeconds || 0) > 0 ? (
+              <span style={{ color: "#587087", fontSize: 10.5, fontWeight: 900 }}>
+                {Math.ceil(Number(durationSeconds))}s
+              </span>
+            ) : null}
+            {canDelete && !confirmingDelete ? (
+              <SubtleButton
+                type="button"
+                onClick={() => setConfirmingDelete(true)}
+                stableHeight={30}
+                minWidth={0}
+                debugId={debugId + ".delete.open"}
+                style={{ minHeight: 30, height: 30, padding: "4px 8px", borderRadius: 999, color: "#9F2424", fontSize: 10.5, boxShadow: "none" }}
+              >
+                Delete
+              </SubtleButton>
+            ) : null}
           </div>
         </div>
-        <div style={{ display: "grid", justifyItems: "end", gap: 4 }}>
-          {Number(durationSeconds || 0) > 0 ? (
-            <span style={{ color: "#587087", fontSize: 10.5, fontWeight: 900 }}>
-              {Math.ceil(Number(durationSeconds))}s
-            </span>
-          ) : null}
-          {canDelete && !confirmingDelete ? (
-            <SubtleButton
-              type="button"
-              onClick={() => setConfirmingDelete(true)}
-              stableHeight={30}
-              minWidth={0}
-              debugId={debugId + ".delete.open"}
-              style={{ minHeight: 30, height: 30, padding: "4px 8px", borderRadius: 999, color: "#9F2424", fontSize: 10.5, boxShadow: "none" }}
-            >
-              Delete
-            </SubtleButton>
-          ) : null}
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto", alignItems: "center", gap: 9 }}>
+          <GsnLegacyIcon name="audio" size={32} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: "#0B1F33", fontSize: 14, fontWeight: 950, lineHeight: 1.15 }}>
+              {label}
+            </div>
+            <div style={{ marginTop: 3, color: "#526C84", fontSize: 10.5, fontWeight: 780, lineHeight: 1.25, overflowWrap: "anywhere" }}>
+              {[speakerName, speakerGmfnId].filter(Boolean).join(" · ")}
+            </div>
+          </div>
+          <div style={{ display: "grid", justifyItems: "end", gap: 4 }}>
+            {Number(durationSeconds || 0) > 0 ? (
+              <span style={{ color: "#587087", fontSize: 10.5, fontWeight: 900 }}>
+                {Math.ceil(Number(durationSeconds))}s
+              </span>
+            ) : null}
+            {canDelete && !confirmingDelete ? (
+              <SubtleButton
+                type="button"
+                onClick={() => setConfirmingDelete(true)}
+                stableHeight={30}
+                minWidth={0}
+                debugId={debugId + ".delete.open"}
+                style={{ minHeight: 30, height: 30, padding: "4px 8px", borderRadius: 999, color: "#9F2424", fontSize: 10.5, boxShadow: "none" }}
+              >
+                Delete
+              </SubtleButton>
+            ) : null}
+          </div>
         </div>
-      </div>
+      )}
 
       <AudioWavePlayer
         src={audioUrl}
