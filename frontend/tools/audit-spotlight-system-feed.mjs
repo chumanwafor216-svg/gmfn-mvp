@@ -129,7 +129,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /function applyPublicShop\([\s\S]*?ownerInspection\?: OwnerSpotlightInspection \| null[\s\S]*?const spotlightRequestFailed = viewerSpotlightRows === undefined[\s\S]*?const viewerBroadcasts = spotlightRequestFailed[\s\S]*?\? \[\][\s\S]*?: Array\.isArray\(viewerSpotlightRows\)[\s\S]*?\? viewerSpotlightRows[\s\S]*?: publicBroadcasts[\s\S]*?const spotlightBroadcasts = ownerSpotlightInspectionMode[\s\S]*?\? \[ownerInspectionBroadcast, \.\.\.viewerBroadcasts\]\.filter\(Boolean\)[\s\S]*?: viewerBroadcasts/,
+  /function applyPublicShop\([\s\S]*?ownerInspection\?: OwnerSpotlightInspection \| null[\s\S]*?ownerInspectionOccurrenceKey[\s\S]*?ownerInspectionCanEnterRotation[\s\S]*?spotlightConsumedOwnerInspectionKeysRef\.current\.has[\s\S]*?const spotlightRequestFailed = viewerSpotlightRows === undefined[\s\S]*?const viewerBroadcasts = spotlightRequestFailed[\s\S]*?const spotlightBroadcasts = ownerSpotlightInspectionMode[\s\S]*?ownerInspectionCanEnterRotation \? ownerInspectionBroadcast : null[\s\S]*?\.\.\.viewerBroadcasts/,
   "Public Shop must merge the authenticated non-delivery owner item with the governed viewer feed instead of replacing other members' Spotlights."
 );
 
@@ -609,7 +609,7 @@ assertNotContains(
 );
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /rotationWeight\?: number[\s\S]*?dedupePublicShopSpotlightRows[\s\S]*?seenCanonicalCampaignIds[\s\S]*?ownerSpotlightPreviewAuthorized[\s\S]*?const ownerInspectionSpotlight = ownerSpotlightInspectionMode && relevantBroadcast[\s\S]*?const viewerRotationBroadcasts = normalizedBroadcasts\.filter[\s\S]*?const orderedViewerRotationBroadcasts =[\s\S]*?const rotationBroadcasts = ownerSpotlightPreviewAuthorized[\s\S]*?\? ownerInspectionSpotlight[\s\S]*?\? \[ownerInspectionSpotlight\][\s\S]*?: \[\][\s\S]*?: ownerInspectionSpotlight[\s\S]*?\? \[ownerInspectionSpotlight, \.\.\.orderedViewerRotationBroadcasts\][\s\S]*?: orderedViewerRotationBroadcasts[\s\S]*?setCommunitySpotlights\(rotationBroadcasts\)/,
+  /rotationWeight\?: number[\s\S]*?dedupePublicShopSpotlightRows[\s\S]*?seenCanonicalCampaignIds[\s\S]*?ownerInspectionCanEnterRotation[\s\S]*?const ownerInspectionSpotlight =[\s\S]*?ownerSpotlightInspectionMode[\s\S]*?ownerInspectionCanEnterRotation[\s\S]*?const viewerRotationBroadcasts = normalizedBroadcasts\.filter[\s\S]*?const rotationBroadcasts = ownerSpotlightPreviewAuthorized[\s\S]*?\? ownerInspectionSpotlight[\s\S]*?\? \[ownerInspectionSpotlight\][\s\S]*?: \[\][\s\S]*?: ownerInspectionSpotlight[\s\S]*?\? \[ownerInspectionSpotlight, \.\.\.orderedViewerRotationBroadcasts\][\s\S]*?: orderedViewerRotationBroadcasts[\s\S]*?setCommunitySpotlights\(rotationBroadcasts\)[\s\S]*?spotlightConsumedOwnerInspectionKeysRef\.current\.add/,
   "Canonical Public Shop rows must be campaign-deduped and single-occurrence while ordinary owner inspection and explicit Preview remain intact."
 );
 

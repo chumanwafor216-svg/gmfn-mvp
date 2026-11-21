@@ -1327,6 +1327,18 @@ function spotlightBroadcastKey(item: ShopBroadcast | null): string {
     .join("|");
 }
 
+function spotlightOwnerInspectionOccurrenceKey(
+  item: ShopBroadcast | null
+): string {
+  const broadcastKey = spotlightBroadcastKey(item);
+  if (!broadcastKey) return '';
+  return [
+    broadcastKey,
+    positiveNumber(item?.contentVersion),
+    firstMeaningful(item?.authorizedExpiresAt, item?.expiresAt),
+  ].join('|');
+}
+
 function spotlightBroadcastSortValue(item: ShopBroadcast | null): number {
   if (!item?.createdAt) return 0;
   const timestamp = new Date(item.createdAt).getTime();
@@ -2005,6 +2017,9 @@ export default function ShopGalleryPage() {
   const spotlightRefreshGenerationRef = useRef(0);
   const spotlightVisibilityWindowRef = useRef(1);
   const spotlightSeenCampaignIdsRef = useRef<Set<number>>(new Set());
+  const spotlightConsumedOwnerInspectionKeysRef = useRef<Set<string>>(
+    new Set()
+  );
   const [spotlightPresentationActivated, setSpotlightPresentationActivated] =
     useState(false);
   const [spotlightHasKeyboardFocus, setSpotlightHasKeyboardFocus] = useState(false);
@@ -2264,6 +2279,15 @@ export default function ShopGalleryPage() {
         ...rowsOf<any>(publicShopRes?.broadcasts),
       ].filter(Boolean);
       const ownerInspectionBroadcast = normalizeBroadcast(ownerInspection?.item);
+      const ownerInspectionOccurrenceKey =
+        spotlightOwnerInspectionOccurrenceKey(ownerInspectionBroadcast);
+      const ownerInspectionCanEnterRotation = Boolean(
+        ownerSpotlightPreviewAuthorized ||
+          (ownerInspectionOccurrenceKey &&
+            !spotlightConsumedOwnerInspectionKeysRef.current.has(
+              ownerInspectionOccurrenceKey
+            ))
+      );
       const spotlightRequestFailed = viewerSpotlightRows === undefined;
       const viewerBroadcasts = spotlightRequestFailed
         ? []
@@ -2271,7 +2295,10 @@ export default function ShopGalleryPage() {
         ? viewerSpotlightRows
         : publicBroadcasts;
       const spotlightBroadcasts = ownerSpotlightInspectionMode
-        ? [ownerInspectionBroadcast, ...viewerBroadcasts].filter(Boolean)
+        ? [
+            ownerInspectionCanEnterRotation ? ownerInspectionBroadcast : null,
+            ...viewerBroadcasts,
+          ].filter(Boolean)
         : viewerBroadcasts;
 
       const publicOwnerBroadcast = publicBroadcasts
@@ -2323,7 +2350,10 @@ export default function ShopGalleryPage() {
           if (timeDelta !== 0) return timeDelta;
           return spotlightBroadcastKey(a).localeCompare(spotlightBroadcastKey(b));
         });
-      const ownerInspectionSpotlight = ownerSpotlightInspectionMode && relevantBroadcast
+      const ownerInspectionSpotlight =
+        ownerSpotlightInspectionMode &&
+        ownerInspectionCanEnterRotation &&
+        relevantBroadcast
         ? normalizedBroadcasts.find(
             (item) => spotlightBroadcastKey(item) === spotlightBroadcastKey(relevantBroadcast)
           ) || relevantBroadcast
@@ -2916,6 +2946,7 @@ export default function ShopGalleryPage() {
     spotlightRefreshRetryCountRef.current = 0;
     spotlightVisibilityWindowRef.current = 1;
     spotlightSeenCampaignIdsRef.current.clear();
+    spotlightConsumedOwnerInspectionKeysRef.current.clear();
     if (spotlightRefreshRetryTimerRef.current !== null) {
       window.clearTimeout(spotlightRefreshRetryTimerRef.current);
       spotlightRefreshRetryTimerRef.current = null;
@@ -3325,6 +3356,8 @@ export default function ShopGalleryPage() {
             spotlightBroadcastKey(item)
           );
           return !(
+            (campaignId > 0 &&
+              spotlightSeenCampaignIdsRef.current.has(campaignId)) ||
             (campaignId > 0 && retainedCampaignIds.has(campaignId)) ||
             (presentationId && retainedPresentationIds.has(presentationId))
           );
@@ -4021,12 +4054,31 @@ export default function ShopGalleryPage() {
       const activeCampaignId = positiveNumber(
         activeRows[activeIndex]?.opportunityCampaignId
       );
+      const activeItem = activeRows[activeIndex] || null;
+      if (
+        ownerSpotlightInspectionMode &&
+        !ownerSpotlightPreviewAuthorized &&
+        activeItem &&
+        !activeItem.isCanonicalOpportunity
+      ) {
+        const ownerOccurrenceKey =
+          spotlightOwnerInspectionOccurrenceKey(activeItem);
+        if (ownerOccurrenceKey) {
+          spotlightConsumedOwnerInspectionKeysRef.current.add(
+            ownerOccurrenceKey
+          );
+        }
+      }
       if (activeCampaignId > 0) {
         spotlightSeenCampaignIdsRef.current.add(activeCampaignId);
       }
       if (activeRows.length <= 1) {
+        communitySpotlightsRef.current = [];
+        miniSpotlightIndexRef.current = 0;
+        setCommunitySpotlights([]);
+        setMiniSpotlightIndex(0);
         void requestNextCanonicalSpotlight();
-        return false;
+        return true;
       }
 
       const nextIndexBeforeRemoval = (activeIndex + 1) % activeRows.length;
@@ -4074,6 +4126,12 @@ export default function ShopGalleryPage() {
       Math.max(activeRowsAtStart.length - 1, 0)
     );
     const activeItemAtStart = activeRowsAtStart[activeIndexAtStart] || null;
+    if (
+      activeRowsAtStart.length <= 1 &&
+      activeItemAtStart?.isCanonicalOpportunity
+    ) {
+      void requestNextCanonicalSpotlight();
+    }
     const activeDeadlineMs = activeItemAtStart?.isCanonicalOpportunity
       ? publicShopSpotlightPresentationDeadlineMs(activeItemAtStart)
       : Number.NaN;
@@ -4126,6 +4184,8 @@ export default function ShopGalleryPage() {
     spotlightRotationCanAdvance,
     spotlightRotationMediaSettled,
     requestNextCanonicalSpotlight,
+    ownerSpotlightInspectionMode,
+    ownerSpotlightPreviewAuthorized,
   ]);
 
   const ownerSpotlightStatusView = useMemo(() => {

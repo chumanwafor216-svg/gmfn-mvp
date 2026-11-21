@@ -484,8 +484,8 @@ assertContains(
 
 assertContains(
   'frontend/tools/smoke-spotlight-owner-visibility.mjs',
-  /testCanonicalRefreshFailureKeepsCurrentSpotlight[^]*?transient refresh outage erased[^]*?canonicalCalls !== 5[^]*?qualifyCalls !== 1[^]*?impressionCalls !== 1/,
-  'The phone smoke must prove a transient canonical outage preserves the last valid Spotlight and cannot alter accounting.'
+  /testCanonicalRefreshFailureClearsConsumedSpotlight[^]*?transient refresh outage kept a consumed Spotlight painted[^]*?canonicalCalls !== 5[^]*?qualifyCalls !== 1[^]*?impressionCalls !== 1/,
+  'The phone smoke must prove a transient canonical outage clears a consumed occurrence while bounded retries cannot alter accounting.'
 );
 
 assertContains(
@@ -543,8 +543,8 @@ assertContains(
 );
 assertContains(
   'frontend/src/pages/ShopGalleryPage.tsx',
-  /SPOTLIGHT_MEDIA_PRELOAD_TIMEOUT_MS[^]*?nextSpotlightMediaKey[^]*?activeRows.length <= 1[^]*?requestNextCanonicalSpotlight[^]*?nextRows.length <= 1[^]*?preloadVideo='auto'/,
-  'Public Shop must preload the next asset, bound failed media, refill early, and keep the final row from stalling until server expiry.'
+  /SPOTLIGHT_MEDIA_PRELOAD_TIMEOUT_MS[^]*?nextSpotlightMediaKey[^]*?activeRows.length <= 1[^]*?setCommunitySpotlights\(\[\]\)[^]*?requestNextCanonicalSpotlight[^]*?return true[^]*?activeRowsAtStart.length <= 1[^]*?requestNextCanonicalSpotlight[^]*?preloadVideo='auto'/,
+  'Public Shop must preload and refill early, then remove a consumed final occurrence instead of leaving stale media painted during refill cooldown.'
 );
 
 assertContains(
@@ -557,6 +557,18 @@ assertContains(
   'frontend/tools/test-spotlight-presentation-policy.mjs',
   /three-second video[^]*?seven-second video[^]*?nine-second video[^]*?twelve-second video[^]*?missing-duration video[^]*?non-finite video/,
   'Focused policy tests must cover image, short, bounded, long, missing, and non-finite media durations.'
+);
+
+assertContains(
+  'frontend/tools/smoke-spotlight-owner-visibility.mjs',
+  /testOwnerInspectionDoesNotReenterAfterRefresh[^]*?dispatchEvent\(new Event\('focus'\)\)[^]*?observeActiveSpotlight\(page, 12_000\)[^]*?entry.type === 'owner-preview'[^]*?Community Spotlight 2/,
+  'Focused browser coverage must prove a periodic refresh cannot reinsert consumed owner inspection ahead of other members.'
+);
+
+assertContains(
+  'frontend/tools/smoke-spotlight-owner-visibility.mjs',
+  /testDuplicateCanonicalRefillUsesCooldown[^]*?waitForTimeout\(8_000\)[^]*?consumed Spotlight remained painted[^]*?canonicalCalls !== 2[^]*?qualifyCalls !== 1/,
+  'Focused browser coverage must prove duplicate refill cooldown removes the consumed occurrence without duplicating accounting.'
 );
 
 assertContains(

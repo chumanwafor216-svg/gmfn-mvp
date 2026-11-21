@@ -7307,3 +7307,14 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Added a strict completion check: when sound is requested, the frontend accepts the prepared reel only when the server confirms both that sound was added and that the output contains an audio stream. A silent output is rejected with a clear retry message instead of being reported as successful.
 - Updated the focused media-quality and Shop Control action-inventory audits. Verification passed: media-quality audit, button inventory, TypeScript check, production frontend build and diff check.
 - No backend route, schema, permission, payment, Spotlight scheduling or public-discovery behavior changed. Browser previews may still begin muted because of autoplay policy; the audio remains embedded and can be enabled with the existing sound control.
+
+# 2026-11-21 - Public Shop Spotlight rotation fairness and anti-hang
+
+- Reproduced both pilot defects on the Public Shop Spotlight rail: ordinary owner inspection was reinserted by focus/periodic refresh after it had already played, and a consumed final item remained painted when a duplicate or failed canonical refill entered cooldown.
+- Gave each ordinary owner-inspection content version one local occurrence. Refreshes no longer push the same owner placement back ahead of other members, while an explicitly authorised owner Preview remains available and changed owner content can enter as a new occurrence.
+- Prefetch now begins while a lone canonical occurrence is still active. Once its visible dwell is consumed, the rail removes it before requesting the next occurrence; duplicate, empty or failed refills can no longer make stale media appear frozen.
+- Refill filtering now rejects campaign ids already seen in the current fair pass, preserving canonical no-repeat behavior and single qualification/impression accounting.
+- Added focused browser regressions for owner refresh fairness, duplicate-refill cooldown, bounded refresh failure and presentation expiry. The observed owner sequence advanced through Visitor eligible Spotlight, Community Spotlight 2 and Community Spotlight 3 without owner re-entry.
+- Verification passed: TypeScript no-emit, Spotlight system-feed audit, Spotlight presentation-contract audit, four focused Playwright scenarios, production frontend build, protected-button freeze audit and diff check.
+- Honest unrelated test status: the legacy owner-reopen full-suite scenario currently stops before rotation because its helper waits for a hidden More summary. That stale fixture was not rewritten as part of this bounded rotation fix.
+- No backend selector, payment, settlement, capacity, permission, database or public-discovery contract changed.

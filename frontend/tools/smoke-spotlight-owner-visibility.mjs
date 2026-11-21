@@ -261,6 +261,24 @@ async function revealSpotlightSurface(page) {
   await page.locator('#public-shop-spotlight').scrollIntoViewIfNeeded();
 }
 
+async function observeActiveSpotlight(page, durationMs) {
+  const observations = [];
+  const deadline = Date.now() + durationMs;
+  while (Date.now() < deadline) {
+    const snapshot = await page.locator('#public-shop-spotlight').evaluate((rail) => ({
+      type: rail.getAttribute('data-spotlight-presentation-type') || '',
+      title:
+        rail.querySelector('[data-spotlight-information-title=true]')?.textContent?.trim() || '',
+    }));
+    const previous = observations[observations.length - 1];
+    if (!previous || previous.type !== snapshot.type || previous.title !== snapshot.title) {
+      observations.push(snapshot);
+    }
+    await page.waitForTimeout(120);
+  }
+  return observations;
+}
+
 async function installMocks(page, scenario) {
   await page.route("**/*", async (route) => {
     const requestPath = new URL(route.request().url()).pathname;
@@ -802,6 +820,52 @@ async function testDelayedOwnerAuthentication(browser, baseUrl) {
   }
   await context.close();
   return scenario;
+}
+
+async function testOwnerInspectionDoesNotReenterAfterRefresh(browser, baseUrl) {
+  const scenario = {
+    identity: ownerGsnId,
+    ownerState: 'live',
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    impressionCalls: 0,
+    diaryCalls: 0,
+    streamLimit: 3,
+  };
+  const { context, page } = await newPage(browser, ownerGsnId);
+  await installMocks(page, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await revealSpotlightSurface(page);
+  await page.getByText('Owner saved Spotlight', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 15_000,
+  });
+  await page.getByText('Visitor eligible Spotlight', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 15_000,
+  });
+
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  const observations = await observeActiveSpotlight(page, 12_000);
+  if (observations.some((entry) => entry.type === 'owner-preview')) {
+    throw new Error(
+      'Periodic refresh reinserted the owner inspection ahead of other members: ' +
+        JSON.stringify(observations)
+    );
+  }
+  if (!observations.some((entry) => entry.title === 'Community Spotlight 2')) {
+    throw new Error(
+      'Owner rotation did not continue to the next community placement after refresh: ' +
+        JSON.stringify(observations)
+    );
+  }
+  await context.close();
+  return { ...scenario, observations };
 }
 
 async function testExpiredSpotlightSessionReturnsToSignIn(browser, baseUrl) {
@@ -1517,7 +1581,7 @@ async function testRejectedQualificationRetriesBeforeAttention(browser, baseUrl)
   return scenario;
 }
 
-async function testCanonicalRefreshFailureKeepsCurrentSpotlight(browser, baseUrl) {
+async function testCanonicalRefreshFailureClearsConsumedSpotlight(browser, baseUrl) {
   const scenario = {
     identity: visitorGsnId,
     ownerState: 'live',
@@ -1543,14 +1607,14 @@ async function testCanonicalRefreshFailureKeepsCurrentSpotlight(browser, baseUrl
     timeout: 15_000,
   });
   await page.getByText(/Community Spotlight could not refresh/).waitFor({
-    state: 'visible',
+    state: 'attached',
     timeout: 15_000,
   });
   await page.waitForTimeout(13_000);
   if (
-    !(await page.getByText('Visitor eligible Spotlight', { exact: true }).count())
+    await page.getByText('Visitor eligible Spotlight', { exact: true }).count()
   ) {
-    throw new Error('A transient refresh outage erased the last valid Spotlight.');
+    throw new Error('A transient refresh outage kept a consumed Spotlight painted.');
   }
   if (scenario.canonicalCalls !== 5 || scenario.canonicalFailuresRemaining !== 0) {
     throw new Error(
@@ -1591,10 +1655,10 @@ async function testDuplicateCanonicalRefillUsesCooldown(browser, baseUrl) {
     timeout: 15_000,
   });
   await page.waitForTimeout(8_000);
-  if (
-    !(await page.getByText('Visitor eligible Spotlight', { exact: true }).count())
-  ) {
-    throw new Error('A duplicate refill erased the last valid Spotlight.');
+  if (await page.getByText('Visitor eligible Spotlight', { exact: true }).count()) {
+    throw new Error(
+      'A consumed Spotlight remained painted during duplicate-refill cooldown.'
+    );
   }
   if (scenario.canonicalCalls !== 2) {
     throw new Error(
@@ -1621,7 +1685,7 @@ async function testPresentationExpiryRemovesContact(browser, baseUrl) {
     impressionCalls: 0,
     diaryCalls: 0,
     streamLimit: 1,
-    presentationExpiresInMs: 2_500,
+    presentationExpiresInMs: 6_000,
   };
   const { context, page } = await newPage(browser, visitorGsnId);
   await installMocks(page, scenario);
@@ -1634,7 +1698,7 @@ async function testPresentationExpiryRemovesContact(browser, baseUrl) {
     state: "visible",
     timeout: 15_000,
   });
-  await page.waitForTimeout(3_000);
+  await page.waitForTimeout(7_000);
   if (await page.getByText("Visitor eligible Spotlight", { exact: true }).count()) {
     throw new Error("Expired canonical presentation remained visible after its server deadline.");
   }
@@ -1663,6 +1727,7 @@ try {
   const smokeCases = {
     ownerReopen: testOwnerReopenPreviewBackAndResume,
     delayedOwnerAuth: testDelayedOwnerAuthentication,
+    ownerRefreshFairness: testOwnerInspectionDoesNotReenterAfterRefresh,
     expiredSession: testExpiredSpotlightSessionReturnsToSignIn,
     visitorPreviewBoundary: testVisitorCannotForceOwnerPreview,
     visibleIssuance: testCanonicalIssuanceWaitsForVisibleSpotlightSurface,
@@ -1676,7 +1741,7 @@ try {
     replayAccounting: testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting,
     freshLeasePriority: testFreshLeaseWinsOverWeightedReplay,
     qualificationRetry: testRejectedQualificationRetriesBeforeAttention,
-    refreshFailure: testCanonicalRefreshFailureKeepsCurrentSpotlight,
+    refreshFailure: testCanonicalRefreshFailureClearsConsumedSpotlight,
     duplicateRefillCooldown: testDuplicateCanonicalRefillUsesCooldown,
     presentationExpiry: testPresentationExpiryRemovesContact,
   };
