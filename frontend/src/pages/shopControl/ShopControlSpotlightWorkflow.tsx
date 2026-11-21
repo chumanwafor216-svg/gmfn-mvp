@@ -321,6 +321,8 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
   }, [spotlightImageFile, spotlightVideoFile]);
 
   function chooseShopReelPicture() {
+    setSpotlightFinishedVideoUrl("");
+    clearPreparedShopReel();
     setPreferredShopReelSource("image");
     setSpotlightMediaChoice(spotlightVideoFile ? "both" : "image");
     const input = document.getElementById("shop-control-reel-image-file") as HTMLInputElement | null;
@@ -331,6 +333,8 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
   }
 
   function chooseShopReelVideo() {
+    setSpotlightFinishedVideoUrl("");
+    clearPreparedShopReel();
     setPreferredShopReelSource("video");
     setSpotlightMediaChoice(spotlightImageFile ? "both" : "video");
     const input = document.getElementById("shop-control-reel-video-file") as HTMLInputElement | null;
@@ -347,6 +351,15 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     }
     setSpotlightNaturalFinishEnabled(true);
     await prepareSpotlightNaturalFinish();
+  }
+
+  function editShopReelOrSound() {
+    setSpotlightFinishedVideoUrl("");
+    clearPreparedShopReel();
+    showNotice(
+      "info",
+      "Your source is still here. Add or change the sound, confirm permission, then create the Reel again."
+    );
   }
 
   async function downloadShopReel() {
@@ -1360,6 +1373,14 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 >
                   Download reel
                 </SecondaryButton>
+                <SecondaryButton
+                  type="button"
+                  onClick={editShopReelOrSound}
+                  fullWidth
+                  debugId="shop-control.reel.edit-sound"
+                >
+                  Edit Reel or sound
+                </SecondaryButton>
               </div>
               <div style={{ marginTop: 9, color: "#D7E3F1", fontSize: 12, fontWeight: 750, lineHeight: 1.45 }}>
                 Ready: owner content + approved shop entrance + link to this shop.
@@ -1449,6 +1470,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                     value={shopReelPictureSound}
                     onChange={(sound) => {
                       setShopReelPictureSound(sound);
+                      setSpotlightFinishedVideoUrl("");
                       clearPreparedShopReel();
                     }}
                     disabled={preparingShopReelFromImage}

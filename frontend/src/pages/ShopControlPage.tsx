@@ -6891,6 +6891,17 @@ export default function ShopControlPage() {
         },
         spotlightVideoSound
       );
+      if (
+        spotlightVideoSound &&
+        (
+          uploadRes?.sound?.added !== true ||
+          uploadRes?.sound?.output_has_audio !== true
+        )
+      ) {
+        throw new Error(
+          "GSN prepared the Reel but could not confirm the selected sound. The silent result was not kept; please create it again."
+        );
+      }
       const url = firstTruthy(
         uploadRes?.video_url,
         uploadRes?.url,
@@ -6904,7 +6915,9 @@ export default function ShopControlPage() {
       rememberPreparedShopReel(url);
       setSpotlightMediaFeedback({
         tone: 'success',
-        text: "Your improved video is ready to check.",
+        text: spotlightVideoSound
+          ? "Your improved video is ready with the selected sound."
+          : "Your improved video is ready to check.",
       });
       return url;
     } catch (err: any) {
@@ -6942,6 +6955,17 @@ export default function ShopControlPage() {
         },
         shopReelPictureSound
       );
+      if (
+        shopReelPictureSound &&
+        (
+          uploadRes?.sound?.added !== true ||
+          uploadRes?.sound?.output_has_audio !== true
+        )
+      ) {
+        throw new Error(
+          "GSN prepared the Reel but could not confirm the selected sound. The silent result was not kept; please create it again."
+        );
+      }
       const url = firstTruthy(
         uploadRes?.video_url,
         uploadRes?.url,
@@ -6950,12 +6974,20 @@ export default function ShopControlPage() {
         uploadRes?.data?.video_url
       );
       if (!url) throw new Error('GSN created the Reel but did not return a preview link.');
+      setSpotlightFinishedVideoUrl(url);
       rememberPreparedShopReel(url);
       setSpotlightMediaFeedback({
         tone: 'success',
-        text: 'Your picture Reel is ready to review and share.',
+        text: shopReelPictureSound
+          ? 'Your picture Reel is ready with the selected sound.'
+          : 'Your picture Reel is ready to review and share.',
       });
-      showNotice('success', 'Your picture Reel is ready to review and share.');
+      showNotice(
+        'success',
+        shopReelPictureSound
+          ? 'Your picture Reel is ready with the selected sound.'
+          : 'Your picture Reel is ready to review and share.'
+      );
       return url;
     } catch (err: any) {
       showNotice(

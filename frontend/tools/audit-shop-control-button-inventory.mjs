@@ -36,11 +36,11 @@ const findings = [];
 
 const expectedSourceActions = {
   PrimaryButton: 14,
-  SecondaryButton: 24,
+  SecondaryButton: 25,
   SubtleButton: 3,
   StableButton: 7,
   StableCtaLink: 13,
-  total: 61,
+  total: 62,
 };
 const expectedNativeFieldCount = 33;
 const expectedFileInputActionRoots = 4;

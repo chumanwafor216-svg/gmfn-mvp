@@ -7298,3 +7298,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Added route-scoped responsive CSS with compact cards, stable mobile fields, navy/gold/cyan styling and 390px handling. No shared design system or frozen Dashboard Market Wisdom styling changed.
 - Updated the focused publisher audit to lock the new hierarchy and responsive stylesheet. Verification passed: focused campaign audit, TypeScript no-emit check, production frontend build, protected-button freeze audit and diff check.
 - Honest limitation: the authenticated admin route was not exercised as a phone screenshot in this pass; source, type, contract and production-build verification all passed.
+
+# 2026-11-21 - Shop Reel sound recovery
+
+- Investigated the Shop Reel audio path end to end. The backend audio renderer and rights checks were intact; the focused media-quality tests passed with 9 tests and no product-code failure.
+- Corrected the frontend defect that trapped a prepared reel in its ready state and hid the source/sound controls. A ready reel now has an explicit `Edit Reel or sound` action, and choosing a new picture or video clears the stale prepared result before rebuilding.
+- Corrected prepared-picture precedence so a newly created picture reel replaces any older cached video reel rather than allowing the previous reel URL to remain authoritative.
+- Added a strict completion check: when sound is requested, the frontend accepts the prepared reel only when the server confirms both that sound was added and that the output contains an audio stream. A silent output is rejected with a clear retry message instead of being reported as successful.
+- Updated the focused media-quality and Shop Control action-inventory audits. Verification passed: media-quality audit, button inventory, TypeScript check, production frontend build and diff check.
+- No backend route, schema, permission, payment, Spotlight scheduling or public-discovery behavior changed. Browser previews may still begin muted because of autoplay policy; the audio remains embedded and can be enabled with the existing sound control.
