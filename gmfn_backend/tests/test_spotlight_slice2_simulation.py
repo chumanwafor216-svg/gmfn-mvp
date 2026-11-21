@@ -164,7 +164,8 @@ def test_reference_board_reconciles_fulfilment_shortfall_and_recovery() -> None:
     assert recovery["recovered"] is True
     assert board["frequency_continuity_proof"]["accepted_count"] == 5
     assert board["frequency_continuity_proof"]["suppressed_count"] == 1
-    assert board["settings"]["canonical_live_delivery_connected"] is False
+    assert board["settings"]["canonical_live_delivery_connected"] is True
+    assert board["settings"]["live_customer_promise"] is False
     assert board["settings"]["inactive_windows"][0]["code"] == "overnight"
     assert board["settings"]["inactive_windows"][0]["allocated_opportunities"] == 0
     assert board["programme_board"]["available_views"] == [

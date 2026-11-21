@@ -11,7 +11,7 @@ from app.db.database import engine
 
 
 PREVIOUS_REVISION = "20261030_market_dir_scale"
-HEAD_REVISION = "20261118_corrected_community_entry"
+HEAD_REVISION = "20261121_spotlight_slice3a_integrity"
 
 
 EXPECTED_TABLES = {
