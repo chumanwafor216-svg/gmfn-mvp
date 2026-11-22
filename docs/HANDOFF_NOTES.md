@@ -7386,3 +7386,13 @@ under `docs/` or `docs/archive/`, then link that file here.
 - This is an inventory safety ceiling, not evidence that 300 simultaneous campaigns can meet any paid delivery promise. Existing delivery, pacing, community-policy, expiry and emergency-stop authorities remain unchanged.
 - Focused verification: `19 passed` in `gmfn_backend/tests/test_gsn_house_spotlight.py`; `audit:admin-gsn-house-campaign` passed; the production frontend build passed.
 - The broad `audit:protected-button-freeze` completed all listed checks except the unrelated `dashboard passive passport hitboxes` browser fixture, which timed out during `page.goto(.../app/dashboard)` after its Vite/HMR test server reported an invalid port-0 WebSocket. The GSN publisher contract was not implicated; existing duplicate React-key browser warnings also remain outside this change.
+
+# Command Centre promotion workspace compaction - 2026-11-22
+
+- Reworked `/app/command-center/gsn-campaigns` into three compact operator workspaces: `Audience`, `Campaign`, and `Monitor`. Only one is exposed at a time, so the route no longer opens the audience, campaign form, programme board, live operations, and governance material as one long page.
+- Shortened the hero to a promotion-command identity and retained only the live audience, media, and delivery summary needed to orient the operator.
+- Added truthful audience shortcuts for the complete paginated directory, selecting eligible communities on the current page, and clearing the retained selection. Selections continue across searches and pages.
+- Limited the selected-community disclosure to twelve rendered rows plus a remaining count, preventing a large audience from creating another giant DOM list.
+- Preserved the existing backend publication maximum of 100 communities per batch. `All communities` browses the full server-paginated directory; it does not falsely claim that the present explicit-id contract can atomically publish to 2,000 communities.
+- Did not invent Africa/Europe/Americas targeting from community names. Community Domain country data is optional and the current publication contract has no authoritative regional audience scope; that needs a separate backend contract before a regional shortcut can be truthful and safe.
+- Verification passed: focused Admin GSN campaign audit, TypeScript through the production build, the production Vite build, and the complete protected-button freeze audit. The broad audit still emitted the known unrelated duplicate React-key browser warnings while passing every protected contract.

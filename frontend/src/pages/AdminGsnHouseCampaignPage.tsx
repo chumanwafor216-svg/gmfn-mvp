@@ -398,6 +398,7 @@ function replaceCampaignReport(
 }
 
 export default function AdminGsnHouseCampaignPage() {
+  const [workspacePanel, setWorkspacePanel] = useState<"audience" | "campaign" | "operations">("audience");
   const [query, setQuery] = useState("");
   const [catalogue, setCatalogue] = useState<GsnHouseCampaignDestination[]>([]);
   const [catalogueMeta, setCatalogueMeta] = useState({
@@ -587,13 +588,25 @@ export default function AdminGsnHouseCampaignPage() {
     selectedRows.length,
   ]);
   const publisherSteps = [
-    { label: "Audience", ready: selectedRows.length > 0 },
-    { label: "Message", ready: message.trim().length >= 2 && mediaQueue.length > 0 },
-    { label: "Schedule", ready: !campaignExpiryProblem(expiryInput) },
+    {
+      label: "Audience",
+      panel: "audience" as const,
+      ready: selectedRows.length > 0,
+      value: selectedRows.length ? `${selectedRows.length} selected` : "Choose",
+    },
+    {
+      label: "Campaign",
+      panel: "campaign" as const,
+      ready: message.trim().length >= 2 && mediaQueue.length > 0,
+      value: mediaQueue.length ? `${mediaQueue.length} media` : "Build",
+    },
+    {
+      label: "Monitor",
+      panel: "operations" as const,
+      ready: Boolean(operations?.active_count),
+      value: operations?.active_count ? `${operations.active_count} live` : "Open",
+    },
   ];
-  const currentPublisherStep = review || publication
-    ? 3
-    : publisherSteps.findIndex((step) => !step.ready) + 1 || 3;
 
   useEffect(() => {
     reviewRef.current = review;
@@ -919,6 +932,39 @@ export default function AdminGsnHouseCampaignPage() {
       }
       return { ...current, [row.clan_id]: row };
     });
+  }
+
+  function selectVisibleEligibleDestinations() {
+    if (draftBusy || publishedCount > 0) return;
+    if (!invalidateReview()) return;
+    setSelected((current) => {
+      const next = { ...current };
+      const available = Math.max(0, 100 - Object.keys(next).length);
+      const additions = catalogue
+        .filter((row) => row.eligible && !next[row.clan_id])
+        .slice(0, available);
+      for (const row of additions) next[row.clan_id] = row;
+      const eligibleOnPage = catalogue.filter((row) => row.eligible && !current[row.clan_id]).length;
+      setFeedback({
+        tone: additions.length < eligibleOnPage ? "info" : "success",
+        text: additions.length < eligibleOnPage
+          ? `Selected ${additions.length} more communities. The current publication contract allows 100 communities per batch.`
+          : `Selected ${additions.length} eligible ${additions.length === 1 ? "community" : "communities"} from this page.`,
+      });
+      return next;
+    });
+  }
+
+  function clearSelectedDestinations() {
+    if (draftBusy || publishedCount > 0 || selectedRows.length === 0) return;
+    if (!invalidateReview()) return;
+    setSelected({});
+    setFeedback({ tone: "info", text: "The audience selection was cleared." });
+  }
+
+  function browseAllCommunities() {
+    setQuery("");
+    void loadDestinations("", 0);
   }
 
   function removePreparedMedia(key: string) {
@@ -1743,21 +1789,21 @@ export default function AdminGsnHouseCampaignPage() {
             </div>
             <div style={{ flex: "1 1 280px", minWidth: 0 }}>
               <div style={{ color: "#F4D77E", fontSize: 12, fontWeight: 900, textTransform: "uppercase" }}>
-                Official Publisher
+                GSN promotion engine
               </div>
               <h1 style={{ margin: "7px 0 0", fontSize: "clamp(26px, 5vw, 40px)", lineHeight: 1.08 }}>
-                Publish one clear GSN message
+                Promotion Command
               </h1>
               <p style={{ margin: "10px 0 0", color: "#D7E3EF", lineHeight: 1.65, maxWidth: 760 }}>
-                Choose the audience, prepare the message, then review before anything goes live.
+                Choose audience. Build campaign. Monitor delivery.
               </p>
             </div>
           </div>
           <div className="gsn-house-publisher__identity">
             <div className="gsn-house-publisher__identity-seal" aria-hidden="true">GSN</div>
             <div>
-              <strong>GSN-HOUSE · Official message</strong>
-              <span>Sent by GSN. Your admin identity remains in the audit record.</span>
+              <strong>GSN-HOUSE · Official publisher</strong>
+              <span>Admin-recorded promotion</span>
             </div>
           </div>
           <div className="gsn-house-publisher__draft" aria-label="Current campaign draft">
@@ -1776,25 +1822,45 @@ export default function AdminGsnHouseCampaignPage() {
           </div>
         </section>
 
-        <nav className="gsn-house-publisher__steps" aria-label="Campaign preparation progress">
+        <nav className="gsn-house-publisher__steps" aria-label="Promotion command workspaces">
           {publisherSteps.map((step, index) => {
             const stepNumber = index + 1;
-            const active = currentPublisherStep === stepNumber;
+            const active = workspacePanel === step.panel;
             return (
-              <div
+              <StableButton
                 key={step.label}
                 className={`gsn-house-publisher__step${active ? " is-active" : ""}${step.ready ? " is-ready" : ""}`}
                 data-complete={step.ready ? "true" : "false"}
-                aria-current={active ? "step" : undefined}
+                aria-pressed={active}
+                onClick={() => setWorkspacePanel(step.panel)}
+                debugId={`admin-gsn-campaign.workspace.${step.panel}`}
+                stableHeight={56}
+                style={{
+                  width: "100%",
+                  minWidth: 0,
+                  display: "grid",
+                  gridTemplateColumns: "28px minmax(0, 1fr)",
+                  gap: 8,
+                  justifyContent: "flex-start",
+                  padding: "6px 8px",
+                  border: active ? "1px solid rgba(12,174,157,0.32)" : "1px solid transparent",
+                  borderRadius: 14,
+                  color: active ? "#0B1F33" : "#60758A",
+                  background: active ? "linear-gradient(180deg, #E8FBF7, #F4FCFA)" : "transparent",
+                  boxShadow: "none",
+                }}
               >
                 <span className="gsn-house-publisher__step-number">{step.ready ? "✓" : stepNumber}</span>
-                <strong>{step.label}</strong>
-              </div>
+                <span className="gsn-house-publisher__step-copy">
+                  <strong>{step.label}</strong>
+                  <small>{step.value}</small>
+                </span>
+              </StableButton>
             );
           })}
         </nav>
 
-        <section className="gsn-house-publisher__advanced" style={{ ...card("#F8FBFF"), order: 8 }} aria-label="Command Centre campaign schedule simulation">
+        <section className="gsn-house-publisher__advanced" style={{ ...card("#F8FBFF"), order: 8, display: workspacePanel === "operations" ? undefined : "none" }} aria-label="Command Centre campaign schedule simulation">
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 300px" }}>
               <div style={sectionLabel()}>Campaign schedule · protocol 1.3 · paid_spotlight.day.v1</div>
@@ -2250,7 +2316,7 @@ export default function AdminGsnHouseCampaignPage() {
           ) : null}
         </section>
 
-        <section className="gsn-house-publisher__operations" style={{ ...card(), order: 7 }} aria-label="GSN campaign operations">
+        <section className="gsn-house-publisher__operations" style={{ ...card(), order: 1, display: workspacePanel === "operations" ? undefined : "none" }} aria-label="GSN campaign operations">
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 280px" }}>
               <div style={sectionLabel()}>Campaign operations</div>
@@ -2521,7 +2587,7 @@ export default function AdminGsnHouseCampaignPage() {
         </section>
 
         {review ? (
-          <section className="gsn-house-publisher__review" style={{ ...card("#FFFDF6"), order: 3 }} aria-label="Read-only campaign review">
+          <section className="gsn-house-publisher__review" style={{ ...card("#FFFDF6"), order: 3, display: workspacePanel === "campaign" ? undefined : "none" }} aria-label="Read-only campaign review">
             <div style={sectionLabel()}>3. Read-only review</div>
             <h2 style={{ margin: "8px 0 0", color: "#0B1F33", fontSize: 22 }}>
               Nothing is published yet
@@ -2659,7 +2725,7 @@ export default function AdminGsnHouseCampaignPage() {
         ) : null}
 
         {publication ? (
-          <section className="gsn-house-publisher__result" style={{ ...card("#ECFDF3"), order: 4 }}>
+          <section className="gsn-house-publisher__result" style={{ ...card("#ECFDF3"), order: 4, display: workspacePanel === "campaign" ? undefined : "none" }}>
             <div style={sectionLabel()}>Publication result</div>
             <h2 style={{ margin: "8px 0 0", color: "#14532D", fontSize: 24 }}>
               {publication.complete
@@ -2714,7 +2780,7 @@ export default function AdminGsnHouseCampaignPage() {
           </section>
         ) : null}
 
-        <details className="gsn-house-publisher__governance" style={{ ...card(), order: 9 }}>
+        <details className="gsn-house-publisher__governance" style={{ ...card(), order: 9, display: workspacePanel === "operations" ? undefined : "none" }}>
           <StableDisclosureSummary
             debugId="admin-gsn-campaign.governance.summary"
             stableHeight={44}
@@ -2735,14 +2801,41 @@ export default function AdminGsnHouseCampaignPage() {
         </details>
         {feedback ? <div role="status" style={{ ...statusPanel(feedback.tone), order: 2 }}>{feedback.text}</div> : null}
 
-        <section className="gsn-house-publisher__audience" style={{ ...card(), order: 1 }}>
+        <section className="gsn-house-publisher__audience" style={{ ...card(), order: 1, display: workspacePanel === "audience" ? undefined : "none" }}>
           <div style={sectionLabel()}>1. Audience</div>
           <h2 style={{ margin: "8px 0 0", color: "#0B1F33", fontSize: 22 }}>
             Choose communities
           </h2>
           <p style={{ margin: "8px 0 0", ...helper() }}>
-            Select where this official message may appear. Blocked communities remain visible with the reason.
+            Search or page through the directory. Selections remain saved while you browse.
           </p>
+
+          <div className="gsn-house-publisher__audience-actions" aria-label="Audience shortcuts">
+            <StableButton
+              type="button"
+              onClick={browseAllCommunities}
+              disabled={loadingCatalogue}
+              debugId="admin-gsn-campaign.communities-all"
+            >
+              All communities
+            </StableButton>
+            <StableButton
+              type="button"
+              onClick={selectVisibleEligibleDestinations}
+              disabled={loadingCatalogue || draftBusy || publishedCount > 0 || catalogue.every((row) => !row.eligible || Boolean(selected[row.clan_id]))}
+              debugId="admin-gsn-campaign.communities-select-page"
+            >
+              Select this page
+            </StableButton>
+            <StableButton
+              type="button"
+              onClick={clearSelectedDestinations}
+              disabled={!selectedRows.length || draftBusy || publishedCount > 0}
+              debugId="admin-gsn-campaign.communities-clear"
+            >
+              Clear
+            </StableButton>
+          </div>
 
           <form
             onSubmit={(event) => {
@@ -2854,7 +2947,7 @@ export default function AdminGsnHouseCampaignPage() {
                 {selectedRows.length} selected {selectedRows.length === 1 ? "community" : "communities"}
               </StableDisclosureSummary>
               <div className="gsn-house-publisher__selected-list">
-                {selectedRows.map((row) => (
+                {selectedRows.slice(0, 12).map((row) => (
                   <div key={row.clan_id} className="gsn-house-publisher__selected-row">
                     <span>{destinationTitle(row)}{row.community_code ? ` · ${row.community_code}` : ""}</span>
                     <StableButton
@@ -2869,12 +2962,43 @@ export default function AdminGsnHouseCampaignPage() {
                     </StableButton>
                   </div>
                 ))}
+                {selectedRows.length > 12 ? (
+                  <div className="gsn-house-publisher__selected-overflow">
+                    +{selectedRows.length - 12} more retained in this audience
+                  </div>
+                ) : null}
               </div>
             </details>
           ) : null}
+
+          <StableButton
+            type="button"
+            fullWidth
+            kind="primary"
+            onClick={() => {
+              if (selectedRows.length === 0) {
+                setFeedback({ tone: "info", text: "Choose at least one eligible community before building the campaign." });
+                return;
+              }
+              setWorkspacePanel("campaign");
+            }}
+            aria-disabled={!selectedRows.length}
+            debugId="admin-gsn-campaign.audience-continue"
+            style={{ marginTop: 14 }}
+          >
+            Continue to campaign
+          </StableButton>
         </section>
 
-        <section className="gsn-house-publisher__compose" style={{ ...card(), order: 2 }}>
+        <section className="gsn-house-publisher__compose" style={{ ...card(), order: 2, display: workspacePanel === "campaign" ? undefined : "none" }}>
+          <StableButton
+            type="button"
+            onClick={() => setWorkspacePanel("audience")}
+            debugId="admin-gsn-campaign.campaign-back-audience"
+            style={{ marginBottom: 12 }}
+          >
+            ← Change audience
+          </StableButton>
           <div style={sectionLabel()}>2. Message and schedule</div>
           <h2 style={{ margin: "8px 0 0", color: "#0B1F33", fontSize: 22 }}>
             Prepare the announcement

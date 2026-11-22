@@ -241,11 +241,18 @@ for (const text of [
 }
 for (const text of [
   'import "./AdminGsnHouseCampaignPage.css"',
-  'aria-label="Campaign preparation progress"',
+  'aria-label="Promotion command workspaces"',
   'className="gsn-house-publisher__audience"',
   'className="gsn-house-publisher__compose"',
   'className="gsn-house-publisher__community-list"',
   'aria-label="Community result pages"',
+  'aria-label="Audience shortcuts"',
+  'debugId="admin-gsn-campaign.communities-all"',
+  'debugId="admin-gsn-campaign.communities-select-page"',
+  'selectedRows.slice(0, 12)',
+  'display: workspacePanel === "audience" ? undefined : "none"',
+  'display: workspacePanel === "campaign" ? undefined : "none"',
+  'display: workspacePanel === "operations" ? undefined : "none"',
   'DESTINATION_PAGE_SIZE = 20',
   'OPERATIONS_PAGE_SIZE = 20',
   'response.next_offset',
@@ -261,6 +268,8 @@ for (const text of [
   ".gsn-house-publisher__compose",
   ".gsn-house-publisher__community-option",
   ".gsn-house-publisher__community-pagination",
+  ".gsn-house-publisher__audience-actions",
+  ".gsn-house-publisher__selected-overflow",
   'input:not([type="checkbox"])',
   "@media (max-width: 720px)",
 ]) {
