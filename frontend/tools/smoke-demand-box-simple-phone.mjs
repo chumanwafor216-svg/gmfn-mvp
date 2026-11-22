@@ -101,7 +101,57 @@ async function installApiMocks(page, apiCalls) {
       return route.fulfill(json({ clan_id: 8, version: 1, outbound_enabled: false, inbound_enabled: false }));
     }
     if (/^\/marketplace\/requests\/\d+\/supply-matches$/.test(path)) {
-      return route.fulfill(json({ count: 0, matches: [] }));
+      const requestId = Number(path.split("/")[3] || 0);
+      if (requestId !== 73) return route.fulfill(json({ count: 0, matches: [] }));
+      return route.fulfill(json({
+        count: 4,
+        matches: [
+          {
+            demand_id: 73,
+            demand_category: "Transport",
+            clan_id: 8,
+            shop_id: 81,
+            product_id: 810,
+            product_title: "Weekday school driver",
+            shop_name: "Awka Family Transport",
+            public_shop_path: "/shop/GSN-U-810?product_id=810&clan_id=8",
+            reason_codes: ["SAME_COMMUNITY", "LISTED_OFFERING", "AVAILABILITY_UNCONFIRMED", "AREA_COMPATIBLE", "PRODUCT_TITLE_MATCH", "RELEVANCE_RELIABLE"],
+          },
+          {
+            demand_id: 73,
+            demand_category: "Transport",
+            clan_id: 8,
+            shop_id: 82,
+            product_id: 820,
+            product_title: "School-run transport",
+            shop_name: "Morning Route Services",
+            public_shop_path: "/shop/GSN-U-820?product_id=820&clan_id=8",
+            reason_codes: ["SAME_COMMUNITY", "LISTED_OFFERING", "AVAILABILITY_UNCONFIRMED", "PRODUCT_DESCRIPTION_MATCH", "RELEVANCE_RELIABLE"],
+          },
+          {
+            demand_id: 73,
+            demand_category: "Transport",
+            clan_id: 9,
+            shop_id: 83,
+            product_id: 830,
+            product_title: "Morning minibus listing",
+            shop_name: "Neighbouring Community Travel",
+            public_shop_path: "/shop/GSN-U-830?product_id=830&clan_id=9",
+            reason_codes: ["RELAY_BOUNDARY_CROSSED", "LISTED_OFFERING", "AVAILABILITY_UNCONFIRMED", "PRODUCT_DESCRIPTION_MATCH", "RELEVANCE_RELIABLE"],
+          },
+          {
+            demand_id: 73,
+            demand_category: "Transport",
+            clan_id: 8,
+            shop_id: 84,
+            product_id: 840,
+            product_title: "General services",
+            shop_name: "Transport Connections",
+            public_shop_path: "/shop/GSN-U-840?product_id=840&clan_id=8",
+            reason_codes: ["SAME_COMMUNITY", "LISTED_OFFERING", "AVAILABILITY_UNCONFIRMED", "SHOP_CONTEXT_MATCH", "RELEVANCE_WEAK"],
+          },
+        ],
+      }));
     }
     if (/^\/demand-box\/requests\/\d+\/responses$/.test(path) && method === "GET") {
       const requestId = Number(path.split("/")[3] || 0);
@@ -281,6 +331,23 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible(), "The complete request message did not open with the request.");
   assert(await transportCard.locator('[data-gsn-demand-respond-in-place="true"]').isVisible(), "The response surface did not open with the request.");
   assert(await transportCard.locator('[data-gsn-demand-private-replies="true"]').isVisible(), "Private replies still require another navigation step.");
+  const matchPanel = transportCard.locator('[data-gsn-demand-supply-intelligence="true"]');
+  await matchPanel.waitFor();
+  assert((await matchPanel.locator('[data-gsn-demand-reliable-match="true"]').count()) === 3, "DemandBox did not surface exactly three reliable initial suggestions.");
+  assert(await matchPanel.getByText("Relevant listings to check. Availability and suitability are not confirmed.", { exact: true }).isVisible(), "The truthful match boundary is missing.");
+  assert(await matchPanel.getByText("Availability not confirmed", { exact: true }).first().isVisible(), "The availability evidence label is missing.");
+  assert(await matchPanel.getByText("Via permitted wider search", { exact: true }).isVisible(), "The governed wider-search label is missing.");
+  assert((await matchPanel.getByRole("link", { name: /View listing/ }).count()) === 3, "The compact listing destinations are incomplete.");
+  assert((await matchPanel.getByRole("button", { name: /matches/i }).count()) === 0, "A redundant match-expansion step returned.");
+  const matchGeometry = await matchPanel.evaluate((node) => ({
+    noOverflow: node.scrollWidth <= node.clientWidth + 1,
+    width: Math.round(node.getBoundingClientRect().width),
+  }));
+  assert(matchGeometry.noOverflow && matchGeometry.width <= viewport.width - 24, "The compact match panel overflows the phone viewport.");
+  const matchScreenshotPath = process.env.GSN_DEMAND_BOX_MATCH_SCREENSHOT_PATH?.trim();
+  if (matchScreenshotPath && viewport.width === 390) {
+    await matchPanel.screenshot({ path: matchScreenshotPath });
+  }
   assert(!(await page.getByText("Source: DemandBox", { exact: true }).isVisible()), "Technical request details opened before the user asked.");
   await transportCard
     .locator('[data-cta-id$=".request-details"]')
@@ -610,6 +677,7 @@ async function run() {
     browser = await chromium.launch({ headless: true });
     await verifyViewport(browser, "http://127.0.0.1:" + port, { width: 390, height: 844 });
     await verifyViewport(browser, "http://127.0.0.1:" + port, { width: 360, height: 780 });
+    await verifyViewport(browser, "http://127.0.0.1:" + port, { width: 430, height: 932 });
   } finally {
     await browser?.close();
     await server?.close();

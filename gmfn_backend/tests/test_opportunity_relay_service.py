@@ -13,6 +13,7 @@ from app.services import demand_supply_intelligence_service as intelligence
 from app.services import opportunity_relay_service as relay_service
 from app.services.demand_supply_intelligence_service import (
     REASON_RELAY_BOUNDARY_CROSSED,
+    REASON_RELEVANCE_RELIABLE,
     REASON_SAME_COMMUNITY,
     find_demands_for_supply,
     find_supply_for_demand,
@@ -471,6 +472,44 @@ def test_o1_cannot_return_b_supply_before_crossing_but_can_after_accept(monkeypa
     assert REASON_RELAY_BOUNDARY_CROSSED in after[0]["reason_codes"]
     assert REASON_SAME_COMMUNITY not in after[0]["reason_codes"]
     assert [match["demand_id"] for match in reciprocal] == [1000]
+
+
+def test_selected_community_is_preferred_without_hiding_a_stronger_permitted_match(monkeypatch):
+    _seed_relay_base()
+    monkeypatch.setenv("GSN_OPPORTUNITY_RELAY_MAX_ACTIVE_OFFERS", "2")
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active, created_at
+                ) VALUES
+                    (10, 1, 1, 'A Painting Shop', 'Painting in Ajah', 1, CURRENT_TIMESTAMP)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_products (
+                    id, clan_id, shop_id, seller_user_id, title, description,
+                    price, currency, image_url, video_url, visibility_mode, is_active, created_at
+                ) VALUES
+                    (1001, 1, 10, 1, 'Painter service', 'Painting rooms in Ajah', NULL, 'NGN', NULL, NULL, 'community_visible', 1, CURRENT_TIMESTAMP)
+                """
+            )
+        )
+
+    with SessionLocal() as db:
+        create_relay_run_for_demand(db, request_id=1000, current_user_id=1)
+        accept_relay_offer(db, offer_id=_offer_rows()[0][0], current_user_id=2)
+        matches = find_supply_for_demand(db, demand_id=1000, current_user_id=1)
+
+    assert [match["product_id"] for match in matches] == [1001, 2000]
+    assert REASON_SAME_COMMUNITY in matches[0]["reason_codes"]
+    assert REASON_RELEVANCE_RELIABLE in matches[0]["reason_codes"]
+    assert REASON_RELAY_BOUNDARY_CROSSED in matches[1]["reason_codes"]
+    assert REASON_RELEVANCE_RELIABLE in matches[1]["reason_codes"]
 
 
 def test_accept_is_idempotent_atomic_and_cancels_competing_offers(monkeypatch):

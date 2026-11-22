@@ -1271,16 +1271,16 @@ Rules:
 Purpose:
 Let one member publish and manage a personal need inside a selected community,
 then deliberately ask GSN to check another authorised community when current
-same-community supply has no plausible match.
+same-community supply has no reliable match.
 
 Must show:
 - the selected community context;
 - one clear `Post a need` action and one secondary `Ask community` action;
 - governed queue lanes and the member's own open requests;
-- current same-community supply matches when available;
+- up to three reliable current supply listings when available;
 - on the requester's own open community-visible request, one compact
   `Expand search` card only after the supply check succeeds with zero current
-  matches;
+  reliable matches;
 - a clear fulfilled/cancel path;
 - relay policy controls only for authorised community owners/admins.
 
@@ -1295,6 +1295,23 @@ Rules:
   never a requester, provider, match, availability, recommendation, or
   evidence claim. Do not add animation, flashing, a new navigation system, or
   a global companion card inside this focused route.
+- Founder-approved 2026-11-22 Phase 0-1 matching correction: an opened request
+  shows up to three reliable listings immediately, without a second `View
+  matches` disclosure or another form. The complete request message, protected
+  voice and reply surface remain dominant. Results use the existing
+  `find_supply_for_demand()` authority and existing Shop/product destinations.
+  Relevance considers product title and description evidence, selected-community
+  relationship, area compatibility and recency; the selected community receives
+  a preference but does not hide a more relevant result from an already
+  authorised wider-community relay. Shop-name context alone is insufficient to
+  surface a result. Fewer than three results must be shown when evidence is
+  insufficient.
+- Match copy must say `Relevant listings to check` and must label each item as a
+  listed offering whose availability and suitability are not confirmed.
+  Community relationship is context only; it is not professional verification,
+  endorsement or guaranteed trust. An active listing must not be described as
+  confirmed stock, a capability statement as a verified qualification, or a
+  community member as a guaranteed provider.
 - The queue exposes only `All`, `For you`, and `Yours` first. `Tagged`,
   `Questions`, `Urgent`, and `Need types` remain reachable behind one
   `More filters` disclosure. All direct `?queue=` routes remain supported.
@@ -1411,7 +1428,9 @@ Rules:
   that GSN is being authorised to check another permitted community for this
   request. Consent must remain withdrawable.
 - Do not show the no-match card when the supply check failed or is still
-  loading. Failure is not evidence that no supply exists.
+  loading. Failure is not evidence that no supply exists. A successful response
+  containing only low-evidence candidates counts as zero reliable matches for
+  this member surface.
 - Do not offer expanded search for private Ask Person requests.
 - Do not describe one-hop relay as public, network-wide, radius-based, nearby,
   guaranteed, recommended, approved, or paid search.

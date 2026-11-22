@@ -20,10 +20,16 @@ class Obj:
 
 from app.services.demand_supply_intelligence_service import (
     REASON_ACTIVE_SUPPLY,
+    REASON_AVAILABILITY_UNCONFIRMED,
     REASON_AREA_COMPATIBLE,
     REASON_CATEGORY_MATCH,
     REASON_LIVE_DEMAND,
+    REASON_LISTED_OFFERING,
+    REASON_PRODUCT_DESCRIPTION_MATCH,
+    REASON_PRODUCT_TITLE_MATCH,
+    REASON_RELEVANCE_RELIABLE,
     REASON_SAME_COMMUNITY,
+    REASON_SHOP_CONTEXT_MATCH,
     demand_supply_coverage_summary,
     find_demands_for_supply,
     find_supply_for_demand,
@@ -159,7 +165,13 @@ def test_same_community_demand_finds_active_category_supply_with_reason_codes():
         REASON_LIVE_DEMAND,
         REASON_ACTIVE_SUPPLY,
         REASON_CATEGORY_MATCH,
+        REASON_LISTED_OFFERING,
+        REASON_AVAILABILITY_UNCONFIRMED,
         REASON_AREA_COMPATIBLE,
+        REASON_PRODUCT_TITLE_MATCH,
+        REASON_PRODUCT_DESCRIPTION_MATCH,
+        REASON_SHOP_CONTEXT_MATCH,
+        REASON_RELEVANCE_RELIABLE,
     ]
     assert "seller_user_id" not in matches[0]
     assert "requester_user_id" not in matches[0]
@@ -269,7 +281,9 @@ def _seed_product(
     description: str,
     shop_id: int = 10,
     seller_user_id: int = 2,
+    created_at: datetime | None = None,
 ) -> None:
+    created_at = created_at or datetime.now(timezone.utc)
     with engine.begin() as conn:
         conn.execute(
             text(
@@ -280,7 +294,7 @@ def _seed_product(
                 )
                 VALUES (
                     :id, 1, :shop_id, :seller_user_id, :title, :description,
-                    '10000', 'NGN', NULL, NULL, 'community_visible', 1, CURRENT_TIMESTAMP
+                    '10000', 'NGN', NULL, NULL, 'community_visible', 1, :created_at
                 )
                 """
             ),
@@ -290,6 +304,7 @@ def _seed_product(
                 "seller_user_id": seller_user_id,
                 "title": title,
                 "description": description,
+                "created_at": created_at,
             },
         )
 
@@ -403,6 +418,133 @@ def test_stop_words_alone_cannot_create_a_demand_supply_match():
         matches = find_supply_for_demand(db, demand_id=34, current_user_id=1)
 
     assert matches == []
+
+
+def test_realistic_plumber_request_orders_title_then_description_then_shop_only():
+    _seed_base()
+    _seed_product(
+        product_id=310,
+        title="Emergency Plumber",
+        description="Pipe and tap repairs",
+        created_at=datetime.now(timezone.utc) - timedelta(days=45),
+    )
+    _seed_product(
+        product_id=311,
+        title="Home maintenance call-out",
+        description="Plumber for leaking pipes",
+    )
+    _seed_product(
+        product_id=312,
+        title="General household help",
+        description="Call to discuss the work",
+    )
+    _seed_product(
+        product_id=313,
+        title="Mobile mechanic",
+        description="Vehicle repair and servicing",
+        shop_id=11,
+        seller_user_id=3,
+    )
+    _seed_request(
+        request_id=35,
+        title="Need a plumber",
+        description="Leaking pipe under the sink",
+        category="Repairs",
+        area=None,
+    )
+
+    with SessionLocal() as db:
+        matches = find_supply_for_demand(db, demand_id=35, current_user_id=1)
+
+    assert [match["product_id"] for match in matches] == [310, 100, 311]
+    assert REASON_RELEVANCE_RELIABLE in matches[0]["reason_codes"]
+    assert REASON_PRODUCT_TITLE_MATCH in matches[0]["reason_codes"]
+    assert REASON_RELEVANCE_RELIABLE in matches[2]["reason_codes"]
+    assert REASON_PRODUCT_DESCRIPTION_MATCH in matches[2]["reason_codes"]
+    assert 312 not in [match["product_id"] for match in matches]
+    assert 313 not in [match["product_id"] for match in matches]
+
+
+@pytest.mark.parametrize(
+    ("request_title", "product_title"),
+    [
+        ("Need mechanics", "Local mechanic service"),
+        ("Need vegetables", "Fresh vegetable basket"),
+    ],
+)
+def test_safe_plural_variations_match_without_fuzzy_guessing(request_title, product_title):
+    _seed_base()
+    _seed_product(product_id=320, title=product_title, description="Available to order")
+    _seed_request(
+        request_id=36,
+        title=request_title,
+        description="Please contact me",
+        category="Other",
+        area=None,
+    )
+
+    with SessionLocal() as db:
+        matches = find_supply_for_demand(db, demand_id=36, current_user_id=1)
+
+    assert [match["product_id"] for match in matches] == [320]
+    assert REASON_RELEVANCE_RELIABLE in matches[0]["reason_codes"]
+
+
+def test_ogili_request_prefers_ogili_and_does_not_promote_unrelated_food():
+    _seed_base()
+    _seed_product(product_id=330, title="Ogili seasoning", description="Traditional ogili wrap")
+    _seed_product(product_id=331, title="Vegetable basket", description="Ugu and spinach")
+    _seed_request(
+        request_id=37,
+        title="Need ogili",
+        description="One small wrap",
+        category="Food",
+        area=None,
+    )
+
+    with SessionLocal() as db:
+        matches = find_supply_for_demand(db, demand_id=37, current_user_id=1)
+
+    assert [match["product_id"] for match in matches] == [330]
+
+
+def test_ambiguous_ogiri_spelling_is_not_silently_treated_as_ogili():
+    _seed_base()
+    _seed_product(product_id=340, title="Ogili seasoning", description="Traditional ogili wrap")
+    _seed_request(
+        request_id=38,
+        title="Need ogiri",
+        description="One small wrap",
+        category="Food",
+        area=None,
+    )
+
+    with SessionLocal() as db:
+        matches = find_supply_for_demand(db, demand_id=38, current_user_id=1)
+
+    assert matches == []
+
+
+def test_result_limit_is_applied_after_relevance_ordering():
+    _seed_base()
+    _seed_product(product_id=350, title="General household help", description="Plumber details in shop")
+    _seed_product(product_id=351, title="Emergency plumber", description="Pipe leak repair")
+    _seed_product(product_id=352, title="Plumber call-out", description="Sink and tap repair")
+    _seed_request(
+        request_id=39,
+        title="Need plumber",
+        description="Pipe leak",
+        category="Repairs",
+        area=None,
+    )
+
+    with SessionLocal() as db:
+        matches = find_supply_for_demand(db, demand_id=39, current_user_id=1, limit=2)
+
+    assert [match["product_id"] for match in matches] == [351, 100]
+    assert 350 not in [match["product_id"] for match in matches]
+
+
 def test_intelligence_service_does_not_depend_on_paid_or_trust_ranking_engines():
     source = (ROOT / "app/services/demand_supply_intelligence_service.py").read_text()
     lowered = source.lower()
@@ -448,7 +590,13 @@ def test_demand_supply_read_api_returns_authorised_matches_without_private_conta
         REASON_LIVE_DEMAND,
         REASON_ACTIVE_SUPPLY,
         REASON_CATEGORY_MATCH,
+        REASON_LISTED_OFFERING,
+        REASON_AVAILABILITY_UNCONFIRMED,
         REASON_AREA_COMPATIBLE,
+        REASON_PRODUCT_TITLE_MATCH,
+        REASON_PRODUCT_DESCRIPTION_MATCH,
+        REASON_SHOP_CONTEXT_MATCH,
+        REASON_RELEVANCE_RELIABLE,
     ]
     assert "seller_user_id" not in data["matches"][0]
     assert "requester_user_id" not in data["matches"][0]

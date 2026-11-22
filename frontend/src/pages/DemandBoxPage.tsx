@@ -943,15 +943,22 @@ function demandHasReadyWhatsApp(row: DemandRow): boolean {
 function demandMatchReasonLabels(match: DemandSupplyMatchItem): string[] {
   const codes = Array.isArray(match?.reason_codes) ? match.reason_codes : [];
   const labels: string[] = [];
-  const category = firstTruthy(match?.demand_category, "Supply");
 
   if (codes.includes("SAME_COMMUNITY")) labels.push("Same community");
-  if (codes.includes("RELAY_BOUNDARY_CROSSED")) labels.push("Via another community");
-  if (codes.includes("CATEGORY_MATCH")) labels.push(`${category} match`);
-  if (codes.includes("AREA_COMPATIBLE")) labels.push("Area compatible");
-  if (!labels.length && codes.includes("LIVE_DEMAND")) labels.push("Live demand");
+  if (codes.includes("RELAY_BOUNDARY_CROSSED")) labels.push("Via permitted wider search");
+  if (codes.includes("LISTED_OFFERING")) labels.push("Listed offering");
+  if (codes.includes("AVAILABILITY_UNCONFIRMED")) labels.push("Availability not confirmed");
+  if (codes.includes("AREA_COMPATIBLE")) labels.push("Area mentioned");
+  if (!labels.length) labels.push("Related listing");
 
   return labels.slice(0, 3);
+}
+
+function reliableDemandMatches(matchState: DemandMatchState | null): DemandSupplyMatchItem[] {
+  if (!matchState?.matches?.length) return [];
+  return matchState.matches.filter((match) =>
+    Array.isArray(match?.reason_codes) && match.reason_codes.includes("RELEVANCE_RELIABLE")
+  );
 }
 
 function demandMatchStateForRow(
@@ -1135,7 +1142,6 @@ export default function DemandBoxPage() {
   const [tagMembers, setTagMembers] = useState<DemandTagMember[]>([]);
   const [activeQueueLane, setActiveQueueLane] = useState<DemandQueueLane>("open");
   const [demandMatchesById, setDemandMatchesById] = useState<Record<string, DemandMatchState>>({});
-  const [openMatchDemandId, setOpenMatchDemandId] = useState<number>(0);
   const [openDemandRecordKey, setOpenDemandRecordKey] = useState("");
   const [openDemandDetailTab, setOpenDemandDetailTab] = useState("");
   const [showMoreQueueRows, setShowMoreQueueRows] = useState(false);
@@ -2090,28 +2096,18 @@ export default function DemandBoxPage() {
     return `${path}${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   }
 
-  function toggleDemandMatches(row: DemandRow, matchState: DemandMatchState | null) {
-    const rowId = positiveNumber(row?.id);
-    if (!rowId || !matchState?.matches?.length) return;
-    const nextOpen = openMatchDemandId === rowId ? 0 : rowId;
-    setOpenMatchDemandId(nextOpen);
-    if (nextOpen) {
-      trackDemandMatchAttention("matches_opened", matchState.matches[0], rowId);
-    }
-  }
-
   function renderDemandMatchPanel(
     row: DemandRow,
     matchState: DemandMatchState | null,
     debugBase: string
   ): React.ReactNode {
     const rowId = positiveNumber(row?.id);
-    if (!rowId || !matchState?.loaded || matchState.count <= 0 || !matchState.matches.length) {
+    const reliableMatches = reliableDemandMatches(matchState);
+    if (!rowId || !matchState?.loaded || reliableMatches.length <= 0) {
       return null;
     }
 
-    const open = openMatchDemandId === rowId;
-    const shownMatches = matchState.matches.slice(0, 3);
+    const shownMatches = reliableMatches.slice(0, 3);
 
     return (
       <div
@@ -2135,62 +2131,57 @@ export default function DemandBoxPage() {
         >
           <div style={{ minWidth: 0 }}>
             <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-              Possible matches · {matchState.count}
+              Possible matches: {shownMatches.length}
             </div>
             <div style={{ marginTop: 3, ...helperText(), fontSize: 13 }}>
-              Based on your request and currently available supply.
+              Relevant listings to check. Availability and suitability are not confirmed.
             </div>
           </div>
-          <SecondaryButton
-            onClick={() => toggleDemandMatches(row, matchState)}
-            debugId={`${debugBase}.possible-matches`}
-            stableHeight={42}
-            style={{ minWidth: 154 }}
-          >
-            {open ? "Hide matches" : "View matches"}
-          </SecondaryButton>
         </div>
 
-        {open ? (
-          <div style={{ display: "grid", gap: 8 }}>
-            {shownMatches.map((match) => {
-              const labels = demandMatchReasonLabels(match);
-              const to = demandMatchSupplyPath(row, match);
-              return (
-                <div
-                  key={`${match.product_id}-${match.shop_id}`}
-                  style={{
-                    ...innerCard("#FFFFFF"),
-                    border: "1px solid rgba(13,95,168,0.10)",
-                    display: "grid",
-                    gap: 8,
-                  }}
-                >
-                  <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-                    {firstTruthy(match.product_title, "Possible supply")}
-                  </div>
-                  <div style={{ ...helperText(), fontSize: 13 }}>
-                    {firstTruthy(match.shop_name, "Marketplace shop")}
-                  </div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {labels.map((label) => (
-                      <span key={label} style={badge(false)}>{label}</span>
-                    ))}
-                  </div>
-                  <StableCtaLink
-                    to={to}
-                    onClick={() => trackDemandMatchAttention("supply_opened", match, rowId)}
-                    debugId={`${debugBase}.supply.${match.product_id}`}
-                    stableHeight={46}
-                    style={demandActionStyle(46)}
-                  >
-                    {demandIconText("shop", "Open supply", 18)}
-                  </StableCtaLink>
+        <div style={{ display: "grid", gap: 8 }}>
+          {shownMatches.map((match) => {
+            const labels = demandMatchReasonLabels(match);
+            const to = demandMatchSupplyPath(row, match);
+            return (
+              <div
+                key={`${match.product_id}-${match.shop_id}`}
+                data-gsn-demand-reliable-match="true"
+                style={{
+                  ...innerCard("#FFFFFF"),
+                  border: "1px solid rgba(13,95,168,0.10)",
+                  display: "grid",
+                  gap: 7,
+                  padding: isCompact ? 12 : undefined,
+                }}
+              >
+                <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                  {firstTruthy(match.product_title, "Possible listing")}
                 </div>
-              );
-            })}
-          </div>
-        ) : null}
+                <div style={{ ...helperText(), fontSize: 13 }}>
+                  {firstTruthy(match.shop_name, "Marketplace shop")}
+                </div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {labels.map((label) => (
+                    <span key={label} style={badge(false)}>{label}</span>
+                  ))}
+                </div>
+                <StableCtaLink
+                  to={to}
+                  onClick={() => trackDemandMatchAttention("supply_opened", match, rowId)}
+                  debugId={`${debugBase}.supply.${match.product_id}`}
+                  stableHeight={44}
+                  style={demandActionStyle(44)}
+                >
+                  {demandIconText("shop", "View listing", 18)}
+                </StableCtaLink>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ ...helperText(), fontSize: 12 }}>
+          Community connection is context, not professional verification or guaranteed trust.
+        </div>
       </div>
     );
   }
@@ -2207,7 +2198,7 @@ export default function DemandBoxPage() {
       !isProtectedTargetDemand(row) &&
       matchState?.loaded === true &&
       !matchState.error &&
-      matchState.count === 0;
+      reliableDemandMatches(matchState).length === 0;
 
     if (!canOfferExpandedSearch) return null;
 

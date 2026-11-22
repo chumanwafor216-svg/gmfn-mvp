@@ -24,6 +24,12 @@ REASON_ACTIVE_SUPPLY = "ACTIVE_SUPPLY"
 REASON_CATEGORY_MATCH = "CATEGORY_MATCH"
 REASON_AREA_COMPATIBLE = "AREA_COMPATIBLE"
 REASON_RELAY_BOUNDARY_CROSSED = "RELAY_BOUNDARY_CROSSED"
+REASON_LISTED_OFFERING = "LISTED_OFFERING"
+REASON_AVAILABILITY_UNCONFIRMED = "AVAILABILITY_UNCONFIRMED"
+REASON_PRODUCT_TITLE_MATCH = "PRODUCT_TITLE_MATCH"
+REASON_PRODUCT_DESCRIPTION_MATCH = "PRODUCT_DESCRIPTION_MATCH"
+REASON_SHOP_CONTEXT_MATCH = "SHOP_CONTEXT_MATCH"
+REASON_RELEVANCE_RELIABLE = "RELEVANCE_RELIABLE"
 
 PRODUCT_VISIBILITY_COMMUNITY = "community_visible"
 PRODUCT_VISIBLE_MODES = {PRODUCT_VISIBILITY_COMMUNITY, "community", "public"}
@@ -91,6 +97,9 @@ class DemandSupplyMatch:
     product_title: str
     shop_name: str
     reason_codes: tuple[str, ...]
+    ranking_score: int = 0
+    semantic_score: int = 0
+    created_at: datetime | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -104,6 +113,27 @@ class DemandSupplyMatch:
             "shop_name": self.shop_name,
             "reason_codes": list(self.reason_codes),
         }
+
+
+@dataclass(frozen=True)
+class DemandSupplyRelevance:
+    semantic_score: int
+    title_overlap: frozenset[str]
+    description_overlap: frozenset[str]
+    description_title_overlap: frozenset[str]
+    shop_overlap: frozenset[str]
+
+    @property
+    def has_match(self) -> bool:
+        return bool(self.title_overlap or self.description_overlap or self.shop_overlap)
+
+    @property
+    def reliable(self) -> bool:
+        return bool(
+            self.title_overlap
+            or self.description_title_overlap
+            or len(self.description_overlap) >= 2
+        )
 
 
 def find_supply_for_demand(
@@ -144,9 +174,9 @@ def find_supply_for_demand(
             )
             if match:
                 matches.append(match)
-            if len(matches) >= limit:
-                return [match.to_dict() for match in matches]
-    return [match.to_dict() for match in matches]
+    matches.sort(key=_demand_supply_match_sort_key)
+    bounded_limit = max(int(limit), 0)
+    return [match.to_dict() for match in matches[:bounded_limit]]
 
 
 def find_demands_for_supply(
@@ -397,13 +427,16 @@ def _build_match_for_supply_clan(
         return None
     if not relay_authorized and int(demand.clan_id or 0) != int(product.clan_id or 0):
         return None
-    if not _category_compatible(demand=demand, product=product, shop=shop):
+    relevance = _assess_relevance(demand=demand, product=product, shop=shop)
+    if not relevance.has_match or not relevance.reliable:
         return None
 
     reason_codes = [
         REASON_LIVE_DEMAND,
         REASON_ACTIVE_SUPPLY,
         REASON_CATEGORY_MATCH,
+        REASON_LISTED_OFFERING,
+        REASON_AVAILABILITY_UNCONFIRMED,
     ]
     if relay_authorized:
         reason_codes.append(REASON_RELAY_BOUNDARY_CROSSED)
@@ -411,6 +444,17 @@ def _build_match_for_supply_clan(
         reason_codes.insert(0, REASON_SAME_COMMUNITY)
     if _area_compatible(demand=demand, product=product, shop=shop):
         reason_codes.append(REASON_AREA_COMPATIBLE)
+    if relevance.title_overlap:
+        reason_codes.append(REASON_PRODUCT_TITLE_MATCH)
+    if relevance.description_overlap:
+        reason_codes.append(REASON_PRODUCT_DESCRIPTION_MATCH)
+    if relevance.shop_overlap:
+        reason_codes.append(REASON_SHOP_CONTEXT_MATCH)
+    reason_codes.append(REASON_RELEVANCE_RELIABLE)
+
+    area_score = 15 if REASON_AREA_COMPATIBLE in reason_codes else 0
+    community_score = 4 if relay_authorized else 10
+    recency_score = _product_recency_score(product)
 
     return DemandSupplyMatch(
         demand_id=int(demand.id),
@@ -422,6 +466,14 @@ def _build_match_for_supply_clan(
         product_title=_clean_text(getattr(product, "name", None)) or "Marketplace item",
         shop_name=_clean_text(getattr(shop, "name", None)) or "Marketplace shop",
         reason_codes=tuple(reason_codes),
+        ranking_score=(
+            int(relevance.semantic_score)
+            + int(area_score)
+            + int(community_score)
+            + int(recency_score)
+        ),
+        semantic_score=int(relevance.semantic_score),
+        created_at=getattr(product, "created_at", None),
     )
 
 
@@ -637,15 +689,56 @@ def _has_active_clan_membership(
     )
 
 
-def _category_compatible(
+def _assess_relevance(
     *,
     demand: MarketplaceRequest,
     product: MarketplaceProduct,
     shop: MarketplaceShop,
-) -> bool:
+) -> DemandSupplyRelevance:
     demand_tokens = _demand_compatibility_tokens(demand)
-    supply_tokens = _supply_tokens(product=product, shop=shop)
-    return bool(demand_tokens and supply_tokens and demand_tokens & supply_tokens)
+    area_tokens = _tokens(getattr(demand, "area", None))
+    demand_title_tokens = (
+        _tokens(getattr(demand, "title", None))
+        - _GENERIC_CATEGORY_TOKENS
+        - area_tokens
+    )
+    product_description_tokens = _tokens(
+        getattr(product, "description", None),
+        strip_marketplace_prefixes=True,
+    )
+    title_overlap = frozenset(
+        demand_tokens & _tokens(getattr(product, "name", None), strip_marketplace_prefixes=True)
+    )
+    description_overlap = frozenset(
+        demand_tokens & product_description_tokens
+    )
+    description_title_overlap = frozenset(
+        demand_title_tokens & product_description_tokens
+    )
+    shop_overlap = frozenset(
+        demand_tokens
+        & _tokens(
+            getattr(shop, "name", None),
+            getattr(shop, "description", None),
+            strip_marketplace_prefixes=True,
+        )
+    )
+
+    semantic_score = 0
+    if title_overlap:
+        semantic_score += 35 + min(15, len(title_overlap) * 5)
+    if description_overlap:
+        semantic_score += 20 + min(9, len(description_overlap) * 3)
+    if shop_overlap:
+        semantic_score += 5
+
+    return DemandSupplyRelevance(
+        semantic_score=min(70, semantic_score),
+        title_overlap=title_overlap,
+        description_overlap=description_overlap,
+        description_title_overlap=description_title_overlap,
+        shop_overlap=shop_overlap,
+    )
 
 
 def _area_compatible(
@@ -661,15 +754,19 @@ def _area_compatible(
 
 
 def _demand_compatibility_tokens(demand: MarketplaceRequest) -> set[str]:
-    category_tokens = _tokens(getattr(demand, "category", None))
-    strong_category_tokens = category_tokens - _GENERIC_CATEGORY_TOKENS
-    if strong_category_tokens:
-        return strong_category_tokens
-    fallback_tokens = _tokens(
+    area_tokens = _tokens(getattr(demand, "area", None))
+    request_tokens = _tokens(
         getattr(demand, "title", None),
         getattr(demand, "description", None),
     )
-    return fallback_tokens - _GENERIC_CATEGORY_TOKENS
+    specific_request_tokens = (
+        request_tokens - _GENERIC_CATEGORY_TOKENS - area_tokens
+    )
+    if specific_request_tokens:
+        return specific_request_tokens
+
+    category_tokens = _tokens(getattr(demand, "category", None))
+    return category_tokens - _GENERIC_CATEGORY_TOKENS
 
 
 def _supply_tokens(
@@ -683,6 +780,33 @@ def _supply_tokens(
         getattr(shop, "name", None),
         getattr(shop, "description", None),
         strip_marketplace_prefixes=True,
+    )
+
+
+def _product_recency_score(product: MarketplaceProduct) -> int:
+    created_at = getattr(product, "created_at", None)
+    if created_at is None:
+        return 0
+    age_days = max(0.0, (_now_utc() - _as_aware_utc(created_at)).total_seconds() / 86400)
+    if age_days <= 30:
+        return 5
+    if age_days <= 90:
+        return 3
+    return 1
+
+
+def _demand_supply_match_sort_key(match: DemandSupplyMatch) -> tuple[float, ...]:
+    created_at = match.created_at
+    created_timestamp = (
+        _as_aware_utc(created_at).timestamp()
+        if created_at is not None
+        else 0.0
+    )
+    return (
+        -float(match.ranking_score),
+        -float(match.semantic_score),
+        -created_timestamp,
+        float(match.product_id),
     )
 
 

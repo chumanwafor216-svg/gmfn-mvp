@@ -87,7 +87,10 @@ function forbidPattern(input, file, pattern, message) {
   [/debugId=\{[^\n]*fulfilled[^\n]*\}[\s\S]*?debugId=\{[^\n]*cancelled[^\n]*\}/, "owner fulfil and cancel controls must remain available inside open cards"],
   [/demandPaperAction\(row, scope, copyDebugId\)[\s\S]*?demandContactActions\(row/, "copy and contact actions must remain inside open cards"],
   [/getDemandSupplyMatches/, "possible supply matching must remain server-driven"],
-  [/data-gsn-demand-supply-intelligence="true"[\s\S]*?Open supply/, "possible supply results must remain reachable"],
+  [/reliableDemandMatches[\s\S]*?RELEVANCE_RELIABLE[\s\S]*?\.slice\(0, 3\)/, "only the first three reliable matches may surface immediately"],
+  [/data-gsn-demand-supply-intelligence="true"[\s\S]*?Relevant listings to check\. Availability and suitability are not confirmed\.[\s\S]*?data-gsn-demand-reliable-match="true"[\s\S]*?View listing/, "truthful compact supply results must remain immediately reachable"],
+  [/Listed offering[\s\S]*?Availability not confirmed/, "match labels must distinguish a listing from confirmed availability"],
+  [/Community connection is context, not professional verification or guaranteed trust\./, "community context must not be presented as professional verification"],
   [/data-gsn-demand-load-older="true"[\s\S]*?demand-box\.queue\.load-older/, "large queues must keep paged loading"],
   [/const DEMAND_BOX_PAGE_SIZE = 200/, "the backend-safe page size must remain explicit"],
   [/pulseDestination="demand_box"/, "Ask a question must still post into DemandBox"],
@@ -166,6 +169,8 @@ requirePattern(
   [/minHeight: 82,\s*alignItems: "flex-start"/, "the seven tall queue tiles must not return"],
   [/activeDetailTab === "replies"|\.private-replies/, "a second reply-opening disclosure must not return"],
   [/Possible matches[^\n]*\b(recommended|trusted|approved|best|guaranteed)\b/i, "possible matches must not imply endorsement"],
+  [/currently available supply/i, "a listing must not be described as confirmed current availability"],
+  [/toggleDemandMatches|openMatchDemandId|View matches|Hide matches/, "reliable matches must not require another expansion step"],
   [/<button|<summary|<a\s/, "DemandBox must keep shared stable action primitives"],
 ].forEach(([pattern, message]) => forbidPattern(source, pageFile, pattern, message));
 

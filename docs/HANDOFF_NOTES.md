@@ -1,5 +1,16 @@
 # Active Handoff Notes
 
+## DemandBox reliable-match Phase 0-1 - 2026-11-22
+
+- Founder-authorised local-only implementation preserves the existing DemandBox request, protected voice, private replies, lifecycle, Shop/product destinations, Ask Community and governed one-hop relay.
+- `find_supply_for_demand()` now ranks all eligible candidates before applying the result limit. Evidence combines product title/description relevance, area compatibility, selected-community preference and recency. Paid Spotlight and trust posture remain excluded.
+- A reliable result requires product-title overlap, demand-title evidence in the product description, or at least two relevant description overlaps. Shop-name context alone is rejected. This deliberately avoids presenting weak or accidental matches as useful supply.
+- The selected community is preferred when comparable, while an already-authorised stronger wider-community result remains eligible. Community relationship is never presented as professional verification or guaranteed trust.
+- An opened request immediately shows at most three compact reliable listings. The page says availability and suitability are unconfirmed, removes the extra View matches step, and preserves the complete request/voice/reply surface as the dominant content.
+- Realistic regression cases cover plumber, mechanic, ogili, vegetables, plural variation, irrelevant listings, recency, result limiting and community/relay relationships. `ogiri` is not silently guessed to mean `ogili`; safe typo/fuzzy handling remains a known future question rather than an invented Phase 0-1 capability.
+- Mobile smoke passes at 360x780, 390x844 and 430x932. Screenshot evidence is generated locally at `tmp/gsn-demandbox-phase01-matches-390.png` and is not a production artifact.
+- No route, API, database schema, migration, permission, payment, delivery, Shop Diary, Spotlight or TrustSlip behavior changed. No merge, push or production deployment is authorised by this work.
+
 ## DemandBox respond-in-place simplification - 2026-11-22
 
 - Founder-approved correction removes the second `Listen & reply` / `Reply privately` navigation step from an opened DemandBox request. `View request` remains the single phone opening action.

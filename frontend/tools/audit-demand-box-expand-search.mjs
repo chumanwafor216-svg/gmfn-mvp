@@ -18,8 +18,8 @@ function requirePattern(source, file, pattern, message) {
 requirePattern(
   demand,
   demandPath,
-  /function renderExpandedSearchPanel\([\s\S]*?matchState\?\.loaded === true[\s\S]*?!matchState\.error[\s\S]*?matchState\.count === 0/,
-  "expanded search must require a successful zero-match supply check"
+  /function renderExpandedSearchPanel\([\s\S]*?matchState\?\.loaded === true[\s\S]*?!matchState\.error[\s\S]*?reliableDemandMatches\(matchState\)\.length === 0/,
+  "expanded search must require a successful zero-reliable-match supply check"
 );
 requirePattern(
   demand,
