@@ -1,5 +1,14 @@
 # Active Handoff Notes
 
+## Demand-to-outcome journey audit - 2026-11-22
+
+- Added `docs/GSN_DEMAND_TO_OUTCOME_JOURNEY_AUDIT_2026-11-22.md` to reconcile the founder's latest simplicity direction with the existing Demand Box, Spotlight, Public Shop, Marketplace Trade Evidence and campaign systems.
+- The audit confirms that GSN already has most required engines: community/private demand, protected voice, private response, WhatsApp/call handoff, supply matching, Spotlight discovery, Shop contact, prefilled Trade Evidence and lifecycle evidence.
+- The primary gap is surface orchestration. A responder currently finds a queue, opens a request, opens `Listen & reply`, then uses the composer; a requester can require further match and Shop transitions before reaching seller contact or evidence.
+- The recommended first correction is `Respond in place`: a direct or targeted demand opens the exact request with its message/voice and inline private reply composer. Technical details remain secondary and current privacy/API authorities remain unchanged.
+- No code, route, API, schema, permission, payment, production data or deployment changed. The current Screen Spec and mobile smoke deliberately require the closed `Listen & reply` disclosure, so implementation needs one scoped founder-approved spec amendment rather than an accidental contract break.
+- Focused evidence passed: Demand Box front package, Marketplace front package, Public Shop button inventory, Spotlight system feed and Demand Box phone smoke at 390x844 and 360x780. Public Shop inventory currently reports 41 whole-route action-template families, supporting the audit's clutter concern.
+
 ## Discovery completion and Spotlight Slice 2 candidate - 2026-11-20
 
 - Candidate baseline is `3ce16134e1b6a07b040099dbe7faad5bc626f7d3`; implementation stays on `codex/public-shop-audio-fallback` and does not promote or deploy.
