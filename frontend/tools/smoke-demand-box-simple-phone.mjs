@@ -333,21 +333,156 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await transportCard.locator('[data-gsn-demand-private-replies="true"]').isVisible(), "Private replies still require another navigation step.");
   const matchPanel = transportCard.locator('[data-gsn-demand-supply-intelligence="true"]');
   await matchPanel.waitFor();
-  assert((await matchPanel.locator('[data-gsn-demand-reliable-match="true"]').count()) === 3, "DemandBox did not surface exactly three reliable initial suggestions.");
-  assert(await matchPanel.getByText("Relevant listings to check. Availability and suitability are not confirmed.", { exact: true }).isVisible(), "The truthful match boundary is missing.");
-  assert(await matchPanel.getByText("Availability not confirmed", { exact: true }).first().isVisible(), "The availability evidence label is missing.");
-  assert(await matchPanel.getByText("Via permitted wider search", { exact: true }).isVisible(), "The governed wider-search label is missing.");
-  assert((await matchPanel.getByRole("link", { name: /View listing/ }).count()) === 3, "The compact listing destinations are incomplete.");
+  const matchRows = matchPanel.locator('[data-gsn-demand-reliable-match="true"]');
+  assert((await matchRows.count()) === 3, "DemandBox did not surface exactly three reliable initial suggestions.");
+  assert(await matchPanel.getByText("Check these listings. Availability and suitability are not confirmed.", { exact: true }).isVisible(), "The truthful match boundary is missing.");
+  assert(await matchPanel.getByText("Same community, area mentioned; availability not confirmed.", { exact: true }).isVisible(), "The same-community evidence sentence is missing.");
+  assert(await matchPanel.getByText("Permitted wider search; availability not confirmed.", { exact: true }).isVisible(), "The governed wider-search evidence sentence is missing.");
+  const matchLinks = matchPanel.getByRole("link", { name: /View listing:/ });
+  assert((await matchLinks.count()) === 3, "The compact listing destinations are incomplete.");
   assert((await matchPanel.getByRole("button", { name: /matches/i }).count()) === 0, "A redundant match-expansion step returned.");
-  const matchGeometry = await matchPanel.evaluate((node) => ({
-    noOverflow: node.scrollWidth <= node.clientWidth + 1,
-    width: Math.round(node.getBoundingClientRect().width),
-  }));
+  assert(await page.getByRole("link", { name: "Ask community", exact: true }).isVisible(), "Ask community was obscured by the suggestions.");
+  const listingHrefs = await matchLinks.evaluateAll((links) => links.map((link) => link.getAttribute("href") || ""));
+  assert(
+    JSON.stringify(listingHrefs) === JSON.stringify([
+      "/shop/GSN-U-810?product_id=810&clan_id=8",
+      "/shop/GSN-U-820?product_id=820&clan_id=8",
+      "/shop/GSN-U-830?product_id=830&clan_id=9",
+    ]),
+    "A compact View action changed its existing listing destination or non-owner source-context boundary."
+  );
+  const matchGeometry = await matchPanel.evaluate((node) => {
+    const rows = Array.from(node.querySelectorAll('[data-gsn-demand-match-row="compact"]'));
+    const actions = Array.from(node.querySelectorAll('[data-gsn-demand-match-action="compact"]'));
+    const textNodes = Array.from(node.querySelectorAll(
+      '[data-gsn-demand-match-title], [data-gsn-demand-match-shop], [data-gsn-demand-match-evidence]'
+    ));
+    return {
+      noOverflow: node.scrollWidth <= node.clientWidth + 1,
+      width: Math.round(node.getBoundingClientRect().width),
+      height: Math.round(node.getBoundingClientRect().height),
+      rowHeights: rows.map((row) => Math.round(row.getBoundingClientRect().height)),
+      actionWidths: actions.map((action) => Math.round(action.getBoundingClientRect().width)),
+      actionHeights: actions.map((action) => Math.round(action.getBoundingClientRect().height)),
+      textFits: textNodes.every((item) =>
+        item.scrollWidth <= item.clientWidth + 1 && item.scrollHeight <= item.clientHeight + 1
+      ),
+    };
+  });
   assert(matchGeometry.noOverflow && matchGeometry.width <= viewport.width - 24, "The compact match panel overflows the phone viewport.");
+  assert(matchGeometry.height <= 460, "The compact match panel exceeds the approved mobile density.");
+  assert(
+    matchGeometry.rowHeights.every((height) => height >= 72 && height <= 110),
+    "A match row exceeded the compact target plus bounded natural text growth: " + matchGeometry.rowHeights.join("/")
+  );
+  assert(
+    matchGeometry.actionWidths.every((width) => width < 90) &&
+      matchGeometry.actionHeights.every((height) => height >= 44),
+    "A match destination is no longer a compact, accessible action."
+  );
+  assert(matchGeometry.textFits, "Normal match text is clipped.");
+  const requestTitleFont = await transportCard
+    .getByText("Need school transport", { exact: true })
+    .first()
+    .evaluate((node) => Number.parseFloat(getComputedStyle(node).fontSize));
+  const matchTitleFont = await matchPanel
+    .locator('[data-gsn-demand-match-title="true"]')
+    .first()
+    .evaluate((node) => Number.parseFloat(getComputedStyle(node).fontSize));
+  assert(requestTitleFont >= matchTitleFont + 4, "The match rows visually overtake the original request.");
+  console.log(
+    "DemandBox compact match panel at " + viewport.width + "px: " +
+    matchGeometry.height + "px high; rows " + matchGeometry.rowHeights.join("/") + "px (baseline about 817px)."
+  );
+
   const matchScreenshotPath = process.env.GSN_DEMAND_BOX_MATCH_SCREENSHOT_PATH?.trim();
   if (matchScreenshotPath && viewport.width === 390) {
-    await matchPanel.screenshot({ path: matchScreenshotPath });
+    await matchPanel.screenshot({ path: matchScreenshotPath, scale: "css" });
   }
+  const matchFullPageScreenshotPath = process.env.GSN_DEMAND_BOX_MATCH_FULL_PAGE_SCREENSHOT_PATH?.trim();
+  if (matchFullPageScreenshotPath && viewport.width === 390) {
+    const captureState = await page.evaluate(() => {
+      const shell = document.querySelector('[data-gmfn-shell-mode="compact"]');
+      const scrollRoot = document.querySelector('[data-gmfn-mobile-scroll-root="true"]');
+      const bottomNav = document.querySelector('[data-gmfn-bottom-nav="true"]');
+      if (!(shell instanceof HTMLElement) || !(scrollRoot instanceof HTMLElement)) {
+        throw new Error("The authenticated mobile scroll surface is unavailable for full-page evidence.");
+      }
+      const state = {
+        shellStyle: shell.getAttribute("style") || "",
+        scrollStyle: scrollRoot.getAttribute("style") || "",
+        bottomStyle: bottomNav instanceof HTMLElement ? bottomNav.getAttribute("style") || "" : "",
+        scrollTop: scrollRoot.scrollTop,
+      };
+      scrollRoot.scrollTop = 0;
+      const contentHeight = scrollRoot.scrollHeight;
+      shell.style.height = "auto";
+      shell.style.minHeight = "0";
+      shell.style.overflow = "visible";
+      scrollRoot.style.height = contentHeight + "px";
+      scrollRoot.style.minHeight = contentHeight + "px";
+      scrollRoot.style.flex = "0 0 auto";
+      scrollRoot.style.overflow = "visible";
+      if (bottomNav instanceof HTMLElement) {
+        bottomNav.style.position = "static";
+      }
+      return state;
+    });
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await page.screenshot({ path: matchFullPageScreenshotPath, fullPage: true, scale: "css" });
+    await page.evaluate((state) => {
+      const shell = document.querySelector('[data-gmfn-shell-mode="compact"]');
+      const scrollRoot = document.querySelector('[data-gmfn-mobile-scroll-root="true"]');
+      const bottomNav = document.querySelector('[data-gmfn-bottom-nav="true"]');
+      if (shell instanceof HTMLElement) shell.setAttribute("style", state.shellStyle);
+      if (scrollRoot instanceof HTMLElement) {
+        scrollRoot.setAttribute("style", state.scrollStyle);
+        scrollRoot.scrollTop = state.scrollTop;
+      }
+      if (bottomNav instanceof HTMLElement) bottomNav.setAttribute("style", state.bottomStyle);
+    }, captureState);
+  }
+
+  const firstMatchRow = matchRows.first();
+  const originalMatchCopy = await firstMatchRow.evaluate((row) => ({
+    title: row.querySelector('[data-gsn-demand-match-title]')?.textContent || "",
+    shop: row.querySelector('[data-gsn-demand-match-shop]')?.textContent || "",
+  }));
+  await firstMatchRow.evaluate((row) => {
+    const title = row.querySelector('[data-gsn-demand-match-title]');
+    const shop = row.querySelector('[data-gsn-demand-match-shop]');
+    if (title) title.textContent = "Reliable weekday school transport for early-morning routes and several pickup points";
+    if (shop) shop.textContent = "Shop: Awka Family Transport and School Run Services Cooperative";
+  });
+  const enlargedMatchStyle = await page.addStyleTag({
+    content: [
+      '[data-gsn-demand-match-title="true"] { font-size: 18px !important; }',
+      '[data-gsn-demand-match-shop="true"] { font-size: 16px !important; }',
+      '[data-gsn-demand-match-evidence="true"] { font-size: 15px !important; }',
+    ].join("\n"),
+  });
+  const enlargedGeometry = await firstMatchRow.evaluate((row) => {
+    const textNodes = Array.from(row.querySelectorAll(
+      '[data-gsn-demand-match-title], [data-gsn-demand-match-shop], [data-gsn-demand-match-evidence]'
+    ));
+    return {
+      noOverflow: row.scrollWidth <= row.clientWidth + 1,
+      height: Math.round(row.getBoundingClientRect().height),
+      textFits: textNodes.every((item) =>
+        item.scrollWidth <= item.clientWidth + 1 && item.scrollHeight <= item.clientHeight + 1
+      ),
+    };
+  });
+  assert(enlargedGeometry.noOverflow, "A long enlarged match row overflows horizontally.");
+  assert(enlargedGeometry.textFits, "Long or enlarged match wording is clipped.");
+  assert(enlargedGeometry.height > matchGeometry.rowHeights[0], "The compact row did not grow naturally for enlarged text.");
+  await enlargedMatchStyle.evaluate((style) => style.remove());
+  await firstMatchRow.evaluate((row, originalCopy) => {
+    const title = row.querySelector('[data-gsn-demand-match-title]');
+    const shop = row.querySelector('[data-gsn-demand-match-shop]');
+    if (title) title.textContent = originalCopy.title;
+    if (shop) shop.textContent = originalCopy.shop;
+  }, originalMatchCopy);
   assert(!(await page.getByText("Source: DemandBox", { exact: true }).isVisible()), "Technical request details opened before the user asked.");
   await transportCard
     .locator('[data-cta-id$=".request-details"]')

@@ -940,20 +940,18 @@ function demandHasReadyWhatsApp(row: DemandRow): boolean {
   return Boolean(demandReadyWhatsAppRecipient(row));
 }
 
-function demandMatchReasonLabels(match: DemandSupplyMatchItem): string[] {
+function demandMatchEvidenceSentence(match: DemandSupplyMatchItem): string {
   const codes = Array.isArray(match?.reason_codes) ? match.reason_codes : [];
-  const labels: string[] = [];
+  const source = codes.includes("SAME_COMMUNITY")
+    ? codes.includes("AREA_COMPATIBLE")
+      ? "Same community, area mentioned"
+      : "Same community"
+    : codes.includes("RELAY_BOUNDARY_CROSSED")
+      ? "Permitted wider search"
+      : "Related listing";
 
-  if (codes.includes("SAME_COMMUNITY")) labels.push("Same community");
-  if (codes.includes("RELAY_BOUNDARY_CROSSED")) labels.push("Via permitted wider search");
-  if (codes.includes("LISTED_OFFERING")) labels.push("Listed offering");
-  if (codes.includes("AVAILABILITY_UNCONFIRMED")) labels.push("Availability not confirmed");
-  if (codes.includes("AREA_COMPATIBLE")) labels.push("Area mentioned");
-  if (!labels.length) labels.push("Related listing");
-
-  return labels.slice(0, 3);
+  return `${source}; availability not confirmed.`;
 }
-
 function reliableDemandMatches(matchState: DemandMatchState | null): DemandSupplyMatchItem[] {
   if (!matchState?.matches?.length) return [];
   return matchState.matches.filter((match) =>
@@ -2117,7 +2115,8 @@ export default function DemandBoxPage() {
           ...innerCard("#F8FBFF"),
           border: "1px solid rgba(13,95,168,0.12)",
           display: "grid",
-          gap: 10,
+          gap: 8,
+          padding: isCompact ? 10 : undefined,
         }}
       >
         <div
@@ -2133,59 +2132,100 @@ export default function DemandBoxPage() {
             <div style={{ color: "#0B1F33", fontWeight: 900 }}>
               Possible matches: {shownMatches.length}
             </div>
-            <div style={{ marginTop: 3, ...helperText(), fontSize: 13 }}>
-              Relevant listings to check. Availability and suitability are not confirmed.
+            <div style={{ marginTop: 2, ...helperText(), fontSize: 12 }}>
+              Check these listings. Availability and suitability are not confirmed.
             </div>
           </div>
         </div>
 
-        <div style={{ display: "grid", gap: 8 }}>
+        <div data-gsn-demand-match-list="compact" style={{ display: "grid", gap: 6 }}>
           {shownMatches.map((match) => {
-            const labels = demandMatchReasonLabels(match);
+            const evidence = demandMatchEvidenceSentence(match);
             const to = demandMatchSupplyPath(row, match);
+            const title = firstTruthy(match.product_title, "Possible listing");
+            const shopName = firstTruthy(match.shop_name, "Marketplace shop");
             return (
               <div
                 key={`${match.product_id}-${match.shop_id}`}
                 data-gsn-demand-reliable-match="true"
+                data-gsn-demand-match-row="compact"
                 style={{
-                  ...innerCard("#FFFFFF"),
+                  borderRadius: 14,
+                  background: "#FFFFFF",
                   border: "1px solid rgba(13,95,168,0.10)",
                   display: "grid",
-                  gap: 7,
-                  padding: isCompact ? 12 : undefined,
+                  gridTemplateColumns: "minmax(0, 1fr) auto",
+                  alignItems: "center",
+                  gap: 8,
+                  minHeight: isCompact ? 78 : 82,
+                  padding: isCompact ? "9px 9px 9px 11px" : "11px 12px",
                 }}
               >
-                <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-                  {firstTruthy(match.product_title, "Possible listing")}
-                </div>
-                <div style={{ ...helperText(), fontSize: 13 }}>
-                  {firstTruthy(match.shop_name, "Marketplace shop")}
-                </div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {labels.map((label) => (
-                    <span key={label} style={badge(false)}>{label}</span>
-                  ))}
+                <div style={{ minWidth: 0, display: "grid", gap: 2 }}>
+                  <div
+                    data-gsn-demand-match-title="true"
+                    style={{
+                      color: "#0B1F33",
+                      fontSize: 14,
+                      fontWeight: 900,
+                      lineHeight: 1.2,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {title}
+                  </div>
+                  <div
+                    data-gsn-demand-match-shop="true"
+                    style={{
+                      color: "#31516F",
+                      fontSize: 12.5,
+                      fontWeight: 800,
+                      lineHeight: 1.2,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    Shop: {shopName}
+                  </div>
+                  <div
+                    data-gsn-demand-match-evidence="true"
+                    style={{
+                      color: "#5B7188",
+                      fontSize: 11.5,
+                      lineHeight: 1.25,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {evidence}
+                  </div>
                 </div>
                 <StableCtaLink
                   to={to}
                   onClick={() => trackDemandMatchAttention("supply_opened", match, rowId)}
                   debugId={`${debugBase}.supply.${match.product_id}`}
+                  aria-label={`View listing: ${title} from ${shopName}`}
+                  data-gsn-demand-match-action="compact"
                   stableHeight={44}
-                  style={demandActionStyle(44)}
+                  minWidth={58}
+                  style={{
+                    borderRadius: 12,
+                    padding: "8px 9px",
+                    fontSize: 12,
+                    fontWeight: 900,
+                    whiteSpace: "nowrap",
+                  }}
                 >
-                  {demandIconText("shop", "View listing", 18)}
+                  View ›
                 </StableCtaLink>
               </div>
             );
           })}
         </div>
-        <div style={{ ...helperText(), fontSize: 12 }}>
+        <div style={{ ...helperText(), fontSize: 11.5, lineHeight: 1.3 }}>
           Community connection is context, not professional verification or guaranteed trust.
         </div>
       </div>
     );
   }
-
   function renderExpandedSearchPanel(
     row: DemandRow,
     matchState: DemandMatchState | null,

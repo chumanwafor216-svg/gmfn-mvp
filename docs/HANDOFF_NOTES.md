@@ -7426,3 +7426,15 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Preserved the existing backend publication maximum of 100 communities per batch. `All communities` browses the full server-paginated directory; it does not falsely claim that the present explicit-id contract can atomically publish to 2,000 communities.
 - Did not invent Africa/Europe/Americas targeting from community names. Community Domain country data is optional and the current publication contract has no authoritative regional audience scope; that needs a separate backend contract before a regional shortcut can be truthful and safe.
 - Verification passed: focused Admin GSN campaign audit, TypeScript through the production build, the production Vite build, and the complete protected-button freeze audit. The broad audit still emitted the known unrelated duplicate React-key browser warnings while passing every protected contract.
+
+# DemandBox compact match-row correction - 2026-11-22
+
+- Founder-approved presentation-only correction replaced the three oversized DemandBox supply-match cards with compact rows. Matching scores, eligibility, backend/API contracts, community permissions, Shop destinations, Spotlight, Shop Diary and TrustSlip behavior are unchanged.
+- Each row now shows the listing title, Shop name, one concise evidence sentence and a compact 44px View action. Existing listing destinations and the non-owner source-context boundary remain exact.
+- The original request, private text/voice reply surface, Ask Community and governed wider search remain present and visually dominant. No extra match-expansion action was added.
+- Real phone measurements: the match panel is 414px high at 360px and 390px, and 364px at 430px, versus the rejected baseline of approximately 817px. Normal row heights are 85/85/100px at 360/390, with the 100px row using approved natural growth for its wrapped Shop name; at 430 they are 85/78/78px.
+- The phone smoke now guards horizontal overflow, clipped wording, compact action geometry, exact destinations, request-title dominance, long listing/Shop names, enlarged match text and full-page internal-scroll capture.
+- Founder-review evidence is local at tmp/demandbox-compact-review/demandbox-full-page-390.png (390x2067) and tmp/demandbox-compact-review/demandbox-match-panel-390.png (332x415). These screenshots are review artifacts and are not committed.
+- Verification passed: DemandBox phone smoke at 360/390/430, DemandBox front-package audit, DemandBox expanded-search audit, Community Home button inventory, Community Home phone-button audit, production frontend build and the complete protected-button freeze suite.
+- The protected suite still emits the pre-existing duplicate React key 0 browser warnings and Babel large-file notes outside this DemandBox correction; all protected contracts passed.
+- No push, merge, migration, production deployment or environment change was performed.
