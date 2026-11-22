@@ -231,7 +231,7 @@ async function verifyViewport(browser, baseURL, viewport) {
     window.MediaRecorder = FakeMediaRecorder;
   });
 
-  await page.goto(baseURL + "/app/demand-box", { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(baseURL + "/app/demand-box?queue=open", { waitUntil: "domcontentloaded", timeout: 180000 });
   const frontDoor = page.locator('[data-gsn-demand-front-door="simple"]');
   await frontDoor.waitFor();
 
@@ -278,17 +278,15 @@ async function verifyViewport(browser, baseURL, viewport) {
   await transportCard.getByRole("button", { name: "View request →", exact: true }).click();
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "Opening a request did not expose exactly one card.");
   assert(await transportCard.locator('[data-gsn-demand-request-hero="request"]').isVisible(), "Opened request hero is missing.");
-  assert(!(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible()), "Request detail leaked before the user asked.");
+  assert(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible(), "The complete request message did not open with the request.");
+  assert(await transportCard.locator('[data-gsn-demand-respond-in-place="true"]').isVisible(), "The response surface did not open with the request.");
+  assert(await transportCard.locator('[data-gsn-demand-private-replies="true"]').isVisible(), "Private replies still require another navigation step.");
   assert(!(await page.getByText("Source: DemandBox", { exact: true }).isVisible()), "Technical request details opened before the user asked.");
   await transportCard
     .locator('[data-cta-id$=".request-details"]')
     .evaluate((element) => element.click());
-  assert(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible(), "Opened request detail is missing.");
   assert(await page.getByText("Source: DemandBox", { exact: true }).isVisible(), "Request details are not reachable.");
-  assert(
-    await transportCard.getByRole("button", { name: "Reply privately", exact: true }).isVisible(),
-    "A request without audio still promises that members can listen."
-  );
+  assert((await transportCard.getByRole("button", { name: "Reply privately", exact: true }).count()) === 0, "The obsolete second reply-opening action returned.");
 
   await page.getByRole("button", { name: "View more needs", exact: true }).click();
   assert((await cards.count()) === 2, "View more needs did not reveal the remaining request preview.");
@@ -314,9 +312,10 @@ async function verifyViewport(browser, baseURL, viewport) {
 
   const compactTabs = freezerCard.locator('[data-gsn-demand-detail-tabs="compact"]');
   assert((await compactTabs.getByRole("button").count()) === 2, "The compact request/privacy tabs are incomplete.");
-  assert(!(await freezerCard.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible()), "Request details opened before the member asked.");
+  assert(await freezerCard.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible(), "The complete request message is not visible immediately.");
+  assert(await freezerCard.locator('[data-gsn-demand-respond-in-place="true"]').isVisible(), "The owner response surface is not in place.");
+  assert(await freezerCard.locator('[data-gsn-demand-private-replies="true"]').isVisible(), "Existing private replies are not visible immediately.");
   await compactTabs.getByRole("button", { name: "Request details", exact: true }).click();
-  assert(await freezerCard.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible(), "Request details did not open.");
   assert(await freezerCard.getByText("Source: DemandBox", { exact: true }).isVisible(), "Request evidence did not remain reachable.");
   await compactTabs.getByRole("button", { name: "Privacy & terms", exact: true }).click();
   assert(await freezerCard.locator('[data-gsn-demand-detail-panel="privacy"]').isVisible(), "Privacy & terms did not open.");
@@ -324,11 +323,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert((await contactActions.getByRole("button").count()) === 2, "Private contact options are incomplete.");
   await compactTabs.getByRole("button", { name: "Privacy & terms", exact: true }).click();
 
-  const listenReplyButton = freezerCard.getByRole("button", { name: "Listen & reply", exact: true });
-  assert(await listenReplyButton.isVisible(), "The primary listen-and-reply action is missing.");
-  assert(!(await freezerCard.locator('[data-gsn-demand-private-replies="true"]').isVisible().catch(() => false)), "Private replies opened before the member asked.");
-  await listenReplyButton.click();
-  assert(await freezerCard.locator('[data-gsn-demand-private-replies="true"]').isVisible(), "Private replies did not open.");
+  assert((await freezerCard.getByRole("button", { name: "Listen & reply", exact: true }).count()) === 0, "The obsolete second listen-and-reply action returned.");
   const participantPicker = freezerCard.locator('[data-gsn-demand-conversation-participant="true"] select');
   await participantPicker.waitFor();
   assert((await participantPicker.locator("option").count()) === 2, "Separate private responders are not selectable.");
@@ -570,6 +565,29 @@ async function verifyViewport(browser, baseURL, viewport) {
   await page.waitForFunction(() => !document.querySelector('[data-gsn-demand-create-form="simple"]'));
   assert(apiCalls.voiceRequestPosts === 1, "The ready recording did not use the protected voice request endpoint.");
   assert(apiCalls.textRequestPosts === 0, "The recorded request silently fell back to the text-only endpoint.");
+
+  await page.goto(baseURL + "/app/demand-box?demand_id=72", { waitUntil: "domcontentloaded", timeout: 180000 });
+  const directCard = page.locator('[data-gsn-demand-record="open"]');
+  await directCard.waitFor();
+  assert((await directCard.count()) === 1, "A direct DemandBox link did not isolate one opened request.");
+  assert(await directCard.getByText("Need a freezer repair", { exact: true }).isVisible(), "A direct DemandBox link opened the wrong request.");
+  assert(
+    (await page.getByRole("button", { name: "Yours 1", exact: true }).getAttribute("aria-pressed")) === "true",
+    "A direct link to the member's request did not select Yours."
+  );
+  assert(await directCard.locator('[data-gsn-demand-respond-in-place="true"]').isVisible(), "The direct request did not open ready to respond.");
+
+  await page.goto(baseURL + "/app/demand-box", { waitUntil: "domcontentloaded", timeout: 180000 });
+  const defaultQueue = page.locator('[data-gsn-demand-queue="simple"]');
+  await defaultQueue.waitFor();
+  assert(
+    (await defaultQueue.getByRole("button", { name: "For you 1", exact: true }).getAttribute("aria-pressed")) === "true",
+    "Ordinary DemandBox entry did not prefer answerable For you work."
+  );
+  assert(
+    await page.locator('[data-gsn-demand-record]').getByText("Need school transport", { exact: true }).isVisible(),
+    "The useful default queue did not surface the answerable request."
+  );
 
   const overflow = await page.locator("body").evaluate((node) => node.scrollWidth > node.clientWidth + 1);
   assert(!overflow, "DemandBox overflows at " + viewport.width + "x" + viewport.height + ".");

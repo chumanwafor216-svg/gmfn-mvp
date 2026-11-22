@@ -1351,7 +1351,8 @@ Rules:
   Post action icon because those still explain context, choices, or actions.
 - An opened phone request is one cohesive white request paper: truthful status,
   sender portrait or initials with display name and GSN reference, request
-  title, area, date, one primary `Listen & reply` disclosure, then requested
+  title, area, date, the request message and voice note when present, an
+  immediately available private response surface, then optional technical
   details, matches/search and lifecycle actions. Do not restore the separate
   dark request hero or trailing DemandBox brand banner. Fulfilled, Cancel and
   Copy request form the compact owner action row; WhatsApp Chat and Call remain
@@ -1379,11 +1380,18 @@ Rules:
   bounded, reference-aware cleanup queue. Recipients, community owners, and
   admins do not inherit the sender's irreversible authority. Expiry and closure
   never trigger this deletion.
-- `Listen & reply` stays inside the opened request. Each responding member has
-  a private exchange with the requester; unrelated community members cannot
-  read or play that exchange. On phone it is the single primary disclosure and
-  the reply composer stays closed until the member opens it. Replies may contain text, a voice note up to 60
-  seconds, or both.
+- Founder-approved 2026-11-22 respond-in-place correction: `View request` is
+  the only opening decision on phone. Once opened, the complete request message,
+  protected voice note when present, existing private exchange and reply
+  composer appear in the same request paper without a second `Listen & reply`
+  or `Reply privately` disclosure. Each responding member still has a private
+  exchange with the requester; unrelated community members cannot read or play
+  that exchange. Replies may contain text, a voice note up to 60 seconds, or
+  both. Technical metadata and privacy terms remain optional disclosures.
+- A direct `demand_id` route must prioritise and open that exact request in the
+  correct `For you`, `Yours`, or fallback queue. Without an explicit queue, the
+  first ordinary load should prefer answerable `For you` work when available so
+  a member is not dropped into an undifferentiated list.
 - The opened private exchange should use a familiar phone-chat trail: incoming
   messages sit left, the signed-in member's messages sit right, each message
   keeps its consented sender portrait or initials fallback, and time remains

@@ -1,5 +1,15 @@
 # Active Handoff Notes
 
+## DemandBox respond-in-place simplification - 2026-11-22
+
+- Founder-approved correction removes the second `Listen & reply` / `Reply privately` navigation step from an opened DemandBox request. `View request` remains the single phone opening action.
+- The opened request now shows its complete written message, protected request voice note when present, existing private exchange and inline text/voice reply composer together. Technical request facts and privacy/contact terms remain secondary disclosures.
+- Privacy and evidence boundaries are unchanged: every responder still has a separate private exchange with the requester, protected audio still uses the authoritative endpoint, owner voice deletion retains its tombstone, and no backend route, schema, permission or public-discovery rule changed.
+- A direct `demand_id` route now prioritises the exact row, opens it, and selects `Yours`, `For you`, or the fallback queue according to the loaded authoritative record. On ordinary entry without an explicit queue, answerable `For you` work is preferred.
+- Queue buttons now expose their selected state with `aria-pressed`. Explicit `queue=` links still override the ordinary useful default.
+- Updated `docs/SCREEN_SPECS.md`, the DemandBox front-package audit and the two-viewport phone smoke so the obsolete second disclosure cannot silently return.
+- Verification passed: `npm.cmd run audit:demand-box-front-package`, `npm.cmd run build` (332 modules), and `npm.cmd run smoke:demand-box-simple-phone` at 390x844 and 360x780. The smoke covers explicit All, direct Yours, ordinary For you, inline private conversations, protected voice deletion, lifecycle actions and voice-request posting.
+
 ## Demand-to-outcome journey audit - 2026-11-22
 
 - Added `docs/GSN_DEMAND_TO_OUTCOME_JOURNEY_AUDIT_2026-11-22.md` to reconcile the founder's latest simplicity direction with the existing Demand Box, Spotlight, Public Shop, Marketplace Trade Evidence and campaign systems.

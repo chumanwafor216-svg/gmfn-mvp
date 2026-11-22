@@ -1172,6 +1172,7 @@ export default function DemandBoxPage() {
   const demandCreateRevealRef = useRef<number | null>(null);
   const demandMountedRef = useRef(true);
   const demandLoadSeqRef = useRef(0);
+  const demandQueueIntentAppliedRef = useRef(false);
   const demandLoadContextRef = useRef("");
 
   useEffect(() => {
@@ -2651,6 +2652,52 @@ export default function DemandBoxPage() {
 
         {recordOpen ? (
         <>
+          <div
+            data-gsn-demand-primary-message="true"
+            style={{
+              margin: isCompact ? "12px 12px 0" : "10px 0 0",
+              padding: isCompact ? 14 : 0,
+              borderRadius: isCompact ? 18 : undefined,
+              background: isCompact ? "#F8FBFF" : undefined,
+              border: isCompact ? "1px solid rgba(13,95,168,0.12)" : undefined,
+              color: "#17324A",
+              fontSize: isCompact ? 15 : 14,
+              lineHeight: 1.55,
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            {firstTruthy(row?.description, "No extra detail yet.")}
+          </div>
+
+          {rowId ? (
+            <div
+              data-gsn-demand-respond-in-place="true"
+              style={{ padding: isCompact ? "0 12px" : undefined, marginTop: 10 }}
+            >
+              {positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at ? (
+                <div style={{ marginBottom: 10 }}>
+                  <ProtectedVoiceNotePlayer
+                    attachmentId={positiveNumber(row?.audio_attachment_id)}
+                    durationSeconds={row?.audio_duration_seconds}
+                    deletedAt={row?.audio_deleted_at}
+                    canDelete={
+                      scope === "owner" && positiveNumber(row?.audio_attachment_id) > 0
+                    }
+                    debugId={`${debugBase}.listen`}
+                    label="Request voice note"
+                  />
+                </div>
+              ) : null}
+              <DemandResponsePanel
+                requestId={rowId}
+                ownerUserId={positiveNumber(row?.user_id)}
+                currentUser={me}
+                isOwner={scope === "owner"}
+                compact={isCompact}
+              />
+            </div>
+          ) : null}
+
           {isCompact ? (
             <div style={{ padding: "12px 12px 0" }}>
               <div
@@ -2732,10 +2779,7 @@ export default function DemandBoxPage() {
                     border: "1px solid rgba(13,95,168,0.10)",
                   }}
                 >
-                  <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.55 }}>
-                    {firstTruthy(row?.description, "No extra detail yet.")}
-                  </div>
-                  <div style={{ marginTop: 10, display: "flex", gap: 7, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
                     <span style={badge(fromAskCommunity || protectedTarget)}>Source: {sourceLabel}</span>
                     <span style={badge(false)}>Need type: {categoryLabel(row)}</span>
                     <span data-gsn-demand-routing-chip="true" style={badge(mentionedHandles.length > 0)}>
@@ -2826,10 +2870,6 @@ export default function DemandBoxPage() {
               ) : null}
             </div>
           ) : null}
-          <div style={{ marginTop: 10, ...helperText() }}>
-            {firstTruthy(row?.description, "No extra detail yet.")}
-          </div>
-
           <details style={{ ...detailsShell(), marginTop: 12 }}>
             <StableDisclosureSummary
               style={{ ...detailsSummary(), padding: "12px 14px", fontSize: 14 }}
@@ -2908,79 +2948,6 @@ export default function DemandBoxPage() {
           )}
 
           <div style={{ padding: isCompact ? "0 12px 12px" : undefined }}>
-          {rowId ? (
-            <div style={{ marginTop: 10 }}>
-              <PrimaryButton
-                type="button"
-                onClick={() =>
-                  setOpenDemandDetailTab(
-                    activeDetailTab === "replies" ? "" : `${detailTabPrefix}replies`
-                  )
-                }
-                fullWidth
-                stableHeight={56}
-                debugId={`${debugBase}.private-replies`}
-                aria-expanded={activeDetailTab === "replies"}
-                style={{
-                  ...demandActionStyle(56),
-                  borderRadius: 18,
-                  background: "linear-gradient(180deg, #126FD8 0%, #0755B5 100%)",
-                  boxShadow: "0 12px 24px rgba(7,85,181,0.24)",
-                  fontSize: 16,
-                }}
-              >
-                {demandIconText(
-                  "audio",
-                  positiveNumber(row?.audio_attachment_id) > 0
-                    ? "Listen & reply"
-                    : "Reply privately",
-                  20
-                )}
-              </PrimaryButton>
-              <div
-                style={{
-                  marginTop: 7,
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  gap: 6,
-                  color: "#64748B",
-                  fontSize: 11,
-                  fontWeight: 800,
-                }}
-              >
-                <GsnLegacyIcon name="lock" size={16} />
-                Replies are private
-              </div>
-            </div>
-          ) : null}
-
-          {rowId && activeDetailTab === "replies" ? (
-            <div style={{ marginTop: 10 }}>
-              {positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at ? (
-                <div style={{ marginBottom: 10 }}>
-                  <ProtectedVoiceNotePlayer
-                    attachmentId={positiveNumber(row?.audio_attachment_id)}
-                    durationSeconds={row?.audio_duration_seconds}
-                    deletedAt={row?.audio_deleted_at}
-                    canDelete={
-                      scope === "owner" && positiveNumber(row?.audio_attachment_id) > 0
-                    }
-                    debugId={`${debugBase}.listen`}
-                    label="Request voice note"
-                  />
-                </div>
-              ) : null}
-              <DemandResponsePanel
-                requestId={rowId}
-                ownerUserId={positiveNumber(row?.user_id)}
-                currentUser={me}
-                isOwner={scope === "owner"}
-                compact={isCompact}
-              />
-            </div>
-          ) : null}
-
           {renderDemandMatchPanel(row, matchState, debugBase)}
           {renderExpandedSearchPanel(row, matchState, debugBase)}
 
@@ -3083,11 +3050,13 @@ export default function DemandBoxPage() {
     const params = new URLSearchParams(location.search);
     return positiveNumber(params.get("demand_id"));
   }, [location.search]);
-  const shouldOpenDemandQueues = useMemo(() => {
+  const explicitQueueMode = useMemo(() => {
     const params = new URLSearchParams(location.search);
-    const queueMode = safeStr(params.get("queue") || "").toLowerCase();
-    return ["open", "queue", "all", "tagged", "for_me", "community", "mine", "ask_community", "ask-community", "urgent", "categories"].includes(queueMode);
+    return safeStr(params.get("queue") || "").toLowerCase();
   }, [location.search]);
+  const shouldOpenDemandQueues = useMemo(() => {
+    return ["open", "queue", "all", "tagged", "for_me", "community", "mine", "ask_community", "ask-community", "urgent", "categories"].includes(explicitQueueMode);
+  }, [explicitQueueMode]);
   const allOpenRows = useMemo(
     () => uniqueDemandRows([...visibleRows, ...myOpenRows]),
     [myOpenRows, visibleRows]
@@ -3119,18 +3088,26 @@ export default function DemandBoxPage() {
       }))
       .sort((a, b) => b.rows.length - a.rows.length || a.label.localeCompare(b.label));
   }, [allOpenRows]);
-  const queueLaneRows = useMemo<Record<DemandQueueLane, DemandRow[]>>(
-    () => ({
-      open: allOpenRows,
-      tagged: taggedRows,
-      for_me: visibleRows,
-      mine: myOpenRows,
-      ask_community: askCommunityRows,
-      urgent: urgentRows,
-      categories: allOpenRows,
-    }),
-    [allOpenRows, askCommunityRows, myOpenRows, taggedRows, urgentRows, visibleRows]
-  );
+  const queueLaneRows = useMemo<Record<DemandQueueLane, DemandRow[]>>(() => {
+    const prioritiseDirectDemand = (rows: DemandRow[]) => {
+      if (!directDemandId) return rows;
+      const directIndex = rows.findIndex(
+        (row) => positiveNumber(row?.id) === directDemandId
+      );
+      if (directIndex <= 0) return rows;
+      return [rows[directIndex], ...rows.slice(0, directIndex), ...rows.slice(directIndex + 1)];
+    };
+
+    return {
+      open: prioritiseDirectDemand(allOpenRows),
+      tagged: prioritiseDirectDemand(taggedRows),
+      for_me: prioritiseDirectDemand(visibleRows),
+      mine: prioritiseDirectDemand(myOpenRows),
+      ask_community: prioritiseDirectDemand(askCommunityRows),
+      urgent: prioritiseDirectDemand(urgentRows),
+      categories: prioritiseDirectDemand(allOpenRows),
+    };
+  }, [allOpenRows, askCommunityRows, directDemandId, myOpenRows, taggedRows, urgentRows, visibleRows]);
   const queueLanes = useMemo<Array<{ key: DemandQueueLane; label: string; count: number; icon: GsnIconName; detail: string }>>(
     () => [
       { key: "open", label: "All", count: allOpenRows.length, icon: "briefcase", detail: "Every loaded open request" },
@@ -3206,26 +3183,47 @@ export default function DemandBoxPage() {
     }
   }, [demandMatchesById, visibleRowsForDemandIntelligence]);
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const queueMode = safeStr(params.get("queue") || "").toLowerCase();
     const directLanes: DemandQueueLane[] = ["open", "tagged", "for_me", "mine", "ask_community", "urgent", "categories"];
-    const normalizedQueueMode = queueMode === "ask-community" || queueMode === "community" || queueMode === "queue" || queueMode === "all" ? "open" : queueMode;
+    const normalizedQueueMode = explicitQueueMode === "ask-community" || explicitQueueMode === "community" || explicitQueueMode === "queue" || explicitQueueMode === "all" ? "open" : explicitQueueMode;
 
     if (directLanes.includes(normalizedQueueMode as DemandQueueLane)) {
+      demandQueueIntentAppliedRef.current = true;
       setActiveQueueLane(normalizedQueueMode as DemandQueueLane);
       return;
     }
 
     if (shouldOpenDemandQueues) {
+      demandQueueIntentAppliedRef.current = true;
       setActiveQueueLane("open");
     }
-  }, [location.search, shouldOpenDemandQueues]);
+  }, [explicitQueueMode, shouldOpenDemandQueues]);
   useEffect(() => {
     if (!directDemandId) return;
-    if (!allOpenRows.some((row) => positiveNumber(row?.id) === directDemandId)) return;
-    setActiveQueueLane("open");
+    const directRow = allOpenRows.find(
+      (row) => positiveNumber(row?.id) === directDemandId
+    );
+    if (!directRow) return;
+    demandQueueIntentAppliedRef.current = true;
+    setActiveQueueLane(
+      myOpenRows.some((row) => positiveNumber(row?.id) === directDemandId)
+        ? "mine"
+        : visibleRows.some((row) => positiveNumber(row?.id) === directDemandId)
+          ? "for_me"
+          : "open"
+    );
+    setShowMoreQueueRows(false);
     setOpenDemandRecordKey(String(directDemandId));
-  }, [allOpenRows, directDemandId]);
+  }, [allOpenRows, directDemandId, myOpenRows, visibleRows]);
+  useEffect(() => {
+    if (loading || demandQueueIntentAppliedRef.current) return;
+    if (directDemandId || shouldOpenDemandQueues) return;
+    demandQueueIntentAppliedRef.current = true;
+    if (visibleRows.length > 0) {
+      setActiveQueueLane("for_me");
+    } else if (myOpenRows.length > 0) {
+      setActiveQueueLane("mine");
+    }
+  }, [directDemandId, loading, myOpenRows.length, shouldOpenDemandQueues, visibleRows.length]);
   const routeAskCommunityMode = ["ask_community", "ask-community", "market_need_pulse"].includes(demandMode);
   const hasLegacyCreateHash = location.hash === "#demand-box-create";
   const isCreateMode = demandMode === "create" || routeAskCommunityMode || hasLegacyCreateHash;
@@ -4601,6 +4599,7 @@ export default function DemandBoxPage() {
               return (
                 <Button
                   key={lane.key}
+                  aria-pressed={active}
                   onClick={() => {
                     setActiveQueueLane(lane.key);
                     setShowMoreQueueRows(false);
@@ -4692,6 +4691,7 @@ export default function DemandBoxPage() {
                 return (
                   <Button
                     key={lane.key}
+                    aria-pressed={active}
                     onClick={() => {
                       setActiveQueueLane(lane.key);
                       setShowMoreQueueRows(false);
