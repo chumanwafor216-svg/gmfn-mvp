@@ -85,6 +85,7 @@ type BatchPublication = {
 
 const MAX_GSN_HOUSE_BATCH_MEDIA = 10;
 const DESTINATION_PAGE_SIZE = 20;
+const OPERATIONS_PAGE_SIZE = 20;
 const GSN_HOUSE_DEFAULT_LIFETIME_MS = 24 * 60 * 60 * 1000;
 const GSN_HOUSE_MIN_SCHEDULE_INTERVAL_MINUTES = 5;
 
@@ -640,10 +641,18 @@ export default function AdminGsnHouseCampaignPage() {
     return true;
   }, [discardReviewMediaItems, discardUnpublishedReview, publication, review, stagedReviewMedia]);
 
-  const loadOperations = useCallback(async (silent = false): Promise<boolean> => {
+  const loadOperations = useCallback(async (
+    silent = false,
+    activeOffset = 0,
+    historyOffset = 0
+  ): Promise<boolean> => {
     setLoadingOperations(true);
     try {
-      setOperations(await listAdminGsnHouseCampaigns(100));
+      setOperations(await listAdminGsnHouseCampaigns({
+        limit: OPERATIONS_PAGE_SIZE,
+        active_offset: activeOffset,
+        history_offset: historyOffset,
+      }));
       return true;
     } catch (error) {
       if (!silent) {
@@ -2271,6 +2280,9 @@ export default function AdminGsnHouseCampaignPage() {
                   <div style={{ color: "#166534", fontSize: 12, fontWeight: 900, textTransform: "uppercase" }}>
                     {operations.active_count} active · most recent is {stateLabel(operations.current.state)}
                   </div>
+                  <div style={{ marginTop: 5, color: "#496277", fontSize: 13, fontWeight: 800 }}>
+                    {operations.active_count} of {operations.active_inventory_limit} pilot places used · {operations.active_inventory_remaining} remaining
+                  </div>
                   <h3 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 19 }}>
                     Campaign #{operations.current.campaign_id}
                   </h3>
@@ -2395,17 +2407,22 @@ export default function AdminGsnHouseCampaignPage() {
             </div>
           )}
 
-          {operations && operations.active.length > 1 ? (
+          {operations && operations.active_count > 1 ? (
             <details style={{ marginTop: 14, ...softCard("#F5FAFF") }}>
               <StableDisclosureSummary
                 debugId="admin-gsn-campaign.other-active.summary"
                 stableHeight={44}
                 style={{ color: "#0B1F33", fontWeight: 900 }}
               >
-                Other active promotions ({operations.active.length - 1})
+                Other active promotions ({Math.max(0, operations.active_count - 1)})
               </StableDisclosureSummary>
+              <div style={{ marginTop: 10, ...helper(), fontSize: 13 }}>
+                Showing records {operations.active_offset + 1}–{operations.active_offset + operations.active.length} of {operations.active_count}. Promotions load in small pages so this screen remains usable as inventory grows.
+              </div>
               <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-                {operations.active.slice(1).map((item) => (
+                {operations.active
+                  .filter((item) => item.campaign_id !== operations.current?.campaign_id)
+                  .map((item) => (
                   <div key={item.campaign_id} style={institutionalInnerCard("#FFFFFF")}>
                     <div style={{ color: "#0B1F33", fontWeight: 900 }}>
                       Campaign #{item.campaign_id} · {stateLabel(item.state)}
@@ -2423,6 +2440,26 @@ export default function AdminGsnHouseCampaignPage() {
                   </div>
                 ))}
               </div>
+              {operations.active_previous_offset != null || operations.active_has_more ? (
+                <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  {operations.active_previous_offset != null ? (
+                    <StableButton
+                      onClick={() => void loadOperations(false, operations.active_previous_offset || 0, operations.history_offset)}
+                      debugId="admin-gsn-campaign.active-previous"
+                    >
+                      Previous active promotions
+                    </StableButton>
+                  ) : null}
+                  {operations.active_has_more && operations.active_next_offset != null ? (
+                    <StableButton
+                      onClick={() => void loadOperations(false, operations.active_next_offset || 0, operations.history_offset)}
+                      debugId="admin-gsn-campaign.active-next"
+                    >
+                      Next active promotions
+                    </StableButton>
+                  ) : null}
+                </div>
+              ) : null}
             </details>
           ) : null}
 
@@ -2432,7 +2469,7 @@ export default function AdminGsnHouseCampaignPage() {
               stableHeight={44}
               style={{ color: "#0B1F33", fontWeight: 900 }}
             >
-              Campaign history ({operations?.history.length || 0})
+              Campaign history ({operations?.history_count || 0})
             </StableDisclosureSummary>
             <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
               {operations?.history.length ? operations.history.map((item) => (
@@ -2460,6 +2497,26 @@ export default function AdminGsnHouseCampaignPage() {
                 </details>
               )) : <div style={helper()}>No earlier GSN house campaigns are recorded.</div>}
             </div>
+            {operations && (operations.history_previous_offset != null || operations.history_has_more) ? (
+              <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {operations.history_previous_offset != null ? (
+                  <StableButton
+                    onClick={() => void loadOperations(false, operations.active_offset, operations.history_previous_offset || 0)}
+                    debugId="admin-gsn-campaign.history-previous"
+                  >
+                    Previous history
+                  </StableButton>
+                ) : null}
+                {operations.history_has_more && operations.history_next_offset != null ? (
+                  <StableButton
+                    onClick={() => void loadOperations(false, operations.active_offset, operations.history_next_offset || 0)}
+                    debugId="admin-gsn-campaign.history-next"
+                  >
+                    Next history
+                  </StableButton>
+                ) : null}
+              </div>
+            ) : null}
           </details>
         </section>
 
@@ -2828,7 +2885,7 @@ export default function AdminGsnHouseCampaignPage() {
 
           {operations?.active_count ? (
             <div style={{ marginTop: 13, ...statusPanel("info") }}>
-              {operations.active_count} promotion{operations.active_count === 1 ? " is" : "s are"} already active. This new promotion will join that inventory; it will not replace them.
+              {operations.active_count} of {operations.active_inventory_limit} pilot promotion places are active. This new promotion will join that inventory; it will not replace them.
             </div>
           ) : null}
 

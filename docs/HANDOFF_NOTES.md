@@ -7376,3 +7376,13 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Separated the Record and Stop stable-button identities after the phone smoke exposed that the shared 360ms tap guard could reject an immediate Stop when React reused the same button instance.
 - Added static and browser guards for the scoped hero contract, minimum 180px waveform width, 44px height, three-pixel centring tolerance and visible ready-to-recording transition.
 - Verification passed: shared audio audit, Demand Box package audit, production frontend build, Demand Box phone smoke at 390x844 and 360x780, and the complete protected-button freeze audit. The protected audit still reports the unrelated pre-existing duplicate React key console warnings while passing all contracts.
+# GSN house promotion pilot inventory raised to 300 - 2026-11-22
+
+- The owner explicitly approved raising the bounded GSN-house active-promotion pilot inventory from `100` to `300`.
+- Historical truth: the previous October change raised the limit from one active house promotion to 100; no committed change above 100 existed before this work.
+- `GSN_HOUSE_PILOT_ACTIVE_INVENTORY_LIMIT` now controls both the publication guard and the operator-facing limit message. The message no longer hardcodes 100, so focused tests can verify configured limits truthfully.
+- The operations endpoint now reports the true active and historical totals independently of the returned page, with `active_offset`, `history_offset`, next/previous offsets, and 20-at-a-time Command Centre browsing.
+- Command Centre shows used, total and remaining pilot inventory. It does not render or fully report all 300 campaigns at once.
+- This is an inventory safety ceiling, not evidence that 300 simultaneous campaigns can meet any paid delivery promise. Existing delivery, pacing, community-policy, expiry and emergency-stop authorities remain unchanged.
+- Focused verification: `19 passed` in `gmfn_backend/tests/test_gsn_house_spotlight.py`; `audit:admin-gsn-house-campaign` passed; the production frontend build passed.
+- The broad `audit:protected-button-freeze` completed all listed checks except the unrelated `dashboard passive passport hitboxes` browser fixture, which timed out during `page.goto(.../app/dashboard)` after its Vite/HMR test server reported an invalid port-0 WebSocket. The GSN publisher contract was not implicated; existing duplicate React-key browser warnings also remain outside this change.

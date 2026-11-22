@@ -7879,7 +7879,20 @@ export type GsnHouseCampaignOperations = {
   current?: GsnHouseCampaignReport | null;
   active: GsnHouseCampaignReport[];
   active_count: number;
+  active_offset: number;
+  active_limit: number;
+  active_has_more: boolean;
+  active_next_offset?: number | null;
+  active_previous_offset?: number | null;
+  active_inventory_limit: number;
+  active_inventory_remaining: number;
   history: GsnHouseCampaignReport[];
+  history_count: number;
+  history_offset: number;
+  history_limit: number;
+  history_has_more: boolean;
+  history_next_offset?: number | null;
+  history_previous_offset?: number | null;
   items: GsnHouseCampaignReport[];
   returned_count: number;
   reporting_boundary: string;
@@ -8069,10 +8082,17 @@ export type SpotlightCommercialBoard = {
 };
 
 export async function listAdminGsnHouseCampaigns(
-  limit = 20
+  params: { limit?: number; active_offset?: number; history_offset?: number } = {}
 ): Promise<GsnHouseCampaignOperations> {
+  const limit = Number(params.limit || 20);
+  const activeOffset = Number(params.active_offset || 0);
+  const historyOffset = Number(params.history_offset || 0);
   const out = await httpJson(
-    `/marketplace/admin/gsn-house-campaigns${buildQuery({ limit })}`,
+    `/marketplace/admin/gsn-house-campaigns${buildQuery({
+      limit,
+      active_offset: activeOffset,
+      history_offset: historyOffset,
+    })}`,
     "GET",
     undefined,
     { header_clan_id: null }
@@ -8082,7 +8102,20 @@ export async function listAdminGsnHouseCampaigns(
     current: out?.current || null,
     active: Array.isArray(out?.active) ? out.active : out?.current ? [out.current] : [],
     active_count: Number(out?.active_count || (out?.current ? 1 : 0)),
+    active_offset: Number(out?.active_offset || 0),
+    active_limit: Number(out?.active_limit || limit),
+    active_has_more: Boolean(out?.active_has_more),
+    active_next_offset: out?.active_next_offset == null ? null : Number(out.active_next_offset),
+    active_previous_offset: out?.active_previous_offset == null ? null : Number(out.active_previous_offset),
+    active_inventory_limit: Number(out?.active_inventory_limit || 0),
+    active_inventory_remaining: Number(out?.active_inventory_remaining || 0),
     history: Array.isArray(out?.history) ? out.history : [],
+    history_count: Number(out?.history_count || 0),
+    history_offset: Number(out?.history_offset || 0),
+    history_limit: Number(out?.history_limit || limit),
+    history_has_more: Boolean(out?.history_has_more),
+    history_next_offset: out?.history_next_offset == null ? null : Number(out.history_next_offset),
+    history_previous_offset: out?.history_previous_offset == null ? null : Number(out.history_previous_offset),
     items: Array.isArray(out?.items) ? out.items : [],
   };
 }

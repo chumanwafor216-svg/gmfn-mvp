@@ -91,7 +91,7 @@ requireText(specsFile, specs, "## AdminGsnHouseCampaignPage", "The screen specif
 requireText(specsFile, specs, "Preview must be read-only.", "The read-only preview boundary is missing from the screen spec.");
 
 for (const endpoint of [
-  "/marketplace/admin/gsn-house-campaigns${buildQuery({ limit })}",
+  "/marketplace/admin/gsn-house-campaigns${buildQuery({",
   "/marketplace/admin/gsn-house-campaigns/destinations",
   "/marketplace/admin/gsn-house-campaigns/preview",
   "/marketplace/admin/gsn-house-campaigns",
@@ -202,6 +202,12 @@ for (const text of [
   "Issued by GSN",
   '"Seen"',
   "operations.active_count",
+  "operations.active_inventory_limit",
+  "operations.active_inventory_remaining",
+  "operations.active_next_offset",
+  "operations.history_next_offset",
+  "Next active promotions",
+  "Next history",
   "Emergency campaign stop",
   "Discard unpublished review",
   "await stopAdminGsnHouseCampaign",
@@ -241,6 +247,7 @@ for (const text of [
   'className="gsn-house-publisher__community-list"',
   'aria-label="Community result pages"',
   'DESTINATION_PAGE_SIZE = 20',
+  'OPERATIONS_PAGE_SIZE = 20',
   'response.next_offset',
   '"Review and publish"',
 ]) {

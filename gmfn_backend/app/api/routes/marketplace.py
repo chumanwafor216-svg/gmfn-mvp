@@ -202,7 +202,7 @@ SPOTLIGHT_DISTRIBUTION_SCOPE_SELECTED_COMMUNITIES = "selected_communities"
 GSN_HOUSE_PUBLISHER_EMAIL = "gsn-house-publisher@system.invalid"
 GSN_HOUSE_PUBLISHER_ID = "GSN-HOUSE"
 GSN_HOUSE_PUBLISHER_NAME = "Global Support Network"
-GSN_HOUSE_PILOT_ACTIVE_INVENTORY_LIMIT = 100
+GSN_HOUSE_PILOT_ACTIVE_INVENTORY_LIMIT = 300
 GSN_HOUSE_SCHEDULE_MIN_INTERVAL_MINUTES = 5
 GSN_HOUSE_SCHEDULE_MAX_INTERVAL_MINUTES = 24 * 60
 GSN_CENTRAL_ADVERTISING_POLICY_KEY = "domain.central_advertising"
@@ -8433,34 +8433,96 @@ def get_shop_spotlight_status(
 @router.get("/admin/gsn-house-campaigns")
 def list_gsn_house_campaigns(
     limit: int = Query(default=20, ge=1, le=100),
+    active_offset: int = Query(default=0, ge=0),
+    history_offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     _require_platform_admin(current_user)
-    campaigns = (
-        db.query(SpotlightCampaign)
-        .filter(SpotlightCampaign.source_kind == SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE)
+    now = _now_utc()
+    active_filters = (
+        SpotlightCampaign.source_kind == SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE,
+        SpotlightCampaign.status == SPOTLIGHT_CAMPAIGN_STATUS_ACTIVE,
+        or_(SpotlightCampaign.expires_at.is_(None), SpotlightCampaign.expires_at > now),
+    )
+    history_filters = (
+        SpotlightCampaign.source_kind == SPOTLIGHT_CAMPAIGN_SOURCE_GSN_HOUSE,
+        or_(
+            SpotlightCampaign.status != SPOTLIGHT_CAMPAIGN_STATUS_ACTIVE,
+            and_(
+                SpotlightCampaign.status == SPOTLIGHT_CAMPAIGN_STATUS_ACTIVE,
+                SpotlightCampaign.expires_at.is_not(None),
+                SpotlightCampaign.expires_at <= now,
+            ),
+        ),
+    )
+    active_query = db.query(SpotlightCampaign).filter(*active_filters)
+    history_query = db.query(SpotlightCampaign).filter(*history_filters)
+    active_count = int(active_query.with_entities(func.count(SpotlightCampaign.id)).scalar() or 0)
+    history_count = int(history_query.with_entities(func.count(SpotlightCampaign.id)).scalar() or 0)
+    active_campaigns = (
+        active_query
         .order_by(SpotlightCampaign.created_at.desc(), SpotlightCampaign.id.desc())
+        .offset(int(active_offset))
         .limit(int(limit))
         .all()
     )
-    now = _now_utc()
-    items = [
+    history_campaigns = (
+        history_query
+        .order_by(SpotlightCampaign.created_at.desc(), SpotlightCampaign.id.desc())
+        .offset(int(history_offset))
+        .limit(int(limit))
+        .all()
+    )
+    current_campaign = (
+        active_query
+        .order_by(SpotlightCampaign.created_at.desc(), SpotlightCampaign.id.desc())
+        .first()
+    )
+    active = [
         _gsn_house_campaign_report(db, campaign=campaign, now=now)
-        for campaign in campaigns
+        for campaign in active_campaigns
     ]
-    active = [item for item in items if item["state"] in {"live", "on_hold"}]
-    current = active[0] if active else None
+    history = [
+        _gsn_house_campaign_report(db, campaign=campaign, now=now)
+        for campaign in history_campaigns
+    ]
+    current = next(
+        (
+            item
+            for item in active
+            if current_campaign is not None
+            and int(item["campaign_id"]) == int(current_campaign.id)
+        ),
+        None,
+    )
+    if current is None and current_campaign is not None:
+        current = _gsn_house_campaign_report(db, campaign=current_campaign, now=now)
+    active_next_offset = int(active_offset) + len(active)
+    history_next_offset = int(history_offset) + len(history)
+    items = [*active, *history]
     return {
         "ok": True,
         "current": current,
         "active": active,
-        "active_count": len(active),
-        "history": [
-            item
-            for item in items
-            if item["state"] not in {"live", "on_hold"}
-        ],
+        "active_count": active_count,
+        "active_offset": int(active_offset),
+        "active_limit": int(limit),
+        "active_has_more": active_next_offset < active_count,
+        "active_next_offset": active_next_offset if active_next_offset < active_count else None,
+        "active_previous_offset": max(0, int(active_offset) - int(limit)) if active_offset else None,
+        "active_inventory_limit": GSN_HOUSE_PILOT_ACTIVE_INVENTORY_LIMIT,
+        "active_inventory_remaining": max(
+            0,
+            GSN_HOUSE_PILOT_ACTIVE_INVENTORY_LIMIT - active_count,
+        ),
+        "history": history,
+        "history_count": history_count,
+        "history_offset": int(history_offset),
+        "history_limit": int(limit),
+        "history_has_more": history_next_offset < history_count,
+        "history_next_offset": history_next_offset if history_next_offset < history_count else None,
+        "history_previous_offset": max(0, int(history_offset) - int(limit)) if history_offset else None,
         "items": items,
         "returned_count": len(items),
         "reporting_boundary": (
@@ -9156,7 +9218,8 @@ def create_gsn_house_campaign(
             detail={
                 "code": "gsn_house_pilot_inventory_limit_reached",
                 "message": (
-                    "The pilot inventory already has 100 active GSN promotions. "
+                    f"The pilot inventory already has {GSN_HOUSE_PILOT_ACTIVE_INVENTORY_LIMIT} "
+                    "active GSN promotions. "
                     "Stop or allow one to expire before adding another. Raise this "
                     "safety limit only after the capacity gate is passed."
                 ),

@@ -814,6 +814,8 @@ def test_house_campaign_inventory_allows_parallel_active_promotions(
     assert operations.status_code == 200, operations.text
     body = operations.json()
     assert body["active_count"] == 2
+    assert body["active_inventory_limit"] == 300
+    assert body["active_inventory_remaining"] == 298
     assert {int(item["campaign_id"]) for item in body["active"]} == {first_id, second_id}
     assert body["history"] == []
 
@@ -884,15 +886,33 @@ def test_house_campaign_inventory_accepts_sixty_active_promotions(
         campaign_ids.add(int(response.json()["item"]["spotlight_campaign_id"]))
 
     assert len(campaign_ids) == 60
-    operations = client.get(
-        "/marketplace/admin/gsn-house-campaigns",
-        params={"limit": 100},
-    )
-    assert operations.status_code == 200, operations.text
-    body = operations.json()
-    assert body["active_count"] == 60
-    assert len(body["active"]) == 60
-    assert {int(item["campaign_id"]) for item in body["active"]} == campaign_ids
+    operation_pages = []
+    for active_offset in (0, 20, 40):
+        operations = client.get(
+            "/marketplace/admin/gsn-house-campaigns",
+            params={"limit": 20, "active_offset": active_offset},
+        )
+        assert operations.status_code == 200, operations.text
+        body = operations.json()
+        assert body["active_count"] == 60
+        assert body["active_offset"] == active_offset
+        assert body["active_limit"] == 20
+        assert len(body["active"]) == 20
+        assert body["active_previous_offset"] == (
+            None if active_offset == 0 else active_offset - 20
+        )
+        assert body["active_next_offset"] == (
+            None if active_offset == 40 else active_offset + 20
+        )
+        assert body["active_has_more"] is (active_offset < 40)
+        operation_pages.append(body)
+
+    paged_campaign_ids = {
+        int(item["campaign_id"])
+        for page in operation_pages
+        for item in page["active"]
+    }
+    assert paged_campaign_ids == campaign_ids
 
     with engine.begin() as conn:
         placement_count = conn.execute(
@@ -967,6 +987,7 @@ def test_house_campaign_inventory_stops_at_configured_pilot_limit(
     )
     assert blocked.status_code == 409, blocked.text
     assert blocked.json()["detail"]["code"] == "gsn_house_pilot_inventory_limit_reached"
+    assert "already has 2 active GSN promotions" in blocked.json()["detail"]["message"]
 
 
 def test_house_campaign_operations_report_and_audited_stop(
