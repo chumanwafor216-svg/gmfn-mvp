@@ -2023,8 +2023,8 @@ export default function DemandBoxPage() {
           style={useDockStyle ? demandDockButtonStyle() : demandActionStyle(actionHeight)}
         >
           {useDockStyle
-            ? demandDockIconText("phone", hasContact ? "WhatsApp Chat" : "Chat not ready")
-            : demandIconText("phone", hasContact ? "WhatsApp Chat" : "WhatsApp not ready", 20)}
+            ? demandDockIconText("phone", hasContact ? "Chat" : "Chat unavailable")
+            : demandIconText("phone", hasContact ? "Chat" : "Chat unavailable", 20)}
         </SecondaryButton>
         <SubtleButton
           onClick={() => openDemandWhatsAppCall(row)}
@@ -2033,8 +2033,8 @@ export default function DemandBoxPage() {
           style={useDockStyle ? demandDockButtonStyle() : demandActionStyle(actionHeight)}
         >
           {useDockStyle
-            ? demandDockIconText("phone", hasContact ? "WhatsApp Call" : "Call not ready")
-            : demandIconText("phone", hasContact ? "WhatsApp Call" : "Call not ready", 20)}
+            ? demandDockIconText("phone", hasContact ? "Call" : "Call unavailable")
+            : demandIconText("phone", hasContact ? "Call" : "Call unavailable", 20)}
         </SubtleButton>
       </>
     );
@@ -2428,12 +2428,12 @@ export default function DemandBoxPage() {
                 lineHeight: 1.18,
               }}
             >
-              No matches here yet
+              No matches yet
             </div>
             <div style={{ marginTop: 5, ...helperText(), fontSize: 13 }}>
               {isCompact
-                ? "Let GSN check one other permitted community for a possible match."
-                : "Allow GSN to check one other permitted community for this request. Candidate communities and provider identities stay hidden until an authorised bridge accepts."}
+                ? "Check one more permitted community."
+                : "Check one more permitted community. People stay hidden until an authorised bridge accepts."}
             </div>
           </div>
         </div>
@@ -2450,7 +2450,7 @@ export default function DemandBoxPage() {
             {demandIconText(
               "search",
               isCompact
-                ? "Search in one other community"
+                ? "Search one more community"
                 : consentActive
                   ? "Search again"
                   : "Expand search",
@@ -2487,7 +2487,7 @@ export default function DemandBoxPage() {
           {isCompact ? <GsnLegacyIcon name="alert" size={20} /> : null}
           <span>
             {isCompact
-              ? "One-hop community search only. Not public, paid or guaranteed. You can stop or withdraw this search at any time."
+              ? "One community only. Not public or guaranteed. You can stop anytime."
               : "This authorises one-hop community search for this request only. It is not public, radius-based, paid, or guaranteed search, and permission can be withdrawn."}
           </span>
         </div>
@@ -2851,7 +2851,7 @@ export default function DemandBoxPage() {
               whiteSpace: "pre-wrap",
             }}
           >
-            {firstTruthy(row?.description, "No extra detail yet.")}
+            {firstTruthy(row?.description, "No details yet.")}
           </div>
 
           {rowId ? (
@@ -2927,7 +2927,7 @@ export default function DemandBoxPage() {
                     fontSize: 12,
                   }}
                 >
-                  {demandIconText("document", "Request details", 19)}
+                  {demandIconText("document", "Details", 19)}
                 </SecondaryButton>
                 <SubtleButton
                   type="button"
@@ -2954,7 +2954,7 @@ export default function DemandBoxPage() {
                     fontSize: 12,
                   }}
                 >
-                  {demandIconText("shield", "Privacy & terms", 19)}
+                  {demandIconText("shield", "Privacy", 19)}
                 </SubtleButton>
               </div>
 
@@ -3012,27 +3012,27 @@ export default function DemandBoxPage() {
                   <div style={{ color: "#0B1F33", fontSize: 13, fontWeight: 850, lineHeight: 1.5 }}>
                     {protectedTarget
                       ? "This request is private to the matched person. Do not forward it as a community request."
-                      : "This request is visible inside the selected community. Candidate communities and provider identities stay hidden until an authorised bridge accepts."}
+                      : "Visible in this community. Other communities and providers stay hidden until an authorised bridge accepts."}
                   </div>
                   <div style={{ marginTop: 10, display: "flex", gap: 7, flexWrap: "wrap" }}>
                     {protectedTarget ? (
                       <span data-gsn-demand-protected-target-chip="true" style={badge(true)}>Private to matched person</span>
                     ) : null}
                     {demandHasReadyWhatsApp(row) ? (
-                      <span style={badge(false)}>Contact path: WhatsApp</span>
+                      <span style={badge(false)}>WhatsApp available</span>
                     ) : safeStr(row?.whatsapp_number) ? (
-                      <span style={badge(false)}>Contact path not ready</span>
+                      <span style={badge(false)}>WhatsApp not ready</span>
                     ) : null}
                     {safeStr(row?.payment_mode) ? <span style={badge(false)}>Terms: {safeStr(row?.payment_mode)}</span> : null}
                     {row?.allow_trust_credit ? <span style={badge(false)}>Trust-credit openness only</span> : null}
                     {scope === "owner" ? (
                       <span style={badge(Boolean(row?.relay_consent_granted))}>
-                        {row?.relay_consent_granted ? "One-hop relay allowed" : "Relay stays in this community"}
+                        {row?.relay_consent_granted ? "Relay allowed" : "Community only"}
                       </span>
                     ) : null}
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 12, lineHeight: 1.45 }}>
-                    GSN records the request and contact path. It does not guarantee a provider, price, payment, or fulfilment.
+                    GSN records the request and contact path. It does not guarantee a provider or fulfilment.
                   </div>
                   <div
                     data-gsn-demand-contact-actions="private"
@@ -3067,7 +3067,7 @@ export default function DemandBoxPage() {
               debugId={debugBase + ".request-details"}
             >
               <span>Request details</span>
-              <span style={{ color: "#64748B", fontSize: 12 }}>Privacy and terms</span>
+              <span style={{ color: "#64748B", fontSize: 12 }}>Privacy</span>
             </StableDisclosureSummary>
             <div
               style={{
@@ -3106,9 +3106,9 @@ export default function DemandBoxPage() {
             <span style={badge(false)}>GSN ID {safeStr(row?.requester_gmfn_id)}</span>
           ) : null}
           {demandHasReadyWhatsApp(row) ? (
-            <span style={badge(false)}>Contact path: WhatsApp</span>
+            <span style={badge(false)}>WhatsApp available</span>
           ) : safeStr(row?.whatsapp_number) ? (
-            <span style={badge(false)}>Contact path not ready</span>
+            <span style={badge(false)}>WhatsApp not ready</span>
           ) : null}
           {firstTruthy(row?.marketplace_name, row?.clan_name) ? (
             <span style={badge(false)}>Community: {firstTruthy(row?.marketplace_name, row?.clan_name)}</span>
@@ -3125,8 +3125,8 @@ export default function DemandBoxPage() {
           {scope === "owner" ? (
             <span style={badge(Boolean(row?.relay_consent_granted))}>
               {row?.relay_consent_granted
-                ? "One-hop relay allowed"
-                : "Relay stays in this community"}
+                ? "Relay allowed"
+                : "Community only"}
             </span>
           ) : null}
           {safeStr(row?.created_at) ? (

@@ -231,7 +231,7 @@ export default function DemandResponsePanel({
             Private conversation
           </div>
           <div style={{ marginTop: 3, color: "#587087", fontSize: 12, lineHeight: 1.45 }}>
-            Text or voice replies stay between the requester and responder.
+            Only the requester and responder can see these replies.
           </div>
         </div>
       ) : null}
@@ -288,7 +288,7 @@ export default function DemandResponsePanel({
             lineHeight: 1.45,
           }}
         >
-          Private conversation is not available for this request. The authorised request and matching actions remain available below.
+          Private replies are not available here. Request actions remain below.
         </div>
       ) : visibleRows.length ? (
         <div
@@ -487,12 +487,12 @@ export default function DemandResponsePanel({
             textAlign: "center",
           }}
         >
-          No private replies yet. Start the conversation below.
+          No replies yet. Send the first message.
         </div>
       )}
       {conversationAccess === "available" && isOwner && participants.length === 0 ? (
         <div style={{ color: "#587087", fontSize: 12 }}>
-          When someone replies, you can answer them here.
+          Replies appear here.
         </div>
       ) : conversationAccess === "available" ? (
         <div

@@ -194,7 +194,7 @@ async function installApiMocks(page, apiCalls) {
         contact_available: true,
         public_shop_path: "/shop/GSN-U-900?product_id=900&clan_id=8",
         back_to_request_path: "/app/demand-box?demand_id=72",
-        prepared_message: "Hello Onitsha Cooling Repairs.\nI found Freezer repair visit as a possible match for my GSN request:\n\"Need a freezer repair\"\nRequest details: The freezer stopped cooling yesterday.\nArea: Onitsha\nIs it available? Please confirm the price and fulfilment arrangement.\nThis message starts a conversation; no agreement has been made yet.",
+        prepared_message: "Hello Onitsha Cooling Repairs.\nI found Freezer repair visit as a possible match for my GSN request:\n\"Need a freezer repair\"\nDetails: The freezer stopped cooling yesterday.\nArea: Onitsha\nIs it available? Please confirm the price and fulfilment arrangement.\nThis message starts a conversation; no agreement has been made yet.",
         boundary_note: "Contact only; no agreement has been made.",
       }));
     }
@@ -560,7 +560,7 @@ async function verifyViewport(browser, baseURL, viewport) {
     .locator('[data-cta-id$=".request-details"]')
     .click({ force: true });
   await transportCard.getByText("Source: DemandBox", { exact: true }).waitFor();
-  assert(await transportCard.getByText("Source: DemandBox", { exact: true }).isVisible(), "Request details are not reachable.");
+  assert(await transportCard.getByText("Source: DemandBox", { exact: true }).isVisible(), "Details are not reachable.");
   assert((await transportCard.getByRole("button", { name: "Reply privately", exact: true }).count()) === 0, "The obsolete second reply-opening action returned.");
 
   await page.getByRole("button", { name: "View more needs", exact: true }).click();
@@ -613,13 +613,13 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert((await ownerPrivateReplies.getAttribute("data-gsn-demand-conversation-access")) === "available", "Existing private conversation access was not established.");
   assert(await ownerPrivateReplies.locator('[data-gsn-demand-conversation-heading="true"]').isVisible(), "The opened request lacks the conversation-first heading.");
   assert(await ownerPrivateReplies.isVisible(), "Existing private replies are not visible immediately.");
-  await compactTabs.getByRole("button", { name: "Request details", exact: true }).click();
+  await compactTabs.getByRole("button", { name: "Details", exact: true }).click();
   assert(await freezerCard.getByText("Source: DemandBox", { exact: true }).isVisible(), "Request evidence did not remain reachable.");
-  await compactTabs.getByRole("button", { name: "Privacy & terms", exact: true }).click();
-  assert(await freezerCard.locator('[data-gsn-demand-detail-panel="privacy"]').isVisible(), "Privacy & terms did not open.");
+  await compactTabs.getByRole("button", { name: "Privacy", exact: true }).click();
+  assert(await freezerCard.locator('[data-gsn-demand-detail-panel="privacy"]').isVisible(), "Privacy did not open.");
   const contactActions = freezerCard.locator('[data-gsn-demand-contact-actions="private"]');
   assert((await contactActions.getByRole("button").count()) === 2, "Private contact options are incomplete.");
-  await compactTabs.getByRole("button", { name: "Privacy & terms", exact: true }).click();
+  await compactTabs.getByRole("button", { name: "Privacy", exact: true }).click();
 
   assert((await freezerCard.getByRole("button", { name: "Listen & reply", exact: true }).count()) === 0, "The obsolete second listen-and-reply action returned.");
   const participantPicker = freezerCard.locator('[data-gsn-demand-conversation-participant="true"] select');

@@ -7466,3 +7466,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Changed files are limited to `frontend/src/pages/DemandBoxPage.tsx`, `frontend/tools/smoke-demand-box-simple-phone.mjs`, `gmfn_backend/app/api/routes/marketplace_requests.py`, and `gmfn_backend/tests/test_marketplace_requests.py`. No schema, migration, matching engine, permission or taxonomy changes were made.
 - Verification passed: full `tests/test_marketplace_requests.py` (`21 passed`), `audit:demand-box-front-package`, production frontend build, and DemandBox simple-phone smoke at 390x844, 360x780 and 430x932.
 - The broad protected-button suite still reports unrelated pre-existing browser visual failures caused by Windows `spawn EPERM` while starting Vite/esbuild fixtures; no DemandBox assertion failed. No push, merge or deployment was performed.
+
+## DemandBox copy simplification - 2026-11-23
+
+- Shortened opened-request explanations and compact labels without changing routes, actions, permissions, matching, voice or privacy behavior.
+- Compact wording now uses Details, Privacy, Chat, Call, No matches yet, and shorter relay/search boundaries.
+- Changed files: frontend/src/components/DemandResponsePanel.tsx, frontend/src/pages/DemandBoxPage.tsx, frontend/tools/audit-demand-box-front-package.mjs, frontend/tools/smoke-demand-box-simple-phone.mjs.
+- Verification: DemandBox front-package audit passed; mobile smoke passed at 360x780, 390x844 and 430x932; frontend production build passed. The smoke test required normal process-launch permissions because restricted Windows execution returned spawn EPERM.
+- No backend, schema, migration, taxonomy, payment or Phase 2 changes.
