@@ -1275,7 +1275,10 @@ same-community supply has no reliable match.
 
 Must show:
 - the selected community context;
-- one clear `Post a need` action and one secondary `Ask community` action;
+- one clear `Post a need` action;
+- legacy `Ask Community` deep links and records remain supported through the
+  existing DemandBox route and queue lanes, but do not compete with the first
+  surface's general-purpose action;
 - governed queue lanes and the member's own open requests;
 - up to three reliable current supply listings when available;
 - on the requester's own open community-visible request, one compact
@@ -1291,7 +1294,8 @@ Rules:
   five-tab authenticated bottom rail visible. The first surface shows the
   selected marketplace in one gold-accented row, the approved generic human
   market photograph with the GSN `People helping people` promise, then only
-  `Post a need` and `Ask community`. The photograph is identity scenery only,
+  `Post a need`. Legacy Ask Community routes remain supported but are not shown
+  as a competing first-surface action. The photograph is identity scenery only,
   never a requester, provider, match, availability, recommendation, or
   evidence claim. Do not add animation, flashing, a new navigation system, or
   a global companion card inside this focused route.

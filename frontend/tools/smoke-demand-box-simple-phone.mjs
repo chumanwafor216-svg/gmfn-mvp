@@ -352,9 +352,8 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await frontDoor.getByText("People helping people", { exact: true }).isVisible(), "The GSN human-market promise is missing.");
   assert(await frontDoor.getByRole("link", { name: /Blessed Satch family Marketplace/ }).isVisible(), "The selected marketplace identity is missing.");
   assert(await page.getByRole("button", { name: "Post a need", exact: true }).isVisible(), "Post a need is missing.");
-  assert(await page.getByRole("link", { name: "Ask community", exact: true }).isVisible(), "Ask community is missing.");
   assert((await frontDoor.getByRole("button").count()) === 1, "The first surface has extra buttons.");
-  assert((await frontDoor.getByRole("link").count()) === 2, "The first surface must contain only the marketplace selector and Ask community links.");
+  assert((await frontDoor.getByRole("link").count()) === 1, "The first surface must contain only the marketplace selector link; Post a need is the sole general-purpose action.");
   assert(!(await page.getByText("Current state", { exact: true }).isVisible().catch(() => false)), "The repeated Current state card returned.");
   assert(!(await page.getByText("Routing readiness", { exact: true }).isVisible().catch(() => false)), "Technical routing copy leaked onto the member surface.");
   assert(!(await page.getByText("Needs attention", { exact: true }).isVisible().catch(() => false)), "The global companion card interrupted the focused Demand Box route.");
@@ -407,7 +406,6 @@ async function verifyViewport(browser, baseURL, viewport) {
   const matchLinks = matchPanel.getByRole("link", { name: /View Shop:/ });
   assert((await matchLinks.count()) === 3, "The compact listing destinations are incomplete.");
   assert((await matchPanel.getByRole("button", { name: /matches/i }).count()) === 0, "A redundant match-expansion step returned.");
-  assert(await page.getByRole("link", { name: "Ask community", exact: true }).isVisible(), "Ask community was obscured by the suggestions.");
   const listingHrefs = await matchLinks.evaluateAll((links) => links.map((link) => link.getAttribute("href") || ""));
   assert(
     JSON.stringify(listingHrefs) === JSON.stringify([

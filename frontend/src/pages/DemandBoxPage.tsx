@@ -3959,26 +3959,6 @@ export default function DemandBoxPage() {
                   demandIconText("document", "Post a need", 20)
                 )}
               </PrimaryButton>
-              <StableCtaLink
-                to={routes.askCommunity}
-                debugId="demand-box.ask-community"
-                stableHeight={isCompact ? 52 : 54}
-                style={{
-                  ...demandActionStyle(isCompact ? 52 : 54),
-                  ...(isCompact
-                    ? {
-                        borderRadius: 20,
-                        color: "#18304B",
-                        background: "linear-gradient(180deg, #FFFFFF 0%, #F7F1E7 100%)",
-                        border: "1px solid #F4D67D",
-                        boxShadow:
-                          "0 0 9px rgba(0,224,255,0.68), 0 0 18px rgba(221,43,255,0.54), inset 0 1px 0 rgba(255,255,255,0.92)",
-                      }
-                    : {}),
-                }}
-              >
-                {demandIconText("community", "Ask community", 20)}
-              </StableCtaLink>
             </div>
 
             <div

@@ -892,7 +892,7 @@ assertContains(
 
 assertContains(
   "src/pages/DemandBoxPage.tsx",
-  /debugId="demand-box\.open-community"[\s\S]*?debugId="demand-box\.create"[\s\S]*?<span>Post a need<\/span>[\s\S]*?demandIconText\("document", "Post a need", 20\)[\s\S]*?debugId="demand-box\.ask-community"[\s\S]*?demandIconText\("community", "Ask community", 20\)[\s\S]*?debugId="demand-box\.more-options"[\s\S]*?<span>More options<\/span>[\s\S]*?debugId="demand-box\.post"[\s\S]*?demandIconText\([\s\S]*?"megaphone",[\s\S]*?"Post need"/,
+  /debugId="demand-box\.open-community"[\s\S]*?debugId="demand-box\.create"[\s\S]*?<span>Post a need<\/span>[\s\S]*?demandIconText\("document", "Post a need", 20\)[\s\S]*?debugId="demand-box\.more-options"[\s\S]*?<span>More options<\/span>[\s\S]*?debugId="demand-box\.post"[\s\S]*?demandIconText\([\s\S]*?"megaphone",[\s\S]*?"Post need"/,
   "DemandBox simple front-door, optional-detail, and post actions must keep stable shared primitives."
 );
 
