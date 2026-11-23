@@ -156,20 +156,28 @@ export default function VoiceNoteRecorder({
         gap: 10,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <GsnLegacyIcon name="audio" size={28} />
-        <div style={{ minWidth: 0 }}>
-          <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-            {recording ? "Recording your voice" : value ? "Voice note ready" : "Record a voice note"}
-          </div>
-          <div style={{ color: "#587087", fontSize: 12, marginTop: 2 }}>
-            Speak in the language that is natural for you. Maximum {maxSeconds} seconds.
+      {heroWaveform || recording || value ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {heroWaveform ? null : <GsnLegacyIcon name="audio" size={24} />}
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+              {recording ? "Recording voice message" : value ? "Voice message ready" : "Record a voice message"}
+            </div>
+            {heroWaveform ? (
+              <div style={{ color: "#587087", fontSize: 12, marginTop: 2 }}>{maxSeconds} seconds</div>
+            ) : null}
           </div>
         </div>
-      </div>
+      ) : null}
 
       {heroWaveform && !value ? (
-        <div
+        <button
+          type="button"
+          onClick={() => {
+            if (!recording) void startRecording();
+          }}
+          disabled={disabled || recording}
+          aria-label={recording ? "Recording voice note" : "Tap to record a voice note"}
           data-gsn-voice-recorder-waveform="hero"
           data-gsn-voice-recorder-waveform-state={recording ? "recording" : "ready"}
           style={{
@@ -189,6 +197,11 @@ export default function VoiceNoteRecorder({
             boxShadow: recording
               ? "0 12px 28px rgba(163,59,22,0.10)"
               : "0 12px 28px rgba(15,114,200,0.10)",
+            width: "100%",
+            color: "inherit",
+            font: "inherit",
+            cursor: disabled || recording ? "default" : "pointer",
+            opacity: disabled ? 0.65 : 1,
           }}
         >
           <div style={{ width: "min(100%, 220px)" }}>
@@ -203,9 +216,9 @@ export default function VoiceNoteRecorder({
               textAlign: "center",
             }}
           >
-            {recording ? `${seconds}s / ${maxSeconds}s` : "Tap Record and speak"}
+            {recording ? `${seconds}s / ${maxSeconds}s` : "Tap to record"}
           </div>
-        </div>
+        </button>
       ) : null}
 
       {recording ? (
@@ -278,21 +291,37 @@ export default function VoiceNoteRecorder({
             </SubtleButton>
           </div>
         </>
-      ) : (
-        <PrimaryButton
+      ) : heroWaveform ? null : (
+        <button
           key="start-recording"
           type="button"
           onClick={() => void startRecording()}
           disabled={disabled}
-          fullWidth
-          stableHeight={52}
-          debugId={`${debugPrefix}.start`}
+          aria-label="Record a voice message"
+          data-gsn-voice-recorder-waveform="standard"
+          data-gsn-voice-recorder-waveform-state="ready"
+          style={{
+            minHeight: 72,
+            width: "100%",
+            padding: "10px 14px",
+            borderRadius: 16,
+            border: "2px solid rgba(15,114,200,0.22)",
+            background: "linear-gradient(135deg, #EEF8FF 0%, #FFFFFF 56%, #FFF8E7 100%)",
+            display: "grid",
+            justifyItems: "center",
+            gap: 4,
+            color: "#0B4EA2",
+            font: "inherit",
+            fontWeight: 900,
+            cursor: disabled ? "default" : "pointer",
+            opacity: disabled ? 0.65 : 1,
+          }}
         >
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <GsnLegacyIcon name="audio" size={22} />
-            Record
-          </span>
-        </PrimaryButton>
+          <div style={{ width: "min(100%, 220px)" }}>
+            <AudioWaveSignal mode="hero" />
+          </div>
+          <span>Record a voice message</span>
+        </button>
       )}
 
       {error ? (

@@ -149,7 +149,7 @@ export default function DemandResponsePanel({
     if (participants.some((participant) => participant.id === recipientUserId)) {
       return;
     }
-    setRecipientUserId(participants[0].id);
+    setRecipientUserId(0);
   }, [isOwner, participants, recipientUserId]);
 
   const selectedParticipant = useMemo(
@@ -173,10 +173,14 @@ export default function DemandResponsePanel({
       .map((participant) => {
         const threadRows = grouped.get(participant.id) || [];
         const lastRow = threadRows[threadRows.length - 1];
+        const responderRow = threadRows.find(
+          (row) => Number(row.author_user_id || 0) === participant.id
+        );
         return {
           ...participant,
           count: threadRows.length,
           lastRow,
+          profileImageUrl: responderRow?.author_profile_image_url || null,
           preview: lastRow ? responsePreview(lastRow) : "No replies yet",
         };
       })
@@ -338,7 +342,7 @@ export default function DemandResponsePanel({
                     width: "100%",
                     minHeight: 64,
                     display: "grid",
-                    gridTemplateColumns: "minmax(0, 1fr) auto",
+                    gridTemplateColumns: "auto minmax(0, 1fr) auto",
                     alignItems: "center",
                     gap: 8,
                     padding: "9px 11px",
@@ -353,6 +357,42 @@ export default function DemandResponsePanel({
                     cursor: "pointer",
                   }}
                 >
+                  {resolveProfileImageUrl(thread.profileImageUrl) ? (
+                    <img
+                      src={resolveProfileImageUrl(thread.profileImageUrl)}
+                      alt=""
+                      data-gsn-demand-thread-avatar="portrait"
+                      style={{
+                        width: 38,
+                        height: 38,
+                        flex: "0 0 38px",
+                        borderRadius: 999,
+                        objectFit: "cover",
+                        border: "2px solid rgba(255,255,255,0.96)",
+                        boxShadow: "0 2px 7px rgba(15,23,42,0.16)",
+                      }}
+                    />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      data-gsn-demand-thread-avatar="initials"
+                      style={{
+                        width: 38,
+                        height: 38,
+                        flex: "0 0 38px",
+                        borderRadius: 999,
+                        display: "grid",
+                        placeItems: "center",
+                        background: "#EAF3FF",
+                        color: "#0B4FA8",
+                        border: "2px solid rgba(255,255,255,0.96)",
+                        fontSize: 11,
+                        fontWeight: 950,
+                      }}
+                    >
+                      {initials(thread.name)}
+                    </span>
+                  )}
                   <span style={{ minWidth: 0, display: "grid", gap: 3 }}>
                     <span style={{ fontSize: 13, fontWeight: 900, overflowWrap: "anywhere" }}>
                       Conversation with {thread.name}
@@ -404,6 +444,22 @@ export default function DemandResponsePanel({
           }}
         >
           Private replies are not available here. Request actions remain below.
+        </div>
+      ) : isOwner && participantThreads.length > 0 && !selectedParticipant ? (
+        <div
+          data-gsn-demand-conversation-picker="true"
+          style={{
+            padding: compact ? "14px 12px" : "16px 14px",
+            borderRadius: 18,
+            border: "1px solid rgba(13,95,168,0.14)",
+            background: "#F6FAFF",
+            color: "#536A81",
+            fontSize: 12,
+            lineHeight: 1.45,
+            textAlign: "center",
+          }}
+        >
+          Choose a conversation above to open it.
         </div>
       ) : visibleRows.length ? (
         <div
@@ -616,7 +672,7 @@ export default function DemandResponsePanel({
         <div style={{ color: "#587087", fontSize: 12 }}>
           Replies appear here.
         </div>
-      ) : conversationAccess === "available" ? (
+      ) : conversationAccess === "available" && (!isOwner || participantThreads.length === 0 || selectedParticipant) ? (
         <div
           data-gsn-demand-reply-composer="true"
           style={{

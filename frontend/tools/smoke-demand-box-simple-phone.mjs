@@ -556,11 +556,6 @@ async function verifyViewport(browser, baseURL, viewport) {
     if (shop) shop.textContent = originalCopy.shop;
   }, originalMatchCopy);
   assert(!(await page.getByText("Source: DemandBox", { exact: true }).isVisible()), "Technical request details opened before the user asked.");
-  await transportCard
-    .locator('[data-cta-id$=".request-details"]')
-    .click({ force: true });
-  await transportCard.getByText("Source: DemandBox", { exact: true }).waitFor();
-  assert(await transportCard.getByText("Source: DemandBox", { exact: true }).isVisible(), "Details are not reachable.");
   assert((await transportCard.getByRole("button", { name: "Reply privately", exact: true }).count()) === 0, "The obsolete second reply-opening action returned.");
 
   await page.getByRole("button", { name: "View more needs", exact: true }).click();
@@ -605,7 +600,8 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(!heroBackground.includes("url("), "The category-neutral request hero unexpectedly contains a photo.");
 
   const compactTabs = freezerCard.locator('[data-gsn-demand-detail-tabs="compact"]');
-  assert((await compactTabs.getByRole("button").count()) === 2, "The compact request/privacy tabs are incomplete.");
+  assert((await compactTabs.getByRole("button").count()) === 1, "The compact privacy control is missing.");
+  assert((await compactTabs.getByRole("button", { name: "Details", exact: true }).count()) === 0, "Unnecessary request details remain exposed.");
   assert(await freezerCard.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible(), "The complete request message is not visible immediately.");
   const ownerConversationZone = freezerCard.locator('[data-gsn-demand-conversation-zone="primary"]');
   assert(await ownerConversationZone.isVisible(), "The owner conversation zone is not in place.");
@@ -613,14 +609,12 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert((await ownerPrivateReplies.getAttribute("data-gsn-demand-conversation-access")) === "available", "Existing private conversation access was not established.");
   assert(await ownerPrivateReplies.locator('[data-gsn-demand-conversation-heading="true"]').isVisible(), "The opened request lacks the conversation-first heading.");
   assert(await ownerPrivateReplies.isVisible(), "Existing private replies are not visible immediately.");
-  await compactTabs.getByRole("button", { name: "Details", exact: true }).click();
-  assert(await freezerCard.getByText("Source: DemandBox", { exact: true }).isVisible(), "Request evidence did not remain reachable.");
   await compactTabs.getByRole("button", { name: "Privacy", exact: true }).click();
   assert(await freezerCard.locator('[data-gsn-demand-detail-panel="privacy"]').isVisible(), "Privacy did not open.");
   const contactActions = freezerCard.locator('[data-gsn-demand-contact-actions="private"]');
   assert((await contactActions.getByRole("button").count()) === 1, "Private WhatsApp contact action is missing.");
   assert(await contactActions.getByRole("button", { name: "WhatsApp", exact: true }).isVisible(), "Private WhatsApp contact action is not visible.");
-  await compactTabs.getByRole("button", { name: "Privacy", exact: true }).click();
+    await compactTabs.getByRole("button", { name: "Privacy", exact: true }).click();
 
   assert((await freezerCard.getByRole("button", { name: "Listen & reply", exact: true }).count()) === 0, "The obsolete second listen-and-reply action returned.");
   const threadList = freezerCard.locator('[data-gsn-demand-thread-list="true"]');
@@ -628,8 +622,9 @@ async function verifyViewport(browser, baseURL, viewport) {
   const threadRows = threadList.locator('[data-gsn-demand-thread-row="true"]');
   assert((await threadRows.count()) === 2, "Separate private responder threads are not grouped into compact rows.");
   const conversation = freezerCard.locator('[data-gsn-demand-conversation="whatsapp-like"]');
-  await conversation.getByText("I can inspect the freezer after 4pm.", { exact: true }).waitFor();
-  assert((await conversation.getByText("I can also inspect it tomorrow morning.", { exact: true }).count()) === 0, "Another responder's private exchange leaked into the selected conversation.");
+  assert(await freezerCard.locator('[data-gsn-demand-conversation-picker="true"]').isVisible(), "The owner must choose a private thread before its conversation opens.");
+  assert(!(await conversation.isVisible().catch(() => false)), "A responder conversation opened before its row was selected.");
+  assert(await threadRows.first().locator('[data-gsn-demand-thread-avatar]').isVisible(), "The responder portrait or privacy-safe initials avatar is missing from the thread row.");
   await threadList.getByRole("button", { name: /Conversation with Ngozi Member/ }).click();
   await conversation.getByText("I can also inspect it tomorrow morning.", { exact: true }).waitFor();
   assert(await conversation.locator('[data-gsn-demand-message-avatar="initials"]').isVisible(), "The privacy-safe initials avatar is missing when no portrait was shared.");
@@ -785,7 +780,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   const categorySelect = form.getByLabel("Need type");
   assert(await categorySelect.isVisible(), "Need type selector is missing.");
   assert((await categorySelect.locator("option").count()) === 10, "Need type options are incomplete.");
-  assert(await page.getByRole("button", { name: "Record", exact: true }).isVisible(), "Voice recorder is missing.");
+  assert(await page.getByRole("button", { name: "Tap to record a voice note", exact: true }).isVisible(), "Voice recorder is missing.");
   const recorderWaveform = form.locator('[data-gsn-voice-recorder-waveform="hero"]');
   assert(await recorderWaveform.isVisible(), "The DemandBox composer hero waveform is missing.");
   const recorderWaveformGeometry = await recorderWaveform.evaluate((surface) => {
@@ -805,7 +800,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(recorderWaveformGeometry.barsWidth >= 180, "The DemandBox composer waveform is not visually dominant.");
   assert(recorderWaveformGeometry.barsHeight >= 44, "The DemandBox composer waveform is too short.");
   assert(recorderWaveformGeometry.centerOffset <= 3, "The DemandBox composer waveform is not centred.");
-  assert(await page.getByLabel("Add your need").isVisible(), "Written need field is missing.");
+  assert(await page.getByLabel("Chat").isVisible(), "Written need field is missing.");
   assert(await page.getByLabel("Area").isVisible(), "Area field is missing.");
   assert(await page.getByRole("button", { name: "Community", exact: true }).isVisible(), "Community visibility choice is missing.");
   assert(await page.getByRole("button", { name: "One person", exact: true }).isVisible(), "One person visibility choice is missing.");
@@ -818,10 +813,9 @@ async function verifyViewport(browser, baseURL, viewport) {
   if (createScreenshotPath && viewport.width === 390) {
     await createShell.screenshot({ path: createScreenshotPath });
   }
-  assert(await page.getByLabel("Add your need").isVisible(), "Written details field is missing from the main composer.");
+  assert(await page.getByLabel("Chat").isVisible(), "Written details field is missing from the main composer.");
   await page.locator('[data-cta-id="demand-box.more-options"]').click();
-  assert(await page.getByLabel("Add your need").isVisible(), "Written details disappeared after opening More options.");
-  assert(await page.getByLabel("WhatsApp number").isVisible(), "WhatsApp override is not reachable.");
+  assert(await page.getByLabel("Chat").isVisible(), "Written details disappeared after opening More options.");
   assert(await page.getByLabel("Urgency").isVisible(), "Urgency is not reachable.");
   assert(await page.getByLabel("Payment").isVisible(), "Payment preference is not reachable.");
   assert(await page.getByLabel("Proof needed").isVisible(), "Proof preference is not reachable.");
@@ -841,8 +835,8 @@ async function verifyViewport(browser, baseURL, viewport) {
 
   await page.getByRole("button", { name: "Community", exact: true }).click();
   await categorySelect.selectOption("Transport");
-  await page.getByLabel("Add your need").fill("Need a taxi");
-  await page.getByRole("button", { name: "Record", exact: true }).click();
+  await page.getByLabel("Chat").fill("Need a taxi");
+  await page.getByRole("button", { name: "Tap to record a voice note", exact: true }).click();
   assert(
     (await recorderWaveform.getAttribute("data-gsn-voice-recorder-waveform-state")) === "recording",
     "The composer waveform did not visibly enter its recording state."
@@ -854,7 +848,7 @@ async function verifyViewport(browser, baseURL, viewport) {
     "The active recording did not explain why posting was locked."
   );
   await page.getByRole("button", { name: "Stop recording", exact: true }).click();
-  await page.getByText("Voice note ready", { exact: true }).waitFor();
+  await page.getByText("Voice message ready", { exact: true }).waitFor();
   assert(!(await postButton.isDisabled()), "Post need did not unlock after the voice file became ready.");
   await postButton.click();
   await page.waitForFunction(() => !document.querySelector('[data-gsn-demand-create-form="simple"]'));

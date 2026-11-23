@@ -7519,3 +7519,14 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Attachment upload failures do not retry the request/reply submission, preventing duplicate records. Photos require matching file signatures; videos are ffmpeg-validated and limited to 30 seconds.
 - Verification: backend media plus DemandBox voice/response tests `7 passed`; frontend DemandBox audit passed; production build passed; phone smoke passed at 360x780, 390x844 and 430x932; Alembic head is `20261123_demand_media`.
 - Release note: this includes a backend migration and API routes, so it requires coordinated API and frontend deployment. No production deployment was performed in this worktree.
+
+# DemandBox responder thread open-on-click correction - 2026-11-23
+
+- Owner view no longer auto-opens the first private responder conversation. The existing responder row must be selected before its private exchange and reply composer render.
+- Responder rows now show the existing consented responder portrait when available, otherwise a privacy-safe initials fallback. No new identity data or permission path was added.
+- The existing pair-filtered response endpoint, message privacy boundary, voice notes, editable quick replies and responder isolation remain unchanged.
+- The compact composer now uses Chat for written need details, a direct Tap to record voice waveform, and a single Privacy disclosure on mobile; requester WhatsApp-number input and redundant mobile Details metadata were removed without changing contact authority.
+- Changed files: frontend/src/components/DemandResponsePanel.tsx, frontend/src/components/VoiceNoteRecorder.tsx, frontend/src/pages/DemandBoxPage.tsx, frontend/tools/audit-demand-box-front-package.mjs, frontend/tools/smoke-demand-box-simple-phone.mjs.
+- Verification passed: DemandBox front-package audit, TypeScript/build, and isolated phone smoke at 360x780, 390x844 and 430x932. No API, schema, migration, taxonomy or deployment changes were made.
+- Local only: no commit, push, main promotion or Render deployment was performed for this correction.
+- Standard private-reply voice capture now uses one compact radio-wave control labelled ?Record a voice message?; the existing recorder, preview, delete and send behavior is unchanged.

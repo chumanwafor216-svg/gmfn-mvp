@@ -1174,7 +1174,6 @@ export default function DemandBoxPage() {
   const [category, setCategory] = useState("");
   const [targetHandle, setTargetHandle] = useState("");
   const [visibilityScope, setVisibilityScope] = useState<DemandVisibilityScope>(DEMAND_VISIBILITY_COMMUNITY);
-  const [whatsappNumber, setWhatsappNumber] = useState("");
   const [expiresInHours, setExpiresInHours] = useState("72");
   const [paymentMode, setPaymentMode] = useState("");
   const [responseEvidence, setResponseEvidence] = useState("");
@@ -1709,7 +1708,6 @@ export default function DemandBoxPage() {
         category: selectedCategory.value,
         urgency: safeStr(urgency) || undefined,
         area: safeStr(area) || undefined,
-        whatsapp_number: safeStr(whatsappNumber) || undefined,
         expires_in_hours: Number(expiresInHours || 0) > 0 ? Number(expiresInHours) : undefined,
         payment_mode: safeStr(paymentMode) || undefined,
         allow_trust_credit: allowTrustCredit,
@@ -1746,7 +1744,6 @@ export default function DemandBoxPage() {
       setCategory("");
       setTargetHandle("");
       setVisibilityScope(DEMAND_VISIBILITY_COMMUNITY);
-      setWhatsappNumber("");
       setExpiresInHours("72");
       setPaymentMode("");
       setResponseEvidence("");
@@ -2000,7 +1997,6 @@ export default function DemandBoxPage() {
         description: buildAskCommunityDemandDescription(body, targetHandle, options),
         category: "Community Ask",
         urgency: "medium",
-        whatsapp_number: safeStr(whatsappNumber) || undefined,
         expires_in_hours: demandExpiryHoursFromAskCommunity(options),
       });
       setActiveQueueLane("ask_community");
@@ -2915,7 +2911,7 @@ export default function DemandBoxPage() {
                 data-gsn-demand-detail-tabs="compact"
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gridTemplateColumns: "1fr",
                   padding: 4,
                   borderRadius: 18,
                   background: "#F4F7FB",
@@ -2923,33 +2919,6 @@ export default function DemandBoxPage() {
                   boxShadow: "0 8px 18px rgba(15,23,42,0.06)",
                 }}
               >
-                <SecondaryButton
-                  type="button"
-                  aria-pressed={activeDetailTab === "request"}
-                  onClick={() =>
-                    setOpenDemandDetailTab(
-                      activeDetailTab === "request" ? "" : `${detailTabPrefix}request`
-                    )
-                  }
-                  debugId={debugBase + ".request-details"}
-                  stableHeight={48}
-                  style={{
-                    borderRadius: 14,
-                    border: 0,
-                    color: activeDetailTab === "privacy" ? "#0B1F33" : "#FFFFFF",
-                    background:
-                      activeDetailTab === "privacy"
-                        ? "transparent"
-                        : "linear-gradient(180deg, #116DDA 0%, #0755B5 100%)",
-                    boxShadow:
-                      activeDetailTab === "privacy"
-                        ? "none"
-                        : "0 8px 18px rgba(7,85,181,0.22)",
-                    fontSize: 12,
-                  }}
-                >
-                  {demandIconText("document", "Details", 19)}
-                </SecondaryButton>
                 <SubtleButton
                   type="button"
                   aria-pressed={activeDetailTab === "privacy"}
@@ -2979,47 +2948,7 @@ export default function DemandBoxPage() {
                 </SubtleButton>
               </div>
 
-              {activeDetailTab === "request" ? (
-                <div
-                  data-gsn-demand-detail-panel="request"
-                  style={{
-                    marginTop: 9,
-                    padding: 12,
-                    borderRadius: 16,
-                    background: "#F8FBFF",
-                    border: "1px solid rgba(13,95,168,0.10)",
-                  }}
-                >
-                  <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-                    <span style={badge(fromAskCommunity || protectedTarget)}>Source: {sourceLabel}</span>
-                    <span style={badge(false)}>Need type: {categoryLabel(row)}</span>
-                    <span data-gsn-demand-routing-chip="true" style={badge(mentionedHandles.length > 0)}>
-                      Route: {routingLabel(row)}
-                    </span>
-                    {mentionedHandles.length > 0 ? (
-                      <span style={badge(false)}>Typed tag: {mentionedHandles.join(", ")}</span>
-                    ) : null}
-                    {matchedTagCount > 0 ? (
-                      <span data-gsn-demand-matched-tag-chip="true" style={badge(true)}>
-                        Matched tags: {matchedTagCount}
-                      </span>
-                    ) : mentionedHandles.length > 0 ? (
-                      <span data-gsn-demand-matched-tag-chip="true" style={badge(false)}>
-                        No matched member yet
-                      </span>
-                    ) : null}
-                    {scope === "community" ? <span style={badge(false)}>By: {requesterName(row)}</span> : null}
-                    {safeStr(row?.requester_gmfn_id) && scope === "community" ? (
-                      <span style={badge(false)}>GSN ID {safeStr(row?.requester_gmfn_id)}</span>
-                    ) : null}
-                    {firstTruthy(row?.marketplace_name, row?.clan_name) ? (
-                      <span style={badge(false)}>Community: {firstTruthy(row?.marketplace_name, row?.clan_name)}</span>
-                    ) : null}
-                    {safeStr(row?.area) ? <span style={badge(false)}>Area: {safeStr(row?.area)}</span> : null}
-                    {safeStr(row?.created_at) ? <span style={badge(false)}>{safeDateTime(row?.created_at)}</span> : null}
-                  </div>
-                </div>
-              ) : activeDetailTab === "privacy" ? (
+              {activeDetailTab === "privacy" ? (
                 <div
                   data-gsn-demand-detail-panel="privacy"
                   style={{
@@ -4361,7 +4290,7 @@ export default function DemandBoxPage() {
 
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 3 }}>
                 <label htmlFor="demand-box-need">
-                  {demandCreateFieldLabel("Add your need")}
+                  {demandCreateFieldLabel("Chat")}
                 </label>
                 <textarea
                   id="demand-box-need"
@@ -4373,7 +4302,7 @@ export default function DemandBoxPage() {
                   placeholder={
                     voiceFile
                       ? "Optional when your voice note explains the need"
-                      : "Example: I need a hairdresser and details such as area, size or timing"
+                      : "Write what you need and any useful details"
                   }
                   style={{
                     ...textAreaStyle(),
@@ -4383,7 +4312,7 @@ export default function DemandBoxPage() {
                   }}
                 />
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  One box for the request and its details. New lines stay with the request.
+                  Your need and its details stay together.
                 </div>
               </div>
 
@@ -4533,20 +4462,7 @@ export default function DemandBoxPage() {
                     gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
                     gap: 12,
                   }}
-                >
-
-              <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
-                <label htmlFor="demand-box-whatsapp" style={sectionLabel()}>WhatsApp number</label>
-                <input
-                  id="demand-box-whatsapp"
-                  value={whatsappNumber}
-                  onChange={(e) => setWhatsappNumber(e.target.value)}
-                  placeholder="Optional WhatsApp number if your approved profile contact should not be used"
-                  style={{ ...inputStyle(), marginTop: 8 }}
-                />
-              </div>
-
-              <div>
+                >\n                  <div>
                 <label htmlFor="demand-box-urgency" style={sectionLabel()}>Urgency</label>
                 <select
                   id="demand-box-urgency"
