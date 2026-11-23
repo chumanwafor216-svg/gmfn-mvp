@@ -7494,3 +7494,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Replaced separate primary `Write your need` and `Add details` controls with one `Add your need` expandable field. The first line maps to the existing title payload and subsequent lines to the existing description payload; no API or schema contract changed.
 - Compactified the `Close` and `Change community` controls and reduced Community/One person visibility controls to 48px while preserving the existing permissions and selected-community context.
 - Focused checks: `npm run audit:demand-box-front-package`, `npm run build`, and `node tools/smoke-demand-box-simple-phone.mjs` passed at 360px, 390px, and 430px.
+
+
+# DemandBox responder thread compaction - 2026-11-23
+
+- Reused the existing response rows and privacy-filtered endpoint; owner view now groups replies into compact responder rows with a count and latest preview.
+- Selecting a responder row uses the existing private pair filter so only that requester/responder exchange is rendered.
+- The responder list is bounded and scrollable so many responders do not expand the whole page.
+- No backend, schema, migration, expiry, TrustSlip, or messaging semantics changed.
+- Verification: DemandBox package audit, production build, and phone smoke at 360/390/430.

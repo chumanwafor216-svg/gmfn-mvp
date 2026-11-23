@@ -60,6 +60,12 @@ function messageDay(value: string): string {
   });
 }
 
+function responsePreview(row: MarketplaceRequestResponseItem): string {
+  const text = String(row.text || "").trim();
+  if (text) return text;
+  if (Number(row.audio_attachment_id || 0) > 0 || row.audio_deleted_at) return "Voice note";
+  return "Private reply";
+}
 export default function DemandResponsePanel({
   requestId,
   ownerUserId,
@@ -145,6 +151,32 @@ export default function DemandResponsePanel({
     () => participants.find((participant) => participant.id === recipientUserId) || null,
     [participants, recipientUserId]
   );
+
+  const participantThreads = useMemo(() => {
+    if (!isOwner) return [];
+    const grouped = new Map<number, MarketplaceRequestResponseItem[]>();
+    rows.forEach((row) => {
+      const authorId = Number(row.author_user_id || 0);
+      const recipientId = Number(row.recipient_user_id || 0);
+      const peerId = authorId === ownerUserId ? recipientId : authorId;
+      if (!peerId || peerId === ownerUserId) return;
+      const threadRows = grouped.get(peerId) || [];
+      threadRows.push(row);
+      grouped.set(peerId, threadRows);
+    });
+    return participants
+      .map((participant) => {
+        const threadRows = grouped.get(participant.id) || [];
+        const lastRow = threadRows[threadRows.length - 1];
+        return {
+          ...participant,
+          count: threadRows.length,
+          lastRow,
+          preview: lastRow ? responsePreview(lastRow) : "No replies yet",
+        };
+      })
+      .filter((thread) => thread.count > 0);
+  }, [isOwner, ownerUserId, participants, rows]);
 
   const visibleRows = useMemo(() => {
     if (!isOwner) return rows;
@@ -244,33 +276,94 @@ export default function DemandResponsePanel({
         </div>
       </div> : null}
 
-      {conversationAccess === "available" && isOwner && participants.length > 1 ? (
-        <label
-          data-gsn-demand-conversation-participant="true"
-          style={{ display: "grid", gap: 6, color: "#29445E", fontSize: 12, fontWeight: 850 }}
-        >
-          <span>Private conversation</span>
-          <select
-            value={recipientUserId}
-            onChange={(event) => setRecipientUserId(Number(event.target.value || 0))}
+      {conversationAccess === "available" && isOwner && participantThreads.length > 0 ? (
+        <div data-gsn-demand-thread-list="true" style={{ display: "grid", gap: 7 }}>
+          <div
             style={{
-              minHeight: 46,
-              borderRadius: 14,
-              border: "1px solid rgba(13,95,168,0.18)",
-              padding: "0 12px",
-              background: "#FFFFFF",
-              color: "#0B1F33",
-              font: "inherit",
-              fontWeight: 800,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+              color: "#29445E",
+              fontSize: 12,
+              fontWeight: 900,
             }}
           >
-            {participants.map((participant) => (
-              <option key={participant.id} value={participant.id}>
-                Conversation with {participant.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            <span>Responses</span>
+            <span>{participantThreads.length} private threads</span>
+          </div>
+          <div
+            data-gsn-demand-thread-list-scroll="true"
+            style={{
+              display: "grid",
+              gap: 6,
+              maxHeight: compact ? 260 : 320,
+              overflowY: "auto",
+              padding: 2,
+              overscrollBehavior: "contain",
+            }}
+          >
+            {participantThreads.map((thread) => {
+              const selected = thread.id === recipientUserId;
+              return (
+                <button
+                  key={thread.id}
+                  type="button"
+                  data-gsn-demand-thread-row="true"
+                  aria-pressed={selected}
+                  onClick={() => setRecipientUserId(thread.id)}
+                  style={{
+                    width: "100%",
+                    minHeight: 64,
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr) auto",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "9px 11px",
+                    borderRadius: 14,
+                    border: selected
+                      ? "2px solid rgba(13,95,168,0.48)"
+                      : "1px solid rgba(13,95,168,0.14)",
+                    background: selected ? "#EAF3FF" : "#FFFFFF",
+                    color: "#0B1F33",
+                    textAlign: "left",
+                    font: "inherit",
+                    cursor: "pointer",
+                  }}
+                >
+                  <span style={{ minWidth: 0, display: "grid", gap: 3 }}>
+                    <span style={{ fontSize: 13, fontWeight: 900, overflowWrap: "anywhere" }}>
+                      Conversation with {thread.name}
+                    </span>
+                    <span
+                      style={{
+                        color: "#587087",
+                        fontSize: 11,
+                        lineHeight: 1.25,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {thread.count} {thread.count === 1 ? "reply" : "replies"} · {thread.preview}
+                    </span>
+                  </span>
+                  <span aria-hidden="true" style={{ color: "#0B4FA8", fontSize: 22, lineHeight: 1 }}>
+                    ›
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+      {conversationAccess === "available" && isOwner && selectedParticipant ? (
+        <div
+          data-gsn-demand-selected-thread="true"
+          style={{ color: "#587087", fontSize: 11, fontWeight: 850 }}
+        >
+          Conversation with {selectedParticipant.name}
+        </div>
       ) : null}
 
       {conversationAccess === "loading" || loading ? (

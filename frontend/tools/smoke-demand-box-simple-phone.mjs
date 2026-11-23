@@ -622,17 +622,18 @@ async function verifyViewport(browser, baseURL, viewport) {
   await compactTabs.getByRole("button", { name: "Privacy", exact: true }).click();
 
   assert((await freezerCard.getByRole("button", { name: "Listen & reply", exact: true }).count()) === 0, "The obsolete second listen-and-reply action returned.");
-  const participantPicker = freezerCard.locator('[data-gsn-demand-conversation-participant="true"] select');
-  await participantPicker.waitFor();
-  assert((await participantPicker.locator("option").count()) === 2, "Separate private responders are not selectable.");
+  const threadList = freezerCard.locator('[data-gsn-demand-thread-list="true"]');
+  await threadList.waitFor();
+  const threadRows = threadList.locator('[data-gsn-demand-thread-row="true"]');
+  assert((await threadRows.count()) === 2, "Separate private responder threads are not grouped into compact rows.");
   const conversation = freezerCard.locator('[data-gsn-demand-conversation="whatsapp-like"]');
   await conversation.getByText("I can inspect the freezer after 4pm.", { exact: true }).waitFor();
   assert((await conversation.getByText("I can also inspect it tomorrow morning.", { exact: true }).count()) === 0, "Another responder's private exchange leaked into the selected conversation.");
-  await participantPicker.selectOption({ label: "Conversation with Ngozi Member" });
+  await threadList.getByRole("button", { name: /Conversation with Ngozi Member/ }).click();
   await conversation.getByText("I can also inspect it tomorrow morning.", { exact: true }).waitFor();
   assert(await conversation.locator('[data-gsn-demand-message-avatar="initials"]').isVisible(), "The privacy-safe initials avatar is missing when no portrait was shared.");
   assert((await conversation.getByText("I can inspect the freezer after 4pm.", { exact: true }).count()) === 0, "The first responder's exchange remained visible after switching conversations.");
-  await participantPicker.selectOption({ label: "Conversation with Chidi Member" });
+  await threadList.getByRole("button", { name: /Conversation with Chidi Member/ }).click();
   await conversation.getByText("I can inspect the freezer after 4pm.", { exact: true }).waitFor();
   assert(await conversation.locator('[data-gsn-demand-message-direction="incoming"]').isVisible(), "The incoming reply bubble is missing.");
   assert(await conversation.locator('[data-gsn-demand-message-direction="outgoing"]').isVisible(), "The outgoing reply bubble is missing.");

@@ -146,6 +146,7 @@ function forbidPattern(input, file, pattern, message) {
   [/data-gsn-demand-message-avatar="portrait"[\s\S]*?data-gsn-demand-message-avatar="initials"/, "every reply must show the consented portrait or the privacy-safe initials fallback"],
   [/const visibleRows = useMemo[\s\S]*?authorId === ownerUserId && recipientId === recipientUserId[\s\S]*?authorId === recipientUserId && recipientId === ownerUserId/, "request owners must see one private participant exchange at a time"],
   [/Private exchange\. Only the requester and this member can read or play it\./, "the chat trail must retain its private-audience boundary"],
+  [/data-gsn-demand-thread-list="true"[\s\S]*?data-gsn-demand-thread-row="true"[\s\S]*?Conversation with/, "owners must see compact private responder threads before one selected conversation"],
 ].forEach(([pattern, message]) => requirePattern(responsePanelSource, responsePanelFile, pattern, message));
 
 [
