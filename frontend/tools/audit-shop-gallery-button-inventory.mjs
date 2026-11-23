@@ -31,9 +31,9 @@ const findings = [];
 
 const expectedPageSourceActions = {
   PrimaryButton: 7,
-  SecondaryButton: 12,
+  SecondaryButton: 13,
   StableCtaLink: 7,
-  total: 26,
+  total: 27,
 };
 const expectedExistingWorkflowPlusShortcuts = 4;
 const expectedNativeFieldCount = 0;
@@ -216,6 +216,7 @@ const expectedActionOrder = [
   "shop-gallery.sign-in-reconnect-shop",
   "shop-gallery.open-marketplace-refresh",
   "shop-gallery.product.${productOpenId}.toggle",
+  "shop-gallery.product.${productOpenId}.ask-seller",
   "shop-gallery.product.${productOpenId}.owner-share",
   "shop-gallery.product.${productOpenId}.paid-placement",
   "shop-gallery.product.${productOpenId}.owner-manage",
@@ -524,7 +525,7 @@ assertContains(
 );
 
 assertContains(
-  /const productOpenActionRailWidth = showBlockPlacementAction[\s\S]*?diaryActionWidth \* 4[\s\S]*?const productOpenActionColumns = showBlockPlacementAction[\s\S]*?repeat\(4,[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?label=\{`Manage media for \$\{displayTitle\}`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-manage`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
+  /const productOpenActionRailWidth = showBlockPlacementAction[\s\S]*?diaryActionWidth \* 4[\s\S]*?const productOpenActionColumns = showBlockPlacementAction[\s\S]*?repeat\(4,[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.ask-seller`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?label=\{`Manage media for \$\{displayTitle\}`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-manage`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
   "Expanded owner product cards must keep four fixed actions in order: close, Share, Repost, and the owner-only manage-media plus."
 );
 
@@ -638,7 +639,7 @@ assertNotContains(
 );
 
 assertContains(
-  /debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?width: diaryActionWidth[\s\S]*?maxWidth: diaryActionWidth[\s\S]*?showBlockPlacementAction \? \([\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
+  /debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.ask-seller`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
   "Public Shop product action dock must keep one always-available open/close control and reveal owner Share and Paid Repost only inside the opened product card."
 );
 

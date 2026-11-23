@@ -7554,3 +7554,21 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The existing reply composer now exposes the continuation action as `+ Voice note`; text, protected voice, quick replies and privacy boundaries remain unchanged.
 - Verification: `npx tsc -b --pretty false`, DemandBox front-package audit, `npm run build`, and the simple-phone smoke at 360x780, 390x844 and 430x932 passed. Smoke measured the compact match panel at 414px/414px/376px respectively.
 - Local only; no commit, push or deployment performed.
+
+# Shop product-to-seller handoff - 2026-11-23
+
+- Added a compact product-level seller-contact control to the opened public Shop product card for non-owners.
+- Reused the existing approved Shop WhatsApp/privacy projection and fallback copy path; the prepared message includes product title, listed price when available, Shop context and the product link.
+- The action records the existing marketplace attention event with source `public_shop_product_contact`.
+- No backend route, permission, schema, migration, payment, messaging, delivery or Protected Trade behavior changed.
+- This is only an enquiry handoff. It does not imply stock, agreement, payment, fulfilment or a verified sale.
+- The existing Protected Trade service remains the authoritative non-custodial evidence rail, but direct Shop-to-Trade creation is not added because it would create evidence before seller agreement.
+- Verification: TypeScript and `git diff --check` passed. Build and focused marketplace audits remain to be run.
+- Local only: no commit, push, main promotion or deployment performed for this Shop change.
+
+# Shop product enquiry verification - 2026-11-23
+
+- Focused Marketplace audits pass, including the updated Public Shop action inventory: 27 stable action templates with the product-level `ask-seller` action explicitly ordered and checked.
+- Frontend production build passes with TypeScript and Vite after rerunning with process-spawn permission; the initial sandbox-only `esbuild spawn EPERM` was environmental.
+- The local candidate remains based on `de1fe9dbe55b2f1ad1d6d2009b33b63ccae3fe15` and has not been pushed, promoted to `main`, deployed, or connected to production.
+- Known unrelated baseline failures remain outside this change: the Shop evidence-boundary audit and Marketplace trade-evidence lane audit. They were not altered.

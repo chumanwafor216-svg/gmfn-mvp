@@ -4718,6 +4718,7 @@ export default function ShopGalleryPage() {
     }
   }, [hiddenShelfEntryCount, showAllProducts]);
   const showBlockPlacementAction = signedInOwnsShop && !shopLoadFailed;
+  const showProductContactAction = !signedInOwnsShop && !shopLoadFailed;
   function blockPlacementPath(product: ShopProduct): string {
     const params = new URLSearchParams();
     const productId = positiveNumber(product.id);
@@ -5246,6 +5247,45 @@ export default function ShopGalleryPage() {
       text: copied
         ? "Owner WhatsApp is not ready on this shop. The message and shop link were copied instead."
         : "Owner WhatsApp is not ready on this shop, and clipboard copy was blocked.",
+    });
+  }
+
+  async function contactOwnerAboutProduct(product: ShopProduct) {
+    trackMarketplaceAttention("contact_tap", {
+      source: "public_shop_product_contact",
+    });
+
+    const productTitle = productDisplayTitle(product);
+    const shopTitle = firstMeaningful(
+      effectiveShop?.shopName,
+      effectiveShop?.ownerName,
+      "this GSN shop"
+    );
+    const priceText = firstMeaningful(product.priceText);
+    const message = [
+      `Hello, I found "${productTitle}" in ${shopTitle} on GSN.`,
+      priceText
+        ? `The listed price is ${priceText}.`
+        : "Please confirm the current price and availability.",
+      "I would like to ask about buying it.",
+    ].join(" ");
+    const productUrl = buildProductSocialShareTarget(product).url;
+
+    if (
+      openOwnerWhatsAppChat(
+        message,
+        "WhatsApp opened with the product details. Confirm price, availability and fulfilment with the seller."
+      )
+    ) {
+      return;
+    }
+
+    const copied = await safeCopy(`${message}\n${productUrl}`);
+    setNotice({
+      tone: copied ? "success" : "error",
+      text: copied
+        ? "The product enquiry and Shop link were copied. Send them to the seller."
+        : "The seller contact path is not ready and the enquiry could not be copied.",
     });
   }
 
@@ -8292,9 +8332,13 @@ export default function ShopGalleryPage() {
                   : 44;
                 const productOpenActionRailWidth = showBlockPlacementAction
                   ? diaryActionWidth * 4 + (isCompact ? 6 : 8) * 3
+                  : showProductContactAction
+                  ? diaryActionWidth * 2 + (isCompact ? 6 : 8)
                   : diaryActionWidth;
                 const productOpenActionColumns = showBlockPlacementAction
                   ? `repeat(4, ${diaryActionWidth}px)`
+                  : showProductContactAction
+                  ? `repeat(2, ${diaryActionWidth}px)`
                   : `${diaryActionWidth}px`;
                 const diaryMediaControlHeight = isCompact ? 34 : 38;
                 const diaryClosedDockHeight = isCompact ? 58 : 68;
@@ -8672,6 +8716,42 @@ export default function ShopGalleryPage() {
                             {isProductOpen ? "×" : "+"}
                           </span>
                         </SecondaryButton>
+                        {showProductContactAction ? (
+                          <SecondaryButton
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void contactOwnerAboutProduct(product);
+                            }}
+                            minWidth={0}
+                            stableHeight={diaryActionHeight}
+                            debugId={`shop-gallery.product.${productOpenId}.ask-seller`}
+                            aria-label={`Ask seller about ${displayTitle}`}
+                            title="Ask seller"
+                            data-product-contact-action="true"
+                            style={{
+                              ...secondaryBtn(false),
+                              width: diaryActionWidth,
+                              maxWidth: diaryActionWidth,
+                              minWidth: 0,
+                              minHeight: diaryActionHeight,
+                              padding: 0,
+                              borderRadius: 999,
+                              fontSize: isCompact ? 18 : 20,
+                              lineHeight: 1,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              color: "#0B63B6",
+                              background:
+                                "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
+                            }}
+                          >
+                            <GsnRealisticIcon
+                              name="phone-contact"
+                              size={isCompact ? 21 : 24}
+                              decorative
+                            />
+                          </SecondaryButton>
+                        ) : null}
                         {showBlockPlacementAction ? (
                           <SocialTagShareButton
                             target={buildProductSocialShareTarget(product)}
