@@ -24,6 +24,9 @@ type DemandResponsePanelProps = {
   currentUser: any;
   isOwner: boolean;
   compact?: boolean;
+  requestTitle?: string;
+  requestDetail?: string;
+  requestHasVoice?: boolean;
 };
 
 function clientKey(prefix: string): string {
@@ -74,6 +77,9 @@ export default function DemandResponsePanel({
   currentUser,
   isOwner,
   compact = false,
+  requestTitle = "",
+  requestDetail = "",
+  requestHasVoice = false,
 }: DemandResponsePanelProps) {
   const [rows, setRows] = useState<MarketplaceRequestResponseItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -337,7 +343,8 @@ export default function DemandResponsePanel({
                   type="button"
                   data-gsn-demand-thread-row="true"
                   aria-pressed={selected}
-                  onClick={() => setRecipientUserId(thread.id)}
+                  onClick={() => setRecipientUserId((current) => (current === thread.id ? 0 : thread.id))}
+                  aria-expanded={selected}
                   style={{
                     width: "100%",
                     minHeight: 64,
@@ -486,6 +493,36 @@ export default function DemandResponsePanel({
             scrollbarGutter: "stable",
           }}
         >
+          {requestTitle ? (
+            <div
+              data-gsn-demand-conversation-context="request"
+              style={{
+                padding: "8px 10px",
+                borderRadius: 14,
+                border: "1px solid rgba(13,95,168,0.14)",
+                background: "#F8FBFF",
+                display: "grid",
+                gap: 2,
+              }}
+            >
+              <span style={{ color: "#587087", fontSize: 10, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                Request context
+              </span>
+              <strong style={{ color: "#0B1F33", fontSize: 13, lineHeight: 1.25, overflowWrap: "anywhere" }}>
+                {requestTitle}
+              </strong>
+              {requestDetail ? (
+                <span style={{ color: "#536A81", fontSize: 11, lineHeight: 1.35, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                  {requestDetail}
+                </span>
+              ) : null}
+              {requestHasVoice ? (
+                <span style={{ color: "#0B4FA8", fontSize: 10, fontWeight: 850 }}>
+                  Voice detail attached
+                </span>
+              ) : null}
+            </div>
+          ) : null}
           <div
             style={{
               justifySelf: "center",
@@ -739,6 +776,7 @@ export default function DemandResponsePanel({
             disabled={sending || voiceRecording}
             debugPrefix={`demand-box.response.${requestId}.voice`}
             compact
+            startLabel="+ Voice note"
           />
           <details style={{ borderTop: "1px solid rgba(13,95,168,0.12)", paddingTop: 8 }}>
             <summary style={{ cursor: "pointer", color: "#29445E", fontSize: 12, fontWeight: 850 }}>

@@ -7530,3 +7530,27 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Verification passed: DemandBox front-package audit, TypeScript/build, and isolated phone smoke at 360x780, 390x844 and 430x932. No API, schema, migration, taxonomy or deployment changes were made.
 - Local only: no commit, push, main promotion or Render deployment was performed for this correction.
 - Standard private-reply voice capture now uses one compact radio-wave control labelled ?Record a voice message?; the existing recorder, preview, delete and send behavior is unchanged.
+
+# DemandBox compact Post a need surface - 2026-11-23
+
+- Reduced the mobile create-card padding and hero height, shortened the guidance to `Write or record.`, and tightened category and chat spacing.
+- Combined the selected-community display and change-community control into one compact collapsed disclosure row; removed the duplicate selected-community card.
+- Preserved request fields, audience controls, optional media, voice recording, submission behavior, permissions, APIs and backend contracts.
+- Updated the focused front-package audit and phone smoke expectations for the approved copy and compact community control.
+- Local follow-up only: no commit, push, main promotion or Render deployment was performed.
+
+# DemandBox responder toggle and voice continuation - 2026-11-23
+
+- Selecting the active private responder row now toggles that conversation closed; selecting another row still switches threads.
+- The private reply composer keeps the existing recorder and now labels the optional action `+ Voice note` with the radio-wave control.
+- Added smoke coverage for close/reopen behavior and the voice continuation action; no backend, permission, schema, media, notification or TrustSlip behavior changed.
+- Verification: TypeScript, front-package audit, production build, and phone smoke passed at 360x780, 390x844 and 430x932.
+- Local only: no commit, push, main promotion or Render deployment was performed.
+
+# DemandBox request detail and thread context - 2026-11-23
+- The request title remains the primary heading; written details, protected voice detail and permitted request media now render together in one request-detail surface.
+- Removed the duplicate standalone request voice/media presentation while preserving the existing protected player, deletion controls and media permissions.
+- Each opened private responder thread shows compact request context, keeps requester/responder exchanges separate, and can be toggled closed and reopened.
+- The existing reply composer now exposes the continuation action as `+ Voice note`; text, protected voice, quick replies and privacy boundaries remain unchanged.
+- Verification: `npx tsc -b --pretty false`, DemandBox front-package audit, `npm run build`, and the simple-phone smoke at 360x780, 390x844 and 430x932 passed. Smoke measured the compact match panel at 414px/414px/376px respectively.
+- Local only; no commit, push or deployment performed.

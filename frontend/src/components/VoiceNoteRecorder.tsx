@@ -12,6 +12,7 @@ type VoiceNoteRecorderProps = {
   debugPrefix: string;
   compact?: boolean;
   heroWaveform?: boolean;
+  startLabel?: string;
 };
 
 function preferredMimeType(): string {
@@ -40,6 +41,7 @@ export default function VoiceNoteRecorder({
   debugPrefix,
   compact = false,
   heroWaveform = false,
+  startLabel = "Record a voice message",
 }: VoiceNoteRecorderProps) {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -161,7 +163,7 @@ export default function VoiceNoteRecorder({
           {heroWaveform ? null : <GsnLegacyIcon name="audio" size={24} />}
           <div style={{ minWidth: 0 }}>
             <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-              {recording ? "Recording voice message" : value ? "Voice message ready" : "Record a voice message"}
+              {recording ? "Recording voice message" : value ? "Voice message ready" : startLabel}
             </div>
             {heroWaveform ? (
               <div style={{ color: "#587087", fontSize: 12, marginTop: 2 }}>{maxSeconds} seconds</div>
@@ -297,7 +299,7 @@ export default function VoiceNoteRecorder({
           type="button"
           onClick={() => void startRecording()}
           disabled={disabled}
-          aria-label="Record a voice message"
+          aria-label={startLabel}
           data-gsn-voice-recorder-waveform="standard"
           data-gsn-voice-recorder-waveform-state="ready"
           style={{
@@ -320,7 +322,7 @@ export default function VoiceNoteRecorder({
           <div style={{ width: "min(100%, 220px)" }}>
             <AudioWaveSignal mode="hero" />
           </div>
-          <span>Record a voice message</span>
+          <span>{startLabel}</span>
         </button>
       )}
 

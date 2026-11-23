@@ -429,8 +429,8 @@ function demandCreateCardStyle(isCompact: boolean): React.CSSProperties {
     ...pageCard(
       "radial-gradient(circle at 8% 2%, rgba(111,216,255,0.22) 0%, rgba(111,216,255,0) 28%), radial-gradient(circle at 96% 24%, rgba(190,105,255,0.14) 0%, rgba(190,105,255,0) 30%), linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(239,246,255,0.994) 100%)"
     ),
-    padding: isCompact ? 16 : 24,
-    borderRadius: isCompact ? 28 : 32,
+    padding: isCompact ? 10 : 24,
+    borderRadius: isCompact ? 22 : 32,
     border: "2px solid rgba(112,217,255,0.88)",
     boxShadow:
       "0 0 0 2px rgba(255,255,255,0.72) inset, 0 0 24px rgba(25,207,255,0.68), 0 0 52px rgba(121,61,255,0.46), 0 28px 62px rgba(0,8,28,0.48)",
@@ -439,8 +439,8 @@ function demandCreateCardStyle(isCompact: boolean): React.CSSProperties {
 
 function demandCreateHeroStyle(isCompact: boolean): React.CSSProperties {
   return {
-    minHeight: isCompact ? 88 : 108,
-    padding: isCompact ? "8px 6px 14px" : "10px 10px 16px",
+    minHeight: isCompact ? 68 : 108,
+    padding: isCompact ? "0 2px 6px" : "10px 10px 16px",
     borderRadius: isCompact ? 22 : 26,
     border: "none",
     background: "transparent",
@@ -2858,7 +2858,39 @@ export default function DemandBoxPage() {
               whiteSpace: "pre-wrap",
             }}
           >
-            {firstTruthy(row?.description, "No details yet.")}
+            {safeStr(row?.description) ? (
+              <div>{safeStr(row?.description)}</div>
+            ) : null}
+            {positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at ? (
+              <div style={{ marginTop: 8 }}>
+                <ProtectedVoiceNotePlayer
+                  attachmentId={positiveNumber(row?.audio_attachment_id)}
+                  durationSeconds={row?.audio_duration_seconds}
+                  deletedAt={row?.audio_deleted_at}
+                  canDelete={
+                    scope === "owner" && positiveNumber(row?.audio_attachment_id) > 0
+                  }
+                  debugId={`${debugBase}.listen`}
+                  label="Voice detail"
+                />
+              </div>
+            ) : null}
+            {row?.media_attachments?.length ? (
+              <div
+                data-gsn-demand-request-media="true"
+                style={{ display: "grid", gap: 8, marginTop: 8 }}
+              >
+                {row.media_attachments.map((attachment) => (
+                  <ProtectedDemandMedia key={attachment.id} attachment={attachment} compact={isCompact} />
+                ))}
+              </div>
+            ) : null}
+            {!safeStr(row?.description) &&
+            !positiveNumber(row?.audio_attachment_id) &&
+            !row?.audio_deleted_at &&
+            !row?.media_attachments?.length ? (
+              <span>No details yet.</span>
+            ) : null}
           </div>
 
           {rowId ? (
@@ -2871,36 +2903,15 @@ export default function DemandBoxPage() {
                 marginBottom: isCompact ? 2 : undefined,
               }}
             >
-              {positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at ? (
-                <div style={{ marginBottom: 10 }}>
-                  <ProtectedVoiceNotePlayer
-                    attachmentId={positiveNumber(row?.audio_attachment_id)}
-                    durationSeconds={row?.audio_duration_seconds}
-                    deletedAt={row?.audio_deleted_at}
-                    canDelete={
-                      scope === "owner" && positiveNumber(row?.audio_attachment_id) > 0
-                    }
-                    debugId={`${debugBase}.listen`}
-                    label="Request voice note"
-                  />
-                </div>
-              ) : null}
-              {row?.media_attachments?.length ? (
-                <div
-                  data-gsn-demand-request-media="true"
-                  style={{ display: "grid", gap: 8, marginBottom: 10 }}
-                >
-                  {row.media_attachments.map((attachment) => (
-                    <ProtectedDemandMedia key={attachment.id} attachment={attachment} compact={isCompact} />
-                  ))}
-                </div>
-              ) : null}
               <DemandResponsePanel
                 requestId={rowId}
                 ownerUserId={positiveNumber(row?.user_id)}
                 currentUser={me}
                 isOwner={scope === "owner"}
                 compact={isCompact}
+                requestTitle={safeStr(row?.title) || "Request"}
+                requestDetail={safeStr(row?.description)}
+                requestHasVoice={Boolean(positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at)}
               />
             </div>
           ) : null}
@@ -3794,9 +3805,15 @@ export default function DemandBoxPage() {
             >
               <span style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 9 }}>
                 <GsnLegacyIcon name="community" size={27} />
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {currentMarketplaceName}
+                <span style={{ minWidth: 0, display: "grid", gap: 1, overflow: "hidden" }}>
+                  <span style={{ color: "#587087", fontSize: 9, fontWeight: 900, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                    Selected community
+                  </span>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {currentMarketplaceName}
+                  </span>
                 </span>
+                <span aria-hidden="true" style={{ color: "#587087", fontSize: 18, lineHeight: 1 }}>?</span>
               </span>
               <span aria-hidden="true" style={{ fontSize: 22, lineHeight: 1 }}>âŒ„</span>
             </StableCtaLink>
@@ -4061,7 +4078,7 @@ export default function DemandBoxPage() {
                 lineHeight: 1.4,
               }}
             >
-              Write it or record a voice note.
+              Write or record.
             </div>
           </div>
         </div>
@@ -4069,35 +4086,39 @@ export default function DemandBoxPage() {
         {!isCreateMode ? (
           <div
             style={{
-              marginTop: 8,
+              marginTop: 4,
               display: "flex",
               alignItems: "center",
-              gap: 8,
+              gap: 6,
               flexWrap: "wrap",
             }}
           >
             <SecondaryButton
               type="button"
+              aria-label="Close"
               debugId="demand-box.create.close"
               onClick={() => setCreatePanelOpen(false)}
-              stableHeight={40}
+              stableHeight={36}
               style={{
-                ...demandActionStyle(40),
-                width: "auto",
-                minWidth: 0,
-                padding: "0 14px",
+                ...demandActionStyle(36),
+                width: 36,
+                minWidth: 36,
+                padding: 0,
                 borderRadius: 999,
-                fontSize: 13,
+                fontSize: 24,
+                lineHeight: 1,
+                fontWeight: 700,
               }}
             >
-              {demandIconText("lock", "Close", 16)}
+              <span aria-hidden="true">×</span>
             </SecondaryButton>
             <details
+              data-gsn-demand-community-context="selected"
               style={{
                 flex: "1 1 210px",
                 minWidth: 0,
                 border: "1px solid rgba(79,139,211,0.20)",
-                borderRadius: 999,
+                borderRadius: 14,
                 background: "#F8FBFF",
                 overflow: "hidden",
               }}
@@ -4106,13 +4127,21 @@ export default function DemandBoxPage() {
                 style={{
                   ...detailsSummary(),
                   minWidth: 0,
-                  padding: "0 14px",
-                  fontSize: 13,
+                  padding: "0 10px",
+                  fontSize: 12,
                 }}
-                stableHeight={40}
+                stableHeight={36}
                 debugId="demand-box.change-community.summary"
               >
-                <span>Change community</span>
+                <span style={{ minWidth: 0, display: "grid", gap: 1, overflow: "hidden" }}>
+                  <span style={{ color: "#587087", fontSize: 9, fontWeight: 900, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                    Selected community
+                  </span>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {currentMarketplaceName}
+                  </span>
+                </span>
+                <span aria-hidden="true" style={{ color: "#587087", fontSize: 18, lineHeight: 1 }}>?</span>
               </StableDisclosureSummary>
 
           <div
@@ -4166,39 +4195,6 @@ export default function DemandBoxPage() {
           </div>
         ) : null}
 
-        <div
-          data-gsn-demand-community-context="selected"
-          style={{
-            marginTop: 4,
-            padding: isCompact ? "12px 14px" : "14px 16px",
-            borderRadius: 20,
-            border: "2px solid rgba(220,168,45,0.56)",
-            background: "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
-            boxShadow:
-              "0 12px 24px rgba(20,67,118,0.12), inset 0 1px 0 rgba(255,255,255,0.98)",
-            display: "grid",
-            gridTemplateColumns: "auto minmax(0, 1fr)",
-            gap: 12,
-            alignItems: "center",
-          }}
-        >
-          <GsnLegacyIcon name="marketplace" size={isCompact ? 34 : 38} />
-          <div style={{ minWidth: 0 }}>
-            <div style={sectionLabel()}>Selected community</div>
-            <div
-              style={{
-                marginTop: 3,
-                color: "#0B4FA8",
-                fontSize: isCompact ? 16 : 18,
-                fontWeight: 900,
-                lineHeight: 1.25,
-                overflowWrap: "anywhere",
-              }}
-            >
-              {currentMarketplaceName}
-            </div>
-          </div>
-        </div>
         {demandBoxFeatureOff ? (
           <div
             style={{
@@ -4214,10 +4210,10 @@ export default function DemandBoxPage() {
         <div
           data-gsn-demand-create-form="simple"
           style={{
-            marginTop: isCompact ? 14 : 18,
+            marginTop: isCompact ? 8 : 18,
             display: "grid",
             gridTemplateColumns: "1fr",
-            gap: isCompact ? 16 : 18,
+            gap: isCompact ? 10 : 18,
             alignItems: "start",
           }}
         >
@@ -4226,7 +4222,7 @@ export default function DemandBoxPage() {
               style={{
                 display: "grid",
                 gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-                gap: 12,
+                gap: isCompact ? 8 : 12,
               }}
             >
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 1 }}>
@@ -4234,13 +4230,13 @@ export default function DemandBoxPage() {
                 <div
                   data-gsn-demand-category-selector="true"
                   style={{
-                    marginTop: 8,
+                    marginTop: 4,
                     display: "grid",
                     gridTemplateColumns: "auto minmax(0, 1fr)",
                     alignItems: "center",
                     gap: 10,
-                    padding: "10px 12px",
-                    borderRadius: 16,
+                    padding: "5px 8px",
+                    borderRadius: 12,
                     border: "1px solid rgba(13,95,168,0.16)",
                     background: "#FFFFFF",
                   }}
@@ -4253,9 +4249,9 @@ export default function DemandBoxPage() {
                     onChange={(event) => setCategory(event.target.value)}
                     style={{
                       ...inputStyle(),
-                      minHeight: 42,
+                      minHeight: 36,
                       margin: 0,
-                      padding: "8px 10px",
+                      padding: "6px 8px",
                       border: 0,
                       boxShadow: "none",
                       background: "transparent",
@@ -4271,7 +4267,7 @@ export default function DemandBoxPage() {
                   </select>
                 </div>
                 <div style={{ marginTop: 7, ...helperText(), fontSize: 12 }}>
-                  Choose the closest type. Your words still do the matching.
+                  Optional. Your words do the matching.
                 </div>
               </div>
 
@@ -4285,12 +4281,13 @@ export default function DemandBoxPage() {
                   debugPrefix="demand-box.request.voice"
                   compact={isCompact}
                   heroWaveform={isCompact}
+                  startLabel="Record your need"
                 />
               </div>
 
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 3 }}>
                 <label htmlFor="demand-box-need">
-                  {demandCreateFieldLabel("Chat")}
+                  {demandCreateFieldLabel("Write your need")}
                 </label>
                 <textarea
                   id="demand-box-need"
@@ -4306,14 +4303,11 @@ export default function DemandBoxPage() {
                   }
                   style={{
                     ...textAreaStyle(),
-                    marginTop: 8,
-                    minHeight: isCompact ? 96 : 112,
+                    marginTop: 4,
+                    minHeight: isCompact ? 76 : 112,
                     resize: "vertical",
                   }}
                 />
-                <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  Your need and its details stay together.
-                </div>
               </div>
 
               {visibilityScope === DEMAND_VISIBILITY_PROTECTED ? (
