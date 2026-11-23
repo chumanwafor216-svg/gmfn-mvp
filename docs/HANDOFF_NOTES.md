@@ -7474,3 +7474,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Changed files: frontend/src/components/DemandResponsePanel.tsx, frontend/src/pages/DemandBoxPage.tsx, frontend/tools/audit-demand-box-front-package.mjs, frontend/tools/smoke-demand-box-simple-phone.mjs.
 - Verification: DemandBox front-package audit passed; mobile smoke passed at 360x780, 390x844 and 430x932; frontend production build passed. The smoke test required normal process-launch permissions because restricted Windows execution returned spawn EPERM.
 - No backend, schema, migration, taxonomy, payment or Phase 2 changes.
+
+# DemandBox posting form compaction - 2026-11-23
+
+- Replaced the nine-card need-type wall in the existing `Post a need` composer with one accessible selector containing all governed categories, including `Other need`.
+- Moved written details out of `More options` and onto the primary composer beside the existing `Write your need` field and 60-second voice recorder. The same `description` payload and existing request/voice APIs remain in use.
+- Shortened the create hero to `What do you need?` and `Write it or record a voice note.`; community visibility, protected one-person routing, area, optional settings and private response infrastructure are unchanged.
+- Changed files: `frontend/src/pages/DemandBoxPage.tsx`, `frontend/tools/audit-demand-box-front-package.mjs`, `frontend/tools/smoke-demand-box-simple-phone.mjs`. No backend, schema, migration, taxonomy, matching or payment changes.
+- Verification: DemandBox front-package audit passed; production frontend build passed; simple-phone smoke passed at 390x844, 360x780 and 430x932. Restricted Windows build/smoke processes required the approved elevated path because esbuild otherwise returned `spawn EPERM`.
+- Pending release action: this focused frontend correction is local on `codex/demand-box-phase1-release-verified`; commit/push/main promotion and Render frontend deployment require the active pilot release protocol.

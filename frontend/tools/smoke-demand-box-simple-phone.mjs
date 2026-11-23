@@ -764,7 +764,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await createShell.isVisible(), "The approved DemandBox create background is missing.");
   assert(await createHero.isVisible(), "The text-first create hero is missing.");
   assert((await createHero.locator('[data-gsn-3d-icon]').count()) === 0, "The decorative hero icon returned.");
-  assert(await createCard.getByText("Share one clear need with the right people.", { exact: true }).isVisible(), "The create task guidance is missing.");
+  assert(await createCard.getByText("Write it or record a voice note.", { exact: true }).isVisible(), "The create task guidance is missing.");
   assert(await communityContext.getByText("Blessed Satch family Marketplace", { exact: true }).isVisible(), "The selected community context is missing.");
   assert(!(await communityContext.getByText("Blessed Satch family Marketplace Marketplace", { exact: true }).isVisible().catch(() => false)), "Marketplace is duplicated in the selected community name.");
   const createVisuals = await createShell.evaluate((shell) => {
@@ -780,22 +780,9 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(createVisuals.shellBackground.includes("radial-gradient"), "The approved blue-purple DemandBox background is missing.");
   assert(createVisuals.cardBackground.includes("linear-gradient"), "The approved light DemandBox card is missing.");
   assert(createVisuals.cardShadow !== "none", "The approved DemandBox card glow is missing.");
-  for (const label of [
-    "Transport",
-    "Repairs",
-    "Food",
-    "Books",
-    "Housing",
-    "Personal care",
-    "Home services",
-    "Work & business",
-    "Other need",
-  ]) {
-    assert(
-      await form.getByRole("button", { name: label, exact: true }).isVisible(),
-      "Category picture choice is missing: " + label
-    );
-  }
+  const categorySelect = form.getByLabel("Need type");
+  assert(await categorySelect.isVisible(), "Need type selector is missing.");
+  assert((await categorySelect.locator("option").count()) === 10, "Need type options are incomplete.");
   assert(await page.getByRole("button", { name: "Record", exact: true }).isVisible(), "Voice recorder is missing.");
   const recorderWaveform = form.locator('[data-gsn-voice-recorder-waveform="hero"]');
   assert(await recorderWaveform.isVisible(), "The DemandBox composer hero waveform is missing.");
@@ -816,22 +803,22 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(recorderWaveformGeometry.barsWidth >= 180, "The DemandBox composer waveform is not visually dominant.");
   assert(recorderWaveformGeometry.barsHeight >= 44, "The DemandBox composer waveform is too short.");
   assert(recorderWaveformGeometry.centerOffset <= 3, "The DemandBox composer waveform is not centred.");
-  assert(await page.getByLabel("Short heading").isVisible(), "Short heading field is missing.");
+  assert(await page.getByLabel("Write your need").isVisible(), "Written need field is missing.");
   assert(await page.getByLabel("Area").isVisible(), "Area field is missing.");
   assert(await page.getByRole("button", { name: "Community", exact: true }).isVisible(), "Community visibility choice is missing.");
   assert(await page.getByRole("button", { name: "One person", exact: true }).isVisible(), "One person visibility choice is missing.");
   assert((await page.getByRole("button", { name: "Community", exact: true }).getAttribute("aria-pressed")) === "true", "Community visibility is not visibly selected by default.");
   const textOnlyFieldLabels = form.locator('[data-gsn-demand-field-label="text-only"]');
-  assert((await textOnlyFieldLabels.count()) === 4, "The four create-form headings are not text-only.");
+  assert((await textOnlyFieldLabels.count()) === 5, "The five create-form headings are not text-only.");
   assert((await textOnlyFieldLabels.locator('[data-gsn-3d-icon]').count()) === 0, "A decorative field-heading icon returned.");
   assert((await page.locator('[data-cta-id="demand-box.more-options"] [data-gsn-3d-icon]').count()) === 0, "The More options heading icon returned.");
   const createScreenshotPath = process.env.GSN_DEMAND_BOX_CREATE_SCREENSHOT_PATH?.trim();
   if (createScreenshotPath && viewport.width === 390) {
     await createShell.screenshot({ path: createScreenshotPath });
   }
-  assert(!(await page.getByLabel("Short explanation").isVisible().catch(() => false)), "Optional fields opened before More options.");
+  assert(await page.getByLabel("Add details (optional)").isVisible(), "Written details field is missing from the main composer.");
   await page.locator('[data-cta-id="demand-box.more-options"]').click();
-  assert(await page.getByLabel("Short explanation").isVisible(), "Short explanation is not reachable.");
+  assert(await page.getByLabel("Add details (optional)").isVisible(), "Written details disappeared after opening More options.");
   assert(await page.getByLabel("WhatsApp number").isVisible(), "WhatsApp override is not reachable.");
   assert(await page.getByLabel("Urgency").isVisible(), "Urgency is not reachable.");
   assert(await page.getByLabel("Payment").isVisible(), "Payment preference is not reachable.");
@@ -851,8 +838,8 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(createGeometry.width <= viewport.width - 24, "The premium create card is too wide for the phone viewport.");
 
   await page.getByRole("button", { name: "Community", exact: true }).click();
-  await form.getByRole("button", { name: "Transport", exact: true }).click();
-  await page.getByLabel("Short heading").fill("Need a taxi");
+  await categorySelect.selectOption("Transport");
+  await page.getByLabel("Write your need").fill("Need a taxi");
   await page.getByRole("button", { name: "Record", exact: true }).click();
   assert(
     (await recorderWaveform.getAttribute("data-gsn-voice-recorder-waveform-state")) === "recording",

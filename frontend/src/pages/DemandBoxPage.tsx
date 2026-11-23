@@ -427,7 +427,7 @@ function demandCreateCardStyle(isCompact: boolean): React.CSSProperties {
 
 function demandCreateHeroStyle(isCompact: boolean): React.CSSProperties {
   return {
-    minHeight: isCompact ? 110 : 124,
+    minHeight: isCompact ? 88 : 108,
     padding: isCompact ? "8px 6px 14px" : "10px 10px 16px",
     borderRadius: isCompact ? 22 : 26,
     border: "none",
@@ -4094,13 +4094,13 @@ export default function DemandBoxPage() {
               style={{
                 marginTop: 8,
                 color: "#07182F",
-                fontSize: isCompact ? 25 : 32,
+                fontSize: isCompact ? 22 : 30,
                 fontWeight: 900,
                 lineHeight: 1.04,
                 textWrap: "balance",
               }}
             >
-              {"Post from " + currentMarketplaceName + "."}
+              {"What do you need?"}
             </div>
             <div
               style={{
@@ -4111,7 +4111,7 @@ export default function DemandBoxPage() {
                 lineHeight: 1.4,
               }}
             >
-              Share one clear need with the right people.
+              Write it or record a voice note.
             </div>
           </div>
         </div>
@@ -4267,50 +4267,46 @@ export default function DemandBoxPage() {
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 1 }}>
                 <div>{demandCreateFieldLabel("What kind of help is this?")}</div>
                 <div
-                  data-gsn-demand-category-pictures="true"
+                  data-gsn-demand-category-selector="true"
                   style={{
                     marginTop: 8,
                     display: "grid",
-                    gridTemplateColumns: isCompact
-                      ? "repeat(3, minmax(0, 1fr))"
-                      : "repeat(6, minmax(0, 1fr))",
-                    gap: 9,
+                    gridTemplateColumns: "auto minmax(0, 1fr)",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "10px 12px",
+                    borderRadius: 16,
+                    border: "1px solid rgba(13,95,168,0.16)",
+                    background: "#FFFFFF",
                   }}
                 >
-                  {DEMAND_CATEGORY_CHOICES.map((choice) => {
-                    const active = category === choice.value;
-                    return (
-                      <SecondaryButton
-                        key={choice.value}
-                        type="button"
-                        aria-pressed={active}
-                        onClick={() => setCategory(choice.value)}
-                        stableHeight={76}
-                        debugId={`demand-box.category-choice.${choice.value.toLowerCase()}`}
-                        style={{
-                          borderRadius: 16,
-                          padding: "8px 5px",
-                          display: "grid",
-                          placeItems: "center",
-                          gap: 3,
-                          color: active ? "#FFFFFF" : "#0B1F33",
-                          background: active
-                            ? "linear-gradient(180deg, #116DDA 0%, #0755B5 100%)"
-                            : "#FFFFFF",
-                          border: active
-                            ? "2px solid rgba(242,199,102,0.92)"
-                            : "1px solid rgba(13,95,168,0.16)",
-                          fontSize: 11,
-                        }}
-                      >
-                        <GsnLegacyIcon name={choice.icon} size={28} />
-                        <span>{choice.label}</span>
-                      </SecondaryButton>
-                    );
-                  })}
+                  <GsnLegacyIcon name={demandCategoryChoice(category).icon} size={28} />
+                  <select
+                    id="demand-box-category"
+                    aria-label="Need type"
+                    value={category}
+                    onChange={(event) => setCategory(event.target.value)}
+                    style={{
+                      ...inputStyle(),
+                      minHeight: 42,
+                      margin: 0,
+                      padding: "8px 10px",
+                      border: 0,
+                      boxShadow: "none",
+                      background: "transparent",
+                      fontWeight: 800,
+                    }}
+                  >
+                    <option value="">Choose a need type</option>
+                    {DEMAND_CATEGORY_CHOICES.map((choice) => (
+                      <option key={choice.value} value={choice.value}>
+                        {choice.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div style={{ marginTop: 7, ...helperText(), fontSize: 12 }}>
-                  Choose the closest subject. If it is not listed, choose Other need and describe exactly what you want. Matching uses your words; this choice is not a provider or availability claim.
+                  Choose the closest type. Your words still do the matching.
                 </div>
               </div>
 
@@ -4329,7 +4325,7 @@ export default function DemandBoxPage() {
 
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 3 }}>
                 <label htmlFor="demand-box-title">
-                  {demandCreateFieldLabel("Short heading")}
+                  {demandCreateFieldLabel("Write your need")}
                 </label>
                 <input
                   id="demand-box-title"
@@ -4341,6 +4337,18 @@ export default function DemandBoxPage() {
                       : "Example: I need a hairdresser"
                   }
                   style={{ ...demandCreateInputStyle(), marginTop: 8 }}
+                />
+              </div>
+              <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 4 }}>
+                <label htmlFor="demand-box-description">
+                  {demandCreateFieldLabel("Add details (optional)")}
+                </label>
+                <textarea
+                  id="demand-box-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Add a few words to explain what you need"
+                  style={{ ...textAreaStyle(), marginTop: 8, minHeight: isCompact ? 84 : undefined }}
                 />
               </div>
 
@@ -4491,16 +4499,6 @@ export default function DemandBoxPage() {
                     gap: 12,
                   }}
                 >
-              <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
-                <label htmlFor="demand-box-description" style={sectionLabel()}>Short explanation</label>
-                <textarea
-                  id="demand-box-description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Add a short explanation so people can understand the need quickly"
-                  style={{ ...textAreaStyle(), marginTop: 8 }}
-                />
-              </div>
 
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
                 <label htmlFor="demand-box-whatsapp" style={sectionLabel()}>WhatsApp number</label>
