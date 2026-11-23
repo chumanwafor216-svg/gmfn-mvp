@@ -7581,3 +7581,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Shop contact keeps the existing WhatsApp fallback when native enquiry creation is unavailable.
 - No cart, payment, agreement, fulfilment, verified-sale or Protected Trade record is created automatically. Existing trade handoff remains limited to authorised DemandBox supply matches.
 - Verification: `tests/test_marketplace_requests.py` 22 passed; focused product-enquiry test passed; frontend TypeScript/Vite build passed. No production push or deployment performed.
+
+# Shop enquiry to Protected Trade continuation - 2026-11-23
+
+- DemandBox supply matches now expose a guarded `Continue to protected trade` action for the request owner when a validated demand, product and Shop context is present.
+- The action reuses the existing Marketplace Trade Evidence route and carries `trade_source=demand_supply_match`, the demand/product/Shop identifiers, community context and match reason codes.
+- No Protected Trade record is created by the DemandBox link. The existing backend handoff revalidates requester authority, product/Shop visibility, relevance and community or relay permission before an explicit trade-record action.
+- Non-owners and malformed match rows do not receive the continuation action; existing Ask seller, View Shop, WhatsApp fallback and private response permissions remain unchanged.
+- Verification: focused DemandBox/product-enquiry and Protected Trade tests `37 passed`; frontend TypeScript/Vite production build and Marketplace/Shop action audits passed.
+- Local release candidate only; no push, merge, production migration or deployment performed.

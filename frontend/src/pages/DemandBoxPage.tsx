@@ -2122,6 +2122,28 @@ export default function DemandBoxPage() {
   }
 
 
+  function demandMatchTradePath(row: DemandRow, match: DemandSupplyMatchItem): string {
+    if (!isMineRow(row, me)) return routes.marketplace;
+
+    const [pathAndSearch] = routes.marketplace.split("#", 2);
+    const [path, existingSearch = ""] = pathAndSearch.split("?", 2);
+    const params = new URLSearchParams(existingSearch);
+    const clanId = positiveNumber(match.clan_id || selectedClanId);
+    const demandId = positiveNumber(row?.id || match.demand_id);
+    const productId = positiveNumber(match.product_id);
+    const shopId = positiveNumber(match.shop_id);
+    if (clanId) params.set("community", String(clanId));
+    if (demandId) params.set("source_demand_id", String(demandId));
+    if (productId) params.set("source_match_product_id", String(productId));
+    if (shopId) params.set("source_match_shop_id", String(shopId));
+    params.set("trade_source", "demand_supply_match");
+    const reasonCodes = Array.isArray(match.reason_codes)
+      ? match.reason_codes.filter(Boolean).join(",")
+      : "";
+    if (reasonCodes) params.set("source_match_reason_codes", reasonCodes);
+    const query = params.toString();
+    return `${path}${query ? `?${query}` : ""}#marketplace-trade-evidence`;
+  }
   async function askMatchedSeller(row: DemandRow, match: DemandSupplyMatchItem, shopPath: string) {
     const demandId = positiveNumber(row?.id || match.demand_id);
     const productId = positiveNumber(match.product_id);
@@ -2246,9 +2268,14 @@ export default function DemandBoxPage() {
           {shownMatches.map((match) => {
             const evidence = demandMatchEvidenceSentence(match);
             const to = demandMatchSupplyPath(row, match);
+            const tradeTo = demandMatchTradePath(row, match);
             const title = firstTruthy(match.product_title, "Possible listing");
             const shopName = firstTruthy(match.shop_name, "Marketplace shop");
             const canAskSeller = isMineRow(row, me);
+            const canOpenProtectedTrade = canAskSeller
+              && positiveNumber(row?.id || match.demand_id) > 0
+              && positiveNumber(match.product_id) > 0
+              && positiveNumber(match.shop_id) > 0;
             const contactKey = `${rowId}:${positiveNumber(match.product_id)}:${positiveNumber(match.shop_id)}`;
             const preparingContact = preparingSellerContactKey === contactKey;
             return (
@@ -2324,6 +2351,25 @@ export default function DemandBoxPage() {
                     >
                       Ask seller
                     </PrimaryButton>
+                  ) : null}
+                  {canOpenProtectedTrade ? (
+                    <StableCtaLink
+                      to={tradeTo}
+                      debugId={`${debugBase}.protected-trade.${match.product_id}`}
+                      aria-label={`Continue to protected trade for ${title}`}
+                      data-gsn-demand-protected-trade="validated"
+                      stableHeight={44}
+                      minWidth={92}
+                      style={{
+                        borderRadius: 12,
+                        padding: "8px 9px",
+                        fontSize: 12,
+                        fontWeight: 900,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Continue to protected trade
+                    </StableCtaLink>
                   ) : null}
                   <StableCtaLink
                     to={to}
