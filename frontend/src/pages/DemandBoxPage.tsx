@@ -2854,7 +2854,12 @@ export default function DemandBoxPage() {
           {rowId ? (
             <div
               data-gsn-demand-respond-in-place="true"
-              style={{ padding: isCompact ? "0 12px" : undefined, marginTop: 10 }}
+              data-gsn-demand-conversation-zone="primary"
+              style={{
+                padding: isCompact ? "0 12px" : undefined,
+                marginTop: 10,
+                marginBottom: isCompact ? 2 : undefined,
+              }}
             >
               {positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at ? (
                 <div style={{ marginBottom: 10 }}>

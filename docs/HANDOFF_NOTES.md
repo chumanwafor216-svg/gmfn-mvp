@@ -7450,3 +7450,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Notification retry integrity defect remains separate: response commit precedes notification creation and the duplicate-response retry path can return before recreating a failed notification.
 - Full scope, smoke plan, rollback, and Enugu checklist: `docs/GSN_ENUGU_CDW_ADOPTION_PILOT_RELEASE_CANDIDATE_2026-11-23.md`.
 - Not pushed, merged, or deployed. Founder must approve the exact final SHA before release.
+
+# DemandBox Phase 1B conversation-first presentation - 2026-11-23
+
+- Phase 1B keeps the approved Phase 1A unified `Post a need` entry and makes the existing opened-request private conversation visually primary through `DemandResponsePanel` and the existing `DemandBoxPage` response zone.
+- The compact surface now waits for the existing server-authorised response-list call before showing the conversation heading, thread or composer. Any load failure fails closed to a short unavailable state while the request and matching actions remain available.
+- Existing text, protected voice, editable seller quick replies, separate owner responder threads, lifecycle actions, matches and details are unchanged in authority and destination.
+- Local candidate branch: `codex/demand-box-phase1-release-verified`. No push, merge or deployment was performed. Screenshots are ignored local evidence under `frontend/screenshots/phase1-demandbox-phase1b/`.

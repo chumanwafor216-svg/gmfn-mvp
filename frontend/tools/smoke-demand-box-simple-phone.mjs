@@ -384,8 +384,12 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "Opening a request did not expose exactly one card.");
   assert(await transportCard.locator('[data-gsn-demand-request-hero="request"]').isVisible(), "Opened request hero is missing.");
   assert(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible(), "The complete request message did not open with the request.");
-  assert(await transportCard.locator('[data-gsn-demand-respond-in-place="true"]').isVisible(), "The response surface did not open with the request.");
-  assert(await transportCard.locator('[data-gsn-demand-private-replies="true"]').isVisible(), "Private replies still require another navigation step.");
+  const transportConversationZone = transportCard.locator('[data-gsn-demand-conversation-zone="primary"]');
+  assert(await transportConversationZone.isVisible(), "The primary conversation zone did not open with the request.");
+  const transportPrivateReplies = transportCard.locator('[data-gsn-demand-private-replies="true"]');
+  assert((await transportPrivateReplies.getAttribute("data-gsn-demand-conversation-access")) === "available", "Conversation access was not established before rendering the responder surface.");
+  assert(await transportPrivateReplies.locator('[data-gsn-demand-conversation-heading="true"]').isVisible(), "The compact private conversation heading is missing.");
+  assert(await transportPrivateReplies.isVisible(), "Private replies still require another navigation step.");
   const quickReplies = transportCard.locator('[data-gsn-demand-seller-quick-replies="editable"]');
   assert(await quickReplies.isVisible(), "The optional seller-response helpers are missing for an authorised responder.");
   for (const reply of ["I can help.", "Unavailable.", "I need more details."]) {
@@ -398,6 +402,10 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert((await responderText.inputValue()).includes("after 4pm"), "Seller helper text is not editable before sending.");
   const matchPanel = transportCard.locator('[data-gsn-demand-supply-intelligence="true"]');
   await matchPanel.waitFor();
+  const conversationBeforeMatch = await transportConversationZone.evaluate((node, match) =>
+    Boolean(match && (node.compareDocumentPosition(match) & Node.DOCUMENT_POSITION_FOLLOWING))
+  , await matchPanel.elementHandle());
+  assert(conversationBeforeMatch, "The primary conversation zone must remain before secondary matching actions.");
   const matchRows = matchPanel.locator('[data-gsn-demand-reliable-match="true"]');
   assert((await matchRows.count()) === 3, "DemandBox did not surface exactly three reliable initial suggestions.");
   assert(await matchPanel.getByText("Check these listings. Availability and suitability are not confirmed.", { exact: true }).isVisible(), "The truthful match boundary is missing.");
@@ -599,8 +607,12 @@ async function verifyViewport(browser, baseURL, viewport) {
   const compactTabs = freezerCard.locator('[data-gsn-demand-detail-tabs="compact"]');
   assert((await compactTabs.getByRole("button").count()) === 2, "The compact request/privacy tabs are incomplete.");
   assert(await freezerCard.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible(), "The complete request message is not visible immediately.");
-  assert(await freezerCard.locator('[data-gsn-demand-respond-in-place="true"]').isVisible(), "The owner response surface is not in place.");
-  assert(await freezerCard.locator('[data-gsn-demand-private-replies="true"]').isVisible(), "Existing private replies are not visible immediately.");
+  const ownerConversationZone = freezerCard.locator('[data-gsn-demand-conversation-zone="primary"]');
+  assert(await ownerConversationZone.isVisible(), "The owner conversation zone is not in place.");
+  const ownerPrivateReplies = freezerCard.locator('[data-gsn-demand-private-replies="true"]');
+  assert((await ownerPrivateReplies.getAttribute("data-gsn-demand-conversation-access")) === "available", "Existing private conversation access was not established.");
+  assert(await ownerPrivateReplies.locator('[data-gsn-demand-conversation-heading="true"]').isVisible(), "The opened request lacks the conversation-first heading.");
+  assert(await ownerPrivateReplies.isVisible(), "Existing private replies are not visible immediately.");
   await compactTabs.getByRole("button", { name: "Request details", exact: true }).click();
   assert(await freezerCard.getByText("Source: DemandBox", { exact: true }).isVisible(), "Request evidence did not remain reachable.");
   await compactTabs.getByRole("button", { name: "Privacy & terms", exact: true }).click();

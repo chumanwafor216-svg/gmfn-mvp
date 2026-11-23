@@ -76,6 +76,9 @@ export default function DemandResponsePanel({
   const [showPhoto, setShowPhoto] = useState(false);
   const [recipientUserId, setRecipientUserId] = useState(0);
   const [error, setError] = useState("");
+  const [conversationAccess, setConversationAccess] = useState<
+    "loading" | "available" | "unavailable"
+  >("loading");
   const threadRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const currentUserId = Number(currentUser?.id || currentUser?.user_id || 0);
@@ -83,6 +86,7 @@ export default function DemandResponsePanel({
 
   async function load() {
     setLoading(true);
+    setConversationAccess("loading");
     setError("");
     try {
       const result: any = await listMarketplaceRequestResponses(requestId);
@@ -93,7 +97,10 @@ export default function DemandResponsePanel({
             ? result.items
             : []
       );
+      setConversationAccess("available");
     } catch (err: any) {
+      setRows([]);
+      setConversationAccess("unavailable");
       setError(String(err?.message || "Private replies could not be loaded."));
     } finally {
       setLoading(false);
@@ -203,16 +210,32 @@ export default function DemandResponsePanel({
   return (
     <div
       data-gsn-demand-private-replies="true"
+      data-gsn-demand-conversation-access={conversationAccess}
       style={{
-        padding: compact ? 0 : 14,
-        borderRadius: compact ? 0 : 18,
-        border: compact ? "none" : "1px solid rgba(13,95,168,0.16)",
-        background: compact ? "transparent" : "#FFFFFF",
+        padding: compact ? 12 : 14,
+        borderRadius: compact ? 22 : 18,
+        border: compact
+          ? "1px solid rgba(13,95,168,0.18)"
+          : "1px solid rgba(13,95,168,0.16)",
+        background: compact
+          ? "linear-gradient(180deg, #F6FBFF 0%, #FFFFFF 100%)"
+          : "#FFFFFF",
+        boxShadow: compact ? "0 10px 24px rgba(15,55,95,0.10)" : undefined,
         display: "grid",
         gap: 12,
       }}
     >
-      {!compact ? <div>
+      {conversationAccess === "available" && compact ? (
+        <div data-gsn-demand-conversation-heading="true">
+          <div style={{ color: "#0B1F33", fontSize: 16, fontWeight: 950 }}>
+            Private conversation
+          </div>
+          <div style={{ marginTop: 3, color: "#587087", fontSize: 12, lineHeight: 1.45 }}>
+            Text or voice replies stay between the requester and responder.
+          </div>
+        </div>
+      ) : null}
+      {conversationAccess === "available" && !compact ? <div>
         <div style={{ color: "#0B1F33", fontSize: 16, fontWeight: 950 }}>
           Listen & reply
         </div>
@@ -221,7 +244,7 @@ export default function DemandResponsePanel({
         </div>
       </div> : null}
 
-      {isOwner && participants.length > 1 ? (
+      {conversationAccess === "available" && isOwner && participants.length > 1 ? (
         <label
           data-gsn-demand-conversation-participant="true"
           style={{ display: "grid", gap: 6, color: "#29445E", fontSize: 12, fontWeight: 850 }}
@@ -250,8 +273,23 @@ export default function DemandResponsePanel({
         </label>
       ) : null}
 
-      {loading ? (
+      {conversationAccess === "loading" || loading ? (
         <div style={{ color: "#587087", fontSize: 13 }}>Loading private replies...</div>
+      ) : conversationAccess === "unavailable" ? (
+        <div
+          data-gsn-demand-conversation-unavailable="true"
+          style={{
+            padding: compact ? "12px 10px" : "14px",
+            borderRadius: 16,
+            border: "1px solid rgba(163,59,22,0.16)",
+            background: "#FFF8F4",
+            color: "#7C3218",
+            fontSize: 12,
+            lineHeight: 1.45,
+          }}
+        >
+          Private conversation is not available for this request. The authorised request and matching actions remain available below.
+        </div>
       ) : visibleRows.length ? (
         <div
           ref={threadRef}
@@ -452,11 +490,11 @@ export default function DemandResponsePanel({
           No private replies yet. Start the conversation below.
         </div>
       )}
-      {isOwner && participants.length === 0 ? (
+      {conversationAccess === "available" && isOwner && participants.length === 0 ? (
         <div style={{ color: "#587087", fontSize: 12 }}>
           When someone replies, you can answer them here.
         </div>
-      ) : (
+      ) : conversationAccess === "available" ? (
         <div
           data-gsn-demand-reply-composer="true"
           style={{
@@ -568,7 +606,7 @@ export default function DemandResponsePanel({
             </div>
           ) : null}
         </div>
-      )}
+      ) : null}
 
       {error ? (
         <div role="alert" style={{ color: "#A33B16", fontSize: 12, fontWeight: 800 }}>
