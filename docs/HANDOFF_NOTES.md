@@ -7510,3 +7510,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Updated the focused DemandBox package audit and phone smoke assertion; no backend, permission, schema, TrustSlip, or messaging semantics changed.
 - Current request and response contracts support text and protected voice. They do not yet persist or authorize photo/video/link attachments for DemandBox requests or private replies. Do not surface fake attachment controls or encode public media URLs into protected requests.
 - Verification: DemandBox package audit passed, frontend production build passed, and phone smoke passed at 360x780, 390x844, and 430x932.
+
+# DemandBox protected media attachments - 2026-11-23
+
+- Added additive `demand_media_attachments` persistence for optional request and private-response photos, short videos, and external links; TrustSlip remains separate.
+- Request media is owner-created and community-access checked; response media is author-created and limited to the request owner/responder pair. Stored files are served through authenticated, no-store routes.
+- Added closed `More options` controls to the existing request and private-response surfaces. Text, voice, WhatsApp, quick replies, request lifecycle and existing privacy rules remain unchanged.
+- Attachment upload failures do not retry the request/reply submission, preventing duplicate records. Photos require matching file signatures; videos are ffmpeg-validated and limited to 30 seconds.
+- Verification: backend media plus DemandBox voice/response tests `7 passed`; frontend DemandBox audit passed; production build passed; phone smoke passed at 360x780, 390x844 and 430x932; Alembic head is `20261123_demand_media`.
+- Release note: this includes a backend migration and API routes, so it requires coordinated API and frontend deployment. No production deployment was performed in this worktree.

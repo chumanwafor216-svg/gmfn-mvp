@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  createDemandMediaAttachment,
   createMarketplaceRequestResponse,
   listMarketplaceRequestResponses,
   type MarketplaceRequestResponseItem,
@@ -7,6 +8,7 @@ import {
 import { resolveProfileImageUrl } from "../lib/profileImage";
 import { GsnLegacyIcon } from "./GsnLegacyIcon";
 import ProtectedVoiceNotePlayer from "./ProtectedVoiceNotePlayer";
+import ProtectedDemandMedia from "./ProtectedDemandMedia";
 import { PrimaryButton, SecondaryButton } from "./StableButton";
 import VoiceNoteRecorder from "./VoiceNoteRecorder";
 
@@ -78,6 +80,9 @@ export default function DemandResponsePanel({
   const [sending, setSending] = useState(false);
   const [text, setText] = useState("");
   const [voice, setVoice] = useState<File | null>(null);
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaLink, setMediaLink] = useState("");
+  const [mediaKind, setMediaKind] = useState<"image" | "video">("image");
   const [voiceRecording, setVoiceRecording] = useState(false);
   const [showPhoto, setShowPhoto] = useState(false);
   const [recipientUserId, setRecipientUserId] = useState(0);
@@ -218,7 +223,7 @@ export default function DemandResponsePanel({
     setSending(true);
     setError("");
     try {
-      await createMarketplaceRequestResponse(
+      const created = await createMarketplaceRequestResponse(
         requestId,
         {
           text: text.trim() || undefined,
@@ -228,10 +233,27 @@ export default function DemandResponsePanel({
         },
         voice
       );
+      let attachmentError = "";
+      if (mediaFile || mediaLink.trim()) {
+        try {
+          await createDemandMediaAttachment("response", created.id, {
+            kind: mediaLink.trim() ? "link" : mediaKind,
+            file: mediaFile,
+            link: mediaLink.trim() || undefined,
+          });
+        } catch (attachmentErr: any) {
+          attachmentError = String(attachmentErr?.message || "The attachment could not be added.");
+        }
+      }
       setText("");
       setVoice(null);
+      setMediaFile(null);
+      setMediaLink("");
       setShowPhoto(false);
       await load();
+      if (attachmentError) {
+        setError(`Reply sent, but the attachment was not added: ${attachmentError}`);
+      }
     } catch (err: any) {
       setError(String(err?.message || "Reply could not be sent."));
     } finally {
@@ -546,6 +568,13 @@ export default function DemandResponsePanel({
                         debugId={`demand-box.response.${row.id}.listen`}
                       />
                     ) : null}
+                    {row.media_attachments?.map((attachment) => (
+                      <ProtectedDemandMedia
+                        key={attachment.id}
+                        attachment={attachment}
+                        compact
+                      />
+                    ))}
                     <div
                       style={{
                         display: "flex",
@@ -655,6 +684,35 @@ export default function DemandResponsePanel({
             debugPrefix={`demand-box.response.${requestId}.voice`}
             compact
           />
+          <details style={{ borderTop: "1px solid rgba(13,95,168,0.12)", paddingTop: 8 }}>
+            <summary style={{ cursor: "pointer", color: "#29445E", fontSize: 12, fontWeight: 850 }}>
+              Add photo, short video or link
+            </summary>
+            <div style={{ display: "grid", gap: 7, marginTop: 8 }}>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+                onChange={(event) => {
+                  const selected = event.target.files?.[0] || null;
+                  setMediaFile(selected);
+                  setMediaLink("");
+                  setMediaKind(selected?.type.startsWith("video/") ? "video" : "image");
+                }}
+              />
+              <input
+                type="url"
+                value={mediaLink}
+                onChange={(event) => {
+                  setMediaLink(event.target.value);
+                  if (event.target.value) setMediaFile(null);
+                }}
+                placeholder="https://example.com/item"
+                aria-label="Attached link"
+                style={{ minHeight: 42, borderRadius: 12, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 10px", font: "inherit" }}
+              />
+              {mediaFile ? <span style={{ color: "#587087", fontSize: 11 }}>{mediaFile.name}</span> : null}
+            </div>
+          </details>
           {canSharePhoto ? (
             <label style={{ display: "flex", alignItems: "flex-start", gap: 9, color: "#29445E", fontSize: 12 }}>
               <input

@@ -5508,6 +5508,47 @@ class DemandAudioAttachment(Base):
     )
 
 
+class DemandMediaAttachment(Base):
+    __tablename__ = "demand_media_attachments"
+    __table_args__ = (
+        CheckConstraint(
+            "(marketplace_request_id IS NOT NULL AND response_id IS NULL) OR "
+            "(marketplace_request_id IS NULL AND response_id IS NOT NULL)",
+            name="ck_demand_media_exactly_one_parent_v1",
+        ),
+        CheckConstraint(
+            "(storage_key IS NOT NULL AND external_url IS NULL) OR "
+            "(storage_key IS NULL AND external_url IS NOT NULL)",
+            name="ck_demand_media_one_source_v1",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    marketplace_request_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_requests.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    response_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_request_responses.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    storage_key: Mapped[Optional[str]] = mapped_column(String(180), nullable=True, unique=True)
+    external_url: Mapped[Optional[str]] = mapped_column(String(2000), nullable=True)
+    original_filename: Mapped[Optional[str]] = mapped_column(String(180), nullable=True)
+    mime_type: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    byte_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    duration_seconds: Mapped[Optional[Decimal]] = mapped_column(Numeric(6, 2), nullable=True)
+    created_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    deleted_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
+    )
+
+
 class MarketplaceRelayPolicy(Base):
     __tablename__ = "marketplace_relay_policies"
 

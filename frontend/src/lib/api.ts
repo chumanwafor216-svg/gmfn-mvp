@@ -10208,6 +10208,17 @@ export async function adminApproveJoinRequest(id: number): Promise<any> {
   return updated;
 }
 
+export type MarketplaceRequestAttachmentItem = {
+  id: number;
+  kind: "image" | "video" | "link" | string;
+  url: string;
+  original_filename?: string | null;
+  mime_type?: string | null;
+  byte_size?: number | null;
+  duration_seconds?: number | null;
+  created_by_user_id: number;
+  created_at: string;
+};
 export type MarketplaceRequestItem = {
   id: number;
   clan_id?: number | null;
@@ -10253,6 +10264,7 @@ export type MarketplaceRequestItem = {
   audio_attachment_id?: number | null;
   audio_duration_seconds?: number | null;
   audio_deleted_at?: string | null;
+  media_attachments?: MarketplaceRequestAttachmentItem[];
 };
 
 export async function listMarketplaceRequests(params?: {
@@ -10381,6 +10393,7 @@ export type MarketplaceRequestResponseItem = {
   audio_attachment_id?: number | null;
   audio_duration_seconds?: number | null;
   audio_deleted_at?: string | null;
+  media_attachments?: MarketplaceRequestAttachmentItem[];
   created_at: string;
   is_mine?: boolean;
 };
@@ -10415,6 +10428,46 @@ export async function createMarketplaceRequestResponse(
   );
 }
 
+export async function createDemandMediaAttachment(
+  parent: "request" | "response",
+  parentId: number,
+  input: { kind: "image" | "video" | "link"; file?: File | null; link?: string },
+): Promise<MarketplaceRequestAttachmentItem> {
+  const form = new FormData();
+  form.set("kind", input.kind);
+  if (input.link) form.set("link", input.link);
+  if (input.file) form.set("file", input.file, input.file.name || "demand-attachment");
+  const endpoint = parent === "request"
+    ? `/demand-box/requests/${encodeURIComponent(String(parentId))}/media`
+    : `/demand-box/responses/${encodeURIComponent(String(parentId))}/media`;
+  const created = await httpMultipart(endpoint, form);
+  clearStartupSectionCacheByLabel("listMarketplaceRequests");
+  return created;
+}
+
+export async function fetchDemandMediaBlob(attachmentId: number): Promise<Blob> {
+  const headers: Record<string, string> = { Accept: "image/*,video/*,*/*" };
+  const token = getAccessToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetchWithTimeout(
+    buildUrl(`/demand-box/media/${encodeURIComponent(String(attachmentId))}`),
+    { method: "GET", headers },
+    DEFAULT_MULTIPART_TIMEOUT_MS,
+  );
+  if (!response.ok) {
+    throw new HttpStatusError(response.status, await parseError(response));
+  }
+  return response.blob();
+}
+
+export async function deleteDemandMediaAttachment(
+  attachmentId: number,
+): Promise<{ attachment_id: number; status: "deleted" | "already_deleted" }> {
+  return httpJson(
+    `/demand-box/media/${encodeURIComponent(String(attachmentId))}/delete`,
+    "POST",
+  );
+}
 export type MarketplaceRequestActivityItem = {
   id: number;
   event_type: string;

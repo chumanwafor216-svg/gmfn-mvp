@@ -15,6 +15,7 @@ from app.db.models import (
     Clan,
     ClanMembership,
     DemandAudioAttachment,
+    DemandMediaAttachment,
     MarketplaceProduct,
     MarketplaceRequest,
     MarketplaceRequestActivity,
@@ -58,6 +59,7 @@ from app.schemas.marketplace_requests import (
     DemandSupplyMatchOut,
     DemandSupplySellerContactOut,
     DemandSupplyTradeHandoffOut,
+    MarketplaceRequestAttachmentOut,
     MarketplaceRequestCreate,
     MarketplaceRequestOut,
     MarketplaceRequestUpdateStatus,
@@ -429,6 +431,15 @@ def _to_out(
         .first()
     )
     active_audio = audio if audio and audio.deleted_at is None else None
+    media_rows = (
+        db.query(DemandMediaAttachment)
+        .filter(
+            DemandMediaAttachment.marketplace_request_id == int(row.id),
+            DemandMediaAttachment.deleted_at.is_(None),
+        )
+        .order_by(DemandMediaAttachment.created_at.asc(), DemandMediaAttachment.id.asc())
+        .all()
+    )
     return MarketplaceRequestOut(
         id=row.id,
         clan_id=getattr(row, "clan_id", None),
@@ -494,6 +505,28 @@ def _to_out(
             float(active_audio.duration_seconds) if active_audio else None
         ),
         audio_deleted_at=audio.deleted_at if audio else None,
+        media_attachments=[
+            MarketplaceRequestAttachmentOut(
+                id=int(media.id),
+                kind=str(media.kind),
+                url=(
+                    f"/demand-box/media/{int(media.id)}"
+                    if media.storage_key
+                    else str(media.external_url)
+                ),
+                original_filename=media.original_filename,
+                mime_type=media.mime_type,
+                byte_size=media.byte_size,
+                duration_seconds=(
+                    float(media.duration_seconds)
+                    if media.duration_seconds is not None
+                    else None
+                ),
+                created_by_user_id=int(media.created_by_user_id),
+                created_at=media.created_at,
+            )
+            for media in media_rows
+        ],
     )
 
 def _as_aware_utc(value: datetime) -> datetime:

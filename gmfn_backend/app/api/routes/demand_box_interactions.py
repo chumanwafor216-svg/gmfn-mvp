@@ -22,6 +22,7 @@ from app.db.database import get_db
 from app.db.models import (
     ClanMembership,
     DemandAudioAttachment,
+    DemandMediaAttachment,
     MarketplaceRequest,
     MarketplaceRequestActivity,
     MarketplaceRequestResponse,
@@ -31,6 +32,7 @@ from app.schemas.marketplace_requests import (
     MarketplaceRequestActivityOut,
     DemandAudioDeleteCreate,
     DemandAudioDeleteOut,
+    MarketplaceRequestAttachmentOut,
     MarketplaceRequestCreate,
     MarketplaceRequestHistoryOut,
     MarketplaceRequestOut,
@@ -44,6 +46,12 @@ from app.services.demand_audio_service import (
     delete_demand_audio,
     demand_audio_path,
     store_demand_audio,
+)
+from app.services.demand_media_service import (
+    delete_demand_media,
+    demand_media_path,
+    store_demand_media,
+    validate_demand_media_link,
 )
 from app.services.demand_box_access_service import request_visible_to_user
 from app.services.marketplace_media_cleanup_service import (
@@ -124,6 +132,127 @@ def _response_audio(
     return query.first()
 
 
+
+def _media_out(attachment: DemandMediaAttachment) -> MarketplaceRequestAttachmentOut:
+    return MarketplaceRequestAttachmentOut(
+        id=int(attachment.id),
+        kind=str(attachment.kind),
+        url=(
+            f"/demand-box/media/{int(attachment.id)}"
+            if attachment.storage_key
+            else str(attachment.external_url)
+        ),
+        original_filename=attachment.original_filename,
+        mime_type=attachment.mime_type,
+        byte_size=attachment.byte_size,
+        duration_seconds=(
+            float(attachment.duration_seconds)
+            if attachment.duration_seconds is not None
+            else None
+        ),
+        created_by_user_id=int(attachment.created_by_user_id),
+        created_at=attachment.created_at,
+    )
+
+
+def _response_media(
+    db: Session,
+    *,
+    response_id: int,
+    include_deleted: bool = False,
+) -> list[DemandMediaAttachment]:
+    query = db.query(DemandMediaAttachment).filter(
+        DemandMediaAttachment.response_id == int(response_id)
+    )
+    if not include_deleted:
+        query = query.filter(DemandMediaAttachment.deleted_at.is_(None))
+    return query.order_by(
+        DemandMediaAttachment.created_at.asc(),
+        DemandMediaAttachment.id.asc(),
+    ).all()
+
+
+def _validate_media_request(
+    *,
+    kind: str,
+    link: str | None,
+    file: UploadFile | None,
+) -> tuple[str, str | None]:
+    normalized_kind = str(kind or "").strip().lower()
+    normalized_link = str(link or "").strip() or None
+    if normalized_kind == "link":
+        if file is not None or not normalized_link:
+            raise HTTPException(status_code=400, detail="Add one web link.")
+        return normalized_kind, validate_demand_media_link(normalized_link)
+    if normalized_kind not in {"image", "video"} or file is None or normalized_link:
+        raise HTTPException(status_code=400, detail="Add one photo, short video, or link.")
+    return normalized_kind, None
+
+
+async def _add_media(
+    db: Session,
+    *,
+    request: MarketplaceRequest,
+    response: MarketplaceRequestResponse | None,
+    kind: str,
+    link: str | None,
+    file: UploadFile | None,
+    current_user: User,
+) -> MarketplaceRequestAttachmentOut:
+    parent_filter = (
+        DemandMediaAttachment.response_id == int(response.id)
+        if response is not None
+        else DemandMediaAttachment.marketplace_request_id == int(request.id)
+    )
+    existing_count = (
+        db.query(DemandMediaAttachment.id)
+        .filter(parent_filter, DemandMediaAttachment.deleted_at.is_(None))
+        .count()
+    )
+    if existing_count >= 4:
+        raise HTTPException(status_code=400, detail="You can add up to four attachments.")
+    normalized_kind, normalized_link = _validate_media_request(
+        kind=kind,
+        link=link,
+        file=file,
+    )
+    stored = (
+        await store_demand_media(file, kind=normalized_kind)
+        if file is not None
+        else None
+    )
+    try:
+        attachment = DemandMediaAttachment(
+            marketplace_request_id=(None if response is not None else int(request.id)),
+            response_id=(int(response.id) if response is not None else None),
+            kind=normalized_kind,
+            storage_key=stored.storage_key if stored else None,
+            external_url=normalized_link,
+            original_filename=stored.original_filename if stored else None,
+            mime_type=stored.mime_type if stored else None,
+            byte_size=stored.byte_size if stored else None,
+            duration_seconds=stored.duration_seconds if stored else None,
+            created_by_user_id=int(current_user.id),
+        )
+        db.add(attachment)
+        db.add(
+            MarketplaceRequestActivity(
+                marketplace_request_id=int(request.id),
+                actor_user_id=int(current_user.id),
+                event_type="media_added",
+                detail="Private media attachment added.",
+            )
+        )
+        db.flush()
+        output = _media_out(attachment)
+        db.commit()
+        return output
+    except Exception:
+        db.rollback()
+        if stored:
+            delete_demand_media(stored.storage_key)
+        raise
+
 def _response_out(
     db: Session,
     row: MarketplaceRequestResponse,
@@ -151,6 +280,7 @@ def _response_out(
             float(active_audio.duration_seconds) if active_audio else None
         ),
         audio_deleted_at=audio.deleted_at if audio else None,
+        media_attachments=[_media_out(item) for item in _response_media(db, response_id=int(row.id))],
         created_at=row.created_at,
         is_mine=int(row.author_user_id) == int(current_user_id),
     )
@@ -397,6 +527,132 @@ async def create_request_response(
     )
     return _response_out(db, row, current_user_id=int(current_user.id))
 
+
+@router.post(
+    "/requests/{request_id}/media",
+    response_model=MarketplaceRequestAttachmentOut,
+)
+async def add_request_media(
+    request_id: int = ApiPath(..., ge=1),
+    kind: str = Form(...),
+    link: str | None = Form(default=None),
+    file: UploadFile | None = File(default=None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    request = _require_request_access(
+        db,
+        request_id=request_id,
+        current_user=current_user,
+    )
+    if int(request.user_id) != int(current_user.id):
+        raise HTTPException(status_code=403, detail="Only the requester can add request media.")
+    if str(request.status or "").lower() != "open":
+        raise HTTPException(status_code=409, detail="This request is already closed.")
+    return await _add_media(
+        db,
+        request=request,
+        response=None,
+        kind=kind,
+        link=link,
+        file=file,
+        current_user=current_user,
+    )
+
+
+@router.post(
+    "/responses/{response_id}/media",
+    response_model=MarketplaceRequestAttachmentOut,
+)
+async def add_response_media(
+    response_id: int = ApiPath(..., ge=1),
+    kind: str = Form(...),
+    link: str | None = Form(default=None),
+    file: UploadFile | None = File(default=None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    response = db.get(MarketplaceRequestResponse, int(response_id))
+    if not response:
+        raise HTTPException(status_code=404, detail="Reply not found")
+    request = _require_request_access(
+        db,
+        request_id=int(response.marketplace_request_id),
+        current_user=current_user,
+    )
+    if int(response.author_user_id) != int(current_user.id):
+        raise HTTPException(status_code=403, detail="Only the reply author can add reply media.")
+    if str(request.status or "").lower() != "open":
+        raise HTTPException(status_code=409, detail="This request is already closed.")
+    return await _add_media(
+        db,
+        request=request,
+        response=response,
+        kind=kind,
+        link=link,
+        file=file,
+        current_user=current_user,
+    )
+
+
+@router.get("/media/{attachment_id}")
+def get_protected_demand_media(
+    attachment_id: int = ApiPath(..., ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    attachment = db.get(DemandMediaAttachment, int(attachment_id))
+    if not attachment or attachment.deleted_at is not None or not attachment.storage_key:
+        raise HTTPException(status_code=404, detail="Media not found")
+    if attachment.marketplace_request_id is not None:
+        _require_request_access(
+            db,
+            request_id=int(attachment.marketplace_request_id),
+            current_user=current_user,
+        )
+    else:
+        response = db.get(MarketplaceRequestResponse, int(attachment.response_id or 0))
+        if not response or int(current_user.id) not in {
+            int(response.author_user_id),
+            int(response.recipient_user_id),
+        }:
+            raise HTTPException(status_code=404, detail="Media not found")
+    path = demand_media_path(attachment.storage_key)
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Media not found")
+    return FileResponse(
+        path=path,
+        media_type=attachment.mime_type or "application/octet-stream",
+        filename=Path(attachment.original_filename or path.name).name,
+        headers={
+            "Cache-Control": "no-store, private",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@router.post("/media/{attachment_id}/delete")
+def delete_own_demand_media(
+    attachment_id: int = ApiPath(..., ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    attachment = db.get(DemandMediaAttachment, int(attachment_id))
+    if not attachment or int(attachment.created_by_user_id) != int(current_user.id):
+        raise HTTPException(status_code=404, detail="Media not found")
+    if attachment.deleted_at is not None:
+        return {"attachment_id": int(attachment.id), "status": "already_deleted"}
+    attachment.deleted_at = datetime.now(timezone.utc)
+    attachment.deleted_by_user_id = int(current_user.id)
+    storage_key = attachment.storage_key
+    db.commit()
+    if storage_key:
+        delete_demand_media(storage_key)
+    return {
+        "attachment_id": int(attachment.id),
+        "status": "deleted",
+        "deleted_at": attachment.deleted_at,
+    }
 
 @router.get("/audio/{attachment_id}")
 def get_protected_voice_note(

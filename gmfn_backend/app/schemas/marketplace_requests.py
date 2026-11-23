@@ -87,6 +87,17 @@ class MarketplaceRequestUpdateStatus(BaseModel):
         return _reject_non_text_value(value, info.field_name)
 
 
+class MarketplaceRequestAttachmentOut(BaseModel):
+    id: int
+    kind: str
+    url: str
+    original_filename: Optional[str] = None
+    mime_type: Optional[str] = None
+    byte_size: Optional[int] = None
+    duration_seconds: Optional[float] = None
+    created_by_user_id: int
+    created_at: datetime
+
 class MarketplaceRequestOut(BaseModel):
     id: int
     clan_id: Optional[int] = None
@@ -136,6 +147,7 @@ class MarketplaceRequestOut(BaseModel):
     audio_attachment_id: Optional[int] = None
     audio_duration_seconds: Optional[float] = None
     audio_deleted_at: Optional[datetime] = None
+    media_attachments: list[MarketplaceRequestAttachmentOut] = Field(default_factory=list)
 
 
 class MarketplaceRequestResponseCreate(BaseModel):
@@ -172,6 +184,7 @@ class MarketplaceRequestResponseOut(BaseModel):
     audio_attachment_id: Optional[int] = None
     audio_duration_seconds: Optional[float] = None
     audio_deleted_at: Optional[datetime] = None
+    media_attachments: list[MarketplaceRequestAttachmentOut] = Field(default_factory=list)
     created_at: datetime
     is_mine: bool = False
 

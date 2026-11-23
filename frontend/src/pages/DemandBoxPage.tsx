@@ -4,6 +4,7 @@ import PageTopNav from "../components/PageTopNav";
 import DemandResponsePanel from "../components/DemandResponsePanel";
 import DemandHistoryCard from "../components/DemandHistoryCard";
 import ProtectedVoiceNotePlayer from "../components/ProtectedVoiceNotePlayer";
+import ProtectedDemandMedia from "../components/ProtectedDemandMedia";
 import VoiceNoteRecorder from "../components/VoiceNoteRecorder";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
@@ -19,6 +20,7 @@ import {
   institutionalSoftCard,
 } from "../lib/institutionalSurface";
 import {
+  createDemandMediaAttachment,
   createMarketplaceRequest,
   createMarketplaceVoiceRequest,
   createMarketplaceRequestRelayRun,
@@ -108,6 +110,17 @@ type DemandRow = {
   audio_attachment_id?: number | null;
   audio_duration_seconds?: number | null;
   audio_deleted_at?: string | null;
+  media_attachments?: Array<{
+    id: number;
+    kind: string;
+    url: string;
+    original_filename?: string | null;
+    mime_type?: string | null;
+    byte_size?: number | null;
+    duration_seconds?: number | null;
+    created_by_user_id: number;
+    created_at: string;
+  }>;
 };
 
 type NoticeTone = "success" | "error";
@@ -1168,6 +1181,9 @@ export default function DemandBoxPage() {
   const [allowTrustCredit, setAllowTrustCredit] = useState(false);
   const [allowOneHopRelay, setAllowOneHopRelay] = useState(false);
   const [voiceFile, setVoiceFile] = useState<File | null>(null);
+  const [requestMediaFile, setRequestMediaFile] = useState<File | null>(null);
+  const [requestMediaLink, setRequestMediaLink] = useState("");
+  const [requestMediaKind, setRequestMediaKind] = useState<"image" | "video">("image");
   const [voiceRecording, setVoiceRecording] = useState(false);
   const [showSenderPhoto, setShowSenderPhoto] = useState(true);
   const [relayPolicy, setRelayPolicy] = useState<MarketplaceRelayPolicy | null>(null);
@@ -1707,6 +1723,18 @@ export default function DemandBoxPage() {
       const created = voiceFile
         ? await createMarketplaceVoiceRequest(payload, voiceFile)
         : await createMarketplaceRequest(payload);
+      let attachmentError = "";
+      if (requestMediaFile || requestMediaLink.trim()) {
+        try {
+          await createDemandMediaAttachment("request", Number(created.id), {
+            kind: requestMediaLink.trim() ? "link" : requestMediaKind,
+            file: requestMediaFile,
+            link: requestMediaLink.trim() || undefined,
+          });
+        } catch (attachmentErr: any) {
+          attachmentError = safeStr(attachmentErr?.message) || "The attachment could not be added.";
+        }
+      }
 
       setActiveQueueLane("mine");
       setMyOpenRows((currentRows) => uniqueDemandRows([created, ...currentRows]));
@@ -1725,15 +1753,19 @@ export default function DemandBoxPage() {
       setAllowTrustCredit(false);
       setAllowOneHopRelay(false);
       setVoiceFile(null);
+      setRequestMediaFile(null);
+      setRequestMediaLink("");
       setShowSenderPhoto(true);
 
       await loadPage();
       setCreatePanelOpen(false);
       showNotice(
-        "success",
-        visibilityScope === DEMAND_VISIBILITY_PROTECTED
-          ? "Private Ask Person request routed to the matched member."
-          : `Demand posted in ${currentCommunityName}. It appears in DemandBox, not the Community Bulletin.`
+        attachmentError ? "error" : "success",
+        attachmentError
+          ? `Demand posted, but the attachment was not added: ${attachmentError}`
+          : visibilityScope === DEMAND_VISIBILITY_PROTECTED
+            ? "Private Ask Person request routed to the matched member."
+            : `Demand posted in ${currentCommunityName}. It appears in DemandBox, not the Community Bulletin.`
       );
     } catch (err: any) {
       const errorText = safeStr(err?.message) || "Demand could not be created.";
@@ -2855,6 +2887,16 @@ export default function DemandBoxPage() {
                     debugId={`${debugBase}.listen`}
                     label="Request voice note"
                   />
+                </div>
+              ) : null}
+              {row?.media_attachments?.length ? (
+                <div
+                  data-gsn-demand-request-media="true"
+                  style={{ display: "grid", gap: 8, marginBottom: 10 }}
+                >
+                  {row.media_attachments.map((attachment) => (
+                    <ProtectedDemandMedia key={attachment.id} attachment={attachment} compact={isCompact} />
+                  ))}
                 </div>
               ) : null}
               <DemandResponsePanel
@@ -4558,6 +4600,37 @@ export default function DemandBoxPage() {
                   </option>
                 </select>
               </div>
+              <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
+                <label style={sectionLabel()}>Attachments</label>
+                <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+                    onChange={(event) => {
+                      const selected = event.target.files?.[0] || null;
+                      setRequestMediaFile(selected);
+                      setRequestMediaLink("");
+                      setRequestMediaKind(selected?.type.startsWith("video/") ? "video" : "image");
+                    }}
+                  />
+                  <input
+                    type="url"
+                    value={requestMediaLink}
+                    onChange={(event) => {
+                      setRequestMediaLink(event.target.value);
+                      if (event.target.value) setRequestMediaFile(null);
+                    }}
+                    placeholder="Optional link"
+                    aria-label="Attachment link"
+                    style={{ ...inputStyle(), marginTop: 0 }}
+                  />
+                  <span style={{ ...helperText(), fontSize: 12 }}>
+                    Optional: add one photo, short video or link.
+                  </span>
+                  {requestMediaFile ? <span style={{ color: "#587087", fontSize: 12 }}>{requestMediaFile.name}</span> : null}
+                </div>
+              </div>
+
               <div>
                 <label htmlFor="demand-box-expiry" style={sectionLabel()}>Hours open</label>
                 <input
