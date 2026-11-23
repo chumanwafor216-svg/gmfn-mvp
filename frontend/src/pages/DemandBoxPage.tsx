@@ -55,7 +55,6 @@ import {
 } from "../lib/communityDomainFeaturePolicy";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import {
-  buildPhoneCallUrl,
   buildWhatsAppChatUrl,
   normalizeWhatsAppRecipient,
 } from "../lib/whatsappLinks";
@@ -1482,22 +1481,6 @@ export default function DemandBoxPage() {
     showNotice("success", "WhatsApp chat opened for this DemandBox request.");
   }
 
-  function openDemandWhatsAppCall(row: DemandRow) {
-    const readyRecipient = demandReadyWhatsAppRecipient(row);
-    const callUrl = buildPhoneCallUrl(readyRecipient);
-
-    if (!callUrl || typeof window === "undefined") {
-      showNotice(
-        "error",
-        "This request does not have a ready call contact path yet."
-      );
-      return;
-    }
-
-    window.location.href = callUrl;
-    showNotice("success", "Call path opened for this DemandBox request.");
-  }
-
   function buildDemandRequestPaper(
     row: DemandRow,
     scope: DemandPaperScope
@@ -2024,24 +2007,14 @@ export default function DemandBoxPage() {
       <>
         <SecondaryButton
           onClick={() => openDemandWhatsAppChat(row)}
-          debugId={`${debugBase}.whatsapp-chat`}
+          debugId={`${debugBase}.whatsapp`}
           stableHeight={actionHeight}
           style={useDockStyle ? demandDockButtonStyle() : demandActionStyle(actionHeight)}
         >
           {useDockStyle
-            ? demandDockIconText("phone", hasContact ? "Chat" : "Chat unavailable")
-            : demandIconText("phone", hasContact ? "Chat" : "Chat unavailable", 20)}
+            ? demandDockIconText("phone", hasContact ? "WhatsApp" : "WhatsApp unavailable")
+            : demandIconText("phone", hasContact ? "WhatsApp" : "WhatsApp unavailable", 20)}
         </SecondaryButton>
-        <SubtleButton
-          onClick={() => openDemandWhatsAppCall(row)}
-          debugId={`${debugBase}.whatsapp-call`}
-          stableHeight={actionHeight}
-          style={useDockStyle ? demandDockButtonStyle() : demandActionStyle(actionHeight)}
-        >
-          {useDockStyle
-            ? demandDockIconText("phone", hasContact ? "Call" : "Call unavailable")
-            : demandIconText("phone", hasContact ? "Call" : "Call unavailable", 20)}
-        </SubtleButton>
       </>
     );
   }

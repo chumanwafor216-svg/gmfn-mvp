@@ -618,7 +618,8 @@ async function verifyViewport(browser, baseURL, viewport) {
   await compactTabs.getByRole("button", { name: "Privacy", exact: true }).click();
   assert(await freezerCard.locator('[data-gsn-demand-detail-panel="privacy"]').isVisible(), "Privacy did not open.");
   const contactActions = freezerCard.locator('[data-gsn-demand-contact-actions="private"]');
-  assert((await contactActions.getByRole("button").count()) === 2, "Private contact options are incomplete.");
+  assert((await contactActions.getByRole("button").count()) === 1, "Private WhatsApp contact action is missing.");
+  assert(await contactActions.getByRole("button", { name: "WhatsApp", exact: true }).isVisible(), "Private WhatsApp contact action is not visible.");
   await compactTabs.getByRole("button", { name: "Privacy", exact: true }).click();
 
   assert((await freezerCard.getByRole("button", { name: "Listen & reply", exact: true }).count()) === 0, "The obsolete second listen-and-reply action returned.");

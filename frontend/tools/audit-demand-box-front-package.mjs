@@ -82,6 +82,7 @@ function forbidPattern(input, file, pattern, message) {
   [/data-gsn-demand-expand-search="true"[\s\S]*?Search one more community[\s\S]*?Stop expanded search[\s\S]*?One community only/, "the phone one-hop card must keep the approved compact search actions and boundary"],
   [/data-gsn-demand-action-dock=\{isCompact \? "compact" : "standard"\}[\s\S]*?demandDockStyle\(canClose \? 3 : 1\)[\s\S]*?fulfilled[\s\S]*?cancelled[\s\S]*?demandPaperAction\(row, scope, copyDebugId\)/, "opened owner requests must keep the calm three-action lifecycle dock"],
   [/data-gsn-demand-contact-actions="private"[\s\S]*?demandContactActions\(row, debugBase \+ "\.contact", true\)/, "WhatsApp contact actions must remain reachable under privacy and terms"],
+  [/debugId=\{`\$\{debugBase\}\.whatsapp`\}/, "DemandBox contact actions must use one WhatsApp entry point rather than separate chat and call buttons"],
   [/showMoreQueueRows \? 12 : 1[\s\S]*?debugId="demand-box\.queue\.view-more"[\s\S]*?View more needs/, "phone queues must start with one request and provide a deliberate view-more action"],
   [/directDemandId[\s\S]*?setActiveQueueLane\([\s\S]*?myOpenRows[\s\S]*?"mine"[\s\S]*?visibleRows[\s\S]*?"for_me"[\s\S]*?setOpenDemandRecordKey\(String\(directDemandId\)\)/, "direct demand links must select the correct lane and open the requested card"],
   [/demandQueueIntentAppliedRef[\s\S]*?visibleRows\.length > 0[\s\S]*?setActiveQueueLane\("for_me"\)/, "ordinary entry must prefer answerable For you work when available"],

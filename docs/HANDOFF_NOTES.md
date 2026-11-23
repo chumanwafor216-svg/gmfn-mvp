@@ -7503,3 +7503,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The responder list is bounded and scrollable so many responders do not expand the whole page.
 - No backend, schema, migration, expiry, TrustSlip, or messaging semantics changed.
 - Verification: DemandBox package audit, production build, and phone smoke at 360/390/430.
+
+# DemandBox WhatsApp contact consolidation - 2026-11-23
+
+- Replaced separate DemandBox Chat and Call actions with one WhatsApp action using the existing approved WhatsApp chat path; users can place a WhatsApp call from that conversation when needed.
+- Updated the focused DemandBox package audit and phone smoke assertion; no backend, permission, schema, TrustSlip, or messaging semantics changed.
+- Current request and response contracts support text and protected voice. They do not yet persist or authorize photo/video/link attachments for DemandBox requests or private replies. Do not surface fake attachment controls or encode public media URLs into protected requests.
+- Verification: DemandBox package audit passed, frontend production build passed, and phone smoke passed at 360x780, 390x844, and 430x932.
