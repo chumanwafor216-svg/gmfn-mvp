@@ -803,22 +803,22 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(recorderWaveformGeometry.barsWidth >= 180, "The DemandBox composer waveform is not visually dominant.");
   assert(recorderWaveformGeometry.barsHeight >= 44, "The DemandBox composer waveform is too short.");
   assert(recorderWaveformGeometry.centerOffset <= 3, "The DemandBox composer waveform is not centred.");
-  assert(await page.getByLabel("Write your need").isVisible(), "Written need field is missing.");
+  assert(await page.getByLabel("Add your need").isVisible(), "Written need field is missing.");
   assert(await page.getByLabel("Area").isVisible(), "Area field is missing.");
   assert(await page.getByRole("button", { name: "Community", exact: true }).isVisible(), "Community visibility choice is missing.");
   assert(await page.getByRole("button", { name: "One person", exact: true }).isVisible(), "One person visibility choice is missing.");
   assert((await page.getByRole("button", { name: "Community", exact: true }).getAttribute("aria-pressed")) === "true", "Community visibility is not visibly selected by default.");
   const textOnlyFieldLabels = form.locator('[data-gsn-demand-field-label="text-only"]');
-  assert((await textOnlyFieldLabels.count()) === 5, "The five create-form headings are not text-only.");
+  assert((await textOnlyFieldLabels.count()) === 4, "The four create-form headings are not text-only.");
   assert((await textOnlyFieldLabels.locator('[data-gsn-3d-icon]').count()) === 0, "A decorative field-heading icon returned.");
   assert((await page.locator('[data-cta-id="demand-box.more-options"] [data-gsn-3d-icon]').count()) === 0, "The More options heading icon returned.");
   const createScreenshotPath = process.env.GSN_DEMAND_BOX_CREATE_SCREENSHOT_PATH?.trim();
   if (createScreenshotPath && viewport.width === 390) {
     await createShell.screenshot({ path: createScreenshotPath });
   }
-  assert(await page.getByLabel("Add details (optional)").isVisible(), "Written details field is missing from the main composer.");
+  assert(await page.getByLabel("Add your need").isVisible(), "Written details field is missing from the main composer.");
   await page.locator('[data-cta-id="demand-box.more-options"]').click();
-  assert(await page.getByLabel("Add details (optional)").isVisible(), "Written details disappeared after opening More options.");
+  assert(await page.getByLabel("Add your need").isVisible(), "Written details disappeared after opening More options.");
   assert(await page.getByLabel("WhatsApp number").isVisible(), "WhatsApp override is not reachable.");
   assert(await page.getByLabel("Urgency").isVisible(), "Urgency is not reachable.");
   assert(await page.getByLabel("Payment").isVisible(), "Payment preference is not reachable.");
@@ -839,7 +839,7 @@ async function verifyViewport(browser, baseURL, viewport) {
 
   await page.getByRole("button", { name: "Community", exact: true }).click();
   await categorySelect.selectOption("Transport");
-  await page.getByLabel("Write your need").fill("Need a taxi");
+  await page.getByLabel("Add your need").fill("Need a taxi");
   await page.getByRole("button", { name: "Record", exact: true }).click();
   assert(
     (await recorderWaveform.getAttribute("data-gsn-voice-recorder-waveform-state")) === "recording",

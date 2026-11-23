@@ -1683,7 +1683,7 @@ export default function DemandBoxPage() {
     }
 
     if (!safeStr(title) && !voiceFile) {
-      showNotice("error", "Record a voice note or add a short heading.");
+      showNotice("error", "Record a voice note or add your need.");
       return;
     }
 
@@ -1698,9 +1698,15 @@ export default function DemandBoxPage() {
     setCreating(true);
 
     try {
+      const enteredNeed = safeStr(title).trim();
+      const needLines = enteredNeed.split(/\r?\n/);
+      const needHeadline = safeStr(needLines.shift()).trim();
+      const needDetails = [needLines.join("\n").trim(), safeStr(description).trim()]
+        .filter(Boolean)
+        .join("\n");
       const payload = {
-        title: safeStr(title) || selectedCategory.title,
-        description: buildDemandDescription(description, responseEvidence, targetHandle),
+        title: needHeadline || selectedCategory.title,
+        description: buildDemandDescription(needDetails, responseEvidence, targetHandle),
         category: selectedCategory.value,
         urgency: safeStr(urgency) || undefined,
         area: safeStr(area) || undefined,
@@ -4117,39 +4123,53 @@ export default function DemandBoxPage() {
         </div>
 
         {!isCreateMode ? (
-          <div style={demandActionRowStyle(isCompact, 48, 180, 10)}>
+          <div
+            style={{
+              marginTop: 8,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
             <SecondaryButton
               type="button"
               debugId="demand-box.create.close"
               onClick={() => setCreatePanelOpen(false)}
-              style={demandActionStyle(48)}
+              stableHeight={40}
+              style={{
+                ...demandActionStyle(40),
+                width: "auto",
+                minWidth: 0,
+                padding: "0 14px",
+                borderRadius: 999,
+                fontSize: 13,
+              }}
             >
-              {demandIconText("lock", "Close form", 18)}
+              {demandIconText("lock", "Close", 16)}
             </SecondaryButton>
-          </div>
-        ) : null}
-        {!isCreateMode ? (
-        <details
-          style={{
-            marginTop: 14,
-            ...innerCard("#F8FBFF"),
-            padding: 0,
-            overflow: "hidden",
-          }}
-        >
-          <StableDisclosureSummary
-            style={{
-              ...detailsSummary(),
-              padding: "0 14px",
-            }}
-            stableHeight={50}
-            debugId="demand-box.change-community.summary"
-          >
-            <span>Change community</span>
-            <span style={{ color: "#64748B", fontSize: 13 }}>
-              {currentCommunityName}
-            </span>
-          </StableDisclosureSummary>
+            <details
+              style={{
+                flex: "1 1 210px",
+                minWidth: 0,
+                border: "1px solid rgba(79,139,211,0.20)",
+                borderRadius: 999,
+                background: "#F8FBFF",
+                overflow: "hidden",
+              }}
+            >
+              <StableDisclosureSummary
+                style={{
+                  ...detailsSummary(),
+                  minWidth: 0,
+                  padding: "0 14px",
+                  fontSize: 13,
+                }}
+                stableHeight={40}
+                debugId="demand-box.change-community.summary"
+              >
+                <span>Change community</span>
+              </StableDisclosureSummary>
 
           <div
             style={{
@@ -4199,6 +4219,7 @@ export default function DemandBoxPage() {
             )}
           </div>
         </details>
+          </div>
         ) : null}
 
         <div
@@ -4324,32 +4345,31 @@ export default function DemandBoxPage() {
               </div>
 
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 3 }}>
-                <label htmlFor="demand-box-title">
-                  {demandCreateFieldLabel("Write your need")}
+                <label htmlFor="demand-box-need">
+                  {demandCreateFieldLabel("Add your need")}
                 </label>
-                <input
-                  id="demand-box-title"
+                <textarea
+                  id="demand-box-need"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    setDescription("");
+                  }}
                   placeholder={
                     voiceFile
                       ? "Optional when your voice note explains the need"
-                      : "Example: I need a hairdresser"
+                      : "Example: I need a hairdresser and details such as area, size or timing"
                   }
-                  style={{ ...demandCreateInputStyle(), marginTop: 8 }}
+                  style={{
+                    ...textAreaStyle(),
+                    marginTop: 8,
+                    minHeight: isCompact ? 96 : 112,
+                    resize: "vertical",
+                  }}
                 />
-              </div>
-              <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2", order: 4 }}>
-                <label htmlFor="demand-box-description">
-                  {demandCreateFieldLabel("Add details (optional)")}
-                </label>
-                <textarea
-                  id="demand-box-description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Add a few words to explain what you need"
-                  style={{ ...textAreaStyle(), marginTop: 8, minHeight: isCompact ? 84 : undefined }}
-                />
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
+                  One box for the request and its details. New lines stay with the request.
+                </div>
               </div>
 
               {visibilityScope === DEMAND_VISIBILITY_PROTECTED ? (
@@ -4420,7 +4440,7 @@ export default function DemandBoxPage() {
                   <SecondaryButton
                     type="button"
                     debugId="demand-box.visibility.community"
-                    stableHeight={58}
+                    stableHeight={48}
                     aria-pressed={visibilityScope === DEMAND_VISIBILITY_COMMUNITY}
                     style={demandVisibilityChoiceStyle(
                       visibilityScope === DEMAND_VISIBILITY_COMMUNITY
@@ -4432,7 +4452,7 @@ export default function DemandBoxPage() {
                   <SecondaryButton
                     type="button"
                     debugId="demand-box.visibility.protected-target"
-                    stableHeight={58}
+                    stableHeight={48}
                     aria-pressed={visibilityScope === DEMAND_VISIBILITY_PROTECTED}
                     style={demandVisibilityChoiceStyle(
                       visibilityScope === DEMAND_VISIBILITY_PROTECTED

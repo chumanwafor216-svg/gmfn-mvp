@@ -7483,3 +7483,14 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Changed files: `frontend/src/pages/DemandBoxPage.tsx`, `frontend/tools/audit-demand-box-front-package.mjs`, `frontend/tools/smoke-demand-box-simple-phone.mjs`. No backend, schema, migration, taxonomy, matching or payment changes.
 - Verification: DemandBox front-package audit passed; production frontend build passed; simple-phone smoke passed at 390x844, 360x780 and 430x932. Restricted Windows build/smoke processes required the approved elevated path because esbuild otherwise returned `spawn EPERM`.
 - Pending release action: this focused frontend correction is local on `codex/demand-box-phase1-release-verified`; commit/push/main promotion and Render frontend deployment require the active pilot release protocol.
+# DemandBox composer simplification - 2026-11-23
+
+- Unified the primary request inputs into one `Add your need` expandable text area; the first line remains the API title and following lines remain the request detail without changing backend contracts.
+- Reduced `Close` and `Change community` to compact controls and kept the selected community as the single visible context card.
+- Reduced community visibility choices to compact 48px controls; community and one-person permissions are unchanged.
+- Updated the focused front-package audit and phone smoke labels. Verified with `npm run audit:demand-box-front-package`, `npm run build`, and `node tools/smoke-demand-box-simple-phone.mjs` at 360px, 390px, and 430px.
+# DemandBox form controls - 2026-11-23
+
+- Replaced separate primary `Write your need` and `Add details` controls with one `Add your need` expandable field. The first line maps to the existing title payload and subsequent lines to the existing description payload; no API or schema contract changed.
+- Compactified the `Close` and `Change community` controls and reduced Community/One person visibility controls to 48px while preserving the existing permissions and selected-community context.
+- Focused checks: `npm run audit:demand-box-front-package`, `npm run build`, and `node tools/smoke-demand-box-simple-phone.mjs` passed at 360px, 390px, and 430px.
