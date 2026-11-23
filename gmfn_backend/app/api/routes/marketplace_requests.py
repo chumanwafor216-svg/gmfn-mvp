@@ -66,7 +66,7 @@ from app.schemas.marketplace_requests import (
 
 router = APIRouter(prefix="/marketplace/requests", tags=["marketplace-requests"])
 
-MAX_REQUESTS_PER_USER_24H = 5
+MAX_REQUESTS_PER_USER_24H = 20
 REQUEST_QUOTA_WINDOW_HOURS = 24
 DEFAULT_EXPIRY_HOURS = 48
 
@@ -650,7 +650,7 @@ def create_marketplace_request(
         raise HTTPException(
             status_code=400,
             detail=(
-                "You already have 5 active DemandBox requests in 24 hours. "
+                f"You already have {MAX_REQUESTS_PER_USER_24H} active DemandBox requests in 24 hours. "
                 "Close one or wait before posting another."
             ),
         )

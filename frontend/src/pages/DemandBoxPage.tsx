@@ -143,7 +143,10 @@ const DEMAND_CATEGORY_CHOICES: Array<{
   { value: "Food", label: "Food", title: "Food needed", icon: "cart" },
   { value: "Books", label: "Books", title: "Books needed", icon: "document" },
   { value: "Housing", label: "Housing", title: "Housing needed", icon: "home" },
-  { value: "General", label: "Other", title: "Help needed", icon: "megaphone" },
+  { value: "Personal care", label: "Personal care", title: "Personal care needed", icon: "user" },
+  { value: "Home services", label: "Home services", title: "Home service needed", icon: "home" },
+  { value: "Work & business", label: "Work & business", title: "Work or business help needed", icon: "briefcase" },
+  { value: "General", label: "Other need", title: "Help needed", icon: "megaphone" },
 ];
 
 function demandClientKey(prefix: string): string {
@@ -4307,7 +4310,7 @@ export default function DemandBoxPage() {
                   })}
                 </div>
                 <div style={{ marginTop: 7, ...helperText(), fontSize: 12 }}>
-                  The picture describes the subject only. It is not a provider or availability claim.
+                  Choose the closest subject. If it is not listed, choose Other need and describe exactly what you want. Matching uses your words; this choice is not a provider or availability claim.
                 </div>
               </div>
 
@@ -4335,7 +4338,7 @@ export default function DemandBoxPage() {
                   placeholder={
                     voiceFile
                       ? "Optional when your voice note explains the need"
-                      : "Example: Need a taxi to the clinic"
+                      : "Example: I need a hairdresser"
                   }
                   style={{ ...demandCreateInputStyle(), marginTop: 8 }}
                 />

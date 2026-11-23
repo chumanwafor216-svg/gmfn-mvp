@@ -908,13 +908,14 @@ def test_marketplace_request_status_rejects_non_positive_request_id(
     assert "request_id" in response.text
 
 
-def test_marketplace_request_allows_five_open_requests_per_user_per_24_hours(
+def test_marketplace_request_allows_twenty_open_requests_per_user_per_24_hours(
     client,
     override_current_user,
 ):
     _seed_primary_clan()
 
-    for index in range(5):
+    quota = marketplace_requests.MAX_REQUESTS_PER_USER_24H
+    for index in range(quota):
         response = client.post(
             "/marketplace/requests",
             json={
@@ -929,14 +930,14 @@ def test_marketplace_request_allows_five_open_requests_per_user_per_24_hours(
         "/marketplace/requests",
         json={
             "clan_id": 1,
-            "title": "Need community item 6",
+            "title": f"Need community item {quota + 1}",
             "description": "This should wait for the next quota window.",
         },
     )
 
     assert blocked.status_code == 400, blocked.text
-    assert "5 active DemandBox requests in 24 hours" in blocked.json()["detail"]
-    assert _marketplace_request_counts() == (5, 5)
+    assert f"{quota} active DemandBox requests in 24 hours" in blocked.json()["detail"]
+    assert _marketplace_request_counts() == (quota, quota)
 
 
 def test_marketplace_request_quota_ignores_open_requests_older_than_24_hours(

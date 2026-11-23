@@ -7457,3 +7457,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The compact surface now waits for the existing server-authorised response-list call before showing the conversation heading, thread or composer. Any load failure fails closed to a short unavailable state while the request and matching actions remain available.
 - Existing text, protected voice, editable seller quick replies, separate owner responder threads, lifecycle actions, matches and details are unchanged in authority and destination.
 - Local candidate branch: `codex/demand-box-phase1-release-verified`. No push, merge or deployment was performed. Screenshots are ignored local evidence under `frontend/screenshots/phase1-demandbox-phase1b/`.
+# DemandBox need coverage and pilot quota correction - 2026-11-23
+
+- Expanded the existing DemandBox category guidance with `Personal care`, `Home services`, and `Work & business`, while retaining the stable backend `General` value as the user-facing `Other need` fallback.
+- Added truthful guidance that matching uses the requester's words in the heading, description, area and voice-supported request context; the category is not a provider, availability or qualification claim.
+- Changed the example heading to `I need a hairdresser` so the intended free-form matching path is visible to novice users.
+- Raised the bounded per-user open-request window from 5 to 20 in 24 hours so the supervised pilot can create enough varied test requests. The 21st request remains rejected with the actual configured limit in the message.
+- Changed files are limited to `frontend/src/pages/DemandBoxPage.tsx`, `frontend/tools/smoke-demand-box-simple-phone.mjs`, `gmfn_backend/app/api/routes/marketplace_requests.py`, and `gmfn_backend/tests/test_marketplace_requests.py`. No schema, migration, matching engine, permission or taxonomy changes were made.
+- Verification passed: full `tests/test_marketplace_requests.py` (`21 passed`), `audit:demand-box-front-package`, production frontend build, and DemandBox simple-phone smoke at 390x844, 360x780 and 430x932.
+- The broad protected-button suite still reports unrelated pre-existing browser visual failures caused by Windows `spawn EPERM` while starting Vite/esbuild fixtures; no DemandBox assertion failed. No push, merge or deployment was performed.

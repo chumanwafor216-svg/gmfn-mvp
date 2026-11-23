@@ -780,7 +780,17 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(createVisuals.shellBackground.includes("radial-gradient"), "The approved blue-purple DemandBox background is missing.");
   assert(createVisuals.cardBackground.includes("linear-gradient"), "The approved light DemandBox card is missing.");
   assert(createVisuals.cardShadow !== "none", "The approved DemandBox card glow is missing.");
-  for (const label of ["Transport", "Repairs", "Food", "Books", "Housing", "Other"]) {
+  for (const label of [
+    "Transport",
+    "Repairs",
+    "Food",
+    "Books",
+    "Housing",
+    "Personal care",
+    "Home services",
+    "Work & business",
+    "Other need",
+  ]) {
     assert(
       await form.getByRole("button", { name: label, exact: true }).isVisible(),
       "Category picture choice is missing: " + label
