@@ -98,6 +98,16 @@ class MarketplaceRequestAttachmentOut(BaseModel):
     created_by_user_id: int
     created_at: datetime
 
+class MarketplaceProductContextOut(BaseModel):
+    product_id: int
+    shop_id: int
+    product_title: str
+    shop_name: str
+    listed_price: Optional[str] = None
+    currency: Optional[str] = None
+    shop_path: Optional[str] = None
+
+
 class MarketplaceRequestOut(BaseModel):
     id: int
     clan_id: Optional[int] = None
@@ -148,6 +158,25 @@ class MarketplaceRequestOut(BaseModel):
     audio_duration_seconds: Optional[float] = None
     audio_deleted_at: Optional[datetime] = None
     media_attachments: list[MarketplaceRequestAttachmentOut] = Field(default_factory=list)
+    product_context: Optional[MarketplaceProductContextOut] = None
+
+
+class MarketplaceProductEnquiryCreate(BaseModel):
+    product_id: int = Field(..., ge=1)
+    shop_id: int = Field(..., ge=1)
+    clan_id: Optional[int] = Field(default=None, ge=1)
+    client_request_id: str = Field(..., min_length=8, max_length=80)
+    note: Optional[str] = Field(default=None, max_length=1000)
+
+    @field_validator("product_id", "shop_id", "clan_id", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_integer(value, info.field_name)
+
+    @field_validator("client_request_id", "note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class MarketplaceRequestResponseCreate(BaseModel):

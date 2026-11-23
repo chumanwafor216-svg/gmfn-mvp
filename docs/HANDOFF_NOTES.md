@@ -7572,3 +7572,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Frontend production build passes with TypeScript and Vite after rerunning with process-spawn permission; the initial sandbox-only `esbuild spawn EPERM` was environmental.
 - The local candidate remains based on `de1fe9dbe55b2f1ad1d6d2009b33b63ccae3fe15` and has not been pushed, promoted to `main`, deployed, or connected to production.
 - Known unrelated baseline failures remain outside this change: the Shop evidence-boundary audit and Marketplace trade-evidence lane audit. They were not altered.
+
+# Shop product-to-DemandBox continuity - 2026-11-23
+
+- Added a server-validated product enquiry endpoint that reuses the protected DemandBox request and existing private response engine.
+- The request carries compact product and Shop context, preserves the existing View Shop destination, and remains hidden from unauthorised users.
+- Repeated taps or retries for an open product enquiry return the existing request, including retries with a different client key; no duplicate active enquiry is created.
+- Shop contact keeps the existing WhatsApp fallback when native enquiry creation is unavailable.
+- No cart, payment, agreement, fulfilment, verified-sale or Protected Trade record is created automatically. Existing trade handoff remains limited to authorised DemandBox supply matches.
+- Verification: `tests/test_marketplace_requests.py` 22 passed; focused product-enquiry test passed; frontend TypeScript/Vite build passed. No production push or deployment performed.

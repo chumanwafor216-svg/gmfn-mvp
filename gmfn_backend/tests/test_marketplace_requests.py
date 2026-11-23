@@ -12,7 +12,10 @@ from app.api.routes import (
     pool,
 )
 from app.db.database import SessionLocal, engine
-from app.schemas.marketplace_requests import MarketplaceRequestCreate
+from app.schemas.marketplace_requests import (
+    MarketplaceProductEnquiryCreate,
+    MarketplaceRequestCreate,
+)
 from app.services.notification_service import (
     list_my_notifications,
     mark_notification_read,
@@ -1199,3 +1202,115 @@ def test_guarantor_exposure_can_be_read_one_currency_at_a_time():
     assert float(gbp_liquidity["pledged_total"]) == 40.0
     assert float(gbp_liquidity["locked_total"]) == 40.0
     assert float(gbp_liquidity["released_total"]) == 5.0
+
+
+def test_product_enquiry_reuses_protected_demand_box_and_is_idempotent():
+    _seed_primary_clan()
+    _add_second_member_to_primary_clan()
+    _add_third_member_to_primary_clan()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, is_active, created_at
+                )
+                VALUES (11, 1, 2, 'Responder Shop', 1, CURRENT_TIMESTAMP)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_products (
+                    id, clan_id, shop_id, seller_user_id, title, description,
+                    price, currency, visibility_mode, is_active, created_at
+                )
+                VALUES (
+                    21, 1, 11, 2, 'Branded school bag', 'Children school bag',
+                    '5000', 'NGN', 'community_visible', 1, CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+
+    with SessionLocal() as db:
+        first = marketplace_requests.create_marketplace_product_enquiry(
+            MarketplaceProductEnquiryCreate(
+                product_id=21,
+                shop_id=11,
+                clan_id=1,
+                client_request_id="product-enquiry-1001",
+                note="Please confirm colours and collection options.",
+            ),
+            db=db,
+            current_user=_fake_current_user(),
+        )
+        duplicate = marketplace_requests.create_marketplace_product_enquiry(
+            MarketplaceProductEnquiryCreate(
+                product_id=21,
+                shop_id=11,
+                clan_id=1,
+                client_request_id="product-enquiry-1001",
+            ),
+            db=db,
+            current_user=_fake_current_user(),
+        )
+        retry_with_new_key = marketplace_requests.create_marketplace_product_enquiry(
+            MarketplaceProductEnquiryCreate(
+                product_id=21,
+                shop_id=11,
+                clan_id=1,
+                client_request_id="product-enquiry-1002",
+            ),
+            db=db,
+            current_user=_fake_current_user(),
+        )
+        seller_rows = marketplace_requests.list_marketplace_requests(
+            db=db,
+            current_user=_fake_second_user(),
+            status="open",
+            category=None,
+            urgency=None,
+            area=None,
+            mine_only=False,
+            clan_id=1,
+            limit=50,
+        )
+        seller_detail = marketplace_requests.get_marketplace_request(
+            request_id=first.id,
+            db=db,
+            current_user=_fake_second_user(),
+            clan_id=1,
+        )
+        with pytest.raises(HTTPException) as unrelated_detail_error:
+            marketplace_requests.get_marketplace_request(
+                request_id=first.id,
+                db=db,
+                current_user=_fake_third_user(),
+                clan_id=1,
+            )
+
+    first_data = first.model_dump()
+    duplicate_data = duplicate.model_dump()
+    assert first_data["id"] == duplicate_data["id"]
+    retry_with_new_key_data = retry_with_new_key.model_dump()
+    assert first_data["id"] == retry_with_new_key_data["id"]
+    assert first_data["title"] == "Buying: Branded school bag"
+    assert first_data["visibility_scope"] == "protected_target"
+    assert first_data["routing_status"] == "protected_member_targeted"
+    assert first_data["product_context"] == {
+        "product_id": 21,
+        "shop_id": 11,
+        "product_title": "Branded school bag",
+        "shop_name": "Responder Shop",
+        "listed_price": "5000",
+        "currency": "NGN",
+        "shop_path": "/shop/GSN-U-RESPONDER?product_id=21&clan_id=1&gsn_source=demand_box_product_enquiry",
+    }
+    assert len(seller_rows) == 1
+    assert seller_rows[0].id == first.id
+    assert seller_rows[0].product_context.product_id == 21
+    assert seller_detail.product_context.shop_id == 11
+    assert unrelated_detail_error.value.status_code == 404

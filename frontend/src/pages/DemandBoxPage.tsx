@@ -110,6 +110,15 @@ type DemandRow = {
   audio_attachment_id?: number | null;
   audio_duration_seconds?: number | null;
   audio_deleted_at?: string | null;
+  product_context?: {
+    product_id: number;
+    shop_id: number;
+    product_title: string;
+    shop_name: string;
+    listed_price?: string | null;
+    currency?: string | null;
+    shop_path?: string | null;
+  } | null;
   media_attachments?: Array<{
     id: number;
     kind: string;
@@ -2893,6 +2902,45 @@ export default function DemandBoxPage() {
             ) : null}
           </div>
 
+          {row?.product_context ? (
+            <div
+              data-gsn-demand-product-context="true"
+              style={{
+                margin: isCompact ? "10px 12px 0" : "10px 0 0",
+                padding: isCompact ? "10px 12px" : 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 9,
+                flexWrap: "wrap",
+                borderRadius: 14,
+                background: "#FFF9E8",
+                border: "1px solid rgba(192,145,25,0.25)",
+                color: "#17324A",
+                fontSize: 12,
+                lineHeight: 1.3,
+              }}
+            >
+              <strong>Product enquiry</strong>
+              <span>{row.product_context.product_title}</span>
+              <span>Shop: {row.product_context.shop_name}</span>
+              {row.product_context.listed_price ? (
+                <span>
+                  Price: {row.product_context.currency ? `${row.product_context.currency} ` : ""}
+                  {row.product_context.listed_price}
+                </span>
+              ) : null}
+              {row.product_context.shop_path ? (
+                <StableCtaLink
+                  to={row.product_context.shop_path}
+                  debugId={`${debugBase}.product-context.shop`}
+                  stableHeight={34}
+                  style={{ borderRadius: 10, padding: "5px 9px", fontSize: 11 }}
+                >
+                  View Shop
+                </StableCtaLink>
+              ) : null}
+            </div>
+          ) : null}
           {rowId ? (
             <div
               data-gsn-demand-respond-in-place="true"

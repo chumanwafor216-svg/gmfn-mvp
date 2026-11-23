@@ -10265,6 +10265,15 @@ export type MarketplaceRequestItem = {
   audio_duration_seconds?: number | null;
   audio_deleted_at?: string | null;
   media_attachments?: MarketplaceRequestAttachmentItem[];
+  product_context?: {
+    product_id: number;
+    shop_id: number;
+    product_title: string;
+    shop_name: string;
+    listed_price?: string | null;
+    currency?: string | null;
+    shop_path?: string | null;
+  } | null;
 };
 
 export async function listMarketplaceRequests(params?: {
@@ -10339,6 +10348,23 @@ export async function createMarketplaceRequest(payload: {
     payload?.clan_id === undefined ? getSelectedClanId() : payload?.clan_id;
 
   const created = await httpJson("/marketplace/requests", "POST", {
+    ...payload,
+    clan_id: effectiveClanId ?? undefined,
+  });
+  clearStartupSectionCacheByLabel("listMarketplaceRequests");
+  return created;
+}
+
+export async function createMarketplaceProductEnquiry(payload: {
+  product_id: number;
+  shop_id: number;
+  clan_id?: number | null;
+  client_request_id: string;
+  note?: string;
+}): Promise<MarketplaceRequestItem> {
+  const effectiveClanId =
+    payload?.clan_id === undefined ? getSelectedClanId() : payload?.clan_id;
+  const created = await httpJson("/marketplace/requests/product-enquiries", "POST", {
     ...payload,
     clan_id: effectiveClanId ?? undefined,
   });

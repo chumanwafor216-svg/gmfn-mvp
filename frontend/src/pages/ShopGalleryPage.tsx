@@ -17,6 +17,7 @@ import ExistingWorkflowPlusLink from '../components/ExistingWorkflowPlusLink';
 import {
   acknowledgeSpotlightPresentationSupply,
   createMarketplaceShop,
+  createMarketplaceProductEnquiry,
   followMarketplaceShop,
   getAccessToken,
   getCurrentClan,
@@ -5270,6 +5271,27 @@ export default function ShopGalleryPage() {
       "I would like to ask about buying it.",
     ].join(" ");
     const productUrl = buildProductSocialShareTarget(product).url;
+    const productId = positiveNumber(product.id);
+    const shopId = positiveNumber(effectiveShop?.id);
+    const clanId = positiveNumber(product.originClanId || effectiveShop?.clanId);
+
+    if (productId && shopId) {
+      try {
+        const created = await createMarketplaceProductEnquiry({
+          product_id: productId,
+          shop_id: shopId,
+          clan_id: clanId || undefined,
+          client_request_id: `shop-enquiry-${productId}-${Date.now()}`,
+        });
+        navigate(`/app/demand-box?demand_id=${created.id}&queue=mine`);
+        setNotice({
+          tone: "success",
+          text: "Your product enquiry is open in DemandBox. The seller can reply there.",
+        });
+        return;
+      } catch {
+      }
+    }
 
     if (
       openOwnerWhatsAppChat(

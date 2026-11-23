@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from urllib.parse import quote
 from datetime import datetime, timedelta, timezone
 from typing import List
@@ -60,6 +61,8 @@ from app.schemas.marketplace_requests import (
     DemandSupplySellerContactOut,
     DemandSupplyTradeHandoffOut,
     MarketplaceRequestAttachmentOut,
+    MarketplaceProductContextOut,
+    MarketplaceProductEnquiryCreate,
     MarketplaceRequestCreate,
     MarketplaceRequestOut,
     MarketplaceRequestUpdateStatus,
@@ -411,6 +414,62 @@ def _request_action_url(row: MarketplaceRequest, queue: str | None = None) -> st
     return f"/app/demand-box?{'&'.join(query_parts)}"
 
 
+def _product_enquiry_context(
+    db: Session,
+    row: MarketplaceRequest,
+) -> MarketplaceProductContextOut | None:
+    if _safe_text(getattr(row, "category", None)).lower() != "buying":
+        return None
+    activity = (
+        db.query(MarketplaceRequestActivity)
+        .filter(
+            MarketplaceRequestActivity.marketplace_request_id == int(row.id),
+            MarketplaceRequestActivity.event_type == "product_enquiry_created",
+        )
+        .order_by(
+            MarketplaceRequestActivity.created_at.desc(),
+            MarketplaceRequestActivity.id.desc(),
+        )
+        .first()
+    )
+    detail = _safe_text(getattr(activity, "detail", None)) if activity else ""
+    prefix = "product_enquiry:v1:"
+    if not detail.startswith(prefix):
+        return None
+    try:
+        payload = json.loads(detail[len(prefix):])
+        product_id = int(payload.get("product_id") or 0)
+        shop_id = int(payload.get("shop_id") or 0)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return None
+    product = db.get(MarketplaceProduct, product_id)
+    shop = db.get(MarketplaceShop, shop_id)
+    if not product or not shop or int(getattr(product, "shop_id", 0) or 0) != shop_id:
+        return None
+    owner = db.get(User, int(getattr(shop, "owner_user_id", 0) or 0))
+    owner_gmfn_id = _safe_text(getattr(owner, "gmfn_id", None))
+    shop_path = None
+    if owner_gmfn_id:
+        shop_path = (
+            f"/shop/{quote(owner_gmfn_id)}?product_id={product_id}"
+            f"&clan_id={int(getattr(product, 'clan_id', 0) or 0)}"
+            "&gsn_source=demand_box_product_enquiry"
+        )
+    price = getattr(product, "price", None)
+    return MarketplaceProductContextOut(
+        product_id=product_id,
+        shop_id=shop_id,
+        product_title=(
+            _safe_text(getattr(product, "title", None) or getattr(product, "name", None))
+            or "Marketplace item"
+        ),
+        shop_name=_safe_text(getattr(shop, "name", None)) or "Marketplace shop",
+        listed_price=str(price) if price is not None else None,
+        currency=_safe_text(getattr(product, "currency", None)) or None,
+        shop_path=shop_path,
+    )
+
+
 def _to_out(
     db: Session,
     row: MarketplaceRequest,
@@ -505,6 +564,7 @@ def _to_out(
             float(active_audio.duration_seconds) if active_audio else None
         ),
         audio_deleted_at=audio.deleted_at if audio else None,
+        product_context=_product_enquiry_context(db, row),
         media_attachments=[
             MarketplaceRequestAttachmentOut(
                 id=int(media.id),
@@ -649,6 +709,137 @@ def _seller_contact_message(
         ]
     )
     return "\n".join(lines)
+
+@router.post("/product-enquiries", response_model=MarketplaceRequestOut)
+def create_marketplace_product_enquiry(
+    payload: MarketplaceProductEnquiryCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    product = _require_visible_supply_for_intelligence(
+        db,
+        product_id=int(payload.product_id),
+        current_user_id=int(current_user.id),
+    )
+    shop = db.get(MarketplaceShop, int(payload.shop_id))
+    if (
+        not shop
+        or not bool(getattr(shop, "is_active", False))
+        or int(getattr(product, "shop_id", 0) or 0) != int(shop.id)
+        or int(getattr(product, "clan_id", 0) or 0) != int(getattr(shop, "clan_id", 0) or 0)
+        or int(getattr(product, "seller_user_id", 0) or 0) != int(getattr(shop, "owner_user_id", 0) or 0)
+    ):
+        raise HTTPException(status_code=404, detail="Product shop context not found")
+
+    seller = db.get(User, int(getattr(shop, "owner_user_id", 0) or 0))
+    seller_gmfn_id = _safe_text(getattr(seller, "gmfn_id", None))
+    if not seller or not seller_gmfn_id:
+        raise HTTPException(status_code=404, detail="Seller is not available for a protected enquiry")
+    if int(seller.id) == int(current_user.id):
+        raise HTTPException(status_code=400, detail="You cannot enquire about your own product")
+
+    product_clan_id = int(getattr(product, "clan_id", 0) or 0)
+    if payload.clan_id is not None and int(payload.clan_id) != product_clan_id:
+        raise HTTPException(status_code=400, detail="Product and enquiry community do not match")
+
+    _cleanup_expired_requests(db)
+    active_enquiries = (
+        db.query(MarketplaceRequest)
+        .join(
+            MarketplaceRequestActivity,
+            MarketplaceRequestActivity.marketplace_request_id == MarketplaceRequest.id,
+        )
+        .filter(
+            MarketplaceRequest.user_id == int(current_user.id),
+            MarketplaceRequest.status == "open",
+            MarketplaceRequest.category == "buying",
+            MarketplaceRequestActivity.event_type == "product_enquiry_created",
+        )
+        .order_by(MarketplaceRequest.created_at.desc(), MarketplaceRequest.id.desc())
+        .all()
+    )
+    for active in active_enquiries:
+        context = _product_enquiry_context(db, active)
+        if (
+            context
+            and context.product_id == int(payload.product_id)
+            and context.shop_id == int(payload.shop_id)
+        ):
+            return _to_out(db, active, current_user, current_user_id=int(current_user.id))
+    client_request_id = payload.client_request_id.strip()
+    existing = (
+        db.query(MarketplaceRequest)
+        .filter(
+            MarketplaceRequest.user_id == int(current_user.id),
+            MarketplaceRequest.client_request_id == client_request_id,
+        )
+        .first()
+    )
+    if existing:
+        context = _product_enquiry_context(db, existing)
+        if (
+            not context
+            or context.product_id != int(payload.product_id)
+            or context.shop_id != int(payload.shop_id)
+        ):
+            raise HTTPException(status_code=409, detail="This enquiry key is already in use")
+        return _to_out(db, existing, current_user, current_user_id=int(current_user.id))
+
+    product_title = (
+        _safe_text(getattr(product, "title", None) or getattr(product, "name", None))
+        or "Marketplace item"
+    )
+    shop_name = _safe_text(getattr(shop, "name", None)) or "Marketplace shop"
+    price = getattr(product, "price", None)
+    currency = _safe_text(getattr(product, "currency", None))
+    listed_price = f"{currency} {price}".strip() if price is not None else "Please confirm the current price"
+    note = _safe_text(payload.note)
+    description_lines = [
+        f"Product: {product_title}",
+        f"Shop: {shop_name}",
+        f"Listed price: {listed_price}",
+        f"@{seller_gmfn_id}",
+        "Please confirm availability, final price and collection or delivery arrangements.",
+    ]
+    if note:
+        description_lines.append(f"Buyer note: {note}")
+
+    created = create_marketplace_request(
+        MarketplaceRequestCreate(
+            clan_id=product_clan_id,
+            title=f"Buying: {product_title}"[:180],
+            description="\n".join(description_lines)[:1500],
+            category="buying",
+            urgency="medium",
+            expires_in_hours=48,
+            visibility_scope=VISIBILITY_SCOPE_PROTECTED_TARGET,
+            client_request_id=client_request_id,
+            show_sender_photo=False,
+        ),
+        db=db,
+        current_user=current_user,
+    )
+    row = db.get(MarketplaceRequest, int(created.id))
+    if not row:
+        raise HTTPException(status_code=500, detail="Product enquiry could not be reopened")
+    db.add(
+        MarketplaceRequestActivity(
+            marketplace_request_id=int(row.id),
+            actor_user_id=int(current_user.id),
+            event_type="product_enquiry_created",
+            detail=(
+                "product_enquiry:v1:"
+                + json.dumps(
+                    {"product_id": int(product.id), "shop_id": int(shop.id)},
+                    separators=(",", ":"),
+                )
+            ),
+        )
+    )
+    db.commit()
+    db.refresh(row)
+    return _to_out(db, row, current_user, current_user_id=int(current_user.id))
+
 
 @router.post("", response_model=MarketplaceRequestOut)
 def create_marketplace_request(
