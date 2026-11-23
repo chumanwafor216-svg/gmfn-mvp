@@ -87,10 +87,13 @@ function forbidPattern(input, file, pattern, message) {
   [/debugId=\{[^\n]*fulfilled[^\n]*\}[\s\S]*?debugId=\{[^\n]*cancelled[^\n]*\}/, "owner fulfil and cancel controls must remain available inside open cards"],
   [/demandPaperAction\(row, scope, copyDebugId\)[\s\S]*?demandContactActions\(row/, "copy and contact actions must remain inside open cards"],
   [/getDemandSupplyMatches/, "possible supply matching must remain server-driven"],
+  [/getDemandSupplySellerContact[\s\S]*?buildWhatsAppChatUrl[\s\S]*?prepared_message/, "Ask seller must use the authenticated server-validated contact handoff"],
+  [/isMineRow\(row, me\)[\s\S]*?data-gsn-demand-ask-seller="validated"/, "direct seller contact must remain requester-only in the interface"],
+  [/data-gsn-demand-seller-contact-result[\s\S]*?Back to request[\s\S]*?View Shop/, "seller contact must preserve a direct return and optional Shop route"],
   [/reliableDemandMatches[\s\S]*?RELEVANCE_RELIABLE[\s\S]*?\.slice\(0, 3\)/, "only the first three reliable matches may surface immediately"],
-  [/data-gsn-demand-supply-intelligence="true"[\s\S]*?Check these listings\. Availability and suitability are not confirmed\.[\s\S]*?data-gsn-demand-match-list="compact"[\s\S]*?data-gsn-demand-match-row="compact"[\s\S]*?data-gsn-demand-match-action="compact"[\s\S]*?View ›/, "truthful compact supply rows must remain immediately reachable"],
+  [/data-gsn-demand-supply-intelligence="true"[\s\S]*?Check these listings\. Availability and suitability are not confirmed\.[\s\S]*?data-gsn-demand-match-list="compact"[\s\S]*?data-gsn-demand-match-row="compact"[\s\S]*?data-gsn-demand-ask-seller="validated"[\s\S]*?Ask seller[\s\S]*?data-gsn-demand-match-action="compact"[\s\S]*?Shop ›/, "truthful compact supply rows must keep direct validated seller contact and optional Shop access"],
   [/demandMatchEvidenceSentence[\s\S]*?availability not confirmed\./, "each compact match must keep one concise availability boundary"],
-  [/gridTemplateColumns: "minmax\(0, 1fr\) auto"[\s\S]*?minHeight: isCompact \? 78 : 82/, "compact match rows must keep bounded row geometry"],
+  [/gridTemplateColumns: "minmax\(0, 1fr\) auto"[\s\S]*?minHeight: isCompact \? 84 : 88/, "compact match rows must keep bounded row geometry with the two compact actions"],
   [/Community connection is context, not professional verification or guaranteed trust\./, "community context must not be presented as professional verification"],
   [/data-gsn-demand-load-older="true"[\s\S]*?demand-box\.queue\.load-older/, "large queues must keep paged loading"],
   [/const DEMAND_BOX_PAGE_SIZE = 200/, "the backend-safe page size must remain explicit"],
@@ -106,6 +109,7 @@ function forbidPattern(input, file, pattern, message) {
   [/fetchDemandAudioBlob/, "the API client must keep authenticated audio retrieval"],
   [/deleteDemandAudio/, "the API client must keep sender-controlled voice deletion"],
   [/DELETE VOICE NOTE/, "permanent deletion must keep the explicit server confirmation phrase"],
+  [/getDemandSupplySellerContact[\s\S]*?\/seller-contact/, "the API client must keep the authenticated seller-contact authority"],
   [/createMarketplaceRequestResponse/, "the API client must keep private replies"],
   [/repostMarketplaceRequest/, "the API client must keep linked reposting"],
 ].forEach(([pattern, message]) => requirePattern(apiSource, apiFile, pattern, message));
@@ -132,7 +136,9 @@ function forbidPattern(input, file, pattern, message) {
 ].forEach(([pattern, message]) => requirePattern(recorderSource, recorderFile, pattern, message));
 
 [
-  [/onRecordingChange=\{setVoiceRecording\}/, "private replies must receive the recorder's active state"],
+  [/SELLER_QUICK_REPLIES[\s\S]*?I can help\.[\s\S]*?Unavailable\.[\s\S]*?I need more details\./, "the private composer must keep the three optional seller response helpers"],
+  [/!isOwner[\s\S]*?data-gsn-demand-seller-quick-replies="editable"[\s\S]*?setText\(reply\)[\s\S]*?textareaRef\.current\?\.focus/, "seller helpers must remain responder-only, editable text rather than transaction statuses"],
+  [/onRecordingChange=\{setVoiceRecording\}/, "private replies must receive the recorder''s active state"],
   [/if \(voiceRecording\)[\s\S]*?Tap Stop and wait for Voice note ready before sending/, "private reply submission must reject an unfinished recording"],
   [/disabled=\{sending \|\| voiceRecording\}[\s\S]*?Stop recording first[\s\S]*?Send private reply/, "private reply sending must stay locked until recorded audio is ready"],
   [/data-gsn-demand-conversation="whatsapp-like"[\s\S]*?data-gsn-demand-message-direction=\{mine \? "outgoing" : "incoming"\}/, "private replies must keep the familiar alternating chat trail"],

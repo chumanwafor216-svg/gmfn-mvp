@@ -7438,3 +7438,15 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Verification passed: DemandBox phone smoke at 360/390/430, DemandBox front-package audit, DemandBox expanded-search audit, Community Home button inventory, Community Home phone-button audit, production frontend build and the complete protected-button freeze suite.
 - The protected suite still emits the pre-existing duplicate React key 0 browser warnings and Babel large-file notes outside this DemandBox correction; all protected contracts passed.
 - No push, merge, migration, production deployment or environment change was performed.
+## Enugu CDW adoption pilot candidate — 23 November 2026
+
+- Isolated branch: `codex/enugu-cdw-adoption-pilot`; based on `origin/main` plus the accepted DemandBox relevance and compact-row commits.
+- Added authenticated requester-only **Ask seller** handoff from a reliable DemandBox match, preserving validated demand/product/Shop context in a prepared WhatsApp draft.
+- Added optional **View Shop**, **Back to request**, and three responder-only editable text helpers while preserving ordinary private text and voice.
+- Backend contact projection reuses existing DemandBox exact-match and Shop privacy authorities; no contact, agreement, notification, trade, TrustSlip, payment, delivery, or analytics record is created.
+- No migration/config/feature-flag change. Alembic remains `20261121_spotlight_slice4a_completion`; frozen taxonomy repair is absent.
+- Passing evidence: 32 focused matching/handoff tests; 106 DemandBox/Shop/privacy/voice regressions; frontend build; DemandBox 360/390/430 mobile smoke; DemandBox, Marketplace, Shop, Spotlight, mobile-tap, Dashboard, and Shop Control protected checks.
+- Honest exception: unchanged Trust infrastructure visual sweep timed out twice waiting for `networkidle` on `/app/dashboard`; no Trust assertion failed and no Trust file changed.
+- Notification retry integrity defect remains separate: response commit precedes notification creation and the duplicate-response retry path can return before recreating a failed notification.
+- Full scope, smoke plan, rollback, and Enugu checklist: `docs/GSN_ENUGU_CDW_ADOPTION_PILOT_RELEASE_CANDIDATE_2026-11-23.md`.
+- Not pushed, merged, or deployed. Founder must approve the exact final SHA before release.

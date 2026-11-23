@@ -4,7 +4,7 @@ from urllib.parse import quote
 from datetime import datetime, timedelta, timezone
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -48,9 +48,15 @@ from app.services.marketplace_relay_governance_service import (
     latest_relay_consent,
     record_relay_consent,
 )
+from app.services.marketplace_shop_privacy_service import (
+    ShopPrivacyScope,
+    project_shop_contact_fields,
+    resolve_shop_privacy_decision,
+)
 from app.schemas.marketplace_requests import (
     DemandSupplyMatchesOut,
     DemandSupplyMatchOut,
+    DemandSupplySellerContactOut,
     DemandSupplyTradeHandoffOut,
     MarketplaceRequestCreate,
     MarketplaceRequestOut,
@@ -586,6 +592,31 @@ def _demand_supply_match_out(db: Session, match: dict) -> DemandSupplyMatchOut:
         public_shop_path=_public_shop_path_for_match(db, match),
     )
 
+def _seller_contact_message(
+    *,
+    demand_title: str,
+    demand_description: str,
+    demand_area: str,
+    product_title: str,
+    shop_name: str,
+) -> str:
+    lines = [
+        f"Hello {shop_name}.",
+        f"I found {product_title} as a possible match for my GSN request:",
+        f'"{demand_title}"',
+    ]
+    if demand_description and demand_description.casefold() != demand_title.casefold():
+        lines.append(f"Request details: {demand_description}")
+    if demand_area:
+        lines.append(f"Area: {demand_area}")
+    lines.extend(
+        [
+            "Is it available? Please confirm the price and how we can arrange collection, delivery, or the service.",
+            "This message starts a conversation; no agreement has been made yet.",
+        ]
+    )
+    return "\n".join(lines)
+
 @router.post("", response_model=MarketplaceRequestOut)
 def create_marketplace_request(
     payload: MarketplaceRequestCreate,
@@ -914,6 +945,85 @@ def get_marketplace_request_trade_handoff(
         item_title=_safe_text(handoff.get("product_title")) or "Marketplace item",
     )
 
+
+@router.get(
+    "/{request_id}/supply-matches/{product_id}/seller-contact",
+    response_model=DemandSupplySellerContactOut,
+)
+def get_marketplace_request_seller_contact(
+    response: Response,
+    request_id: int = Path(..., ge=1),
+    product_id: int = Path(..., ge=1),
+    shop_id: int = Query(..., ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _cleanup_expired_requests(db)
+    handoff = resolve_demand_supply_trade_handoff(
+        db,
+        demand_id=int(request_id),
+        product_id=int(product_id),
+        shop_id=int(shop_id),
+        current_user_id=int(current_user.id),
+    )
+    if not handoff:
+        raise HTTPException(status_code=404, detail="DemandBox match contact not found")
+    if int(handoff.get("requester_user_id") or 0) != int(current_user.id):
+        raise HTTPException(status_code=403, detail="Only the requester can contact this matched seller")
+
+    demand = db.get(MarketplaceRequest, int(request_id))
+    shop = db.get(MarketplaceShop, int(shop_id))
+    if not demand or not shop or not bool(getattr(shop, "is_active", False)):
+        raise HTTPException(status_code=404, detail="DemandBox match contact not found")
+
+    target_clan_id = int(handoff.get("clan_id") or 0)
+    same_community = int(getattr(demand, "clan_id", 0) or 0) == target_clan_id
+    requester_clan_ids = set(_active_clan_ids_for_user(db, int(current_user.id)))
+    contact_scope = (
+        ShopPrivacyScope.AUTHORIZED_COMMUNITY
+        if same_community and target_clan_id in requester_clan_ids
+        else ShopPrivacyScope.UNAUTHENTICATED_PUBLIC
+    )
+    privacy_decision = resolve_shop_privacy_decision(
+        db,
+        owner_user_id=int(getattr(shop, "owner_user_id", 0) or 0),
+        scope=contact_scope,
+        shop_active=bool(getattr(shop, "is_active", False)),
+    )
+    contact = project_shop_contact_fields(
+        {"whatsapp_number": getattr(shop, "whatsapp_number", None)},
+        decision=privacy_decision,
+    )
+    whatsapp_number = _safe_text(contact.get("whatsapp_number")) or None
+    demand_title = _safe_text(handoff.get("demand_title")) or "DemandBox request"
+    demand_description = _safe_text(_public_description(demand))
+    demand_area = _safe_text(getattr(demand, "area", None))
+    product_title = _safe_text(handoff.get("product_title")) or "Marketplace item"
+    shop_name = _safe_text(handoff.get("shop_name")) or "Marketplace shop"
+
+    response.headers["Cache-Control"] = "private, no-store"
+    return DemandSupplySellerContactOut(
+        demand_id=int(handoff.get("demand_id") or 0),
+        product_id=int(handoff.get("product_id") or 0),
+        shop_id=int(handoff.get("shop_id") or 0),
+        clan_id=target_clan_id,
+        demand_title=demand_title,
+        demand_description=demand_description or None,
+        demand_area=demand_area or None,
+        product_title=product_title,
+        shop_name=shop_name,
+        whatsapp_number=whatsapp_number,
+        contact_available=bool(whatsapp_number),
+        public_shop_path=_public_shop_path_for_match(db, handoff),
+        back_to_request_path=f"/app/demand-box?demand_id={int(request_id)}",
+        prepared_message=_seller_contact_message(
+            demand_title=demand_title,
+            demand_description=demand_description,
+            demand_area=demand_area,
+            product_title=product_title,
+            shop_name=shop_name,
+        ),
+    )
 
 @router.get("/{request_id}", response_model=MarketplaceRequestOut)
 def get_marketplace_request(

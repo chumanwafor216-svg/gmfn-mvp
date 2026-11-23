@@ -102,6 +102,24 @@ async function installApiMocks(page, apiCalls) {
     }
     if (/^\/marketplace\/requests\/\d+\/supply-matches$/.test(path)) {
       const requestId = Number(path.split("/")[3] || 0);
+      if (requestId === 72) {
+        return route.fulfill(json({
+          count: 1,
+          matches: [
+            {
+              demand_id: 72,
+              demand_category: "Repair",
+              clan_id: 8,
+              shop_id: 90,
+              product_id: 900,
+              product_title: "Freezer repair visit",
+              shop_name: "Onitsha Cooling Repairs",
+              public_shop_path: "/shop/GSN-U-900?product_id=900&clan_id=8",
+              reason_codes: ["SAME_COMMUNITY", "LISTED_OFFERING", "AVAILABILITY_UNCONFIRMED", "AREA_COMPATIBLE", "PRODUCT_TITLE_MATCH", "RELEVANCE_RELIABLE"],
+            },
+          ],
+        }));
+      }
       if (requestId !== 73) return route.fulfill(json({ count: 0, matches: [] }));
       return route.fulfill(json({
         count: 4,
@@ -151,6 +169,33 @@ async function installApiMocks(page, apiCalls) {
             reason_codes: ["SAME_COMMUNITY", "LISTED_OFFERING", "AVAILABILITY_UNCONFIRMED", "SHOP_CONTEXT_MATCH", "RELEVANCE_WEAK"],
           },
         ],
+      }));
+    }
+    if (/^\/marketplace\/requests\/\d+\/supply-matches\/\d+\/seller-contact$/.test(path) && method === "GET") {
+      apiCalls.sellerContactGets += 1;
+      const parts = path.split("/");
+      const requestId = Number(parts[3] || 0);
+      const productId = Number(parts[5] || 0);
+      const shopId = Number(url.searchParams.get("shop_id") || 0);
+      if (requestId !== 72 || productId !== 900 || shopId !== 90) {
+        return route.fulfill(json({ detail: "DemandBox match contact not found" }, 404));
+      }
+      return route.fulfill(json({
+        demand_id: 72,
+        product_id: 900,
+        shop_id: 90,
+        clan_id: 8,
+        demand_title: "Need a freezer repair",
+        demand_description: "The freezer stopped cooling yesterday.",
+        demand_area: "Onitsha",
+        product_title: "Freezer repair visit",
+        shop_name: "Onitsha Cooling Repairs",
+        whatsapp_number: "+2348012345678",
+        contact_available: true,
+        public_shop_path: "/shop/GSN-U-900?product_id=900&clan_id=8",
+        back_to_request_path: "/app/demand-box?demand_id=72",
+        prepared_message: "Hello Onitsha Cooling Repairs.\nI found Freezer repair visit as a possible match for my GSN request:\n\"Need a freezer repair\"\nRequest details: The freezer stopped cooling yesterday.\nArea: Onitsha\nIs it available? Please confirm the price and fulfilment arrangement.\nThis message starts a conversation; no agreement has been made yet.",
+        boundary_note: "Contact only; no agreement has been made.",
       }));
     }
     if (/^\/demand-box\/requests\/\d+\/responses$/.test(path) && method === "GET") {
@@ -238,7 +283,7 @@ async function installApiMocks(page, apiCalls) {
 
 async function verifyViewport(browser, baseURL, viewport) {
   const page = await browser.newPage({ viewport, deviceScaleFactor: 2, isMobile: true });
-  const apiCalls = { textRequestPosts: 0, voiceRequestPosts: 0 };
+  const apiCalls = { textRequestPosts: 0, voiceRequestPosts: 0, sellerContactGets: 0 };
   page.setDefaultTimeout(45000);
   page.on("pageerror", (error) => console.error("Browser page error:", error));
   page.on("console", (message) => {
@@ -279,6 +324,17 @@ async function verifyViewport(browser, baseURL, viewport) {
       }
     }
     window.MediaRecorder = FakeMediaRecorder;
+    window.__gsnOpenedSellerChatUrl = "";
+    window.open = () => ({
+      opener: null,
+      document: { title: "" },
+      location: {
+        replace(url) {
+          window.__gsnOpenedSellerChatUrl = String(url || "");
+        },
+      },
+      close() {},
+    });
   });
 
   await page.goto(baseURL + "/app/demand-box?queue=open", { waitUntil: "domcontentloaded", timeout: 180000 });
@@ -331,6 +387,16 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible(), "The complete request message did not open with the request.");
   assert(await transportCard.locator('[data-gsn-demand-respond-in-place="true"]').isVisible(), "The response surface did not open with the request.");
   assert(await transportCard.locator('[data-gsn-demand-private-replies="true"]').isVisible(), "Private replies still require another navigation step.");
+  const quickReplies = transportCard.locator('[data-gsn-demand-seller-quick-replies="editable"]');
+  assert(await quickReplies.isVisible(), "The optional seller-response helpers are missing for an authorised responder.");
+  for (const reply of ["I can help.", "Unavailable.", "I need more details."]) {
+    assert(await quickReplies.getByRole("button", { name: reply, exact: true }).isVisible(), "Missing seller-response helper: " + reply);
+  }
+  await quickReplies.getByRole("button", { name: "I can help.", exact: true }).click();
+  const responderText = transportCard.getByPlaceholder("Write a private reply");
+  assert((await responderText.inputValue()) === "I can help.", "A seller helper did not populate ordinary editable text.");
+  await responderText.fill("I can help. I can come after 4pm.");
+  assert((await responderText.inputValue()).includes("after 4pm"), "Seller helper text is not editable before sending.");
   const matchPanel = transportCard.locator('[data-gsn-demand-supply-intelligence="true"]');
   await matchPanel.waitFor();
   const matchRows = matchPanel.locator('[data-gsn-demand-reliable-match="true"]');
@@ -338,7 +404,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await matchPanel.getByText("Check these listings. Availability and suitability are not confirmed.", { exact: true }).isVisible(), "The truthful match boundary is missing.");
   assert(await matchPanel.getByText("Same community, area mentioned; availability not confirmed.", { exact: true }).isVisible(), "The same-community evidence sentence is missing.");
   assert(await matchPanel.getByText("Permitted wider search; availability not confirmed.", { exact: true }).isVisible(), "The governed wider-search evidence sentence is missing.");
-  const matchLinks = matchPanel.getByRole("link", { name: /View listing:/ });
+  const matchLinks = matchPanel.getByRole("link", { name: /View Shop:/ });
   assert((await matchLinks.count()) === 3, "The compact listing destinations are incomplete.");
   assert((await matchPanel.getByRole("button", { name: /matches/i }).count()) === 0, "A redundant match-expansion step returned.");
   assert(await page.getByRole("link", { name: "Ask community", exact: true }).isVisible(), "Ask community was obscured by the suggestions.");
@@ -349,7 +415,7 @@ async function verifyViewport(browser, baseURL, viewport) {
       "/shop/GSN-U-820?product_id=820&clan_id=8",
       "/shop/GSN-U-830?product_id=830&clan_id=9",
     ]),
-    "A compact View action changed its existing listing destination or non-owner source-context boundary."
+    "An optional Shop action changed its existing listing destination or non-owner source-context boundary."
   );
   const matchGeometry = await matchPanel.evaluate((node) => {
     const rows = Array.from(node.querySelectorAll('[data-gsn-demand-match-row="compact"]'));
@@ -486,8 +552,9 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(!(await page.getByText("Source: DemandBox", { exact: true }).isVisible()), "Technical request details opened before the user asked.");
   await transportCard
     .locator('[data-cta-id$=".request-details"]')
-    .evaluate((element) => element.click());
-  assert(await page.getByText("Source: DemandBox", { exact: true }).isVisible(), "Request details are not reachable.");
+    .click({ force: true });
+  await transportCard.getByText("Source: DemandBox", { exact: true }).waitFor();
+  assert(await transportCard.getByText("Source: DemandBox", { exact: true }).isVisible(), "Request details are not reachable.");
   assert((await transportCard.getByRole("button", { name: "Reply privately", exact: true }).count()) === 0, "The obsolete second reply-opening action returned.");
 
   await page.getByRole("button", { name: "View more needs", exact: true }).click();
@@ -501,6 +568,25 @@ async function verifyViewport(browser, baseURL, viewport) {
   await ownerHero.waitFor();
   assert(await freezerCard.getByText("Open request", { exact: true }).isVisible(), "The truthful request status is missing from the visual hero.");
   assert(await freezerCard.getByText("Need a freezer repair", { exact: true }).isVisible(), "The real request title is missing from the visual hero.");
+  const ownerMatchPanel = freezerCard.locator('[data-gsn-demand-supply-intelligence="true"]');
+  await ownerMatchPanel.waitFor();
+  assert((await ownerMatchPanel.locator('[data-gsn-demand-reliable-match="true"]').count()) === 1, "The requester match is missing.");
+  assert(await ownerMatchPanel.getByRole("link", { name: /View Shop:/ }).isVisible(), "Optional View Shop is missing.");
+  await ownerMatchPanel.getByRole("button", { name: "Ask seller", exact: true }).click();
+  await page.waitForFunction(() => Boolean(window.__gsnOpenedSellerChatUrl));
+  const openedSellerChatUrl = await page.evaluate(() => window.__gsnOpenedSellerChatUrl);
+  const decodedSellerChatUrl = decodeURIComponent(openedSellerChatUrl);
+  assert(apiCalls.sellerContactGets === 1, "Ask seller did not use the authenticated validated handoff endpoint exactly once.");
+  assert(decodedSellerChatUrl.includes("Need a freezer repair"), "The original request was lost from the prepared seller message.");
+  assert(decodedSellerChatUrl.includes("Freezer repair visit"), "The matched product was lost from the prepared seller message.");
+  assert(decodedSellerChatUrl.includes("Onitsha Cooling Repairs"), "The matched Shop was lost from the prepared seller message.");
+  const contactResult = ownerMatchPanel.locator('[data-gsn-demand-seller-contact-result="prepared"]');
+  await contactResult.waitFor();
+  assert(await contactResult.getByText("Contacting a seller does not mean an agreement has been reached.", { exact: false }).isVisible(), "The seller-contact boundary is missing.");
+  assert(await contactResult.getByRole("link", { name: "View Shop", exact: true }).isVisible(), "View Shop is not optional after direct contact.");
+  await contactResult.getByRole("button", { name: "Back to request", exact: true }).click();
+  assert(!(await contactResult.isVisible().catch(() => false)), "Back to request did not close the contact result.");
+  assert(await freezerCard.getByText("Need a freezer repair", { exact: true }).isVisible(), "Back to request lost the originating DemandBox request.");
   assert(await ownerHero.locator('[data-gsn-demand-sender-identity="true"] img').isVisible(), "The opted-in sender portrait is missing from the opened request.");
   const compactRequestIcon = ownerHero.locator('[data-gsn-demand-request-icon="compact"]');
   assert(await compactRequestIcon.isVisible(), "The compact generic request icon is missing.");
@@ -621,9 +707,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   );
 
   const expandedSearch = freezerCard.locator('[data-gsn-demand-expand-search="true"]');
-  assert(await expandedSearch.getByText("No matches here yet", { exact: true }).isVisible(), "The compact no-match state is missing.");
-  assert(await expandedSearch.getByRole("button", { name: "Search in one other community", exact: true }).isVisible(), "The compact one-hop search action is missing.");
-  assert(await expandedSearch.getByRole("button", { name: "Stop expanded search", exact: true }).isVisible(), "Withdrawable relay consent is missing.");
+  assert((await expandedSearch.count()) === 0, "A no-match expansion card competed with a reliable visible match.");
 
   const actionDock = freezerCard.locator('[data-gsn-demand-action-dock="compact"]');
   assert((await actionDock.getByRole("button").count()) === 3, "The owner action dock must contain three calm lifecycle actions.");

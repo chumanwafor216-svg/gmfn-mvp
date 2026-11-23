@@ -880,6 +880,94 @@ def test_demand_supply_trade_handoff_rejects_tampered_or_inaccessible_context(cl
     assert _table_count("trust_events") == 0
 
 
+
+def test_demand_supply_seller_contact_is_requester_only_and_read_only(
+    client,
+    override_current_user_user,
+):
+    _seed_base()
+    _seed_request(request_id=63)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE marketplace_shops SET whatsapp_number = '+2348012345678' WHERE id = 10"
+            )
+        )
+
+    before_notifications = _table_count("notifications")
+    before_trade_records = _table_count("protected_trade_records")
+    before_trust_events = _table_count("trust_events")
+
+    response = client.get(
+        "/marketplace/requests/63/supply-matches/100/seller-contact?shop_id=10"
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.headers["cache-control"] == "private, no-store"
+    body = response.json()
+    assert body["demand_id"] == 63
+    assert body["product_id"] == 100
+    assert body["shop_id"] == 10
+    assert body["contact_available"] is True
+    assert body["whatsapp_number"] == "+2348012345678"
+    assert body["back_to_request_path"] == "/app/demand-box?demand_id=63"
+    assert body["public_shop_path"].startswith("/shop/GSN-U-SELLER?")
+    assert "Need urgent plumbing help" in body["prepared_message"]
+    assert "Pipe leak near Ajah" in body["prepared_message"]
+    assert "Emergency Plumbing Repair" in body["prepared_message"]
+    assert "no agreement has been made yet" in body["prepared_message"]
+    assert "seller_user_id" not in body
+    assert "requester_user_id" not in body
+    assert _table_count("notifications") == before_notifications
+    assert _table_count("protected_trade_records") == before_trade_records
+    assert _table_count("trust_events") == before_trust_events
+
+
+def test_demand_supply_seller_contact_fails_closed_when_contact_is_unavailable(
+    client,
+    override_current_user_user,
+):
+    _seed_base()
+    _seed_request(request_id=64)
+
+    response = client.get(
+        "/marketplace/requests/64/supply-matches/100/seller-contact?shop_id=10"
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["contact_available"] is False
+    assert body["whatsapp_number"] is None
+    assert body["prepared_message"]
+    assert body["public_shop_path"]
+
+
+def test_demand_supply_seller_contact_rejects_non_requester_and_tampering(
+    client,
+    override_current_user_user,
+):
+    _seed_base()
+    _seed_request(request_id=65, user_id=2)
+    _seed_request(request_id=66)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE marketplace_shops SET whatsapp_number = '+2348012345678' WHERE id = 10"
+            )
+        )
+
+    non_requester = client.get(
+        "/marketplace/requests/65/supply-matches/100/seller-contact?shop_id=10"
+    )
+    tampered = client.get(
+        "/marketplace/requests/66/supply-matches/100/seller-contact?shop_id=11"
+    )
+
+    assert non_requester.status_code == 403, non_requester.text
+    assert tampered.status_code == 404, tampered.text
+    assert "+2348012345678" not in non_requester.text
+    assert "+2348012345678" not in tampered.text
+
 def test_demand_supply_handoff_supports_services_and_products_without_mandatory_payment(client, override_current_user_user):
     _seed_base()
     cases = [

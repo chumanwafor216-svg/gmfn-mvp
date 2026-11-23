@@ -7,8 +7,14 @@ import {
 import { resolveProfileImageUrl } from "../lib/profileImage";
 import { GsnLegacyIcon } from "./GsnLegacyIcon";
 import ProtectedVoiceNotePlayer from "./ProtectedVoiceNotePlayer";
-import { PrimaryButton } from "./StableButton";
+import { PrimaryButton, SecondaryButton } from "./StableButton";
 import VoiceNoteRecorder from "./VoiceNoteRecorder";
+
+const SELLER_QUICK_REPLIES = [
+  "I can help.",
+  "Unavailable.",
+  "I need more details.",
+] as const;
 
 type DemandResponsePanelProps = {
   requestId: number;
@@ -71,6 +77,7 @@ export default function DemandResponsePanel({
   const [recipientUserId, setRecipientUserId] = useState(0);
   const [error, setError] = useState("");
   const threadRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const currentUserId = Number(currentUser?.id || currentUser?.user_id || 0);
   const canSharePhoto = Boolean(String(currentUser?.profile_image_url || "").trim());
 
@@ -461,7 +468,39 @@ export default function DemandResponsePanel({
             gap: 10,
           }}
         >
+          {!isOwner ? (
+            <div
+              data-gsn-demand-seller-quick-replies="editable"
+              aria-label="Optional quick replies"
+              style={{ display: "flex", gap: 6, flexWrap: "wrap" }}
+            >
+              {SELLER_QUICK_REPLIES.map((reply) => (
+                <SecondaryButton
+                  key={reply}
+                  type="button"
+                  aria-pressed={text === reply}
+                  onClick={() => {
+                    setText(reply);
+                    window.requestAnimationFrame(() => textareaRef.current?.focus());
+                  }}
+                  debugId={`demand-box.response.${requestId}.quick.${reply.toLowerCase().replace(/[^a-z]+/g, "-")}`}
+                  stableHeight={38}
+                  style={{
+                    flex: "1 1 118px",
+                    minWidth: 0,
+                    borderRadius: 999,
+                    padding: "7px 10px",
+                    fontSize: 11.5,
+                    fontWeight: 850,
+                  }}
+                >
+                  {reply}
+                </SecondaryButton>
+              ))}
+            </div>
+          ) : null}
           <textarea
+            ref={textareaRef}
             value={text}
             onChange={(event) => setText(event.target.value)}
             placeholder="Write a private reply"

@@ -10595,6 +10595,36 @@ export type DemandSupplyTradeHandoffResponse = {
   boundary_note?: string | null;
 };
 
+export type DemandSupplySellerContactResponse = {
+  demand_id: number;
+  product_id: number;
+  shop_id: number;
+  clan_id: number;
+  demand_title: string;
+  demand_description?: string | null;
+  demand_area?: string | null;
+  product_title: string;
+  shop_name: string;
+  whatsapp_number?: string | null;
+  contact_available: boolean;
+  public_shop_path?: string | null;
+  back_to_request_path: string;
+  prepared_message: string;
+  boundary_note: string;
+};
+
+export async function getDemandSupplySellerContact(
+  requestId: number,
+  productId: number,
+  params: { shop_id: number }
+): Promise<DemandSupplySellerContactResponse> {
+  return httpJson(
+    `/marketplace/requests/${encodeURIComponent(String(requestId))}/supply-matches/${encodeURIComponent(String(productId))}/seller-contact${buildQuery({
+      shop_id: params.shop_id,
+    })}`,
+    "GET"
+  );
+}
 export async function getDemandSupplyTradeHandoff(
   requestId: number,
   productId: number,

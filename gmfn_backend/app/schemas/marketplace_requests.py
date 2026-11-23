@@ -253,6 +253,26 @@ class DemandSupplyTradeHandoffOut(BaseModel):
     )
 
 
+class DemandSupplySellerContactOut(BaseModel):
+    demand_id: int
+    product_id: int
+    shop_id: int
+    clan_id: int
+    demand_title: str
+    demand_description: Optional[str] = None
+    demand_area: Optional[str] = None
+    product_title: str
+    shop_name: str
+    whatsapp_number: Optional[str] = None
+    contact_available: bool = False
+    public_shop_path: Optional[str] = None
+    back_to_request_path: str
+    prepared_message: str
+    boundary_note: str = (
+        "This prepares an owner-authorised contact path for a server-validated DemandBox match. "
+        "It does not confirm availability, price, agreement, payment, delivery, endorsement, or fulfilment."
+    )
+
 class DemandSupplyMatchesOut(BaseModel):
     request_id: int
     count: int

@@ -23,6 +23,7 @@ import {
   createMarketplaceVoiceRequest,
   createMarketplaceRequestRelayRun,
   getDemandSupplyMatches,
+  getDemandSupplySellerContact,
   getMarketplaceRelayPolicy,
   getMarketplaceRequestRelayCandidates,
   getCurrentClan,
@@ -42,6 +43,7 @@ import {
   updateMarketplaceRelayPolicy,
   type MarketplaceRelayPolicy,
   type DemandSupplyMatchItem,
+  type DemandSupplySellerContactResponse,
 } from "../lib/api";
 import { resolveProfileImageUrl } from "../lib/profileImage";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
@@ -117,6 +119,10 @@ type DemandMatchState = {
   matches: DemandSupplyMatchItem[];
   error?: string | null;
 };
+type DemandSellerHandoffState = DemandSupplySellerContactResponse & {
+  shopPath: string;
+};
+
 type DemandPaperScope = "owner" | "community";
 type DemandNoticeExpiryPolicy = "standard" | "urgent" | "event" | "pinned";
 type DemandQueueLane = "open" | "tagged" | "for_me" | "mine" | "ask_community" | "urgent" | "categories";
@@ -1140,6 +1146,8 @@ export default function DemandBoxPage() {
   const [tagMembers, setTagMembers] = useState<DemandTagMember[]>([]);
   const [activeQueueLane, setActiveQueueLane] = useState<DemandQueueLane>("open");
   const [demandMatchesById, setDemandMatchesById] = useState<Record<string, DemandMatchState>>({});
+  const [preparingSellerContactKey, setPreparingSellerContactKey] = useState("");
+  const [sellerContactHandoff, setSellerContactHandoff] = useState<DemandSellerHandoffState | null>(null);
   const [openDemandRecordKey, setOpenDemandRecordKey] = useState("");
   const [openDemandDetailTab, setOpenDemandDetailTab] = useState("");
   const [showMoreQueueRows, setShowMoreQueueRows] = useState(false);
@@ -2094,6 +2102,83 @@ export default function DemandBoxPage() {
     return `${path}${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   }
 
+
+  async function askMatchedSeller(row: DemandRow, match: DemandSupplyMatchItem, shopPath: string) {
+    const demandId = positiveNumber(row?.id || match.demand_id);
+    const productId = positiveNumber(match.product_id);
+    const shopId = positiveNumber(match.shop_id);
+    if (!demandId || !productId || !shopId || !isMineRow(row, me)) {
+      showNotice("error", "Only the requester can contact a matched seller from this request.");
+      return;
+    }
+
+    const contactKey = `${demandId}:${productId}:${shopId}`;
+    if (preparingSellerContactKey) return;
+
+    const contactWindow =
+      typeof window !== "undefined" ? window.open("", "_blank") : null;
+    if (contactWindow) {
+      contactWindow.opener = null;
+      contactWindow.document.title = "Opening WhatsApp...";
+    }
+
+    setPreparingSellerContactKey(contactKey);
+    try {
+      const contact = await getDemandSupplySellerContact(demandId, productId, {
+        shop_id: shopId,
+      });
+      setSellerContactHandoff({ ...contact, shopPath });
+
+      const chatUrl = buildWhatsAppChatUrl(
+        contact.whatsapp_number,
+        contact.prepared_message
+      );
+      if (!contact.contact_available || !chatUrl) {
+        contactWindow?.close();
+        showNotice(
+          "error",
+          "Seller WhatsApp is not available for this match. View Shop to use any contact method the owner has made available."
+        );
+        return;
+      }
+
+      if (contactWindow) {
+        contactWindow.location.replace(chatUrl);
+      } else if (typeof window !== "undefined") {
+        window.location.assign(chatUrl);
+      }
+      showNotice(
+        "success",
+        "WhatsApp opened with your request and matched listing already included."
+      );
+    } catch (error: any) {
+      contactWindow?.close();
+      showNotice(
+        "error",
+        String(error?.message || "This seller contact could not be prepared safely.")
+      );
+    } finally {
+      setPreparingSellerContactKey("");
+    }
+  }
+
+  function returnToDemandRequest(demandId: number) {
+    setSellerContactHandoff(null);
+    setActiveQueueLane("mine");
+    setShowMoreQueueRows(false);
+    setOpenDemandRecordKey(String(demandId));
+    if (typeof window === "undefined") return;
+    window.requestAnimationFrame(() => {
+      const targetId = `demand-request-${demandId}`;
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      revealElementWithoutJump(target, {
+        surface: "demand-box",
+        targetId,
+        reason: "seller-contact-return",
+      });
+    });
+  }
   function renderDemandMatchPanel(
     row: DemandRow,
     matchState: DemandMatchState | null,
@@ -2144,6 +2229,9 @@ export default function DemandBoxPage() {
             const to = demandMatchSupplyPath(row, match);
             const title = firstTruthy(match.product_title, "Possible listing");
             const shopName = firstTruthy(match.shop_name, "Marketplace shop");
+            const canAskSeller = isMineRow(row, me);
+            const contactKey = `${rowId}:${positiveNumber(match.product_id)}:${positiveNumber(match.shop_id)}`;
+            const preparingContact = preparingSellerContactKey === contactKey;
             return (
               <div
                 key={`${match.product_id}-${match.shop_id}`}
@@ -2157,7 +2245,7 @@ export default function DemandBoxPage() {
                   gridTemplateColumns: "minmax(0, 1fr) auto",
                   alignItems: "center",
                   gap: 8,
-                  minHeight: isCompact ? 78 : 82,
+                  minHeight: isCompact ? 84 : 88,
                   padding: isCompact ? "9px 9px 9px 11px" : "11px 12px",
                 }}
               >
@@ -2198,28 +2286,90 @@ export default function DemandBoxPage() {
                     {evidence}
                   </div>
                 </div>
-                <StableCtaLink
-                  to={to}
-                  onClick={() => trackDemandMatchAttention("supply_opened", match, rowId)}
-                  debugId={`${debugBase}.supply.${match.product_id}`}
-                  aria-label={`View listing: ${title} from ${shopName}`}
-                  data-gsn-demand-match-action="compact"
-                  stableHeight={44}
-                  minWidth={58}
-                  style={{
-                    borderRadius: 12,
-                    padding: "8px 9px",
-                    fontSize: 12,
-                    fontWeight: 900,
-                    whiteSpace: "nowrap",
-                  }}
+                <div
+                  data-gsn-demand-match-actions="compact"
+                  style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}
                 >
-                  View ›
-                </StableCtaLink>
+                  {canAskSeller ? (
+                    <PrimaryButton
+                      type="button"
+                      onClick={() => void askMatchedSeller(row, match, to)}
+                      disabled={Boolean(preparingSellerContactKey) && !preparingContact}
+                      busy={preparingContact}
+                      busyLabel="Opening..."
+                      debugId={`${debugBase}.ask-seller.${match.product_id}`}
+                      data-gsn-demand-ask-seller="validated"
+                      stableHeight={44}
+                      minWidth={82}
+                      style={{ borderRadius: 12, padding: "8px 10px", fontSize: 12, fontWeight: 900 }}
+                    >
+                      Ask seller
+                    </PrimaryButton>
+                  ) : null}
+                  <StableCtaLink
+                    to={to}
+                    onClick={() => trackDemandMatchAttention("supply_opened", match, rowId)}
+                    debugId={`${debugBase}.supply.${match.product_id}`}
+                    aria-label={`View Shop: ${title} from ${shopName}`}
+                    data-gsn-demand-match-action="compact"
+                    stableHeight={44}
+                    minWidth={58}
+                    style={{
+                      borderRadius: 12,
+                      padding: "8px 9px",
+                      fontSize: 12,
+                      fontWeight: 900,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Shop ›
+                  </StableCtaLink>
+                </div>
               </div>
             );
           })}
         </div>
+        {sellerContactHandoff?.demand_id === rowId ? (
+          <div
+            data-gsn-demand-seller-contact-result={
+              sellerContactHandoff.contact_available ? "prepared" : "unavailable"
+            }
+            style={{
+              padding: "10px 11px",
+              borderRadius: 14,
+              border: "1px solid rgba(13,95,168,0.13)",
+              background: sellerContactHandoff.contact_available ? "#EFFAF4" : "#FFF8E8",
+              display: "grid",
+              gap: 8,
+            }}
+          >
+            <div style={{ color: "#17324A", fontSize: 12, fontWeight: 850, lineHeight: 1.35 }}>
+              {sellerContactHandoff.contact_available
+                ? `WhatsApp prepared for ${sellerContactHandoff.shop_name}.`
+                : "Seller WhatsApp is not available from this match."}
+              {" "}Contacting a seller does not mean an agreement has been reached.
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 7 }}>
+              <SecondaryButton
+                type="button"
+                onClick={() => returnToDemandRequest(rowId)}
+                debugId={`${debugBase}.seller-contact.back-to-request`}
+                stableHeight={42}
+                style={{ borderRadius: 12, fontSize: 12 }}
+              >
+                Back to request
+              </SecondaryButton>
+              <StableCtaLink
+                to={sellerContactHandoff.shopPath}
+                debugId={`${debugBase}.seller-contact.view-shop`}
+                stableHeight={42}
+                style={{ borderRadius: 12, fontSize: 12 }}
+              >
+                View Shop
+              </StableCtaLink>
+            </div>
+          </div>
+        ) : null}
         <div style={{ ...helperText(), fontSize: 11.5, lineHeight: 1.3 }}>
           Community connection is context, not professional verification or guaranteed trust.
         </div>
@@ -2383,6 +2533,7 @@ export default function DemandBoxPage() {
     return (
       <div
         key={rowKey}
+        id={rowId ? `demand-request-${rowId}` : undefined}
         data-gsn-demand-record={recordOpen ? "open" : "closed"}
         data-gsn-demand-request-preview={!recordOpen && isCompact ? "message-first" : undefined}
         data-gsn-demand-preview-style={!recordOpen && isCompact ? "neon-paper" : undefined}
