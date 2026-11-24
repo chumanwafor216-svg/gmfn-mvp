@@ -671,6 +671,33 @@ function positiveNumber(value: any): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
+function spotlightProductRailButtonStyle(
+  compact: boolean,
+  background: string
+): React.CSSProperties {
+  const size = compact ? 42 : 46;
+  return {
+    width: size,
+    minWidth: size,
+    maxWidth: size,
+    height: size,
+    minHeight: size,
+    padding: 0,
+    display: "inline-grid",
+    placeItems: "center",
+    borderRadius: 999,
+    border: "1px solid rgba(255,255,255,0.96)",
+    color: "#07172C",
+    background,
+    boxShadow:
+      "0 8px 20px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.96)",
+    fontSize: compact ? 19 : 21,
+    fontWeight: 950,
+    lineHeight: 1,
+    cursor: "pointer",
+  };
+}
+
 function clampGallerySlotsTotal(value: any): number {
   const parsed = Math.floor(positiveNumber(value) || GALLERY_STANDARD_SLOTS_TOTAL);
   return Math.min(GALLERY_SLOTS_TOTAL, Math.max(GALLERY_STANDARD_SLOTS_TOTAL, parsed));
@@ -2081,6 +2108,18 @@ export default function ShopGalleryPage() {
     loading: false,
     busy: false,
   });
+  const [spotlightShopFollowState, setSpotlightShopFollowState] =
+    useState<ShopFollowState>({
+      shopId: 0,
+      isFollowing: false,
+      canFollow: false,
+      isOwner: false,
+      followerCount: 0,
+      loading: false,
+      busy: false,
+    });
+  const [spotlightProductActionsOpen, setSpotlightProductActionsOpen] =
+    useState(true);
   const [error, setError] = useState<string>("");
   const [autoRefreshingShop, setAutoRefreshingShop] = useState(false);
   const [shopReconnectRetryKey, setShopReconnectRetryKey] = useState(0);
@@ -3927,6 +3966,86 @@ export default function ShopGalleryPage() {
     };
   }, [miniSpotlight]);
 
+  const spotlightSourceShopId = positiveNumber(miniSpotlight?.shopId);
+  const spotlightSourceProductId = positiveNumber(
+    miniSpotlight?.sourceProductId
+  );
+  const spotlightSourceClanId = positiveNumber(miniSpotlight?.sourceClanId);
+  const spotlightProductLinked = Boolean(
+    miniSpotlight &&
+      spotlightSourceShopId &&
+      spotlightSourceProductId &&
+      firstMeaningful(miniSpotlight.sourceProductTitle)
+  );
+  const spotlightProductSaved = Boolean(
+    spotlightSourceProductId &&
+      savedProductIds[String(spotlightSourceProductId)]
+  );
+
+  useEffect(() => {
+    setSpotlightProductActionsOpen(true);
+  }, [spotlightSourceProductId, spotlightSourceShopId]);
+
+  useEffect(() => {
+    const token = getAccessToken();
+    const shopId = spotlightSourceShopId;
+    if (!spotlightProductLinked || !shopId || !token) {
+      setSpotlightShopFollowState({
+        shopId,
+        isFollowing: false,
+        canFollow: false,
+        isOwner: false,
+        followerCount: 0,
+        loading: false,
+        busy: false,
+      });
+      return;
+    }
+
+    let alive = true;
+    setSpotlightShopFollowState({
+      shopId,
+      isFollowing: false,
+      canFollow: false,
+      isOwner: false,
+      followerCount: 0,
+      loading: true,
+      busy: false,
+    });
+
+    getMarketplaceShopFollowStatus(shopId)
+      .then((res) => {
+        if (!alive) return;
+        setSpotlightShopFollowState({
+          shopId,
+          isFollowing: Boolean(res?.is_following),
+          canFollow: Boolean(res?.can_follow),
+          isOwner: Boolean(res?.is_owner),
+          followerCount: positiveNumber(
+            res?.follower_count || res?.followers_count
+          ),
+          loading: false,
+          busy: false,
+        });
+      })
+      .catch(() => {
+        if (!alive) return;
+        setSpotlightShopFollowState({
+          shopId,
+          isFollowing: false,
+          canFollow: false,
+          isOwner: false,
+          followerCount: 0,
+          loading: false,
+          busy: false,
+        });
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [spotlightProductLinked, spotlightSourceShopId]);
+
   const nextMiniSpotlight = useMemo(() => {
     if (communitySpotlights.length <= 1) return null;
     const activeIndex = Math.min(
@@ -5477,6 +5596,207 @@ export default function ShopGalleryPage() {
         ? "Vault access request copied. Send it to the shop owner."
         : "Clipboard copy was blocked. Ask the shop owner for a private Vault access link.",
     });
+  }
+
+  function buildSpotlightProductShareTarget() {
+    const productTitle = firstMeaningful(
+      miniSpotlight?.sourceProductTitle,
+      "this product"
+    );
+    const shopTitle = firstMeaningful(
+      miniSpotlight?.sourceShopName,
+      "this GSN shop"
+    );
+    const ownerGmfnId = firstMeaningful(miniSpotlight?.authorGmfnId);
+    const shareUrl =
+      ownerGmfnId && spotlightSourceProductId
+        ? appendShopShareAttribution(
+            publicShopShareUrl({
+              gmfnId: ownerGmfnId,
+              productId: spotlightSourceProductId,
+              block: positiveNumber(miniSpotlight?.sourceProductBlock) || undefined,
+            }),
+            "spotlight_product_repost"
+          )
+        : typeof window !== "undefined"
+        ? window.location.href
+        : "";
+    const priceText = firstMeaningful(miniSpotlightView.priceLabel);
+    const message = [
+      productTitle + " in " + shopTitle + ".",
+      priceText ? "Price: " + priceText + "." : "",
+      "Open this product on GSN.",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    return {
+      title: productTitle + " - " + shopTitle,
+      message,
+      socialMessage: message,
+      socialUrl: shareUrl,
+      url: shareUrl,
+    };
+  }
+
+  async function toggleSpotlightProductSave() {
+    const productId = spotlightSourceProductId;
+    if (!productId || savingProductId === productId) return;
+    if (!getAccessToken()) {
+      setNotice({
+        tone: "error",
+        text: "Sign in to like this product and help GSN remember your preferences.",
+      });
+      return;
+    }
+
+    setSavingProductId(productId);
+    try {
+      const result = spotlightProductSaved
+        ? await unsaveMarketplaceProduct(productId)
+        : await saveMarketplaceProduct(productId);
+      const saved = result?.saved === true;
+      setSavedProductIds((current) => ({
+        ...current,
+        [String(productId)]: saved,
+      }));
+      void trackMarketplaceAttention(
+        saved ? "product_saved" : "product_unsaved",
+        {
+          shop_id: spotlightSourceShopId,
+          product_id: productId,
+          clan_id: spotlightSourceClanId || undefined,
+          broadcast_id: positiveNumber(miniSpotlight?.id) || undefined,
+          source: "public_shop_spotlight_product_preference",
+        },
+        { allowShopFallback: false }
+      );
+    } catch {
+      setNotice({
+        tone: "error",
+        text: "Could not update this product preference. Please try again.",
+      });
+    } finally {
+      setSavingProductId(null);
+    }
+  }
+
+  async function contactSpotlightProductSeller() {
+    pauseSpotlightPresentationRotation();
+    const productId = spotlightSourceProductId;
+    const shopId = spotlightSourceShopId;
+    if (!productId || !shopId) return;
+
+    void trackMarketplaceAttention(
+      "contact_tap",
+      {
+        shop_id: shopId,
+        product_id: productId,
+        clan_id: spotlightSourceClanId || undefined,
+        broadcast_id: positiveNumber(miniSpotlight?.id) || undefined,
+        source: "public_shop_spotlight_product_contact",
+      },
+      { allowShopFallback: false }
+    );
+
+    if (getAccessToken()) {
+      try {
+        const created = await createMarketplaceProductEnquiry({
+          product_id: productId,
+          shop_id: shopId,
+          clan_id: spotlightSourceClanId || undefined,
+          note: "Is this product still available?",
+          client_request_id: "spotlight-enquiry-" + productId + "-" + Date.now(),
+        });
+        navigate("/app/demand-box?demand_id=" + created.id + "&queue=mine");
+        return;
+      } catch {
+      }
+    }
+
+    contactSpotlightOwnerByWhatsApp();
+  }
+
+  async function toggleSpotlightShopFollow() {
+    const shopId = spotlightSourceShopId;
+    if (!shopId || spotlightShopFollowState.busy) return;
+    if (!getAccessToken()) {
+      setNotice({
+        tone: "error",
+        text: "Sign in to follow this shop.",
+      });
+      return;
+    }
+
+    setSpotlightShopFollowState((current) => ({ ...current, busy: true }));
+    try {
+      const nextFollowing = !spotlightShopFollowState.isFollowing;
+      const response = nextFollowing
+        ? await followMarketplaceShop(shopId)
+        : await unfollowMarketplaceShop(shopId);
+      setSpotlightShopFollowState((current) => ({
+        ...current,
+        shopId,
+        isFollowing: nextFollowing,
+        canFollow: true,
+        followerCount: positiveNumber(
+          response?.follower_count || response?.followers_count
+        ),
+        loading: false,
+        busy: false,
+      }));
+      void trackMarketplaceAttention(
+        "recommendation_actioned",
+        {
+          shop_id: shopId,
+          product_id: spotlightSourceProductId || undefined,
+          clan_id: spotlightSourceClanId || undefined,
+          broadcast_id: positiveNumber(miniSpotlight?.id) || undefined,
+          source: nextFollowing
+            ? "public_shop_spotlight_follow"
+            : "public_shop_spotlight_unfollow",
+        },
+        { allowShopFallback: false }
+      );
+    } catch {
+      setSpotlightShopFollowState((current) => ({
+        ...current,
+        busy: false,
+      }));
+      setNotice({
+        tone: "error",
+        text: "GSN could not update this shop follow right now.",
+      });
+    }
+  }
+
+  function openSpotlightSimilarProducts() {
+    const productTitle = firstMeaningful(miniSpotlight?.sourceProductTitle);
+    if (!productTitle) return;
+    pauseSpotlightPresentationRotation();
+    void trackMarketplaceAttention(
+      "recommendation_actioned",
+      {
+        shop_id: spotlightSourceShopId,
+        product_id: spotlightSourceProductId || undefined,
+        clan_id: spotlightSourceClanId || undefined,
+        broadcast_id: positiveNumber(miniSpotlight?.id) || undefined,
+        source: "public_shop_spotlight_similar_products",
+      },
+      { allowShopFallback: false }
+    );
+    const returnTo =
+      typeof window !== "undefined"
+        ? window.location.pathname + window.location.search
+        : "/app/marketplace";
+    navigate(
+      "/discover?q=" +
+        encodeURIComponent(productTitle) +
+        "&source=similar-products&product_id=" +
+        encodeURIComponent(String(spotlightSourceProductId || "")) +
+        "&return_to=" +
+        encodeURIComponent(returnTo)
+    );
   }
 
   function contactSpotlightOwnerByWhatsApp() {
@@ -8043,6 +8363,259 @@ export default function ShopGalleryPage() {
                     )}
                   </div>
                 )}
+                {spotlightProductLinked ? (
+                  <>
+                    {spotlightProductActionsOpen ? (
+                      <div
+                        data-spotlight-product-context="true"
+                        style={{
+                          position: "absolute",
+                          left: isCompact ? 10 : 14,
+                          right: isCompact ? 64 : 72,
+                          bottom: isCompact ? 10 : 14,
+                          zIndex: 5,
+                          display: "grid",
+                          gap: 3,
+                          padding: isCompact ? "9px 11px" : "11px 13px",
+                          borderRadius: 16,
+                          color: "#F8FAFC",
+                          background:
+                            "linear-gradient(180deg, rgba(2,12,27,0.72) 0%, rgba(2,12,27,0.92) 100%)",
+                          boxShadow: "0 12px 26px rgba(2,12,27,0.28)",
+                          pointerEvents: "none",
+                        }}
+                      >
+                        <strong
+                          style={{
+                            fontSize: isCompact ? 16 : 18,
+                            lineHeight: 1.18,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {firstMeaningful(
+                            miniSpotlight?.sourceProductTitle,
+                            "Product"
+                          )}
+                        </strong>
+                        <span
+                          style={{
+                            color: "#F8D66D",
+                            fontSize: isCompact ? 13 : 14,
+                            fontWeight: 900,
+                          }}
+                        >
+                          {firstMeaningful(
+                            miniSpotlightView.priceLabel,
+                            "Ask seller for price"
+                          )}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: isCompact ? 11 : 12,
+                            fontWeight: 760,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {firstMeaningful(
+                            miniSpotlight?.sourceShopName,
+                            "GSN shop"
+                          )}
+                          {firstMeaningful(miniSpotlight?.sourceClanName)
+                            ? " · " +
+                              firstMeaningful(miniSpotlight?.sourceClanName)
+                            : ""}
+                        </span>
+                      </div>
+                    ) : null}
+                    <div
+                      data-spotlight-product-actions="true"
+                      style={{
+                        position: "absolute",
+                        top: isCompact ? 62 : 68,
+                        right: isCompact ? 9 : 12,
+                        zIndex: 6,
+                        display: "grid",
+                        gap: isCompact ? 7 : 8,
+                        justifyItems: "center",
+                      }}
+                    >
+                      <SecondaryButton
+                        onClick={() =>
+                          setSpotlightProductActionsOpen((open) => !open)
+                        }
+                        minWidth={0}
+                        stableHeight={isCompact ? 42 : 46}
+                        debugId="shop-gallery.spotlight-product.toggle"
+                        aria-label={
+                          spotlightProductActionsOpen
+                            ? "Close product actions"
+                            : "Open product actions"
+                        }
+                        title={
+                          spotlightProductActionsOpen
+                            ? "Close product actions"
+                            : "Open product actions"
+                        }
+                        data-spotlight-product-action="toggle"
+                        style={spotlightProductRailButtonStyle(
+                          isCompact,
+                          "linear-gradient(180deg, #FFFFFF 0%, #EAF2FA 100%)"
+                        )}
+                      >
+                        <span aria-hidden="true">
+                          {spotlightProductActionsOpen ? "\u00D7" : "+"}
+                        </span>
+                      </SecondaryButton>
+                      {spotlightProductActionsOpen ? (
+                        <>
+                          <SecondaryButton
+                            onClick={() => void toggleSpotlightProductSave()}
+                            disabled={
+                              savingProductId === spotlightSourceProductId
+                            }
+                            minWidth={0}
+                            stableHeight={isCompact ? 42 : 46}
+                            debugId="shop-gallery.spotlight-product.save"
+                            aria-label={
+                              spotlightProductSaved
+                                ? "Unlike this product"
+                                : "Like this product"
+                            }
+                            title={
+                              spotlightProductSaved
+                                ? "Unlike product"
+                                : "Like product"
+                            }
+                            data-spotlight-product-action="save"
+                            style={spotlightProductRailButtonStyle(
+                              isCompact,
+                              spotlightProductSaved
+                                ? "linear-gradient(180deg, #FFF4D6 0%, #FFDFA0 100%)"
+                                : "linear-gradient(180deg, #FFFFFF 0%, #FFF7E7 100%)"
+                            )}
+                          >
+                            <span
+                              aria-hidden="true"
+                              style={{
+                                color: spotlightProductSaved
+                                  ? "#C2410C"
+                                  : "#9A3412",
+                              }}
+                            >
+                              {spotlightProductSaved ? "\u2665" : "\u2661"}
+                            </span>
+                          </SecondaryButton>
+                          <SecondaryButton
+                            onClick={() =>
+                              void contactSpotlightProductSeller()
+                            }
+                            minWidth={0}
+                            stableHeight={isCompact ? 42 : 46}
+                            debugId="shop-gallery.spotlight-product.ask-seller"
+                            aria-label="Ask seller about this product"
+                            title="Ask seller"
+                            data-spotlight-product-action="ask-seller"
+                            style={spotlightProductRailButtonStyle(
+                              isCompact,
+                              "linear-gradient(180deg, #FFFFFF 0%, #FFF0C7 100%)"
+                            )}
+                          >
+                            <span aria-hidden="true">{"\uD83D\uDCAC"}</span>
+                          </SecondaryButton>
+                          <SocialTagShareButton
+                            target={buildSpotlightProductShareTarget()}
+                            buttonLabel=""
+                            triggerIcon={<span>{"\u21AA"}</span>}
+                            minWidth={0}
+                            stableHeight={isCompact ? 42 : 46}
+                            debugId="shop-gallery.spotlight-product.repost"
+                            onBeforeOpen={() => {
+                              pauseSpotlightPresentationRotation();
+                              return true;
+                            }}
+                            onResult={(tone, text, channel) => {
+                              if (tone === "success") {
+                                void trackMarketplaceAttention(
+                                  "share_action",
+                                  {
+                                    shop_id: spotlightSourceShopId,
+                                    product_id:
+                                      spotlightSourceProductId || undefined,
+                                    clan_id:
+                                      spotlightSourceClanId || undefined,
+                                    broadcast_id:
+                                      positiveNumber(miniSpotlight?.id) ||
+                                      undefined,
+                                    source:
+                                      "public_shop_spotlight_product_repost_" +
+                                      firstMeaningful(channel, "share"),
+                                  },
+                                  { allowShopFallback: false }
+                                );
+                              }
+                              setNotice({ tone, text });
+                            }}
+                            style={spotlightProductRailButtonStyle(
+                              isCompact,
+                              "linear-gradient(180deg, #FFFFFF 0%, #EAF6FF 100%)"
+                            )}
+                          />
+                          <SecondaryButton
+                            onClick={() =>
+                              void toggleSpotlightShopFollow()
+                            }
+                            disabled={
+                              spotlightShopFollowState.loading ||
+                              spotlightShopFollowState.busy ||
+                              spotlightShopFollowState.isOwner
+                            }
+                            minWidth={0}
+                            stableHeight={isCompact ? 42 : 46}
+                            debugId="shop-gallery.spotlight-product.follow-shop"
+                            aria-label={
+                              spotlightShopFollowState.isFollowing
+                                ? "Unfollow this shop"
+                                : "Follow this shop"
+                            }
+                            title={
+                              spotlightShopFollowState.isFollowing
+                                ? "Following shop"
+                                : "Follow shop"
+                            }
+                            data-spotlight-product-action="follow-shop"
+                            style={spotlightProductRailButtonStyle(
+                              isCompact,
+                              "linear-gradient(180deg, #FFFBE8 0%, #F6D879 100%)"
+                            )}
+                          >
+                            <span aria-hidden="true">
+                              {spotlightShopFollowState.isFollowing ? "\u2713" : "+"}
+                            </span>
+                          </SecondaryButton>
+                          <SecondaryButton
+                            onClick={openSpotlightSimilarProducts}
+                            minWidth={0}
+                            stableHeight={isCompact ? 42 : 46}
+                            debugId="shop-gallery.spotlight-product.similar"
+                            aria-label="See similar products"
+                            title="See similar products"
+                            data-spotlight-product-action="similar"
+                            style={spotlightProductRailButtonStyle(
+                              isCompact,
+                              "linear-gradient(180deg, #FFFFFF 0%, #E8F7F1 100%)"
+                            )}
+                          >
+                            <span aria-hidden="true">{"\uD83D\uDD0D"}</span>
+                          </SecondaryButton>
+                        </>
+                      ) : null}
+                    </div>
+                  </>
+                ) : null}
               </div>
             </div>
           </section>

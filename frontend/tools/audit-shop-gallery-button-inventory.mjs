@@ -31,9 +31,9 @@ const findings = [];
 
 const expectedPageSourceActions = {
   PrimaryButton: 7,
-  SecondaryButton: 15,
+  SecondaryButton: 20,
   StableCtaLink: 8,
-  total: 30,
+  total: 35,
 };
 const expectedExistingWorkflowPlusShortcuts = 4;
 const expectedNativeFieldCount = 0;
@@ -41,7 +41,7 @@ const expectedSignedInShortcutCount = 8;
 const expectedInstallPromptActions = 0;
 const expectedMediaFrameInvocations = 3;
 const expectedSharedMediaAudioActionTemplates = 1;
-const expectedSocialTagActionTemplates = 2;
+const expectedSocialTagActionTemplates = 3;
 const expectedWholeRouteActionFamilies =
   expectedPageSourceActions.total +
   expectedExistingWorkflowPlusShortcuts +
@@ -209,6 +209,12 @@ const expectedActionOrder = [
   "shop-gallery.toggle-all-products",
   "shop-gallery.more.compact-toggle",
   "shop-gallery.spotlight.contact-advertiser",
+  "shop-gallery.spotlight-product.toggle",
+  "shop-gallery.spotlight-product.save",
+  "shop-gallery.spotlight-product.ask-seller",
+  "shop-gallery.spotlight-product.repost",
+  "shop-gallery.spotlight-product.follow-shop",
+  "shop-gallery.spotlight-product.similar",
   "shop-gallery.vault.owner-shortcut",
   "shop-gallery.ask-vault-access",
   "shop-gallery.copy-vault-request-link",
