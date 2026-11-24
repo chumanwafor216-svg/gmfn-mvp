@@ -2,7 +2,7 @@
 
 ## Public Shop product preference and similar discovery - 2026-11-24
 
-- Founder-approved visitor refinement keeps the ordinary Public Shop grid compact: closed product cards retain the exact seller-entered price/currency and one contact/open action without exposing the full interaction rail.
+- Founder-approved visitor refinement keeps the ordinary Public Shop grid compact: closed product cards retain the product name, exact seller-entered price/currency and one open `+`; seller messaging is deliberately deferred until that exact product is opened.
 - Opening a product now reveals one ordered vertical action rail beside the media: close, product heart, ask availability, share, then see similar products. The heart reuses the existing product-save authority as product preference evidence; it does not follow the Shop.
 - `Ask availability` reuses the existing native Shop-to-DemandBox enquiry authority and prepares the truthful question `Is this product still available?`; the existing WhatsApp fallback and Shop-owner control separation remain intact.
 - Open product details show the product name, concise description, exact seller-entered price/currency and the Shop's safe city/area. The Shop name is not repeated inside its own product card.

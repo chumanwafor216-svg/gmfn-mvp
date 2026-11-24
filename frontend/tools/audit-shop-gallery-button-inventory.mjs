@@ -529,8 +529,8 @@ assertContains(
 );
 
 assertContains(
-  /const canSaveProduct =[\s\S]*?isProductOpen && showProductSaveAction[\s\S]*?const closedVisitorActionCount = showProductContactAction \? 1 : 0;/,
-  "Closed visitor product cards must keep price space clear by revealing Like only after the product opens."
+  /const canSaveProduct =[\s\S]*?isProductOpen && showProductSaveAction[\s\S]*?const closedVisitorActionCount = 0;[\s\S]*?\{isProductOpen && showProductContactAction \? \(/,
+  "Closed visitor product cards must reserve their dock for product name, exact price, and the open control; seller contact appears only after opening."
 );
 
 assertContains(

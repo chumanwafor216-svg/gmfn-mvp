@@ -8409,7 +8409,7 @@ export default function ShopGalleryPage() {
                   (showProductContactAction ? 1 : 0) +
                   (showPublicProductShareAction ? 1 : 0) +
                   (showSimilarProductsAction ? 1 : 0);
-                const closedVisitorActionCount = showProductContactAction ? 1 : 0;
+                const closedVisitorActionCount = 0;
                 const productOpenActionRailWidth = showBlockPlacementAction
                   ? isProductOpen
                     ? diaryActionWidth * 4 + (isCompact ? 6 : 8) * 3
@@ -8670,20 +8670,20 @@ export default function ShopGalleryPage() {
                           ? "6px 7px"
                           : "7px 9px",
                         boxSizing: "border-box",
-                        display: isProductOpen ? "grid" : "flex",
+                        display: "grid",
                         gridTemplateColumns: isProductOpen
                           ? showBlockPlacementAction
                             ? `minmax(0, 1fr) ${productOpenActionRailWidth}px`
                             : "minmax(0, 1fr) auto"
-                          : undefined,
+                          : `minmax(0, 1fr) ${productClosedActionRailWidth}px`,
                         gridTemplateRows: isProductOpen
                           ? showBlockPlacementAction
                             ? "auto auto auto auto"
                             : "auto auto auto"
-                          : undefined,
+                          : "minmax(0, 1fr) minmax(0, 1fr)",
                         gap: isProductOpen ? (isCompact ? 3 : 4) : "2px 7px",
                         alignContent: "end",
-                        alignItems: isProductOpen ? undefined : "center",
+                        alignItems: isProductOpen ? undefined : "stretch",
                         background:
                           isProductOpen
                             ? "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,251,255,0.98) 100%)"
@@ -8723,9 +8723,10 @@ export default function ShopGalleryPage() {
                             : 17,
                           lineHeight: 1.08,
                           display: "-webkit-box",
-                          WebkitLineClamp: isProductOpen ? 1 : isCompact ? 1 : 2,
+                          WebkitLineClamp: isProductOpen ? 2 : isCompact ? 1 : 2,
                           WebkitBoxOrient: "vertical" as any,
                           overflow: "hidden",
+                          overflowWrap: "anywhere",
                           textShadow:
                             "0 1px 0 rgba(255,255,255,0.88), 0 9px 16px rgba(8,38,67,0.10)",
                         }}
@@ -8829,14 +8830,13 @@ export default function ShopGalleryPage() {
                               ? "2"
                               : isProductOpen
                               ? "1"
-                              : undefined,
+                              : "1",
                           gridRow:
                             isProductOpen && !showBlockPlacementAction
                               ? "1"
                               : isProductOpen
                               ? "4"
-                              : undefined,
-                          flex: isProductOpen ? undefined : "1 1 auto",
+                              : "2",
                           justifyContent: "flex-start",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
@@ -8886,7 +8886,7 @@ export default function ShopGalleryPage() {
                       <div
                         style={{
                           gridColumn: isProductOpen && !showBlockPlacementAction ? "1" : "2",
-                          gridRow: isProductOpen ? "4" : "1 / span 3",
+                          gridRow: isProductOpen ? "4" : "1 / span 2",
                           display: "grid",
                           gridTemplateColumns: isProductOpen
                             ? productOpenActionColumns
@@ -8897,7 +8897,6 @@ export default function ShopGalleryPage() {
                               : undefined,
                           gap: isCompact ? 6 : 8,
                           width: isProductOpen ? "fit-content" : "auto",
-                          flex: isProductOpen ? undefined : "0 0 auto",
                           maxWidth: "100%",
                           minWidth: 0,
                           justifyContent: "start",
@@ -9012,7 +9011,7 @@ export default function ShopGalleryPage() {
                             <span aria-hidden="true">{isProductSaved ? "\u2665" : "\u2661"}</span>
                           </SecondaryButton>
                         ) : null}
-                        {showProductContactAction ? (
+                        {isProductOpen && showProductContactAction ? (
                           <SecondaryButton
                             onClick={(event) => {
                               event.stopPropagation();
