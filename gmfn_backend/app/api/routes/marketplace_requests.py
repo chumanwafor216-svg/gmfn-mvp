@@ -20,6 +20,7 @@ from app.db.models import (
     MarketplaceProduct,
     MarketplaceRequest,
     MarketplaceRequestActivity,
+    MarketplaceRequestResponse,
     MarketplaceShop,
     User,
     UserSettings,
@@ -710,6 +711,69 @@ def _seller_contact_message(
     )
     return "\n".join(lines)
 
+
+def _ensure_product_enquiry_private_thread(
+    db: Session,
+    *,
+    demand: MarketplaceRequest,
+    buyer: User,
+    seller: User,
+    initial_text: str,
+) -> MarketplaceRequestResponse:
+    from app.services.notification_service import create_notification
+
+    client_response_id = f"shop-enquiry-open-{int(demand.id)}"
+    existing = (
+        db.query(MarketplaceRequestResponse)
+        .filter(
+            MarketplaceRequestResponse.author_user_id == int(buyer.id),
+            MarketplaceRequestResponse.client_response_id == client_response_id,
+        )
+        .first()
+    )
+    if existing:
+        if (
+            int(existing.marketplace_request_id) != int(demand.id)
+            or int(existing.recipient_user_id) != int(seller.id)
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="This product enquiry conversation key is already in use",
+            )
+        return existing
+
+    row = MarketplaceRequestResponse(
+        marketplace_request_id=int(demand.id),
+        author_user_id=int(buyer.id),
+        recipient_user_id=int(seller.id),
+        client_response_id=client_response_id,
+        text=initial_text[:1500],
+        show_sender_photo=False,
+    )
+    db.add(row)
+    db.add(
+        MarketplaceRequestActivity(
+            marketplace_request_id=int(demand.id),
+            actor_user_id=int(buyer.id),
+            event_type="response_added",
+            detail="Buyer opened the private product enquiry conversation.",
+        )
+    )
+    create_notification(
+        db,
+        user_id=int(seller.id),
+        kind="demand_response",
+        title="New product enquiry",
+        message=(
+            f"{_public_requester_display_name(buyer)} asked about "
+            f"'{str(demand.title or 'a Shop product').strip()}'."
+        ),
+        action_url=_request_action_url(demand, queue="tagged"),
+        action_label="Open enquiry",
+    )
+    db.refresh(row)
+    return row
+
 @router.post("/product-enquiries", response_model=MarketplaceRequestOut)
 def create_marketplace_product_enquiry(
     payload: MarketplaceProductEnquiryCreate,
@@ -765,6 +829,13 @@ def create_marketplace_product_enquiry(
             and context.product_id == int(payload.product_id)
             and context.shop_id == int(payload.shop_id)
         ):
+            _ensure_product_enquiry_private_thread(
+                db,
+                demand=active,
+                buyer=current_user,
+                seller=seller,
+                initial_text=_safe_text(payload.note) or "Is this product still available?",
+            )
             return _to_out(db, active, current_user, current_user_id=int(current_user.id))
     client_request_id = payload.client_request_id.strip()
     existing = (
@@ -783,6 +854,13 @@ def create_marketplace_product_enquiry(
             or context.shop_id != int(payload.shop_id)
         ):
             raise HTTPException(status_code=409, detail="This enquiry key is already in use")
+        _ensure_product_enquiry_private_thread(
+            db,
+            demand=existing,
+            buyer=current_user,
+            seller=seller,
+            initial_text=_safe_text(payload.note) or "Is this product still available?",
+        )
         return _to_out(db, existing, current_user, current_user_id=int(current_user.id))
 
     product_title = (
@@ -838,6 +916,13 @@ def create_marketplace_product_enquiry(
     )
     db.commit()
     db.refresh(row)
+    _ensure_product_enquiry_private_thread(
+        db,
+        demand=row,
+        buyer=current_user,
+        seller=seller,
+        initial_text=note or "Is this product still available?",
+    )
     return _to_out(db, row, current_user, current_user_id=int(current_user.id))
 
 

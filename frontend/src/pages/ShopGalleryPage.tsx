@@ -5329,7 +5329,7 @@ export default function ShopGalleryPage() {
         navigate(`/app/demand-box?demand_id=${created.id}&queue=mine`);
         setNotice({
           tone: "success",
-          text: "Your product enquiry is open in DemandBox. The seller can reply there.",
+          text: "Your private seller conversation is open in GSN.",
         });
         return;
       } catch {

@@ -10435,6 +10435,8 @@ export type MarketplaceRequestResponseItem = {
   author_display_name: string;
   author_gmfn_id?: string | null;
   author_profile_image_url?: string | null;
+  recipient_display_name?: string | null;
+  recipient_gmfn_id?: string | null;
   text?: string | null;
   audio_attachment_id?: number | null;
   audio_duration_seconds?: number | null;

@@ -139,7 +139,10 @@ export default function DemandResponsePanel({
         row.recipient_user_id !== currentUserId
       ) {
         if (!names.has(row.recipient_user_id)) {
-          names.set(row.recipient_user_id, `Member ${row.recipient_user_id}`);
+          names.set(
+            row.recipient_user_id,
+            row.recipient_display_name || row.recipient_gmfn_id || `Member ${row.recipient_user_id}`
+          );
         }
       }
     });
@@ -155,7 +158,7 @@ export default function DemandResponsePanel({
     if (participants.some((participant) => participant.id === recipientUserId)) {
       return;
     }
-    setRecipientUserId(0);
+    setRecipientUserId(participants.length === 1 ? participants[0].id : 0);
   }, [isOwner, participants, recipientUserId]);
 
   const selectedParticipant = useMemo(

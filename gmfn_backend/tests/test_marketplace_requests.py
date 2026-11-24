@@ -7,6 +7,7 @@ from sqlalchemy import text
 
 from app.api.routes import (
     analytics_liquidity,
+    demand_box_interactions,
     guarantors_exposure,
     marketplace_requests,
     pool,
@@ -1284,12 +1285,29 @@ def test_product_enquiry_reuses_protected_demand_box_and_is_idempotent():
             current_user=_fake_second_user(),
             clan_id=1,
         )
+        buyer_responses = demand_box_interactions.list_request_responses(
+            request_id=first.id,
+            db=db,
+            current_user=_fake_current_user(),
+        )
+        seller_responses = demand_box_interactions.list_request_responses(
+            request_id=first.id,
+            db=db,
+            current_user=_fake_second_user(),
+        )
+        seller_notifications = list_my_notifications(db, user_id=2, limit=20)
         with pytest.raises(HTTPException) as unrelated_detail_error:
             marketplace_requests.get_marketplace_request(
                 request_id=first.id,
                 db=db,
                 current_user=_fake_third_user(),
                 clan_id=1,
+            )
+        with pytest.raises(HTTPException) as unrelated_response_error:
+            demand_box_interactions.list_request_responses(
+                request_id=first.id,
+                db=db,
+                current_user=_fake_third_user(),
             )
 
     first_data = first.model_dump()
@@ -1313,4 +1331,22 @@ def test_product_enquiry_reuses_protected_demand_box_and_is_idempotent():
     assert seller_rows[0].id == first.id
     assert seller_rows[0].product_context.product_id == 21
     assert seller_detail.product_context.shop_id == 11
+    assert len(buyer_responses) == 1
+    assert len(seller_responses) == 1
+    assert buyer_responses[0].id == seller_responses[0].id
+    assert buyer_responses[0].author_user_id == 1
+    assert buyer_responses[0].recipient_user_id == 2
+    assert buyer_responses[0].recipient_display_name == "GSN-U-RESPONDER"
+    assert buyer_responses[0].recipient_gmfn_id == "GSN-U-RESPONDER"
+    assert buyer_responses[0].text == "Please confirm colours and collection options."
+    product_enquiry_notifications = [
+        item
+        for item in seller_notifications["items"]
+        if item["title"] == "New product enquiry"
+    ]
+    assert len(product_enquiry_notifications) == 1
+    assert product_enquiry_notifications[0]["action_url"] == (
+        f"/app/demand-box?clan_id=1&queue=tagged&demand_id={first.id}"
+    )
     assert unrelated_detail_error.value.status_code == 404
+    assert unrelated_response_error.value.status_code == 404

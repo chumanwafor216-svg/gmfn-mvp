@@ -260,6 +260,7 @@ def _response_out(
     current_user_id: int,
 ) -> MarketplaceRequestResponseOut:
     author = db.get(User, int(row.author_user_id))
+    recipient = db.get(User, int(row.recipient_user_id))
     audio = _response_audio(db, response_id=int(row.id))
     active_audio = audio if audio and audio.deleted_at is None else None
     return MarketplaceRequestResponseOut(
@@ -274,6 +275,8 @@ def _response_out(
             if bool(getattr(row, "show_sender_photo", False))
             else None
         ),
+        recipient_display_name=_public_requester_display_name(recipient),
+        recipient_gmfn_id=getattr(recipient, "gmfn_id", None),
         text=str(row.text or "").strip() or None,
         audio_attachment_id=int(active_audio.id) if active_audio else None,
         audio_duration_seconds=(

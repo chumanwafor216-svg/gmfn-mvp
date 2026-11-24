@@ -7623,6 +7623,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Verification: Shop gallery inventory, share/tag actions, Shop Diary Phase 1/2 audits, `git diff --check`, and frontend production build pass.
 - Local only: no commit, push, main promotion, or deployment performed for this refinement.
 
+<<<<<<< HEAD
 
 # Public Shop opened-product 120% focus proportion - 2026-11-24
 
@@ -7638,3 +7639,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - No matching score, candidate eligibility, route, permission, privacy, Shop destination or Protected Trade behavior changed.
 - Verification: frontend production build passed; DemandBox phone smoke passed at 360, 390 and 430 pixels with match text widths of 258, 288 and 328 pixels and panel heights of 526, 526 and 490 pixels; DemandBox front-package and marketplace lane audits passed; git diff --check passed.
 - The broad protected-button audit still reports unrelated baseline raw-input findings and missing backend files in the frontend-only sparse checkout; this correction did not weaken those checks.
+=======
+# Native Shop seller conversation handoff - 2026-11-24
+
+- Product-level Ask seller now creates or reuses one protected buyer-to-Shop-owner DemandBox thread and opens that private conversation directly instead of returning the buyer to a second matching step.
+- The Shop owner receives the existing DemandBox notification, while an unrelated user remains unable to read the request or thread. Retries reuse the same request, response, activity and notification.
+- The DemandBox response payload now carries the authorised recipient display identity so the buyer sees the actual seller rather than a generic member label; a sole thread opens automatically.
+- City was not invented: current Shop/product records expose marketplace/community context but no owner-published public city field. Exact residential location remains prohibited, and taxonomy-dependent locality remains outside this fix.
+- Verification: marketplace request module `22 passed`; DemandBox front-package audit passed; DemandBox phone smoke passed at 360px, 390px and 430px; Shop gallery inventory passed; frontend production build passed. The broad protected-button suite still reports pre-existing raw-action violations untouched by this diff.
+>>>>>>> c61d6fc9 (Connect shop enquiries to seller conversations)

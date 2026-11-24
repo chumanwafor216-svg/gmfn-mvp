@@ -209,6 +209,8 @@ class MarketplaceRequestResponseOut(BaseModel):
     author_display_name: str
     author_gmfn_id: Optional[str] = None
     author_profile_image_url: Optional[str] = None
+    recipient_display_name: Optional[str] = None
+    recipient_gmfn_id: Optional[str] = None
     text: Optional[str] = None
     audio_attachment_id: Optional[int] = None
     audio_duration_seconds: Optional[float] = None
