@@ -1,5 +1,14 @@
 # Active Handoff Notes
 
+## Expanded Spotlight premium media presentation - 2026-11-24
+
+- The expanded Live Spotlight keeps the approved integrated `P&S Update` structure while presenting the advert as one continuous premium dark-navy media surface; the removed `GSN TODAY` interruption remains absent.
+- Expanded Spotlight images now preserve their complete proportions with `contain`, use natural colour without artificial saturation, request an appropriately sized high-priority active image and preload only the governed next image at low priority.
+- Shared media surfaces keep their previous rendering defaults. Natural-colour treatment is deliberately opt-in to the expanded Public Shop Spotlight so unrelated Shop, Marketplace and Dashboard media do not change.
+- No upload/storage API, transcoder, adaptive-streaming provider, rotation, serving, payment, publication, privacy or consent authority changed. Frontend presentation cannot recover detail absent from the owner's original media.
+- Focused verification passed: `audit:spotlight-premium-media`, `audit:spotlight-controls`, `audit:spotlight-presentation-contract`, `test:spotlight-presentation-policy`, `git diff --check` and the production frontend build. The broader `audit:media-quality-gate` could not run because this approved baseline does not contain `gmfn_backend/requirements.txt`.
+- This work remains a local release candidate only. No push, merge, Render deployment or production configuration change was performed.
+
 ## Public Shop product preference and similar discovery - 2026-11-24
 
 - Founder-approved visitor refinement keeps the ordinary Public Shop grid compact: closed product cards retain the product name, exact seller-entered price/currency and one open `+`; seller messaging is deliberately deferred until that exact product is opened.

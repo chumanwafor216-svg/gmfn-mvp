@@ -5,6 +5,10 @@ import { SecondaryButton } from "./StableButton";
 type SpotlightMediaFrameProps = {
   imageUrl?: string | null;
   imageCandidates?: string[];
+  imageLoading?: 'eager' | 'lazy';
+  imageFetchPriority?: 'high' | 'low' | 'auto';
+  imageSizes?: string;
+  preserveNaturalColor?: boolean;
   videoUrl?: string | null;
   videoPoster?: string | null;
   alt: string;
@@ -324,7 +328,9 @@ export default function SpotlightMediaFrame(
     objectFit: "contain",
     objectPosition: "center center",
     display: "block",
-    filter: "saturate(1.04) contrast(1.03)",
+    filter: props.preserveNaturalColor
+      ? "none"
+      : "saturate(1.04) contrast(1.03)",
     ...props.mediaStyle,
   };
 
@@ -350,7 +356,9 @@ export default function SpotlightMediaFrame(
           backgroundPosition: "center center",
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",
-          filter: "blur(24px) saturate(1.12) brightness(0.9)",
+          filter: props.preserveNaturalColor
+            ? "blur(24px) brightness(0.78)"
+            : "blur(24px) saturate(1.12) brightness(0.9)",
           transform: "scale(1.08)",
           opacity: 0.82,
         }}
@@ -613,6 +621,10 @@ export default function SpotlightMediaFrame(
       ref={imageRef}
       src={imageSrc}
       alt={props.alt}
+      loading={props.imageLoading || 'lazy'}
+      decoding="async"
+      fetchPriority={props.imageFetchPriority || 'auto'}
+      sizes={props.imageSizes}
       onLoad={() => {
         // A cover is not the effective medium while its video is pending.
         // It becomes the governed image only when there is no video or the

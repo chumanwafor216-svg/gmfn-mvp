@@ -8174,7 +8174,7 @@ export default function ShopGalleryPage() {
                   gridRow: "1",
                   zIndex: 1,
                   background:
-                    "radial-gradient(circle at 38% 18%, rgba(255,255,255,0.96) 0%, rgba(234,243,255,0.72) 46%, rgba(11,99,209,0.15) 100%)",
+                    "radial-gradient(circle at 50% 16%, rgba(36,78,112,0.92) 0%, rgba(7,24,39,0.98) 58%, #04101C 100%)",
                   border: isCompact ? "1px solid rgba(13,95,168,0.18)" : "1px solid rgba(255,255,255,0.94)",
                   boxShadow:
                     isCompact
@@ -8192,6 +8192,10 @@ export default function ShopGalleryPage() {
                     // still says sound is on.
                     key='public-shop-spotlight-active-media'
                     imageUrl={miniSpotlightView.imageUrl}
+                    imageLoading="eager"
+                    imageFetchPriority="high"
+                    imageSizes="(max-width: 720px) 100vw, 720px"
+                    preserveNaturalColor={true}
                     videoUrl={miniSpotlightView.videoUrl}
                     videoPoster={miniSpotlightView.imageUrl}
                     alt={miniSpotlightView.title}
@@ -8270,7 +8274,7 @@ export default function ShopGalleryPage() {
                     mediaStyle={{
                       width: "100%",
                       height: "100%",
-                      objectFit: "cover",
+                      objectFit: "contain",
                       objectPosition: "center",
                     }}
                   />
@@ -8282,6 +8286,10 @@ export default function ShopGalleryPage() {
                     <SpotlightMediaFrame
                       key={`public-shop-spotlight-preload-${nextSpotlightMediaKey}`}
                       imageUrl={nextMiniSpotlightView.imageUrl}
+                      imageLoading="eager"
+                      imageFetchPriority="low"
+                      imageSizes="(max-width: 720px) 100vw, 720px"
+                      preserveNaturalColor={true}
                       videoUrl={nextMiniSpotlightView.videoUrl}
                       videoPoster={nextMiniSpotlightView.imageUrl}
                       alt=''
@@ -8321,7 +8329,7 @@ export default function ShopGalleryPage() {
                       mediaStyle={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover',
+                        objectFit: 'contain',
                         objectPosition: 'center',
                       }}
                     />
