@@ -8627,15 +8627,16 @@ export default function ShopGalleryPage() {
                           ? "6px 7px"
                           : "7px 9px",
                         boxSizing: "border-box",
-                        display: "grid",
+                        display: isProductOpen ? "grid" : "flex",
                         gridTemplateColumns: isProductOpen
                           ? `minmax(0, 1fr) ${productOpenActionRailWidth}px`
-                          : `minmax(0, 1fr) ${productClosedActionRailWidth}px`,
+                          : undefined,
                         gridTemplateRows: isProductOpen
                           ? "auto auto auto auto"
-                          : "auto auto auto",
+                          : undefined,
                         gap: isProductOpen ? (isCompact ? 3 : 4) : "2px 7px",
                         alignContent: "end",
+                        alignItems: isProductOpen ? undefined : "center",
                         background:
                           isProductOpen
                             ? "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,251,255,0.98) 100%)"
@@ -8647,10 +8648,7 @@ export default function ShopGalleryPage() {
                         minHeight: isProductOpen
                           ? diaryOpenDockHeight
                           : diaryClosedDockHeight,
-                        overflow:
-                          isProductOpen && !showBlockPlacementAction
-                            ? "visible"
-                            : "hidden",
+                        overflow: isProductOpen && !showBlockPlacementAction ? "visible" : "hidden",
                       }}
                     >
                       <div
@@ -8769,8 +8767,12 @@ export default function ShopGalleryPage() {
                       <span
                         style={{
                           ...badge(true),
-                          gridColumn: isProductOpen ? "1" : "1",
-                          gridRow: isProductOpen ? "4" : "3",
+                          gridColumn: isProductOpen ? "1" : undefined,
+                          gridRow: isProductOpen ? "4" : undefined,
+                          flex: isProductOpen ? undefined : "1 1 auto",
+                          justifyContent: "flex-start",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
                           width: "fit-content",
                           maxWidth: "100%",
                           minHeight: isProductOpen
@@ -8815,7 +8817,8 @@ export default function ShopGalleryPage() {
                               ? `${diaryActionHeight}px`
                               : undefined,
                           gap: isCompact ? 6 : 8,
-                          width: "fit-content",
+                          width: isProductOpen ? "fit-content" : "auto",
+                          flex: isProductOpen ? undefined : "0 0 auto",
                           maxWidth: "100%",
                           minWidth: 0,
                           justifyContent: "start",
