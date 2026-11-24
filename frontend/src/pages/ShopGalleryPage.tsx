@@ -8400,14 +8400,18 @@ export default function ShopGalleryPage() {
                     ? diaryActionWidth * 4 + (isCompact ? 6 : 8) * 3
                     : diaryActionWidth
                   : visitorActionCount > 0
-                  ? diaryActionWidth * (1 + visitorActionCount) + (isCompact ? 6 : 8) * visitorActionCount
+                  ? isProductOpen
+                    ? diaryActionWidth
+                    : diaryActionWidth * (1 + visitorActionCount) + (isCompact ? 6 : 8) * visitorActionCount
                   : diaryActionWidth;
                 const productOpenActionColumns = showBlockPlacementAction
                   ? isProductOpen
                     ? `repeat(4, ${diaryActionWidth}px)`
                     : `${diaryActionWidth}px`
                   : visitorActionCount > 0
-                  ? `repeat(${1 + visitorActionCount}, ${diaryActionWidth}px)`
+                  ? isProductOpen
+                    ? "1fr"
+                    : `repeat(${1 + visitorActionCount}, ${diaryActionWidth}px)`
                   : `${diaryActionWidth}px`;
                 const diaryMediaControlHeight = isCompact ? 34 : 38;
                 const diaryClosedDockHeight = isCompact ? 58 : 68;
@@ -8637,7 +8641,10 @@ export default function ShopGalleryPage() {
                         minHeight: isProductOpen
                           ? diaryOpenDockHeight
                           : diaryClosedDockHeight,
-                        overflow: "hidden",
+                        overflow:
+                          isProductOpen && !showBlockPlacementAction
+                            ? "visible"
+                            : "hidden",
                       }}
                     >
                       <div
@@ -8791,10 +8798,14 @@ export default function ShopGalleryPage() {
                       </span>
                       <div
                         style={{
-                          gridColumn: isProductOpen ? "2" : "2",
+                          gridColumn: isProductOpen && !showBlockPlacementAction ? "1" : "2",
                           gridRow: isProductOpen ? "4" : "1 / span 2",
                           display: "grid",
                           gridTemplateColumns: productOpenActionColumns,
+                          gridAutoRows:
+                            isProductOpen && !showBlockPlacementAction
+                              ? `${diaryActionHeight}px`
+                              : undefined,
                           gap: isCompact ? 6 : 8,
                           width: "fit-content",
                           maxWidth: "100%",
@@ -8806,6 +8817,17 @@ export default function ShopGalleryPage() {
                           boxSizing: "border-box",
                           overflow: "hidden",
                           overflowAnchor: "none",
+                          ...(isProductOpen && !showBlockPlacementAction
+                            ? {
+                                position: "absolute" as const,
+                                top: isCompact ? 76 : 90,
+                                right: isCompact ? 10 : 14,
+                                zIndex: 6,
+                                gridTemplateColumns: `${diaryActionWidth}px`,
+                                padding: 0,
+                                overflow: "visible",
+                              }
+                            : {}),
                         }}
                       >
                         <SecondaryButton

@@ -7606,3 +7606,9 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Updated the protected Shop action inventories for the approved visitor actions. Verification: Shop gallery inventory, share/tag actions, Shop Diary Phase 1/2 audits and the frontend production build pass.
 - The marketplace evidence-boundary audit still reports its unrelated pre-existing Community Proof expectation; it was not changed.
 - Local only: no commit, push, main promotion or deployment performed.
+
+# Shop opened-product vertical action rail - 2026-11-24
+- Opened visitor product cards now keep Save, Ask seller, Share, and close/open controls in a vertical media-side rail rather than crowding the bottom dock.
+- Closed cards and owner-management actions remain unchanged. No backend, schema, privacy, sharing, follow, or transaction behavior changed.
+- Verification: Shop gallery inventory, share/tag actions, Shop Diary Phase 1/2 audits, `git diff --check`, and frontend production build pass.
+- Local only: no commit, push, main promotion, or deployment performed for this refinement.
