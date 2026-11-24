@@ -7655,3 +7655,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Shared Spotlight presentation dwell is now 10 seconds, matching the existing 10-second video limit, so a clip is not rotated away halfway through.
 - No backend, schema, permission, privacy, transaction, or owner-control behavior changed.
 - Verification: focused Shop and Spotlight presentation audits pass; the frontend production build passes. The broad protected suite still reports unrelated pre-existing raw-action violations in untouched DemandBox and voice components.
+
+# Shop product voice visitor action - 2026-11-24
+
+- Active product/service voice notes now appear to visitors as a compact microphone action in the opened product media-side rail, after See similar products.
+- Playback remains deliberate and uses the existing public voice authority; deleted or unavailable notes are not exposed.
+- Shop owners retain a compact listen action, while the former large voice-note overlay no longer blocks product media or product information.
+- No backend, schema, visibility, lifecycle, privacy, payment, trade or owner-management contract changed.
+- Verification: Shop gallery inventory, Shop Diary Phase 1 and audio waveform audits pass; `git diff --check` passes. The isolated checkout could not run the full frontend build because dependencies are not installed locally; GitHub CI is required for full build evidence.

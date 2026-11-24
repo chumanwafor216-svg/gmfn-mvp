@@ -8404,11 +8404,22 @@ export default function ShopGalleryPage() {
                   isProductOpen && !showBlockPlacementAction && !shopLoadFailed;
                 const showSimilarProductsAction =
                   isProductOpen && !showBlockPlacementAction && !shopLoadFailed;
+                const hasActiveProductVoice =
+                  isProductOpen &&
+                  positiveNumber(product.voiceAttachmentId) > 0 &&
+                  !product.voiceDeletedAt;
+                const showVisitorProductVoiceAction =
+                  hasActiveProductVoice &&
+                  !showBlockPlacementAction &&
+                  !shopLoadFailed;
+                const showOwnerProductVoiceAction =
+                  hasActiveProductVoice && showBlockPlacementAction;
                 const openVisitorActionCount =
                   (canSaveProduct ? 1 : 0) +
                   (showProductContactAction ? 1 : 0) +
                   (showPublicProductShareAction ? 1 : 0) +
-                  (showSimilarProductsAction ? 1 : 0);
+                  (showSimilarProductsAction ? 1 : 0) +
+                  (showVisitorProductVoiceAction ? 1 : 0);
                 const closedVisitorActionCount = 0;
                 const productOpenActionRailWidth = showBlockPlacementAction
                   ? isProductOpen
@@ -8623,12 +8634,10 @@ export default function ShopGalleryPage() {
                         </div>
                       )}
                     </div>
-                    {isProductOpen &&
-                    (product.voiceAttachmentId || product.voiceDeletedAt) ? (
+                    {showOwnerProductVoiceAction ? (
                       <div
                         style={{
                           position: "absolute",
-                          left: isCompact ? 8 : 12,
                           right: isCompact ? 8 : 12,
                           bottom: diaryOpenDockHeight + (isCompact ? 8 : 12),
                           zIndex: 4,
@@ -8637,7 +8646,6 @@ export default function ShopGalleryPage() {
                         <ShopVoiceNotePlayer
                           attachmentId={product.voiceAttachmentId}
                           durationSeconds={product.voiceDurationSeconds}
-                          deletedAt={product.voiceDeletedAt}
                           speakerName={product.voiceSpeakerName}
                           speakerGmfnId={product.voiceSpeakerGmfnId}
                           shopName={firstMeaningful(
@@ -8645,8 +8653,11 @@ export default function ShopGalleryPage() {
                             shopNameText
                           )}
                           publicAccess
-                          debugId={`shop-gallery.product.${productOpenId}.voice.listen`}
+                          debugId={`shop-gallery.product.${productOpenId}.voice.owner-listen`}
                           label="Product or service voice note"
+                          symbolOnly
+                          symbolSize={diaryActionWidth}
+                          symbolVariant="microphone"
                         />
                       </div>
                     ) : null}
@@ -9170,6 +9181,24 @@ export default function ShopGalleryPage() {
                           >
                             <span aria-hidden="true">{"\u2315"}</span>
                           </StableCtaLink>
+                        ) : null}
+                        {showVisitorProductVoiceAction ? (
+                          <ShopVoiceNotePlayer
+                            attachmentId={product.voiceAttachmentId}
+                            durationSeconds={product.voiceDurationSeconds}
+                            speakerName={product.voiceSpeakerName}
+                            speakerGmfnId={product.voiceSpeakerGmfnId}
+                            shopName={firstMeaningful(
+                              product.originShopName,
+                              shopNameText
+                            )}
+                            publicAccess
+                            debugId={`shop-gallery.product.${productOpenId}.voice.listen`}
+                            label="Product or service voice note"
+                            symbolOnly
+                            symbolSize={diaryActionWidth}
+                            symbolVariant="microphone"
+                          />
                         ) : null}
                         {showBlockPlacementAction ? (
                           <StableCtaLink

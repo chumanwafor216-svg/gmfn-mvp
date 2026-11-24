@@ -22,6 +22,8 @@ type ShopVoiceNotePlayerProps = {
   label: string;
   compactInline?: boolean;
   symbolOnly?: boolean;
+  symbolSize?: number;
+  symbolVariant?: "player" | "microphone";
 };
 
 export default function ShopVoiceNotePlayer({
@@ -38,6 +40,8 @@ export default function ShopVoiceNotePlayer({
   label,
   compactInline = false,
   symbolOnly = false,
+  symbolSize = 84,
+  symbolVariant = "player",
 }: ShopVoiceNotePlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playAfterLoadRef = useRef(false);
@@ -143,6 +147,8 @@ export default function ShopVoiceNotePlayer({
 
   if (symbolOnly) {
     const attribution = [speakerName, speakerGmfnId].filter(Boolean).join(" · ");
+    const resolvedSymbolSize = Math.max(32, symbolSize);
+    const compactMicrophone = symbolVariant === "microphone";
     const actionLabel = loading
       ? "Opening"
       : playing
@@ -176,15 +182,15 @@ export default function ShopVoiceNotePlayer({
           type="button"
           onClick={() => void toggleCompactAudio()}
           disabled={loading}
-          stableHeight={84}
-          minWidth={84}
+          stableHeight={resolvedSymbolSize}
+          minWidth={resolvedSymbolSize}
           debugId={debugId}
           aria-label={`${actionLabel} ${label}${attribution ? ` from ${attribution}` : ""}`}
           style={{
-            width: 84,
-            minWidth: 84,
-            height: 84,
-            minHeight: 84,
+            width: resolvedSymbolSize,
+            minWidth: resolvedSymbolSize,
+            height: resolvedSymbolSize,
+            minHeight: resolvedSymbolSize,
             padding: 0,
             borderRadius: 999,
             display: "grid",
@@ -201,11 +207,11 @@ export default function ShopVoiceNotePlayer({
             aria-hidden="true"
             style={{
               display: "grid",
-              gridTemplateRows: "28px 22px",
+              gridTemplateRows: compactMicrophone ? "1fr" : "28px 22px",
               alignItems: "center",
               justifyContent: "center",
-              gap: 4,
-              width: 58,
+              gap: compactMicrophone ? 0 : 4,
+              width: compactMicrophone ? resolvedSymbolSize * 0.72 : 58,
               opacity: loading ? 0.58 : 1,
             }}
           >
@@ -214,6 +220,13 @@ export default function ShopVoiceNotePlayer({
                 <span style={{ width: 5, height: 20, borderRadius: 3, background: "#0B4EA2" }} />
                 <span style={{ width: 5, height: 20, borderRadius: 3, background: "#0B4EA2" }} />
               </span>
+            ) : compactMicrophone ? (
+              <GsnLegacyIcon
+                name="audio"
+                size={Math.round(resolvedSymbolSize * 0.72)}
+                decorative
+                imageStyle={{ width: "100%", height: "100%" }}
+              />
             ) : (
               <span
                 style={{
@@ -226,7 +239,9 @@ export default function ShopVoiceNotePlayer({
                 }}
               />
             )}
-            <AudioWaveSignal mode="symbol" playing={playing} />
+            {compactMicrophone ? null : (
+              <AudioWaveSignal mode="symbol" playing={playing} />
+            )}
           </span>
         </SecondaryButton>
         {error ? (

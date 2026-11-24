@@ -222,6 +222,7 @@ const expectedActionOrder = [
   "shop-gallery.product.${productOpenId}.owner-share",
   "shop-gallery.product.${productOpenId}.share",
   "shop-gallery.product.${productOpenId}.similar-products",
+  "shop-gallery.product.${productOpenId}.voice.listen",
   "shop-gallery.product.${productOpenId}.paid-placement",
   "shop-gallery.product.${productOpenId}.owner-manage",
 ];
@@ -540,7 +541,17 @@ assertContains(
 
 assertContains(
   /debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.save`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.ask-seller`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.similar-products`\}/,
-  "Opened visitor products must keep the vertical action order Close, Like, Ask availability, Share, then See similar products."
+  "Opened visitor products must keep the vertical action order Close, Like, Ask availability, Share, See similar products, then the product voice note when one exists."
+);
+
+assertContains(
+  /const hasActiveProductVoice =[\s\S]*?positiveNumber\(product\.voiceAttachmentId\) > 0[\s\S]*?!product\.voiceDeletedAt[\s\S]*?const showVisitorProductVoiceAction =[\s\S]*?\{showVisitorProductVoiceAction \? \([\s\S]*?<ShopVoiceNotePlayer[\s\S]*?publicAccess[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.voice\.listen`\}[\s\S]*?symbolOnly[\s\S]*?symbolSize=\{diaryActionWidth\}[\s\S]*?symbolVariant="microphone"/,
+  "An active product voice note must appear as a compact, deliberate visitor microphone action and never expose a deleted note."
+);
+
+assertContains(
+  /\{showOwnerProductVoiceAction \? \([\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.voice\.owner-listen`\}[\s\S]*?symbolOnly[\s\S]*?symbolVariant="microphone"/,
+  "Owners must retain a compact product voice-note playback action without restoring the large overlay."
 );
 
 assertContains(
