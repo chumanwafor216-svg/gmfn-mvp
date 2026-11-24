@@ -197,10 +197,11 @@ export default function ShopVoiceNotePlayer({
             placeItems: "center",
             position: "relative",
             color: "#0B4EA2",
-            background: "rgba(255,255,255,0.96)",
-            border: "2px solid rgba(244,213,124,0.82)",
+            background:
+              "linear-gradient(180deg, rgba(255,253,247,0.99) 0%, rgba(255,244,208,0.96) 100%)",
+            border: "1px solid rgba(244,213,124,0.9)",
             boxShadow:
-              "0 14px 28px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.98)",
+              "0 8px 18px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.98)",
           }}
         >
           <span

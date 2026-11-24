@@ -1641,6 +1641,16 @@ function arrangeProductsByPublicBlock(items: ShopProduct[], slotCount = GALLERY_
   return slots.filter(Boolean) as ShopProduct[];
 }
 
+function publicProductCollectionsMatch(
+  current: ShopProduct[],
+  incoming: ShopProduct[]
+): boolean {
+  if (current.length !== incoming.length) return false;
+  return current.every(
+    (product, index) => JSON.stringify(product) === JSON.stringify(incoming[index])
+  );
+}
+
 const SHOP_GALLERY_INNER_SURFACE =
   "radial-gradient(circle at 8% 0%, rgba(47,128,237,0.105) 0%, transparent 34%), radial-gradient(circle at 100% 6%, rgba(246,196,83,0.075) 0%, transparent 30%), linear-gradient(135deg, #FFFFFF 0%, #F7FBFF 56%, #EEF6FF 100%)";
 
@@ -2042,6 +2052,7 @@ export default function ShopGalleryPage() {
   const galleryRevealFrameRef = useRef<number | null>(null);
   const galleryRevealTimeoutRefs = useRef<number[]>([]);
   const galleryRevealTargetRef = useRef("");
+  const completedGalleryRevealKeyRef = useRef("");
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [savedProductIds, setSavedProductIds] = useState<Record<string, boolean>>({});
   const [savingProductId, setSavingProductId] = useState<number | null>(null);
@@ -2407,7 +2418,11 @@ export default function ShopGalleryPage() {
       setCurrentClan(clanRes || null);
       setShop(normalizedShop);
       setPublicShopVerification(publicShopRes?.verification || null);
-      setProducts(arrangedProducts);
+      setProducts((currentProducts) =>
+        publicProductCollectionsMatch(currentProducts, arrangedProducts)
+          ? currentProducts
+          : arrangedProducts
+      );
       setShopDiaryEntries(
         Array.isArray(publicDiaryRows)
           ? publicDiaryRows
@@ -2954,6 +2969,7 @@ export default function ShopGalleryPage() {
     spotlightVisibilityWindowRef.current = 1;
     spotlightSeenCampaignIdsRef.current.clear();
     spotlightConsumedOwnerInspectionKeysRef.current.clear();
+    completedGalleryRevealKeyRef.current = "";
     if (spotlightRefreshRetryTimerRef.current !== null) {
       window.clearTimeout(spotlightRefreshRetryTimerRef.current);
       spotlightRefreshRetryTimerRef.current = null;
@@ -3067,6 +3083,14 @@ export default function ShopGalleryPage() {
     if (!location.hash && routeProductId <= 0 && routeBlockNumber <= 0) return;
     if (loading) return;
 
+    const revealKey = [
+      gmfnId,
+      location.hash,
+      routeProductId,
+      routeBlockNumber,
+    ].join(":");
+    if (completedGalleryRevealKeyRef.current === revealKey) return;
+
     const id = location.hash.replace(/^#/, "");
     const shouldRevealProduct = id !== PUBLIC_SHOP_DIARIES_ANCHOR;
     const matchedProduct = shouldRevealProduct
@@ -3090,20 +3114,19 @@ export default function ShopGalleryPage() {
     cancelPendingGalleryReveal();
 
     if (matchedProduct) {
+      completedGalleryRevealKeyRef.current = revealKey;
       if (products.indexOf(matchedProduct) >= gallerySlotsTotal) {
         setShowAllProducts(true);
       }
       setOpenProductId(matchedProduct.id ?? matchedProduct.slotNumber);
       revealGalleryTarget(publicShopBlockAnchorId(matchedProduct));
     } else if (id) {
+      completedGalleryRevealKeyRef.current = revealKey;
       revealGalleryTarget(id);
     }
-
-    return () => {
-      cancelPendingGalleryReveal();
-    };
   }, [
     cancelPendingGalleryReveal,
+    gmfnId,
     loading,
     location.hash,
     products,

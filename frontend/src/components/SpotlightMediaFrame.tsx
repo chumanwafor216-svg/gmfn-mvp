@@ -130,36 +130,24 @@ export default function SpotlightMediaFrame(
     if (
       imageCandidates.length === 0 ||
       typeof window === "undefined" ||
-      typeof document === "undefined"
+      (!imageFailed && !videoFailed)
     ) {
       return;
     }
 
-    function retryVisibleMedia() {
-      if (
-        typeof document !== "undefined" &&
-        document.visibilityState &&
-        document.visibilityState !== "visible"
-      ) {
-        return;
-      }
-
+    function retryFailedMedia() {
       setImageRetryCount(0);
       setImageIndex(0);
       setImageFailed(false);
       setVideoFailed(false);
     }
 
-    window.addEventListener("focus", retryVisibleMedia);
-    window.addEventListener("online", retryVisibleMedia);
-    document.addEventListener("visibilitychange", retryVisibleMedia);
+    window.addEventListener("online", retryFailedMedia);
 
     return () => {
-      window.removeEventListener("focus", retryVisibleMedia);
-      window.removeEventListener("online", retryVisibleMedia);
-      document.removeEventListener("visibilitychange", retryVisibleMedia);
+      window.removeEventListener("online", retryFailedMedia);
     };
-  }, [imageCandidateKey, imageCandidates.length]);
+  }, [imageCandidateKey, imageCandidates.length, imageFailed, videoFailed]);
 
   useEffect(() => {
     const video = videoRef.current;
