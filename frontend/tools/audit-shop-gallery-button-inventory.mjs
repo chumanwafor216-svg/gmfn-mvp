@@ -31,9 +31,9 @@ const findings = [];
 
 const expectedPageSourceActions = {
   PrimaryButton: 7,
-  SecondaryButton: 13,
+  SecondaryButton: 15,
   StableCtaLink: 7,
-  total: 27,
+  total: 29,
 };
 const expectedExistingWorkflowPlusShortcuts = 4;
 const expectedNativeFieldCount = 0;
@@ -215,6 +215,7 @@ const expectedActionOrder = [
   "shop-gallery.reconnect-owner-shop",
   "shop-gallery.sign-in-reconnect-shop",
   "shop-gallery.open-marketplace-refresh",
+  "shop-gallery.open-product.follow-shop",
   "shop-gallery.product.${productOpenId}.toggle",
   "shop-gallery.product.${productOpenId}.ask-seller",
   "shop-gallery.product.${productOpenId}.owner-share",
@@ -649,7 +650,7 @@ assertContains(
 );
 
 assertContains(
-  /const diaryOpenDockHeight = isCompact \? 92 : 104;[\s\S]*?padding: isProductOpen[\s\S]*?\? "7px 9px"[\s\S]*?: "9px 12px"[\s\S]*?maxHeight: isProductOpen[\s\S]*?\? diaryOpenDockHeight[\s\S]*?: diaryClosedDockHeight[\s\S]*?minHeight: isProductOpen[\s\S]*?\? diaryOpenDockHeight[\s\S]*?: diaryClosedDockHeight/,
+  /const diaryOpenDockHeight = isCompact \? 132 : 144;[\s\S]*?padding: isProductOpen[\s\S]*?\? "7px 9px"[\s\S]*?: "9px 12px"[\s\S]*?maxHeight: isProductOpen[\s\S]*?\? diaryOpenDockHeight[\s\S]*?: diaryClosedDockHeight[\s\S]*?minHeight: isProductOpen[\s\S]*?\? diaryOpenDockHeight[\s\S]*?: diaryClosedDockHeight/,
   "Public Shop opened diary cards must keep a compact info dock so the existing block gives more height to the media window."
 );
 assertContains(

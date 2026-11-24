@@ -245,13 +245,13 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /showBlockPlacementAction \? \([\s\S]*?<SocialTagShareButton[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}/,
-    "Shop Diary blocks must reserve the block social share slot for owners only.",
+    /showBlockPlacementAction \? \([\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?showPublicProductShareAction \? \([\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.share`\}/,
+    "Shop Diary product sharing must preserve the owner Share slot and the explicit visitor product Share action."
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /const productSocialUrl = appendShopShareAttribution\([\s\S]*publicShopSocialPreviewUrl\([\s\S]*"share_product"[\s\S]*const socialMessage = \[[\s\S]*Open \$\{blockLabel\} on GSN\.[\s\S]*message: buildPublicShopMessage\(productUrl, productTitle\),[\s\S]*socialMessage,[\s\S]*socialUrl: productSocialUrl,[\s\S]*showBlockPlacementAction \? \([\s\S]*<SocialTagShareButton[\s\S]*target=\{buildProductSocialShareTarget\(product\)\}[\s\S]*debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*trackShopShareAction\([\s\S]*"share_product"/,
-    "Shop Diary block social sharing must stay owner-only and use compact link text plus backend social-preview URL.",
+    /const productSocialUrl = appendShopShareAttribution\([\s\S]*publicShopSocialPreviewUrl\([\s\S]*"share_product"[\s\S]*const socialMessage = \[[\s\S]*Open \$\{blockLabel\} on GSN\.[\s\S]*message: buildPublicShopMessage\(productUrl, productTitle\),[\s\S]*socialMessage,[\s\S]*socialUrl: productSocialUrl,[\s\S]*showBlockPlacementAction \? \([\s\S]*<SocialTagShareButton[\s\S]*target=\{buildProductSocialShareTarget\(product\)\}[\s\S]*debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*showPublicProductShareAction \? \([\s\S]*debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.share`\}[\s\S]*trackShopShareAction\([\s\S]*"share_product"/,
+    "Shop Diary product sharing must keep owner and visitor actions on the approved product context and compact public-share routes."
   ],
   [
     "src/pages/VaultControlPage.tsx",
@@ -302,10 +302,10 @@ assertNotContains(
   "Public Shop must not restore a separate Tag button; Share opens the chooser and WhatsApp stays separate."
 );
 
-assertNotContains(
+assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /shop-gallery\.product\.\$\{productOpenId\}\.share/,
-  "Shop Diary product share must not be visitor-facing; use the owner-only owner-share action."
+  /showPublicProductShareAction \? \([\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.share`\}/,
+  "Shop Diary product share must remain an explicit visitor action only in the opened product context.",
 );
 
 assertNotContains(

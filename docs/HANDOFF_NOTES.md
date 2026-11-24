@@ -7597,3 +7597,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Added the additive `marketplace_product_saves` model/migration, idempotent save/unsave routes, saved-product listing, and `product_saved`/`product_unsaved` analytics events and summaries.
 - Save is a private buyer utility, not a public Like count or social interaction; Shop contact, WhatsApp fallback, permissions and owner controls remain unchanged.
 - Verification: focused product-save tests passed 3/3; migration upgrade exercised successfully; Python compilation and `git diff --check` passed. Production deployment and migration were not performed.
+
+# Shop opened-product discovery surface - 2026-11-24
+
+- Opened public Shop products now expose compact shop/declared marketplace context, the existing private Save control, Follow shop using the existing follow authority, Ask seller, and the existing share chooser.
+- Closed product cards remain compact; opened media remains the prominent viewing surface. Owner management controls and owner Share remain separate from visitor actions.
+- Location is limited to existing declared marketplace/community context; no exact browser location or new public likes/counts were added.
+- Updated the protected Shop action inventories for the approved visitor actions. Verification: Shop gallery inventory, share/tag actions, Shop Diary Phase 1/2 audits and the frontend production build pass.
+- The marketplace evidence-boundary audit still reports its unrelated pre-existing Community Proof expectation; it was not changed.
+- Local only: no commit, push, main promotion or deployment performed.

@@ -8389,8 +8389,12 @@ export default function ShopGalleryPage() {
                 const isProductSaved = Boolean(
                   savedProductIds[String(positiveNumber(product.id))] || product.isSaved
                 );
+                const showPublicProductShareAction =
+                  isProductOpen && !showBlockPlacementAction && !shopLoadFailed;
                 const visitorActionCount =
-                  (canSaveProduct ? 1 : 0) + (showProductContactAction ? 1 : 0);
+                  (canSaveProduct ? 1 : 0) +
+                  (showProductContactAction ? 1 : 0) +
+                  (showPublicProductShareAction ? 1 : 0);
                 const productOpenActionRailWidth = showBlockPlacementAction
                   ? isProductOpen
                     ? diaryActionWidth * 4 + (isCompact ? 6 : 8) * 3
@@ -8407,7 +8411,7 @@ export default function ShopGalleryPage() {
                   : `${diaryActionWidth}px`;
                 const diaryMediaControlHeight = isCompact ? 34 : 38;
                 const diaryClosedDockHeight = isCompact ? 58 : 68;
-                const diaryOpenDockHeight = isCompact ? 92 : 104;
+                const diaryOpenDockHeight = isCompact ? 132 : 144;
 
                 return (
                   <article
@@ -8618,7 +8622,7 @@ export default function ShopGalleryPage() {
                                 : diaryActionWidth
                             }px`,
                         gridTemplateRows: isProductOpen
-                          ? "auto auto auto"
+                          ? "auto auto auto auto"
                           : "auto auto",
                         gap: isProductOpen ? (isCompact ? 3 : 4) : "2px 7px",
                         alignContent: "end",
@@ -8679,11 +8683,81 @@ export default function ShopGalleryPage() {
                           {buyerCue}
                         </div>
                       ) : null}
+                      {isProductOpen && !showBlockPlacementAction ? (
+                        <div
+                          style={{
+                            gridColumn: "1 / -1",
+                            gridRow: "3",
+                            minWidth: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: isCompact ? 6 : 8,
+                            overflow: "hidden",
+                          }}
+                        >
+                          <span
+                            style={{
+                              minWidth: 0,
+                              flex: "1 1 auto",
+                              color: "#526C84",
+                              fontSize: isCompact ? 11 : 12,
+                              fontWeight: 850,
+                              lineHeight: 1.1,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            title={`${shopNameText} · ${shopLocationText}`}
+                          >
+                            {shopNameText} · {shopLocationText}
+                          </span>
+                          <SecondaryButton
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (shopFollowState.isFollowing && shopFollowSignedIn) {
+                                void handleUnfollowShop();
+                              } else {
+                                void handleFollowShop();
+                              }
+                            }}
+                            disabled={shopFollowButtonDisabled || (shopFollowSignedIn && !shopFollowState.canFollow)}
+                            minWidth={0}
+                            stableHeight={isCompact ? 28 : 30}
+                            debugId="shop-gallery.open-product.follow-shop"
+                            aria-label={
+                              shopFollowState.isFollowing
+                                ? "Unfollow shop"
+                                : "Follow shop"
+                            }
+                            title={
+                              shopFollowState.isFollowing
+                                ? "Unfollow shop"
+                                : "Follow shop"
+                            }
+                            style={{
+                              ...secondaryBtn(shopFollowButtonDisabled),
+                              flex: "0 0 auto",
+                              minHeight: isCompact ? 28 : 30,
+                              minWidth: isCompact ? 74 : 86,
+                              padding: isCompact ? "3px 7px" : "4px 9px",
+                              borderRadius: 999,
+                              color: shopFollowState.isFollowing ? "#276E4A" : "#8C6829",
+                              border: "1px solid rgba(214,170,69,0.52)",
+                              background:
+                                "linear-gradient(180deg, #FFFDF4 0%, #FFEFC2 100%)",
+                              fontSize: isCompact ? 10 : 11,
+                              fontWeight: 950,
+                            }}
+                          >
+                            {shopFollowState.isFollowing ? "Following" : "Follow shop"}
+                          </SecondaryButton>
+                        </div>
+                      ) : null}
                       <span
                         style={{
                           ...badge(true),
                           gridColumn: isProductOpen ? "1" : "1",
-                          gridRow: isProductOpen ? "3" : "2",
+                          gridRow: isProductOpen ? "4" : "2",
                           width: "fit-content",
                           maxWidth: "100%",
                           minHeight: isProductOpen
@@ -8718,7 +8792,7 @@ export default function ShopGalleryPage() {
                       <div
                         style={{
                           gridColumn: isProductOpen ? "2" : "2",
-                          gridRow: isProductOpen ? "3" : "1 / span 2",
+                          gridRow: isProductOpen ? "4" : "1 / span 2",
                           display: "grid",
                           gridTemplateColumns: productOpenActionColumns,
                           gap: isCompact ? 6 : 8,
@@ -8865,6 +8939,57 @@ export default function ShopGalleryPage() {
                             minWidth={0}
                             stableHeight={diaryActionHeight}
                             debugId={`shop-gallery.product.${productOpenId}.owner-share`}
+                            onResult={(tone, text, channel) => {
+                              if (tone === "success") {
+                                trackShopShareAction(
+                                  "share_product",
+                                  appendShopShareAttribution(
+                                    publicShopShareUrl({
+                                      gmfnId: firstMeaningful(effectiveShop?.gmfnId, gmfnId),
+                                      productId: product.id,
+                                      block: product.slotNumber,
+                                    }),
+                                    "share_product",
+                                    channel
+                                  ),
+                                  product
+                                );
+                              }
+                              setNotice({ tone, text });
+                            }}
+                            style={{
+                              ...secondaryBtn(false),
+                              display: isProductOpen ? "inline-flex" : "none",
+                              width: diaryActionWidth,
+                              maxWidth: diaryActionWidth,
+                              minWidth: 0,
+                              minHeight: diaryActionHeight,
+                              padding: 0,
+                              borderRadius: 999,
+                              fontSize: isCompact ? 9.3 : 10.2,
+                              lineHeight: 1,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              overflowWrap: "normal",
+                              overflowAnchor: "none",
+                              background:
+                                "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
+                            }}
+                          />
+                        ) : null}
+                        {showPublicProductShareAction ? (
+                          <SocialTagShareButton
+                            target={buildProductSocialShareTarget(product)}
+                            buttonLabel=""
+                            triggerIcon={
+                              showBlockPlacementAction ? undefined : (
+                                <span style={{ fontSize: isCompact ? 18 : 20 }}>↗</span>
+                              )
+                            }
+                            minWidth={0}
+                            stableHeight={diaryActionHeight}
+                            debugId={`shop-gallery.product.${productOpenId}.share`}
                             onResult={(tone, text, channel) => {
                               if (tone === "success") {
                                 trackShopShareAction(
