@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   searchPublicMerchantDiscovery,
   type PublicDiscoveryResult,
@@ -23,7 +24,20 @@ function errorMessage(error: any): string {
   return String(detail?.message || detail || error?.message || "Public discovery is not available.");
 }
 
-function ResultCard({ item }: { item: PublicDiscoveryResult }) {
+function safeReturnPath(value: string | null): string {
+  const candidate = String(value || "").trim();
+  return candidate.startsWith("/") && !candidate.startsWith("//")
+    ? candidate
+    : "/app/marketplace";
+}
+
+function ResultCard({
+  item,
+  source,
+}: {
+  item: PublicDiscoveryResult;
+  source: "public-discovery" | "similar-products";
+}) {
   const terms = [...(item.categories || []), ...(item.capability_terms || [])].slice(0, 3);
   return (
     <article
@@ -73,11 +87,7 @@ function ResultCard({ item }: { item: PublicDiscoveryResult }) {
               ? "Remote service"
               : "Ask the shop about service area"}
           {" · "}
-          {item.availability === "available"
-            ? "Available"
-            : item.availability === "on_request"
-              ? "Available on request"
-              : "Ask about availability"}
+          Ask seller to confirm availability
         </div>
         <div style={{ ...brandHelperText(), margin: 0 }}>
           {item.contact_available
@@ -86,7 +96,7 @@ function ResultCard({ item }: { item: PublicDiscoveryResult }) {
         </div>
       </div>
       <StableCtaLink
-        to={`${item.shop_path}?product_id=${encodeURIComponent(String(item.offer_id))}&source=public-discovery`}
+        to={`${item.shop_path}?product_id=${encodeURIComponent(String(item.offer_id))}&source=${source}`}
         kind="primary"
         fullWidth
         debugId={`public-discovery.open.${item.publication_id}`}
@@ -98,7 +108,13 @@ function ResultCard({ item }: { item: PublicDiscoveryResult }) {
 }
 
 export default function PublicMerchantDiscoveryPage() {
-  const [query, setQuery] = useState("");
+  const location = useLocation();
+  const initialParams = useRef(new URLSearchParams(location.search));
+  const initialQuery = String(initialParams.current.get("q") || "").trim();
+  const similarProductsMode = initialParams.current.get("source") === "similar-products";
+  const sourceProductId = Number(initialParams.current.get("product_id") || 0);
+  const returnTo = safeReturnPath(initialParams.current.get("return_to"));
+  const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState("");
   const [area, setArea] = useState("");
   const [items, setItems] = useState<PublicDiscoveryResult[]>([]);
@@ -108,7 +124,11 @@ export default function PublicMerchantDiscoveryPage() {
   const [coverageComplete, setCoverageComplete] = useState(true);
   const [scannedPublicationCount, setScannedPublicationCount] = useState(0);
   const [evaluatedPublicationCount, setEvaluatedPublicationCount] = useState(0);
-  const [activeFilters, setActiveFilters] = useState<SearchFilters>({ q: "", category: "", area: "" });
+  const [activeFilters, setActiveFilters] = useState<SearchFilters>({
+    q: initialQuery,
+    category: "",
+    area: "",
+  });
   const [busy, setBusy] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -127,7 +147,10 @@ export default function PublicMerchantDiscoveryPage() {
         cursor,
       });
       if (requestSequence.current !== requestId) return;
-      const responseItems = Array.isArray(response?.items) ? response.items : [];
+      const rawResponseItems = Array.isArray(response?.items) ? response.items : [];
+      const responseItems = similarProductsMode
+        ? rawResponseItems.filter((item) => Number(item.offer_id) !== sourceProductId)
+        : rawResponseItems;
       setItems((current) => {
         if (!append) return responseItems;
         const known = new Set(current.map((item) => item.publication_id));
@@ -162,7 +185,7 @@ export default function PublicMerchantDiscoveryPage() {
   }
 
   useEffect(() => {
-    void runSearch({ q: "", category: "", area: "" });
+    void runSearch({ q: initialQuery, category: "", area: "" });
     return () => {
       requestSequence.current += 1;
     };
@@ -179,11 +202,15 @@ export default function PublicMerchantDiscoveryPage() {
 
   return (
     <CommunityEntryShell
-      eyebrow="Public shops"
-      title="Find products and services"
-      summary="Search products that their shop owners chose to publish beyond their communities."
-      backTo="/cover"
-      backLabel="Back to GSN"
+      eyebrow={similarProductsMode ? "Similar products" : "Public shops"}
+      title={similarProductsMode ? `More like “${initialQuery}”` : "Find products and services"}
+      summary={
+        similarProductsMode
+          ? "Compare owner-published products. Each seller keeps their own price and currency."
+          : "Search products that their shop owners chose to publish beyond their communities."
+      }
+      backTo={similarProductsMode ? returnTo : "/cover"}
+      backLabel={similarProductsMode ? "Back to product" : "Back to GSN"}
       exitLabel={null}
     >
       <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
@@ -267,25 +294,33 @@ export default function PublicMerchantDiscoveryPage() {
       {items.length ? (
         <section style={{ display: "grid", gap: 12, marginTop: 16 }}>
           <div style={{ color: gmfnBrand.colors.inkSoft, fontWeight: 850 }}>
-            Showing {items.length} of {coverageComplete ? "" : "at least "}{total} {total === 1 ? "published result" : "published results"}
+            {similarProductsMode
+              ? `Showing ${items.length} ${items.length === 1 ? "similar product" : "similar products"}`
+              : `Showing ${items.length} of ${coverageComplete ? "" : "at least "}${total} ${total === 1 ? "published result" : "published results"}`}
           </div>
           {items.map((item) => (
-            <ResultCard key={item.publication_id} item={item} />
+            <ResultCard
+              key={item.publication_id}
+              item={item}
+              source={similarProductsMode ? "similar-products" : "public-discovery"}
+            />
           ))}
-          {nextCursor !== null ? (
-            <StableButton
-              type="button"
-              kind="secondary"
-              fullWidth
-              busy={loadingMore}
-              busyLabel="Loading more..."
-              onClick={() => void runSearch(activeFilters, nextCursor, true)}
-              debugId="public-discovery.load-more"
-            >
-              Show more results
-            </StableButton>
-          ) : null}
         </section>
+      ) : null}
+      {nextCursor !== null ? (
+        <div style={{ marginTop: 12 }}>
+          <StableButton
+            type="button"
+            kind="secondary"
+            fullWidth
+            busy={loadingMore}
+            busyLabel="Loading more..."
+            onClick={() => void runSearch(activeFilters, nextCursor, true)}
+            debugId="public-discovery.load-more"
+          >
+            Show more results
+          </StableButton>
+        </div>
       ) : null}
     </CommunityEntryShell>
   );

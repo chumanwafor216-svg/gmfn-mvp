@@ -4726,7 +4726,7 @@ export default function ShopGalleryPage() {
   }, [hiddenShelfEntryCount, showAllProducts]);
   const showBlockPlacementAction = signedInOwnsShop && !shopLoadFailed;
   const showProductContactAction = !signedInOwnsShop && !shopLoadFailed;
-  const showProductSaveAction = ownerSessionPresent && !signedInOwnsShop && !shopLoadFailed;
+  const showProductSaveAction = !signedInOwnsShop && !shopLoadFailed;
   function blockPlacementPath(product: ShopProduct): string {
     const params = new URLSearchParams();
     const productId = positiveNumber(product.id);
@@ -4753,6 +4753,16 @@ export default function ShopGalleryPage() {
       `${APP_ROUTES.SHOP_ME}?${params.toString()}#shop-control-gallery-tools`,
       ownerSurfaceCommunityId
     );
+  }
+
+  function similarProductsPath(product: ShopProduct): string {
+    const params = new URLSearchParams();
+    params.set("q", productDisplayTitle(product));
+    params.set("source", "similar-products");
+    const productId = positiveNumber(product.id);
+    if (productId) params.set("product_id", String(productId));
+    params.set("return_to", publicShopReturnPath);
+    return `/discover?${params.toString()}`;
   }
 
   function ownerEmptyProductPath(blockNumber: number): string {
@@ -5299,9 +5309,8 @@ export default function ShopGalleryPage() {
     const message = [
       `Hello, I found "${productTitle}" in ${shopTitle} on GSN.`,
       priceText
-        ? `The listed price is ${priceText}.`
-        : "Please confirm the current price and availability.",
-      "I would like to ask about buying it.",
+        ? `The listed price is ${priceText}. Is this product still available?`
+        : "Is this product still available? Please confirm the current price.",
     ].join(" ");
     const productUrl = buildProductSocialShareTarget(product).url;
     const productId = positiveNumber(product.id);
@@ -5314,6 +5323,7 @@ export default function ShopGalleryPage() {
           product_id: productId,
           shop_id: shopId,
           clan_id: clanId || undefined,
+          note: "Is this product still available?",
           client_request_id: `shop-enquiry-${productId}-${Date.now()}`,
         });
         navigate(`/app/demand-box?demand_id=${created.id}&queue=mine`);
@@ -8385,43 +8395,50 @@ export default function ShopGalleryPage() {
                   : isCompact
                   ? 40
                   : 44;
-                const canSaveProduct = showProductSaveAction && positiveNumber(product.id) > 0;
+                const canSaveProduct =
+                  isProductOpen && showProductSaveAction && positiveNumber(product.id) > 0;
                 const isProductSaved = Boolean(
                   savedProductIds[String(positiveNumber(product.id))] || product.isSaved
                 );
                 const showPublicProductShareAction =
                   isProductOpen && !showBlockPlacementAction && !shopLoadFailed;
-                const visitorActionCount =
+                const showSimilarProductsAction =
+                  isProductOpen && !showBlockPlacementAction && !shopLoadFailed;
+                const openVisitorActionCount =
                   (canSaveProduct ? 1 : 0) +
                   (showProductContactAction ? 1 : 0) +
-                  (showPublicProductShareAction ? 1 : 0);
+                  (showPublicProductShareAction ? 1 : 0) +
+                  (showSimilarProductsAction ? 1 : 0);
+                const closedVisitorActionCount = showProductContactAction ? 1 : 0;
                 const productOpenActionRailWidth = showBlockPlacementAction
                   ? isProductOpen
                     ? diaryActionWidth * 4 + (isCompact ? 6 : 8) * 3
                     : diaryActionWidth
-                  : visitorActionCount > 0
+                  : openVisitorActionCount > 0
                   ? isProductOpen
                     ? diaryActionWidth
-                    : diaryActionWidth * (1 + visitorActionCount) + (isCompact ? 6 : 8) * visitorActionCount
+                    : diaryActionWidth * (1 + closedVisitorActionCount) +
+                      (isCompact ? 6 : 8) * closedVisitorActionCount
                   : diaryActionWidth;
                 const productOpenActionColumns = showBlockPlacementAction
                   ? isProductOpen
                     ? `repeat(4, ${diaryActionWidth}px)`
                     : `${diaryActionWidth}px`
-                  : visitorActionCount > 0
+                  : openVisitorActionCount > 0
                   ? isProductOpen
                     ? "1fr"
-                    : `repeat(${1 + visitorActionCount}, ${diaryActionWidth}px)`
+                    : `repeat(${1 + closedVisitorActionCount}, ${diaryActionWidth}px)`
                   : `${diaryActionWidth}px`;
                 const productClosedActionRailWidth = showBlockPlacementAction
                   ? diaryActionWidth
-                  : visitorActionCount > 0
-                  ? diaryActionWidth * (1 + visitorActionCount) + (isCompact ? 6 : 8) * visitorActionCount
+                  : closedVisitorActionCount > 0
+                  ? diaryActionWidth * (1 + closedVisitorActionCount) +
+                    (isCompact ? 6 : 8) * closedVisitorActionCount
                   : diaryActionWidth;
                 const productClosedActionColumns = showBlockPlacementAction
                   ? `${diaryActionWidth}px`
-                  : visitorActionCount > 0
-                  ? `repeat(${1 + visitorActionCount}, ${diaryActionWidth}px)`
+                  : closedVisitorActionCount > 0
+                  ? `repeat(${1 + closedVisitorActionCount}, ${diaryActionWidth}px)`
                   : `${diaryActionWidth}px`;
                 const diaryMediaControlHeight = isCompact ? 34 : 38;
                 const diaryClosedDockHeight = isCompact ? 78 : 88;
@@ -8718,9 +8735,10 @@ export default function ShopGalleryPage() {
                               textOverflow: "ellipsis",
                               whiteSpace: "nowrap",
                             }}
-                            title={`${shopNameText} · ${shopLocationText}`}
+                            title={shopLocationText}
                           >
-                            {shopNameText} · {shopLocationText}
+                            <span aria-hidden="true">{"\uD83D\uDCCD"}</span>{" "}
+                            {shopLocationText}
                           </span>
                           <SecondaryButton
                             onClick={(event) => {
@@ -8894,13 +8912,17 @@ export default function ShopGalleryPage() {
                           <SecondaryButton
                             onClick={(event) => {
                               event.stopPropagation();
+                              if (!ownerSessionPresent) {
+                                navigate(loginReconnectPath);
+                                return;
+                              }
                               void toggleProductSave(product);
                             }}
                             minWidth={0}
                             stableHeight={diaryActionHeight}
                             debugId={`shop-gallery.product.${productOpenId}.save`}
-                            aria-label={isProductSaved ? `Remove ${displayTitle} from saved products` : `Save ${displayTitle}`}
-                            title={isProductSaved ? "Remove saved product" : "Save product"}
+                            aria-label={isProductSaved ? `Unlike ${displayTitle}` : `Like ${displayTitle}`}
+                            title={isProductSaved ? "Unlike product" : "Like product"}
                             data-product-save-action="true"
                             disabled={savingProductId === positiveNumber(product.id)}
                             style={{
@@ -8935,8 +8957,8 @@ export default function ShopGalleryPage() {
                             minWidth={0}
                             stableHeight={diaryActionHeight}
                             debugId={`shop-gallery.product.${productOpenId}.ask-seller`}
-                            aria-label={`Ask seller about ${displayTitle}`}
-                            title="Ask seller"
+                            aria-label={`Ask whether ${displayTitle} is available`}
+                            title="Ask availability"
                             data-product-contact-action="true"
                             style={{
                               ...secondaryBtn(false),
@@ -8958,11 +8980,7 @@ export default function ShopGalleryPage() {
                                 "0 8px 18px rgba(217,160,58,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
                             }}
                           >
-                            <GsnRealisticIcon
-                              name="phone-contact"
-                              size={isCompact ? 21 : 24}
-                              decorative
-                            />
+                            <span aria-hidden="true">{"\uD83D\uDCAC"}</span>
                           </SecondaryButton>
                         ) : null}
                         {showBlockPlacementAction ? (
@@ -9061,6 +9079,34 @@ export default function ShopGalleryPage() {
                                 "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
                             }}
                           />
+                        ) : null}
+                        {showSimilarProductsAction ? (
+                          <StableCtaLink
+                            to={similarProductsPath(product)}
+                            minWidth={0}
+                            stableHeight={diaryActionHeight}
+                            debugId={`shop-gallery.product.${productOpenId}.similar-products`}
+                            aria-label={`See products similar to ${displayTitle}`}
+                            title="See similar products"
+                            style={{
+                              ...secondaryBtn(false),
+                              width: diaryActionWidth,
+                              maxWidth: diaryActionWidth,
+                              minWidth: 0,
+                              minHeight: diaryActionHeight,
+                              padding: 0,
+                              borderRadius: 999,
+                              fontSize: isCompact ? 20 : 22,
+                              lineHeight: 1,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              background:
+                                "linear-gradient(180deg, rgba(235,248,255,0.99) 0%, rgba(207,236,255,0.94) 100%)",
+                              color: "#0B4D78",
+                            }}
+                          >
+                            <span aria-hidden="true">{"\u2315"}</span>
+                          </StableCtaLink>
                         ) : null}
                         {showBlockPlacementAction ? (
                           <StableCtaLink

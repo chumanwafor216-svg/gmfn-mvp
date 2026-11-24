@@ -32,8 +32,8 @@ const findings = [];
 const expectedPageSourceActions = {
   PrimaryButton: 7,
   SecondaryButton: 15,
-  StableCtaLink: 7,
-  total: 29,
+  StableCtaLink: 8,
+  total: 30,
 };
 const expectedExistingWorkflowPlusShortcuts = 4;
 const expectedNativeFieldCount = 0;
@@ -217,8 +217,11 @@ const expectedActionOrder = [
   "shop-gallery.open-marketplace-refresh",
   "shop-gallery.open-product.follow-shop",
   "shop-gallery.product.${productOpenId}.toggle",
+  "shop-gallery.product.${productOpenId}.save",
   "shop-gallery.product.${productOpenId}.ask-seller",
   "shop-gallery.product.${productOpenId}.owner-share",
+  "shop-gallery.product.${productOpenId}.share",
+  "shop-gallery.product.${productOpenId}.similar-products",
   "shop-gallery.product.${productOpenId}.paid-placement",
   "shop-gallery.product.${productOpenId}.owner-manage",
 ];
@@ -523,6 +526,26 @@ assertContains(
 assertContains(
   /onClick=\{\(event\) => \{[\s\S]*?if \(isInteractiveCardTarget\(event\.target\)\) return;[\s\S]*?if \(!isProductOpen\) \{[\s\S]*?setOpenProductId\(productOpenId\);[\s\S]*?return;[\s\S]*?\}[\s\S]*?setOpenProductId\(null\);[\s\S]*?\}\}[\s\S]*?onDoubleClick=\{\(event\) => \{/,
   "Public Shop Products & Services cards must open on a single tap of the card body, with double-click left only as a fallback."
+);
+
+assertContains(
+  /const canSaveProduct =[\s\S]*?isProductOpen && showProductSaveAction[\s\S]*?const closedVisitorActionCount = showProductContactAction \? 1 : 0;/,
+  "Closed visitor product cards must keep price space clear by revealing Like only after the product opens."
+);
+
+assertContains(
+  /title=\{shopLocationText\}[\s\S]*?\{"\\uD83D\\uDCCD"\}[\s\S]*?\{shopLocationText\}/,
+  "Opened visitor products must show the safe Shop location context without repeating the Shop name inside its own Shop."
+);
+
+assertContains(
+  /debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.save`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.ask-seller`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.similar-products`\}/,
+  "Opened visitor products must keep the vertical action order Close, Like, Ask availability, Share, then See similar products."
+);
+
+assertContains(
+  /function similarProductsPath\(product: ShopProduct\)[\s\S]*?params\.set\("q", productDisplayTitle\(product\)\)[\s\S]*?params\.set\("source", "similar-products"\)[\s\S]*?params\.set\("return_to", publicShopReturnPath\)[\s\S]*?return `\/discover\?\$\{params\.toString\(\)\}`;/,
+  "See similar products must reuse Public Discovery and preserve a return path to the originating Shop product."
 );
 
 assertContains(
