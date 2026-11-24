@@ -8413,8 +8413,18 @@ export default function ShopGalleryPage() {
                     ? "1fr"
                     : `repeat(${1 + visitorActionCount}, ${diaryActionWidth}px)`
                   : `${diaryActionWidth}px`;
+                const productClosedActionRailWidth = showBlockPlacementAction
+                  ? diaryActionWidth
+                  : visitorActionCount > 0
+                  ? diaryActionWidth * (1 + visitorActionCount) + (isCompact ? 6 : 8) * visitorActionCount
+                  : diaryActionWidth;
+                const productClosedActionColumns = showBlockPlacementAction
+                  ? `${diaryActionWidth}px`
+                  : visitorActionCount > 0
+                  ? `repeat(${1 + visitorActionCount}, ${diaryActionWidth}px)`
+                  : `${diaryActionWidth}px`;
                 const diaryMediaControlHeight = isCompact ? 34 : 38;
-                const diaryClosedDockHeight = isCompact ? 58 : 68;
+                const diaryClosedDockHeight = isCompact ? 78 : 88;
                 const diaryOpenDockHeight = isCompact ? 132 : 144;
 
                 return (
@@ -8492,7 +8502,7 @@ export default function ShopGalleryPage() {
                           showVideoControls={isProductOpen}
                           autoPlayVideo={!isProductOpen}
                           mutedVideo={true}
-                          loopVideo={!isProductOpen}
+                          loopVideo={false}
                           showAudioUnlock={hasVideoStory}
                           audioUnlockLabel="Sound on"
                           audioUnlockOffLabel="Muted"
@@ -8620,14 +8630,10 @@ export default function ShopGalleryPage() {
                         display: "grid",
                         gridTemplateColumns: isProductOpen
                           ? `minmax(0, 1fr) ${productOpenActionRailWidth}px`
-                          : `minmax(0, 1fr) ${
-                              visitorActionCount > 0
-                                ? productOpenActionRailWidth
-                                : diaryActionWidth
-                            }px`,
+                          : `minmax(0, 1fr) ${productClosedActionRailWidth}px`,
                         gridTemplateRows: isProductOpen
                           ? "auto auto auto auto"
-                          : "auto auto",
+                          : "auto auto auto",
                         gap: isProductOpen ? (isCompact ? 3 : 4) : "2px 7px",
                         alignContent: "end",
                         background:
@@ -8764,7 +8770,7 @@ export default function ShopGalleryPage() {
                         style={{
                           ...badge(true),
                           gridColumn: isProductOpen ? "1" : "1",
-                          gridRow: isProductOpen ? "4" : "2",
+                          gridRow: isProductOpen ? "4" : "3",
                           width: "fit-content",
                           maxWidth: "100%",
                           minHeight: isProductOpen
@@ -8799,9 +8805,11 @@ export default function ShopGalleryPage() {
                       <div
                         style={{
                           gridColumn: isProductOpen && !showBlockPlacementAction ? "1" : "2",
-                          gridRow: isProductOpen ? "4" : "1 / span 2",
+                          gridRow: isProductOpen ? "4" : "1 / span 3",
                           display: "grid",
-                          gridTemplateColumns: productOpenActionColumns,
+                          gridTemplateColumns: isProductOpen
+                            ? productOpenActionColumns
+                            : productClosedActionColumns,
                           gridAutoRows:
                             isProductOpen && !showBlockPlacementAction
                               ? `${diaryActionHeight}px`
