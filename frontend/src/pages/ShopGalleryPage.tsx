@@ -8612,7 +8612,11 @@ export default function ShopGalleryPage() {
                         display: "grid",
                         gridTemplateColumns: isProductOpen
                           ? `minmax(0, 1fr) ${productOpenActionRailWidth}px`
-                          : `minmax(0, 1fr) ${diaryActionWidth}px`,
+                          : `minmax(0, 1fr) ${
+                              visitorActionCount > 0
+                                ? productOpenActionRailWidth
+                                : diaryActionWidth
+                            }px`,
                         gridTemplateRows: isProductOpen
                           ? "auto auto auto"
                           : "auto auto",
@@ -8804,8 +8808,12 @@ export default function ShopGalleryPage() {
                               lineHeight: 1,
                               whiteSpace: "nowrap",
                               overflow: "hidden",
-                              color: isProductSaved ? "#D97706" : "#0B63B6",
-                              background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
+                              color: isProductSaved ? "#C2410C" : "#B45309",
+                              border: "1px solid rgba(234,88,12,0.34)",
+                              background:
+                                "linear-gradient(180deg, #FFF9ED 0%, #FFECC8 100%)",
+                              boxShadow:
+                                "0 8px 18px rgba(234,88,12,0.16), inset 0 1px 0 rgba(255,255,255,0.88)",
                             }}
                           >
                             <span aria-hidden="true">{isProductSaved ? "\u2665" : "\u2661"}</span>
@@ -8835,9 +8843,12 @@ export default function ShopGalleryPage() {
                               lineHeight: 1,
                               whiteSpace: "nowrap",
                               overflow: "hidden",
-                              color: "#0B63B6",
+                              color: "#9A3412",
+                              border: "1px solid rgba(217,160,58,0.58)",
                               background:
-                                "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
+                                "linear-gradient(180deg, #FFFDF4 0%, #FFEFC2 100%)",
+                              boxShadow:
+                                "0 8px 18px rgba(217,160,58,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
                             }}
                           >
                             <GsnRealisticIcon
