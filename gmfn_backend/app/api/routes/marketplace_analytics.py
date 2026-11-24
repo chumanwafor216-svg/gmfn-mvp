@@ -35,6 +35,8 @@ EVENT_PRODUCT_OPEN = "product_open"
 EVENT_SPOTLIGHT_IMPRESSION = "spotlight_impression"
 EVENT_SPOTLIGHT_SHOP_CLICK = "spotlight_shop_click"
 EVENT_CONTACT_TAP = "contact_tap"
+EVENT_PRODUCT_SAVED = "product_saved"
+EVENT_PRODUCT_UNSAVED = "product_unsaved"
 EVENT_SHARE_ACTION = "share_action"
 EVENT_RECOMMENDATION_ACTIONED = "recommendation_actioned"
 EVENT_DEMAND_MATCH_AVAILABLE = "match_available"
@@ -50,6 +52,8 @@ ATTENTION_EVENT_TYPES = {
     EVENT_SPOTLIGHT_IMPRESSION,
     EVENT_SPOTLIGHT_SHOP_CLICK,
     EVENT_CONTACT_TAP,
+    EVENT_PRODUCT_SAVED,
+    EVENT_PRODUCT_UNSAVED,
     EVENT_SHARE_ACTION,
     EVENT_RECOMMENDATION_ACTIONED,
     EVENT_DEMAND_MATCH_AVAILABLE,
@@ -270,6 +274,8 @@ def _period_summary(db: Session, *, shop_id: int, since: datetime) -> dict[str, 
         "unique_spotlight_viewers": _unique_viewer_count(db, shop_id=shop_id, event_type=EVENT_SPOTLIGHT_IMPRESSION, since=since),
         "spotlight_shop_clicks": _event_count(db, shop_id=shop_id, event_type=EVENT_SPOTLIGHT_SHOP_CLICK, since=since),
         "contact_taps": _event_count(db, shop_id=shop_id, event_type=EVENT_CONTACT_TAP, since=since),
+        "product_saves": _event_count(db, shop_id=shop_id, event_type=EVENT_PRODUCT_SAVED, since=since),
+        "product_unsaves": _event_count(db, shop_id=shop_id, event_type=EVENT_PRODUCT_UNSAVED, since=since),
     }
 
 
@@ -1298,6 +1304,8 @@ def _daily_activity_summary(
             "unique_spotlight_viewers": 0,
             "spotlight_shop_clicks": 0,
             "contact_taps": 0,
+            "product_saves": 0,
+            "product_unsaves": 0,
         }
         for label in labels
     }
@@ -1349,6 +1357,10 @@ def _daily_activity_summary(
             summary["spotlight_shop_clicks"] += 1
         elif event_type == EVENT_CONTACT_TAP:
             summary["contact_taps"] += 1
+        elif event_type == EVENT_PRODUCT_SAVED:
+            summary["product_saves"] += 1
+        elif event_type == EVENT_PRODUCT_UNSAVED:
+            summary["product_unsaves"] += 1
 
     for day, viewers in unique_shop_visitors.items():
         rows_by_day[day]["unique_shop_visitors"] = len(viewers)

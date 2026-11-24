@@ -12,13 +12,15 @@ from typing import Any, Dict, Literal, Optional
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from jose import JWTError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_current_user
+from app.core.auth import get_current_user, oauth2_scheme
+from app.core.security import decode_token
 from app.db.database import get_db
 from app.db.models import (
     Clan,
@@ -29,6 +31,7 @@ from app.db.models import (
     MarketplaceBroadcast,
     MarketplaceProduct,
     MarketplaceProductRepost,
+    MarketplaceProductSave,
     MarketplaceReview,
     MarketplaceShop,
     ProtectedTradeRecord,
@@ -2462,6 +2465,36 @@ def _current_user_can_see_shop(
     )
 
 
+def _optional_user_from_token(db: Session, token: Optional[str]) -> Optional[User]:
+    if not token:
+        return None
+    try:
+        payload = decode_token(token)
+        subject = str(payload.get("sub") or "").strip()
+        if not subject:
+            return None
+        return (
+            db.query(User).filter(User.email == subject).first()
+            or db.query(User).filter(User.gmfn_id == subject).first()
+        )
+    except (JWTError, RuntimeError):
+        return None
+    except Exception:
+        return None
+
+
+def _saved_product_ids(db: Session, *, user_id: Optional[int], product_ids: list[int]) -> set[int]:
+    if not user_id or not product_ids:
+        return set()
+    rows = (
+        db.query(MarketplaceProductSave.product_id)
+        .filter(MarketplaceProductSave.user_id == int(user_id))
+        .filter(MarketplaceProductSave.product_id.in_(product_ids))
+        .all()
+    )
+    return {int(row[0]) for row in rows}
+
+
 def _follower_can_receive_shop_notice(
     db: Session,
     *,
@@ -4466,6 +4499,7 @@ def _product_out(
     product: MarketplaceProduct,
     *,
     display_block_number: Optional[int] = None,
+    is_saved: bool = False,
 ) -> Dict[str, Any]:
     shop = (
         db.query(MarketplaceShop)
@@ -4533,6 +4567,7 @@ def _product_out(
             else None
         ),
         "is_active": bool(product.is_active),
+        "is_saved": bool(is_saved),
         "created_at": product.created_at.isoformat() if product.created_at else None,
         "listing_review_required": bool(governance_policy.get("listing_review_required")),
         "listing_review_due_at": listing_review_due_at,
@@ -4565,6 +4600,7 @@ def _products_out(
     products: list[MarketplaceProduct],
     *,
     assignment_products: Optional[list[MarketplaceProduct]] = None,
+    saved_product_ids: Optional[set[int]] = None,
 ) -> list[Dict[str, Any]]:
     assignments = _display_public_block_assignments(
         [
@@ -4590,6 +4626,7 @@ def _products_out(
             display_block_number=display_blocks_by_product_id.get(
                 int(getattr(product, "id", 0) or 0)
             ),
+            is_saved=int(getattr(product, "id", 0) or 0) in (saved_product_ids or set()),
         )
         for product in products
     ]
@@ -5432,6 +5469,7 @@ def get_public_marketplace_shop_by_gmfn_id(
     product_id: Optional[int] = Query(default=None),
     product_limit: int = Query(default=100, ge=1, le=300),
     broadcast_limit: int = Query(default=24, ge=1, le=100),
+    token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
     owner = _get_user_by_identity_key(db, identity_key=gmfn_id)
@@ -5582,6 +5620,12 @@ def get_public_marketplace_shop_by_gmfn_id(
     ):
         product_rows = [requested_product, *product_rows]
     product_rows = _dedupe_active_public_block_products(product_rows)[: int(product_limit)]
+    current_user = _optional_user_from_token(db, token)
+    saved_product_ids = _saved_product_ids(
+        db,
+        user_id=int(current_user.id) if current_user is not None else None,
+        product_ids=[int(row.id) for row in product_rows],
+    )
 
     spotlight_clan_ids = (
         [int(effective_clan_id)]
@@ -5610,6 +5654,7 @@ def get_public_marketplace_shop_by_gmfn_id(
             db,
             product_rows,
             assignment_products=product_context_rows,
+            saved_product_ids=saved_product_ids,
         ),
         "broadcasts": public_broadcasts,
         "primary_broadcast": public_broadcasts[0] if public_broadcasts else None,
@@ -7749,6 +7794,96 @@ def delete_marketplace_product(
     }
 
 
+def _get_saveable_product(db: Session, *, product_id: int, current_user: User) -> tuple[MarketplaceProduct, MarketplaceShop]:
+    product = (
+        db.query(MarketplaceProduct)
+        .filter(MarketplaceProduct.id == int(product_id), MarketplaceProduct.is_active.is_(True))
+        .first()
+    )
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    shop = (
+        db.query(MarketplaceShop)
+        .filter(MarketplaceShop.id == int(product.shop_id), MarketplaceShop.is_active.is_(True))
+        .first()
+    )
+    if not shop:
+        raise HTTPException(status_code=404, detail="Shop not found")
+    if int(shop.owner_user_id) == int(current_user.id):
+        raise HTTPException(status_code=403, detail="Shop owners cannot save their own products")
+    if _resolve_visibility_mode(getattr(product, "visibility_mode", None)) != VISIBILITY_COMMUNITY:
+        raise HTTPException(status_code=404, detail="Product not found")
+    privacy_decision = resolve_shop_privacy_decision(
+        db,
+        owner_user_id=int(shop.owner_user_id),
+        scope=ShopPrivacyScope.UNAUTHENTICATED_PUBLIC,
+        shop_active=bool(shop.is_active),
+    )
+    if not privacy_decision.shop_visible:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product, shop
+
+
+@router.get("/products/saved")
+def list_saved_marketplace_products(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    rows = (
+        db.query(MarketplaceProduct)
+        .join(MarketplaceProductSave, MarketplaceProductSave.product_id == MarketplaceProduct.id)
+        .filter(MarketplaceProductSave.user_id == int(current_user.id))
+        .filter(MarketplaceProduct.is_active.is_(True))
+        .order_by(MarketplaceProductSave.created_at.desc(), MarketplaceProductSave.id.desc())
+        .all()
+    )
+    return {"ok": True, "products": _products_out(db, rows, saved_product_ids={int(row.id) for row in rows})}
+
+
+@router.post("/products/{product_id}/save")
+def save_marketplace_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    product, shop = _get_saveable_product(db, product_id=product_id, current_user=current_user)
+    existing = (
+        db.query(MarketplaceProductSave)
+        .filter(
+            MarketplaceProductSave.product_id == int(product.id),
+            MarketplaceProductSave.user_id == int(current_user.id),
+        )
+        .first()
+    )
+    if existing:
+        return {"ok": True, "saved": True, "already_saved": True, "product_id": int(product.id)}
+    db.add(MarketplaceProductSave(product_id=int(product.id), user_id=int(current_user.id)))
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return {"ok": True, "saved": True, "already_saved": True, "product_id": int(product.id)}
+    return {"ok": True, "saved": True, "product_id": int(product.id), "shop_id": int(shop.id)}
+
+
+@router.delete("/products/{product_id}/save")
+def unsave_marketplace_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    row = (
+        db.query(MarketplaceProductSave)
+        .filter(
+            MarketplaceProductSave.product_id == int(product_id),
+            MarketplaceProductSave.user_id == int(current_user.id),
+        )
+        .first()
+    )
+    if row:
+        db.delete(row)
+        db.commit()
+    return {"ok": True, "saved": False, "product_id": int(product_id)}
 @router.get("/products/{product_id}/repost-targets")
 def recommend_marketplace_repost_targets(
     product_id: int,

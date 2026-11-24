@@ -7080,6 +7080,24 @@ export async function getPublicMarketplaceShopByGmfnId(
 }
 
 
+export async function saveMarketplaceProduct(productId: number): Promise<any> {
+  return httpJson(
+    `/marketplace/products/${encodeURIComponent(String(productId))}/save`,
+    "POST",
+    undefined,
+    { header_clan_id: null }
+  );
+}
+
+export async function unsaveMarketplaceProduct(productId: number): Promise<any> {
+  return httpJson(
+    `/marketplace/products/${encodeURIComponent(String(productId))}/save`,
+    "DELETE",
+    undefined,
+    { header_clan_id: null }
+  );
+}
+
 export type ShopDiaryEvidenceClass =
   | "owner_update"
   | "system_recorded"
@@ -7407,6 +7425,8 @@ export async function recordMarketplaceAttentionEvent(payload: {
     | "spotlight_impression"
     | "spotlight_shop_click"
     | "contact_tap"
+    | "product_saved"
+    | "product_unsaved"
     | "share_action"
     | "recommendation_actioned"
     | "match_available"

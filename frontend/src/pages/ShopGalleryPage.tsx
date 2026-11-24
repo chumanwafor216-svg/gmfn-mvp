@@ -29,6 +29,8 @@ import {
   logout,
   getMe,
   getPublicMarketplaceShopByGmfnId,
+  saveMarketplaceProduct,
+  unsaveMarketplaceProduct,
   getPublicShopDiaryEntries,
   type ShopDiaryEntryRecord,
   getSelectedClanId,
@@ -149,6 +151,7 @@ type ShopProduct = {
   visibilityMode: string;
   createdAt: string;
   originShopName: string;
+  isSaved: boolean;
   originClanId: number;
   repostsUsed: number;
   distributionSlotsRemaining: number;
@@ -1547,6 +1550,7 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
       "community_visible",
     createdAt: firstMeaningful(src?.created_at),
     originShopName: firstMeaningful(src?.origin_shop_name, src?.source_shop_name),
+    isSaved: src?.is_saved === true || src?.isSaved === true,
     originClanId: positiveNumber(
       src?.origin_clan_id || src?.source_clan_id || src?.clan_id
     ),
@@ -2039,6 +2043,8 @@ export default function ShopGalleryPage() {
   const galleryRevealTimeoutRefs = useRef<number[]>([]);
   const galleryRevealTargetRef = useRef("");
   const [products, setProducts] = useState<ShopProduct[]>([]);
+  const [savedProductIds, setSavedProductIds] = useState<Record<string, boolean>>({});
+  const [savingProductId, setSavingProductId] = useState<number | null>(null);
   const [shopDiaryEntries, setShopDiaryEntries] = useState<ShopDiaryEntryRecord[]>([]);
   const [openProductId, setOpenProductId] = useState<number | null>(null);
   const [brokenProductMediaUrls, setBrokenProductMediaUrls] = useState<
@@ -4720,6 +4726,7 @@ export default function ShopGalleryPage() {
   }, [hiddenShelfEntryCount, showAllProducts]);
   const showBlockPlacementAction = signedInOwnsShop && !shopLoadFailed;
   const showProductContactAction = !signedInOwnsShop && !shopLoadFailed;
+  const showProductSaveAction = ownerSessionPresent && !signedInOwnsShop && !shopLoadFailed;
   function blockPlacementPath(product: ShopProduct): string {
     const params = new URLSearchParams();
     const productId = positiveNumber(product.id);
@@ -5251,6 +5258,32 @@ export default function ShopGalleryPage() {
     });
   }
 
+  async function toggleProductSave(product: ShopProduct) {
+    const productId = positiveNumber(product.id);
+    if (!productId || savingProductId === productId) return;
+
+    const key = String(productId);
+    const wasSaved = Boolean(savedProductIds[key] || product.isSaved);
+    setSavingProductId(productId);
+    try {
+      const result = wasSaved
+        ? await unsaveMarketplaceProduct(productId)
+        : await saveMarketplaceProduct(productId);
+      const saved = result?.saved === true;
+      setSavedProductIds((current) => ({ ...current, [key]: saved }));
+      void trackMarketplaceAttention(saved ? "product_saved" : "product_unsaved", {
+        product_id: productId,
+        source: "public_shop_product_save",
+      });
+    } catch {
+      setNotice({
+        tone: "error",
+        text: "Could not update saved products. Please try again.",
+      });
+    } finally {
+      setSavingProductId(null);
+    }
+  }
   async function contactOwnerAboutProduct(product: ShopProduct) {
     trackMarketplaceAttention("contact_tap", {
       source: "public_shop_product_contact",
@@ -8352,15 +8385,25 @@ export default function ShopGalleryPage() {
                   : isCompact
                   ? 40
                   : 44;
+                const canSaveProduct = showProductSaveAction && positiveNumber(product.id) > 0;
+                const isProductSaved = Boolean(
+                  savedProductIds[String(positiveNumber(product.id))] || product.isSaved
+                );
+                const visitorActionCount =
+                  (canSaveProduct ? 1 : 0) + (showProductContactAction ? 1 : 0);
                 const productOpenActionRailWidth = showBlockPlacementAction
-                  ? diaryActionWidth * 4 + (isCompact ? 6 : 8) * 3
-                  : showProductContactAction
-                  ? diaryActionWidth * 2 + (isCompact ? 6 : 8)
+                  ? isProductOpen
+                    ? diaryActionWidth * 4 + (isCompact ? 6 : 8) * 3
+                    : diaryActionWidth
+                  : visitorActionCount > 0
+                  ? diaryActionWidth * (1 + visitorActionCount) + (isCompact ? 6 : 8) * visitorActionCount
                   : diaryActionWidth;
                 const productOpenActionColumns = showBlockPlacementAction
-                  ? `repeat(4, ${diaryActionWidth}px)`
-                  : showProductContactAction
-                  ? `repeat(2, ${diaryActionWidth}px)`
+                  ? isProductOpen
+                    ? `repeat(4, ${diaryActionWidth}px)`
+                    : `${diaryActionWidth}px`
+                  : visitorActionCount > 0
+                  ? `repeat(${1 + visitorActionCount}, ${diaryActionWidth}px)`
                   : `${diaryActionWidth}px`;
                 const diaryMediaControlHeight = isCompact ? 34 : 38;
                 const diaryClosedDockHeight = isCompact ? 58 : 68;
@@ -8673,9 +8716,7 @@ export default function ShopGalleryPage() {
                           gridColumn: isProductOpen ? "2" : "2",
                           gridRow: isProductOpen ? "3" : "1 / span 2",
                           display: "grid",
-                          gridTemplateColumns: isProductOpen
-                            ? productOpenActionColumns
-                            : `${diaryActionWidth}px`,
+                          gridTemplateColumns: productOpenActionColumns,
                           gap: isCompact ? 6 : 8,
                           width: "fit-content",
                           maxWidth: "100%",
@@ -8738,6 +8779,38 @@ export default function ShopGalleryPage() {
                             {isProductOpen ? "×" : "+"}
                           </span>
                         </SecondaryButton>
+                        {canSaveProduct ? (
+                          <SecondaryButton
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void toggleProductSave(product);
+                            }}
+                            minWidth={0}
+                            stableHeight={diaryActionHeight}
+                            debugId={`shop-gallery.product.${productOpenId}.save`}
+                            aria-label={isProductSaved ? `Remove ${displayTitle} from saved products` : `Save ${displayTitle}`}
+                            title={isProductSaved ? "Remove saved product" : "Save product"}
+                            data-product-save-action="true"
+                            disabled={savingProductId === positiveNumber(product.id)}
+                            style={{
+                              ...secondaryBtn(false),
+                              width: diaryActionWidth,
+                              maxWidth: diaryActionWidth,
+                              minWidth: 0,
+                              minHeight: diaryActionHeight,
+                              padding: 0,
+                              borderRadius: 999,
+                              fontSize: isCompact ? 22 : 25,
+                              lineHeight: 1,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              color: isProductSaved ? "#D97706" : "#0B63B6",
+                              background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
+                            }}
+                          >
+                            <span aria-hidden="true">{isProductSaved ? "\u2665" : "\u2661"}</span>
+                          </SecondaryButton>
+                        ) : null}
                         {showProductContactAction ? (
                           <SecondaryButton
                             onClick={(event) => {

@@ -7590,3 +7590,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Non-owners and malformed match rows do not receive the continuation action; existing Ask seller, View Shop, WhatsApp fallback and private response permissions remain unchanged.
 - Verification: focused DemandBox/product-enquiry and Protected Trade tests `37 passed`; frontend TypeScript/Vite production build and Marketplace/Shop action audits passed.
 - Local release candidate only; no push, merge, production migration or deployment performed.
+
+# Shop product save control - 2026-11-23
+
+- Added an authenticated per-user Save product control to visitor-facing public Shop product cards; owners cannot save their own products.
+- Added the additive `marketplace_product_saves` model/migration, idempotent save/unsave routes, saved-product listing, and `product_saved`/`product_unsaved` analytics events and summaries.
+- Save is a private buyer utility, not a public Like count or social interaction; Shop contact, WhatsApp fallback, permissions and owner controls remain unchanged.
+- Verification: focused product-save tests passed 3/3; migration upgrade exercised successfully; Python compilation and `git diff --check` passed. Production deployment and migration were not performed.
