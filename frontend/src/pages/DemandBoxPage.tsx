@@ -2276,6 +2276,8 @@ export default function DemandBoxPage() {
               && positiveNumber(row?.id || match.demand_id) > 0
               && positiveNumber(match.product_id) > 0
               && positiveNumber(match.shop_id) > 0;
+            const actionCount = 1 + (canAskSeller ? 1 : 0) + (canOpenProtectedTrade ? 1 : 0);
+            const spreadCompactActions = isCompact && actionCount > 1;
             const contactKey = `${rowId}:${positiveNumber(match.product_id)}:${positiveNumber(match.shop_id)}`;
             const preparingContact = preparingSellerContactKey === contactKey;
             return (
@@ -2288,8 +2290,8 @@ export default function DemandBoxPage() {
                   background: "#FFFFFF",
                   border: "1px solid rgba(13,95,168,0.10)",
                   display: "grid",
-                  gridTemplateColumns: "minmax(0, 1fr) auto",
-                  alignItems: "center",
+                  gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "minmax(0, 1fr) auto",
+                  alignItems: isCompact ? "stretch" : "center",
                   gap: 8,
                   minHeight: isCompact ? 84 : 88,
                   padding: isCompact ? "9px 9px 9px 11px" : "11px 12px",
@@ -2334,7 +2336,18 @@ export default function DemandBoxPage() {
                 </div>
                 <div
                   data-gsn-demand-match-actions="compact"
-                  style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}
+                  style={{
+                    display: spreadCompactActions ? "grid" : "flex",
+                    gridTemplateColumns: spreadCompactActions
+                      ? `repeat(${actionCount}, minmax(0, 1fr))`
+                      : undefined,
+                    gap: 5,
+                    alignItems: spreadCompactActions ? "stretch" : "center",
+                    flexWrap: spreadCompactActions ? undefined : "wrap",
+                    justifyContent: "flex-end",
+                    minWidth: 0,
+                    width: spreadCompactActions ? "100%" : undefined,
+                  }}
                 >
                   {canAskSeller ? (
                     <PrimaryButton
@@ -2346,8 +2359,15 @@ export default function DemandBoxPage() {
                       debugId={`${debugBase}.ask-seller.${match.product_id}`}
                       data-gsn-demand-ask-seller="validated"
                       stableHeight={44}
-                      minWidth={82}
-                      style={{ borderRadius: 12, padding: "8px 10px", fontSize: 12, fontWeight: 900 }}
+                      minWidth={spreadCompactActions ? 0 : 82}
+                      style={{
+                        borderRadius: 12,
+                        padding: "8px 7px",
+                        fontSize: 12,
+                        fontWeight: 900,
+                        width: spreadCompactActions ? "100%" : undefined,
+                        whiteSpace: "nowrap",
+                      }}
                     >
                       Ask seller
                     </PrimaryButton>
@@ -2359,16 +2379,18 @@ export default function DemandBoxPage() {
                       aria-label={`Continue to protected trade for ${title}`}
                       data-gsn-demand-protected-trade="validated"
                       stableHeight={44}
-                      minWidth={92}
+                      minWidth={spreadCompactActions ? 0 : 92}
                       style={{
                         borderRadius: 12,
-                        padding: "8px 9px",
+                        padding: "8px 7px",
                         fontSize: 12,
                         fontWeight: 900,
-                        whiteSpace: "nowrap",
+                        lineHeight: 1.1,
+                        width: spreadCompactActions ? "100%" : undefined,
+                        whiteSpace: isCompact ? "normal" : "nowrap",
                       }}
                     >
-                      Continue to protected trade
+                      {isCompact ? "Protected trade" : "Continue to protected trade"}
                     </StableCtaLink>
                   ) : null}
                   <StableCtaLink
@@ -2378,12 +2400,13 @@ export default function DemandBoxPage() {
                     aria-label={`View Shop: ${title} from ${shopName}`}
                     data-gsn-demand-match-action="compact"
                     stableHeight={44}
-                    minWidth={58}
+                    minWidth={spreadCompactActions ? 0 : 58}
                     style={{
                       borderRadius: 12,
-                      padding: "8px 9px",
+                      padding: "8px 7px",
                       fontSize: 12,
                       fontWeight: 900,
+                      width: spreadCompactActions ? "100%" : undefined,
                       whiteSpace: "nowrap",
                     }}
                   >

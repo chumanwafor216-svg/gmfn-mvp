@@ -7631,3 +7631,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The complete former opened height is reserved for media. The added 86/76-pixel lower strip contains product name, concise description, exact seller currency/price, safe declared city/area and the existing Shop Follow state.
 - The existing visitor action rail stays beside the media in the approved order. Exact-owner geometry, owner controls and owner-only paid Repost remain unchanged; Spotlight is outside this change.
 - No backend route, schema, migration, publication, privacy, permission, payment, trade or recommendation behavior changed.
+# DemandBox mobile match-card layout correction - 2026-11-24
+
+- Corrected the opened-request Possible matches layout that allowed the action column to crush listing and Shop text into a one-character-wide column on mobile.
+- Compact phone rows now give match context the full row width, place multiple actions in an equal-width row underneath, and keep a lone Shop action compact and right-aligned. Desktop keeps the existing two-column presentation.
+- No matching score, candidate eligibility, route, permission, privacy, Shop destination or Protected Trade behavior changed.
+- Verification: frontend production build passed; DemandBox phone smoke passed at 360, 390 and 430 pixels with match text widths of 258, 288 and 328 pixels and panel heights of 526, 526 and 490 pixels; DemandBox front-package and marketplace lane audits passed; git diff --check passed.
+- The broad protected-button audit still reports unrelated baseline raw-input findings and missing backend files in the frontend-only sparse checkout; this correction did not weaken those checks.

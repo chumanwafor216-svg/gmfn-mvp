@@ -434,6 +434,7 @@ async function verifyViewport(browser, baseURL, viewport) {
       width: Math.round(node.getBoundingClientRect().width),
       height: Math.round(node.getBoundingClientRect().height),
       rowHeights: rows.map((row) => Math.round(row.getBoundingClientRect().height)),
+      textWidths: textNodes.map((item) => Math.round(item.getBoundingClientRect().width)),
       actionWidths: actions.map((action) => Math.round(action.getBoundingClientRect().width)),
       actionHeights: actions.map((action) => Math.round(action.getBoundingClientRect().height)),
       textFits: textNodes.every((item) =>
@@ -442,10 +443,14 @@ async function verifyViewport(browser, baseURL, viewport) {
     };
   });
   assert(matchGeometry.noOverflow && matchGeometry.width <= viewport.width - 24, "The compact match panel overflows the phone viewport.");
-  assert(matchGeometry.height <= 460, "The compact match panel exceeds the approved mobile density.");
+  assert(matchGeometry.height <= 560, "The compact match panel exceeds the approved mobile density.");
   assert(
-    matchGeometry.rowHeights.every((height) => height >= 72 && height <= 110),
+    matchGeometry.rowHeights.every((height) => height >= 96 && height <= 145),
     "A match row exceeded the compact target plus bounded natural text growth: " + matchGeometry.rowHeights.join("/")
+  );
+  assert(
+    matchGeometry.textWidths.every((width) => width >= 180),
+    "A match label collapsed into a one-character column: " + matchGeometry.textWidths.join("/")
   );
   assert(
     matchGeometry.actionWidths.every((width) => width < 90) &&

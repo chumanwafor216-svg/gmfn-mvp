@@ -95,7 +95,7 @@ function forbidPattern(input, file, pattern, message) {
   [/reliableDemandMatches[\s\S]*?RELEVANCE_RELIABLE[\s\S]*?\.slice\(0, 3\)/, "only the first three reliable matches may surface immediately"],
   [/data-gsn-demand-supply-intelligence="true"[\s\S]*?Check these listings\. Availability and suitability are not confirmed\.[\s\S]*?data-gsn-demand-match-list="compact"[\s\S]*?data-gsn-demand-match-row="compact"[\s\S]*?data-gsn-demand-ask-seller="validated"[\s\S]*?Ask seller[\s\S]*?data-gsn-demand-match-action="compact"[\s\S]*?Shop ›/, "truthful compact supply rows must keep direct validated seller contact and optional Shop access"],
   [/demandMatchEvidenceSentence[\s\S]*?availability not confirmed\./, "each compact match must keep one concise availability boundary"],
-  [/gridTemplateColumns: "minmax\(0, 1fr\) auto"[\s\S]*?minHeight: isCompact \? 84 : 88/, "compact match rows must keep bounded row geometry with the two compact actions"],
+  [/gridTemplateColumns: isCompact \? "minmax\(0, 1fr\)" : "minmax\(0, 1fr\) auto"[\s\S]*?data-gsn-demand-match-actions="compact"[\s\S]*?repeat\(\$\{actionCount\}, minmax\(0, 1fr\)\)/, "phone match rows must keep full-width text above a bounded action row"],
   [/Community connection is context, not professional verification or guaranteed trust\./, "community context must not be presented as professional verification"],
   [/data-gsn-demand-load-older="true"[\s\S]*?demand-box\.queue\.load-older/, "large queues must keep paged loading"],
   [/const DEMAND_BOX_PAGE_SIZE = 200/, "the backend-safe page size must remain explicit"],
