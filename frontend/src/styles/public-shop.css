@@ -221,6 +221,8 @@
 }
 
 .public-shop-product-update-ticker {
+  position: relative;
+  z-index: 2;
   box-sizing: border-box;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -230,13 +232,30 @@
   min-height: 44px;
   overflow: hidden;
   color: #07172c;
-  border: 1px solid rgba(214, 170, 69, 0.34);
-  border-radius: 14px;
+  border: 1px solid rgba(242, 207, 119, 0.58);
+  border-bottom: 0;
+  border-radius: 20px 20px 0 0;
   background:
-    linear-gradient(90deg, rgba(255, 249, 226, 0.99) 0%, rgba(255, 255, 255, 0.98) 34%, rgba(241, 248, 255, 0.98) 100%);
+    radial-gradient(circle at top right, rgba(242, 207, 119, 0.2), transparent 34%),
+    linear-gradient(145deg, rgba(11, 58, 92, 0.98) 0%, rgba(3, 30, 51, 0.99) 74%);
   box-shadow:
-    0 10px 22px rgba(8, 38, 67, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 18px 38px rgba(3, 23, 39, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.public-shop-product-update-ticker ~ details[data-public-shop-more=secondary] {
+  min-width: 0;
+  margin-top: 0;
+  padding: 7px;
+  border: 1px solid rgba(242, 207, 119, 0.58);
+  border-top: 0;
+  border-radius: 0 0 20px 20px;
+  background:
+    radial-gradient(circle at top right, rgba(242, 207, 119, 0.2), transparent 34%),
+    linear-gradient(145deg, rgba(11, 58, 92, 0.98) 0%, rgba(3, 30, 51, 0.99) 74%);
+  box-shadow:
+    0 18px 38px rgba(3, 23, 39, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .public-shop-product-update-label {
@@ -291,9 +310,13 @@
 }
 
 .public-shop-product-update-viewport {
-  display: block;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
   min-width: 0;
+  padding-inline: 6px;
   overflow: hidden;
+  background: rgba(255, 255, 255, 0.96);
   white-space: nowrap;
 }
 
