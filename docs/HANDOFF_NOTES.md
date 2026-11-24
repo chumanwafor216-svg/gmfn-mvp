@@ -7648,3 +7648,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - City was not invented: current Shop/product records expose marketplace/community context but no owner-published public city field. Exact residential location remains prohibited, and taxonomy-dependent locality remains outside this fix.
 - Verification: marketplace request module `22 passed`; DemandBox front-package audit passed; DemandBox phone smoke passed at 360px, 390px and 430px; Shop gallery inventory passed; frontend production build passed. The broad protected-button suite still reports pre-existing raw-action violations untouched by this diff.
 >>>>>>> c61d6fc9 (Connect shop enquiries to seller conversations)
+
+# Shop media stability and ten-second looping - 2026-11-24
+
+- Closed two-column Shop product videos now remain still instead of autoplaying simultaneously; only the opened product autoplays and loops, with the existing controls available to pause it.
+- Shared Spotlight presentation dwell is now 10 seconds, matching the existing 10-second video limit, so a clip is not rotated away halfway through.
+- No backend, schema, permission, privacy, transaction, or owner-control behavior changed.
+- Verification: focused Shop and Spotlight presentation audits pass; the frontend production build passes. The broad protected suite still reports unrelated pre-existing raw-action violations in untouched DemandBox and voice components.

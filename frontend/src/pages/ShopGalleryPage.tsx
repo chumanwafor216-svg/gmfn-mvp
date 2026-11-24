@@ -8539,9 +8539,9 @@ export default function ShopGalleryPage() {
                           alt={displayTitle}
                           contentPadding={0}
                           showVideoControls={isProductOpen}
-                          autoPlayVideo={!isProductOpen}
+                          autoPlayVideo={isProductOpen}
                           mutedVideo={true}
-                          loopVideo={false}
+                          loopVideo={isProductOpen}
                           showAudioUnlock={hasVideoStory}
                           audioUnlockLabel="Sound on"
                           audioUnlockOffLabel="Muted"

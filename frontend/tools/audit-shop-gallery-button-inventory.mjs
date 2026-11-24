@@ -507,8 +507,8 @@ assertContains(
 );
 
 assertContains(
-  /visibleProducts\.map\(\(product, index\) => \{[\s\S]*?<SpotlightMediaFrame[\s\S]*?showVideoControls=\{isProductOpen\}[\s\S]*?showAudioUnlock=\{hasVideoStory\}[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?audioUnlockErrorLabel="Play"[\s\S]*?minWidth: diaryMediaControlHeight[\s\S]*?width: diaryMediaControlHeight[\s\S]*?minHeight: diaryMediaControlHeight[\s\S]*?height: diaryMediaControlHeight[\s\S]*?maxHeight: diaryMediaControlHeight[\s\S]*?background: "rgba\(6,24,39,0\.74\)"/,
-  "Public Shop Products & Services media audio controls must stay compact, circular, low-obstruction, and tied to each product card."
+  /visibleProducts\.map\(\(product, index\) => \{[\s\S]*?<SpotlightMediaFrame[\s\S]*?showVideoControls=\{isProductOpen\}[\s\S]*?autoPlayVideo=\{isProductOpen\}[\s\S]*?mutedVideo=\{true\}[\s\S]*?loopVideo=\{isProductOpen\}[\s\S]*?showAudioUnlock=\{hasVideoStory\}[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?audioUnlockErrorLabel="Play"[\s\S]*?minWidth: diaryMediaControlHeight[\s\S]*?width: diaryMediaControlHeight[\s\S]*?minHeight: diaryMediaControlHeight[\s\S]*?height: diaryMediaControlHeight[\s\S]*?maxHeight: diaryMediaControlHeight[\s\S]*?background: "rgba\(6,24,39,0\.74\)"/,
+  "Only an opened public product video may autoplay and loop; compact grid videos stay still while media controls remain compact and tied to the product."
 );
 
 assertFileContains(
