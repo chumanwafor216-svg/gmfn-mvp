@@ -7622,3 +7622,12 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Closed cards and owner-management actions remain unchanged. No backend, schema, privacy, sharing, follow, or transaction behavior changed.
 - Verification: Shop gallery inventory, share/tag actions, Shop Diary Phase 1/2 audits, `git diff --check`, and frontend production build pass.
 - Local only: no commit, push, main promotion, or deployment performed for this refinement.
+
+
+# Public Shop opened-product 120% focus proportion - 2026-11-24
+
+- Opening one visitor product makes only that card span the complete Products & Services shelf width. Closed paired cards remain unchanged.
+- The opened visitor card grows by exactly 20% over its former height: 430 to 516 pixels on compact phones and 380 to 456 pixels on wider layouts.
+- The complete former opened height is reserved for media. The added 86/76-pixel lower strip contains product name, concise description, exact seller currency/price, safe declared city/area and the existing Shop Follow state.
+- The existing visitor action rail stays beside the media in the approved order. Exact-owner geometry, owner controls and owner-only paid Repost remain unchanged; Spotlight is outside this change.
+- No backend route, schema, migration, publication, privacy, permission, payment, trade or recommendation behavior changed.

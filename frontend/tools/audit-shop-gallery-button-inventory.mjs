@@ -673,8 +673,8 @@ assertContains(
 );
 
 assertContains(
-  /const diaryOpenDockHeight = isCompact \? 132 : 144;[\s\S]*?padding: isProductOpen[\s\S]*?\? "7px 9px"[\s\S]*?: "9px 12px"[\s\S]*?maxHeight: isProductOpen[\s\S]*?\? diaryOpenDockHeight[\s\S]*?: diaryClosedDockHeight[\s\S]*?minHeight: isProductOpen[\s\S]*?\? diaryOpenDockHeight[\s\S]*?: diaryClosedDockHeight/,
-  "Public Shop opened diary cards must keep a compact info dock so the existing block gives more height to the media window."
+  /const existingOpenProductHeight = isCompact \? 430 : 380;[\s\S]*?const visitorOpenProductInfoHeight = Math\.round\([\s\S]*?existingOpenProductHeight \* 0\.2[\s\S]*?\);[\s\S]*?const visitorOpenProductHeight =[\s\S]*?existingOpenProductHeight \+ visitorOpenProductInfoHeight;[\s\S]*?minHeight: isProductOpen[\s\S]*?\? showBlockPlacementAction[\s\S]*?\? existingOpenProductHeight[\s\S]*?: visitorOpenProductHeight[\s\S]*?bottom:[\s\S]*?isProductOpen && !showBlockPlacementAction[\s\S]*?\? diaryOpenDockHeight[\s\S]*?: 0/,
+  "Public Shop opened visitor products must reserve the complete former opened height for media and add an exact 20% compact information strip without changing owner geometry."
 );
 assertContains(
   /visibleProducts\.map\(\(product, index\) => \{[\s\S]*?<SpotlightMediaFrame[\s\S]*?mediaStyle=\{\{[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"[\s\S]*?\}\}[\s\S]*?productImageUrl \? \([\s\S]*?<img[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,

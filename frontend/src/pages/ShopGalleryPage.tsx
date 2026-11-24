@@ -8442,7 +8442,17 @@ export default function ShopGalleryPage() {
                   : `${diaryActionWidth}px`;
                 const diaryMediaControlHeight = isCompact ? 34 : 38;
                 const diaryClosedDockHeight = isCompact ? 78 : 88;
-                const diaryOpenDockHeight = isCompact ? 132 : 144;
+                const existingOpenProductHeight = isCompact ? 430 : 380;
+                const visitorOpenProductInfoHeight = Math.round(
+                  existingOpenProductHeight * 0.2
+                );
+                const visitorOpenProductHeight =
+                  existingOpenProductHeight + visitorOpenProductInfoHeight;
+                const diaryOpenDockHeight = showBlockPlacementAction
+                  ? isCompact
+                    ? 132
+                    : 144
+                  : visitorOpenProductInfoHeight;
 
                 return (
                   <article
@@ -8482,16 +8492,22 @@ export default function ShopGalleryPage() {
                       isolation: "isolate",
                       overflowAnchor: "none",
                       minHeight: isProductOpen
-                        ? isCompact
-                          ? 430
-                          : 380
+                        ? showBlockPlacementAction
+                          ? existingOpenProductHeight
+                          : visitorOpenProductHeight
                         : isCompact
                         ? 258
                         : 300,
+                      height:
+                        isProductOpen && !showBlockPlacementAction
+                          ? visitorOpenProductHeight
+                          : undefined,
                       aspectRatio: isProductOpen
-                        ? isCompact
-                          ? "1 / 1.16"
-                          : "1.65 / 1"
+                        ? showBlockPlacementAction
+                          ? isCompact
+                            ? "1 / 1.16"
+                            : "1.65 / 1"
+                          : "auto"
                         : isCompact
                         ? "0.72 / 1"
                         : "1.22 / 1",
@@ -8503,7 +8519,13 @@ export default function ShopGalleryPage() {
                     <div
                       style={{
                         position: "absolute",
-                        inset: 0,
+                        top: 0,
+                        right: 0,
+                        bottom:
+                          isProductOpen && !showBlockPlacementAction
+                            ? diaryOpenDockHeight
+                            : 0,
+                        left: 0,
                         background: "#0B1F33",
                         overflow: "hidden",
                       }}
@@ -8637,19 +8659,27 @@ export default function ShopGalleryPage() {
                         zIndex: 3,
                         minWidth: 0,
                         padding: isProductOpen
-                          ? isCompact
-                            ? "7px 9px"
-                            : "9px 12px"
+                          ? showBlockPlacementAction
+                            ? isCompact
+                              ? "7px 9px"
+                              : "9px 12px"
+                            : isCompact
+                            ? "5px 8px"
+                            : "6px 10px"
                           : isCompact
                           ? "6px 7px"
                           : "7px 9px",
                         boxSizing: "border-box",
                         display: isProductOpen ? "grid" : "flex",
                         gridTemplateColumns: isProductOpen
-                          ? `minmax(0, 1fr) ${productOpenActionRailWidth}px`
+                          ? showBlockPlacementAction
+                            ? `minmax(0, 1fr) ${productOpenActionRailWidth}px`
+                            : "minmax(0, 1fr) auto"
                           : undefined,
                         gridTemplateRows: isProductOpen
-                          ? "auto auto auto auto"
+                          ? showBlockPlacementAction
+                            ? "auto auto auto auto"
+                            : "auto auto auto"
                           : undefined,
                         gap: isProductOpen ? (isCompact ? 3 : 4) : "2px 7px",
                         alignContent: "end",
@@ -8670,15 +8700,24 @@ export default function ShopGalleryPage() {
                     >
                       <div
                         style={{
-                          gridColumn: isProductOpen ? "1 / -1" : "1",
+                          gridColumn:
+                            isProductOpen && !showBlockPlacementAction
+                              ? "1"
+                              : isProductOpen
+                              ? "1 / -1"
+                              : "1",
                           gridRow: isProductOpen ? "1" : "1",
                           minWidth: 0,
                           color: "#07172C",
                           fontWeight: 950,
                           fontSize: isProductOpen
-                            ? isCompact
-                              ? 17
-                              : 20
+                            ? showBlockPlacementAction
+                              ? isCompact
+                                ? 17
+                                : 20
+                              : isCompact
+                              ? 16
+                              : 18
                             : isCompact
                             ? 13
                             : 17,
@@ -8785,8 +8824,18 @@ export default function ShopGalleryPage() {
                       <span
                         style={{
                           ...badge(true),
-                          gridColumn: isProductOpen ? "1" : undefined,
-                          gridRow: isProductOpen ? "4" : undefined,
+                          gridColumn:
+                            isProductOpen && !showBlockPlacementAction
+                              ? "2"
+                              : isProductOpen
+                              ? "1"
+                              : undefined,
+                          gridRow:
+                            isProductOpen && !showBlockPlacementAction
+                              ? "1"
+                              : isProductOpen
+                              ? "4"
+                              : undefined,
                           flex: isProductOpen ? undefined : "1 1 auto",
                           justifyContent: "flex-start",
                           overflow: "hidden",
@@ -8794,23 +8843,35 @@ export default function ShopGalleryPage() {
                           width: "fit-content",
                           maxWidth: "100%",
                           minHeight: isProductOpen
-                            ? isCompact
-                              ? 26
-                              : 28
+                            ? showBlockPlacementAction
+                              ? isCompact
+                                ? 26
+                                : 28
+                              : isCompact
+                              ? 22
+                              : 24
                             : isCompact
                             ? 22
                             : 26,
                           padding: isProductOpen
-                            ? isCompact
-                              ? "4px 9px"
-                              : "5px 11px"
+                            ? showBlockPlacementAction
+                              ? isCompact
+                                ? "4px 9px"
+                                : "5px 11px"
+                              : isCompact
+                              ? "3px 7px"
+                              : "4px 9px"
                             : isCompact
                             ? "3px 7px"
                             : "4px 9px",
                           fontSize: isProductOpen
-                            ? isCompact
-                              ? 12
-                              : 13
+                            ? showBlockPlacementAction
+                              ? isCompact
+                                ? 12
+                                : 13
+                              : isCompact
+                              ? 11
+                              : 12
                             : isCompact
                             ? 10
                             : 12,
@@ -8849,7 +8910,10 @@ export default function ShopGalleryPage() {
                           ...(isProductOpen && !showBlockPlacementAction
                             ? {
                                 position: "absolute" as const,
-                                top: isCompact ? 76 : 90,
+                                top: -(
+                                  existingOpenProductHeight -
+                                  (isCompact ? 12 : 16)
+                                ),
                                 right: isCompact ? 10 : 14,
                                 zIndex: 6,
                                 gridTemplateColumns: `${diaryActionWidth}px`,
