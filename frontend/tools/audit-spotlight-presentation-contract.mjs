@@ -22,7 +22,9 @@ function satisfiesUpdatedSpotlightContract(message, text) {
   }
   if (message.includes('actual media has rendered')) {
     return (
-      text.includes("spotlightMediaStatusByKey[spotlightMediaKey]?.status !== 'ready'") &&
+      text.includes("qualifyingMediaStatus?.status !== 'ready'") &&
+      text.includes('qualifyingMediaStatus.fallbackFromVideo') &&
+      text.includes('spotlightPlaybackCanQualify(playbackStatus)') &&
       text.includes("onMediaReady={(details) =>") &&
       text.includes("status: 'ready'") &&
       text.includes("status: 'unavailable'")
@@ -394,7 +396,7 @@ assertContains(
 
 assertContains(
   'frontend/src/components/SpotlightMediaFrame.tsx',
-  /video[.]readyState >= HTMLMediaElement[.]HAVE_CURRENT_DATA[^]*?imageRef[^]*?image[.]complete[^]*?image[.]naturalWidth > 0[^]*?props[.]onMediaReady/,
+  /video[.]readyState >= HTMLMediaElement[.]HAVE_CURRENT_DATA[^]*?imageRef[^]*?image[.]complete[^]*?image[.]naturalWidth > 0[^]*?onMediaReadyRef[.]current/,
   'Cached image and video readiness must still reach the Public Shop qualification and dwell gates.'
 );
 

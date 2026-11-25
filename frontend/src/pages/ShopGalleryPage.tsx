@@ -11,6 +11,7 @@ import OwnerOnlySurfaceNav from "../components/OwnerOnlySurfaceNav";
 import SocialTagShareButton from "../components/SocialTagShareButton";
 import SpotlightMediaFrame, {
   type SpotlightMediaReadyDetails,
+  type SpotlightPlaybackStateDetails,
 } from "../components/SpotlightMediaFrame";
 import { PrimaryButton, SecondaryButton, StableCtaLink, StableDisclosureSummary } from "../components/StableButton";
 import ExistingWorkflowPlusLink from '../components/ExistingWorkflowPlusLink';
@@ -74,6 +75,10 @@ import {
   publicShopSpotlightRotationMs,
   PUBLIC_SHOP_SPOTLIGHT_QUALIFYING_VISIBLE_MS,
 } from "../lib/spotlightPresentationPolicy";
+import {
+  spotlightPlaybackCanQualify,
+  spotlightPlaybackPausesDisplayClock,
+} from '../lib/spotlightPlaybackPolicy.js';
 
 const SPOTLIGHT_REFRESH_RETRY_DELAY_MS = 2000;
 const SPOTLIGHT_REFRESH_RETRY_LIMIT = 3;
@@ -118,6 +123,7 @@ type SpotlightMediaStatus =
       status: 'ready';
       kind: SpotlightMediaReadyDetails['kind'];
       durationSeconds: number | null;
+      fallbackFromVideo: boolean;
     }
   | { status: 'unavailable' };
 
@@ -2052,6 +2058,10 @@ export default function ShopGalleryPage() {
   const [miniSpotlightIndex, setMiniSpotlightIndex] = useState(0);
   const communitySpotlightsRef = useRef<ShopBroadcast[]>([]);
   const miniSpotlightIndexRef = useRef(0);
+  const spotlightLegacyOccurrenceIdsRef = useRef(
+    new WeakMap<ShopBroadcast, string>()
+  );
+  const spotlightLegacyOccurrenceSequenceRef = useRef(0);
   const spotlightPresentationGateRef = useRef<HTMLDetailsElement | null>(null);
   const spotlightPresentationAutoOpenedRef = useRef(false);
   const spotlightPresentationVisibleRef = useRef(false);
@@ -2086,6 +2096,11 @@ export default function ShopGalleryPage() {
   >({});
   const spotlightMediaStatusByKeyRef = useRef<
     Record<string, SpotlightMediaStatus>
+  >({});
+  const [spotlightPlaybackStatusByKey, setSpotlightPlaybackStatusByKey] =
+    useState<Record<string, SpotlightPlaybackStateDetails>>({});
+  const spotlightPlaybackStatusByKeyRef = useRef<
+    Record<string, SpotlightPlaybackStateDetails>
   >({});
   const [spotlightSoundEnabled, setSpotlightSoundEnabled] = useState(false);
   const galleryRevealFrameRef = useRef<number | null>(null);
@@ -3008,6 +3023,8 @@ export default function ShopGalleryPage() {
     communitySpotlightsRef.current = [];
     setSpotlightMediaStatusByKey({});
     spotlightMediaStatusByKeyRef.current = {};
+    setSpotlightPlaybackStatusByKey({});
+    spotlightPlaybackStatusByKeyRef.current = {};
     spotlightPresentationAutoOpenedRef.current = false;
     spotlightPresentationVisibleRef.current = false;
     setSpotlightPresentationActivated(false);
@@ -4116,7 +4133,8 @@ export default function ShopGalleryPage() {
           (status.status === 'unavailable' ||
             (previous.status === 'ready' &&
               previous.kind === status.kind &&
-              previous.durationSeconds === status.durationSeconds))
+              previous.durationSeconds === status.durationSeconds &&
+              previous.fallbackFromVideo === status.fallbackFromVideo))
         ) {
           return current;
         }
@@ -4131,6 +4149,34 @@ export default function ShopGalleryPage() {
   useEffect(() => {
     spotlightMediaStatusByKeyRef.current = spotlightMediaStatusByKey;
   }, [spotlightMediaStatusByKey]);
+
+  const reportSpotlightPlaybackStatus = useCallback(
+    (occurrenceKey: string, status: SpotlightPlaybackStateDetails) => {
+      if (!occurrenceKey || status.occurrenceId !== occurrenceKey) return;
+      spotlightPlaybackStatusByKeyRef.current = {
+        ...spotlightPlaybackStatusByKeyRef.current,
+        [occurrenceKey]: status,
+      };
+      setSpotlightPlaybackStatusByKey((current) => {
+        const previous = current[occurrenceKey];
+        if (
+          previous?.phase === status.phase &&
+          previous.retryCount === status.retryCount &&
+          previous.pauseReason === status.pauseReason &&
+          spotlightPlaybackCanQualify(previous) ===
+            spotlightPlaybackCanQualify(status)
+        ) {
+          return current;
+        }
+        return { ...current, [occurrenceKey]: status };
+      });
+    },
+    []
+  );
+
+  useEffect(() => {
+    spotlightPlaybackStatusByKeyRef.current = spotlightPlaybackStatusByKey;
+  }, [spotlightPlaybackStatusByKey]);
 
   const spotlightRotationMediaSettled =
     !spotlightHasRenderableMedia ||
@@ -4177,9 +4223,21 @@ export default function ShopGalleryPage() {
       miniSpotlight?.isCanonicalOpportunity &&
         !ownerSpotlightPreviewAuthorized
     );
-  const spotlightRotationActiveKey = firstMeaningful(
-    miniSpotlight?.opportunityPresentationId,
-    spotlightMediaKey
+  const spotlightRotationActiveKey = useMemo(
+    () => {
+      if (!miniSpotlight) return '';
+      const presentationId = firstMeaningful(
+        miniSpotlight.opportunityPresentationId
+      );
+      if (presentationId) return presentationId;
+      const existing = spotlightLegacyOccurrenceIdsRef.current.get(miniSpotlight);
+      if (existing) return existing;
+      spotlightLegacyOccurrenceSequenceRef.current += 1;
+      const occurrenceId = `${spotlightMediaKey}::legacy-occurrence-${spotlightLegacyOccurrenceSequenceRef.current}`;
+      spotlightLegacyOccurrenceIdsRef.current.set(miniSpotlight, occurrenceId);
+      return occurrenceId;
+    },
+    [miniSpotlight, spotlightMediaKey]
   );
 
   useEffect(() => {
@@ -4333,11 +4391,18 @@ export default function ShopGalleryPage() {
       const hidden =
         typeof document !== 'undefined' &&
         document.visibilityState !== 'visible';
+      const playbackStatus =
+        spotlightPlaybackStatusByKeyRef.current[spotlightRotationActiveKey];
+      const playbackStalled =
+        activeSpotlightMediaStatus?.status === 'ready' &&
+        activeSpotlightMediaStatus.kind === 'video' &&
+        (!playbackStatus || spotlightPlaybackPausesDisplayClock(playbackStatus));
       const paused =
         hidden ||
         !spotlightPresentationVisibleRef.current ||
         Date.now() < spotlightInteractionPausedUntilRef.current ||
-        spotlightHasKeyboardFocus;
+        spotlightHasKeyboardFocus ||
+        playbackStalled;
 
       if (!paused) {
         remainingVisibleMs -= Math.max(0, now - lastTickAt);
@@ -4453,6 +4518,8 @@ export default function ShopGalleryPage() {
   ]);
 
   useEffect(() => {
+    const qualifyingMediaStatus =
+      spotlightMediaStatusByKey[spotlightMediaKey];
     if (
       loading ||
       error ||
@@ -4461,7 +4528,8 @@ export default function ShopGalleryPage() {
       ownerSpotlightPreviewAuthorized ||
       !spotlightHasRenderableMedia ||
       !spotlightMediaKey ||
-      spotlightMediaStatusByKey[spotlightMediaKey]?.status !== 'ready'
+      qualifyingMediaStatus?.status !== 'ready' ||
+      qualifyingMediaStatus.fallbackFromVideo
     ) return;
     if (typeof window === "undefined") return;
     const activeSpotlight = miniSpotlight;
@@ -4622,6 +4690,25 @@ export default function ShopGalleryPage() {
         });
       }
 
+      const latestMediaStatus =
+        spotlightMediaStatusByKeyRef.current[spotlightMediaKey];
+      if (
+        latestMediaStatus?.status === 'ready' &&
+        latestMediaStatus.kind === 'video'
+      ) {
+        const playbackStatus =
+          spotlightPlaybackStatusByKeyRef.current[spotlightRotationActiveKey];
+        if (
+          !playbackStatus ||
+          !spotlightPlaybackCanQualify(playbackStatus)
+        ) {
+          visibleSince = 0;
+          qualificationTimer = window.setTimeout(evaluateQualification, 250);
+          spotlightQualificationTimerRef.current = qualificationTimer;
+          return;
+        }
+      }
+
       if (visibleSince <= 0) visibleSince = Date.now();
       const elapsed = Date.now() - visibleSince;
       const remaining = PUBLIC_SHOP_SPOTLIGHT_QUALIFYING_VISIBLE_MS - elapsed;
@@ -4713,6 +4800,7 @@ export default function ShopGalleryPage() {
     spotlightHasRenderableMedia,
     spotlightMediaKey,
     spotlightMediaStatusByKey,
+    spotlightRotationActiveKey,
     trackMarketplaceAttention,
   ]);
 
@@ -8299,19 +8387,23 @@ export default function ShopGalleryPage() {
                     preserveNaturalColor={true}
                     videoUrl={miniSpotlightView.videoUrl}
                     videoPoster={miniSpotlightView.imageUrl}
+                    occurrenceId={spotlightRotationActiveKey}
                     alt={miniSpotlightView.title}
-                    onMediaReady={(details) =>
+                    onMediaReady={(details) => {
+                      if (details.occurrenceId !== spotlightRotationActiveKey) return;
                       reportSpotlightMediaStatus(spotlightMediaKey, {
                         status: 'ready',
                         kind: details.kind,
                         durationSeconds: details.durationSeconds,
-                      })
-                    }
-                    onMediaUnavailable={() =>
+                        fallbackFromVideo: Boolean(details.fallbackFromVideo),
+                      });
+                    }}
+                    onMediaUnavailable={(details) => {
+                      if (details.occurrenceId !== spotlightRotationActiveKey) return;
                       reportSpotlightMediaStatus(spotlightMediaKey, {
                         status: 'unavailable',
-                      })
-                    }
+                      });
+                    }}
                     fallback={
                       <div
                         data-spotlight-media-unavailable='true'
@@ -8337,6 +8429,15 @@ export default function ShopGalleryPage() {
                     }
                     contentPadding={0}
                     showVideoControls={false}
+                    showPlaybackControl={Boolean(miniSpotlightView.videoUrl)}
+                    monitorPlayback={Boolean(miniSpotlightView.videoUrl)}
+                    presentationDurationMs={spotlightRotationDelayMs}
+                    onPlaybackStateChange={(details) =>
+                      reportSpotlightPlaybackStatus(
+                        spotlightRotationActiveKey,
+                        details
+                      )
+                    }
                     autoPlayVideo={
                       Boolean(miniSpotlightView.videoUrl) && !spotlightReducedMotion
                     }
@@ -8362,6 +8463,14 @@ export default function ShopGalleryPage() {
                       padding: 0,
                       fontSize: isCompact ? 14 : 18,
                       boxShadow: "0 10px 18px rgba(2, 12, 27, 0.22)",
+                    }}
+                    playbackControlStyle={{
+                      top: isCompact ? 12 : 'auto',
+                      right: isCompact ? 64 : 56,
+                      bottom: isCompact ? 'auto' : 10,
+                      width: isCompact ? 44 : 38,
+                      minWidth: isCompact ? 44 : 38,
+                      minHeight: isCompact ? 44 : 38,
                     }}
                     maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                     frameStyle={{
@@ -8399,6 +8508,9 @@ export default function ShopGalleryPage() {
                           status: 'ready',
                           kind: details.kind,
                           durationSeconds: details.durationSeconds,
+                          fallbackFromVideo: Boolean(
+                            details.fallbackFromVideo
+                          ),
                         })
                       }
                       onMediaUnavailable={() =>

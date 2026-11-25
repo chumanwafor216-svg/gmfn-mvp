@@ -32,6 +32,7 @@
     "audit:spotlight-presentation-contract": "node tools/audit-spotlight-presentation-contract.mjs",
     "audit:spotlight-premium-media": "node tools/audit-spotlight-premium-media.mjs",
     "test:spotlight-presentation-policy": "node tools/test-spotlight-presentation-policy.mjs",
+    "test:spotlight-playback-reliability": "node tools/test-spotlight-playback-reliability.mjs",
     "audit:action-surfaces": "node tools/audit-action-surface-contracts.mjs",
     "audit:marketplace-actions": "node tools/audit-marketplace-actions.mjs",
     "audit:marketplace-community-member-row": "node tools/audit-marketplace-community-member-row.mjs",

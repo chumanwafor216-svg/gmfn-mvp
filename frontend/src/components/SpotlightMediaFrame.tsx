@@ -1,6 +1,25 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { GsnLegacyIcon } from "./GsnLegacyIcon";
 import { SecondaryButton } from "./StableButton";
+
+import {
+  SPOTLIGHT_PLAYBACK_SAMPLE_MS,
+  beginSpotlightPlaybackRetry,
+  createSpotlightPlaybackTracker,
+  markSpotlightPlaybackBuffering,
+  markSpotlightPlaybackReady,
+  markSpotlightPlaybackTerminal,
+  sampleSpotlightPlayback,
+  type SpotlightPlaybackPauseReason,
+  type SpotlightPlaybackPhase,
+  type SpotlightPlaybackTracker,
+} from '../lib/spotlightPlaybackPolicy.js';
 
 type SpotlightMediaFrameProps = {
   imageUrl?: string | null;
@@ -27,16 +46,39 @@ type SpotlightMediaFrameProps = {
   audioUnlockOffLabel?: string;
   audioUnlockErrorLabel?: string;
   audioUnlockStyle?: React.CSSProperties;
+  showPlaybackControl?: boolean;
+  playbackControlStyle?: React.CSSProperties;
   audioEnabled?: boolean;
   onAudioEnabledChange?: (enabled: boolean) => void;
   preserveVideoElement?: boolean;
+  monitorPlayback?: boolean;
+  occurrenceId?: string;
+  presentationDurationMs?: number | null;
   onMediaReady?: (details: SpotlightMediaReadyDetails) => void;
-  onMediaUnavailable?: () => void;
+  onMediaUnavailable?: (details: SpotlightMediaUnavailableDetails) => void;
+  onPlaybackStateChange?: (details: SpotlightPlaybackStateDetails) => void;
 };
 
 export type SpotlightMediaReadyDetails = {
+  occurrenceId: string;
   kind: 'image' | 'video';
   durationSeconds: number | null;
+  fallbackFromVideo?: boolean;
+};
+
+export type SpotlightMediaUnavailableDetails = {
+  occurrenceId: string;
+};
+
+export type SpotlightPlaybackStateDetails = {
+  occurrenceId: string;
+  phase: SpotlightPlaybackPhase;
+  progressMs: number;
+  retryCount: number;
+  pauseReason: SpotlightPlaybackPauseReason;
+  bufferedAheadSeconds: number;
+  droppedFrames: number | null;
+  totalFrames: number | null;
 };
 
 function safeStr(value: unknown): string {
@@ -49,6 +91,13 @@ function uniqueMediaValues(values: Array<string | null | undefined>): string[] {
 
 const IMAGE_AUTO_RETRY_LIMIT = 2;
 
+function playbackNowMs(): number {
+  return typeof performance !== 'undefined' &&
+    typeof performance.now === 'function'
+    ? performance.now()
+    : Date.now();
+}
+
 export default function SpotlightMediaFrame(
   props: SpotlightMediaFrameProps
 ) {
@@ -60,34 +109,94 @@ export default function SpotlightMediaFrame(
     () => imageCandidates.join("|"),
     [imageCandidates]
   );
+  const videoSrc = safeStr(props.videoUrl);
+  const playbackOccurrenceId =
+    safeStr(props.occurrenceId) ||
+    `media:${imageCandidateKey}|${videoSrc}`;
+  const occurrenceGeneration = useMemo(
+    () => ({ occurrenceId: playbackOccurrenceId, videoSrc }),
+    [playbackOccurrenceId, videoSrc]
+  );
 
   const [imageIndex, setImageIndex] = useState(0);
   const [videoFailed, setVideoFailed] = useState(false);
+  const [videoPosterFailed, setVideoPosterFailed] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [imageRetryCount, setImageRetryCount] = useState(0);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [manualPaused, setManualPaused] = useState(false);
   const [audioError, setAudioError] = useState("");
   const imageRef = useRef<HTMLImageElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const retainedVideoSrcRef = useRef("");
   const lastAudioToggleRef = useRef(0);
+  const manualPausedRef = useRef(false);
+  const userPlaybackRequestedRef = useRef(false);
+  const gestureBlockedRef = useRef(false);
+  const retryResumeTimeRef = useRef<number | null>(null);
+  const retryPlayRequestedRef = useRef(false);
+  const activeOccurrenceGenerationRef = useRef(occurrenceGeneration);
+  const playRequestRef = useRef<{
+    generation: typeof occurrenceGeneration;
+    requestId: number;
+  } | null>(null);
+  const playRequestSequenceRef = useRef(0);
+  const playbackTrackerRef = useRef<SpotlightPlaybackTracker>(
+    createSpotlightPlaybackTracker(playbackNowMs(), playbackOccurrenceId)
+  );
+  const playbackReportSignatureRef = useRef('');
   const mediaReportRef = useRef<'pending' | 'ready' | 'unavailable'>(
     'pending'
   );
+  const onMediaReadyRef = useRef(props.onMediaReady);
+  const onMediaUnavailableRef = useRef(props.onMediaUnavailable);
+  const onPlaybackStateChangeRef = useRef(props.onPlaybackStateChange);
+  onMediaReadyRef.current = props.onMediaReady;
+  onMediaUnavailableRef.current = props.onMediaUnavailable;
+  onPlaybackStateChangeRef.current = props.onPlaybackStateChange;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    activeOccurrenceGenerationRef.current = occurrenceGeneration;
+    playRequestRef.current = null;
     mediaReportRef.current = 'pending';
     setImageIndex(0);
     setVideoFailed(false);
+    setVideoPosterFailed(false);
     setImageFailed(false);
     setImageRetryCount(0);
+    setVideoPlaying(false);
+    setManualPaused(false);
+    manualPausedRef.current = false;
+    userPlaybackRequestedRef.current = false;
+    gestureBlockedRef.current = false;
+    retryResumeTimeRef.current = null;
+    retryPlayRequestedRef.current = false;
+    playbackTrackerRef.current = createSpotlightPlaybackTracker(
+      playbackNowMs(),
+      playbackOccurrenceId
+    );
+    playbackReportSignatureRef.current = '';
     setAudioUnlocked(false);
     setAudioError("");
-  }, [imageCandidateKey, props.videoUrl]);
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      if (Number.isFinite(video.currentTime) && video.currentTime > 0) {
+        try {
+          video.currentTime = 0;
+        } catch {
+          retryResumeTimeRef.current = null;
+        }
+      }
+    }
+  }, [occurrenceGeneration, playbackOccurrenceId]);
 
   useEffect(() => {
     const hasVideo = Boolean(safeStr(props.videoUrl));
-    const hasImage = imageCandidates.length > 0;
+    const hasImage =
+      imageCandidates.length > 0 ||
+      (Boolean(safeStr(props.videoPoster)) && !videoPosterFailed);
     const videoUnavailable = !hasVideo || videoFailed;
     const imageUnavailable =
       !hasImage ||
@@ -96,18 +205,22 @@ export default function SpotlightMediaFrame(
     if (
       videoUnavailable &&
       imageUnavailable &&
-      mediaReportRef.current === 'pending'
+      mediaReportRef.current === 'pending' &&
+      activeOccurrenceGenerationRef.current === occurrenceGeneration
     ) {
       mediaReportRef.current = 'unavailable';
-      props.onMediaUnavailable?.();
+      onMediaUnavailableRef.current?.({ occurrenceId: playbackOccurrenceId });
     }
   }, [
     imageCandidates.length,
     imageFailed,
     imageRetryCount,
-    props.onMediaUnavailable,
+    occurrenceGeneration,
+    playbackOccurrenceId,
+    props.videoPoster,
     props.videoUrl,
     videoFailed,
+    videoPosterFailed,
   ]);
 
   useEffect(() => {
@@ -143,7 +256,10 @@ export default function SpotlightMediaFrame(
       setImageRetryCount(0);
       setImageIndex(0);
       setImageFailed(false);
-      setVideoFailed(false);
+      setVideoPosterFailed(false);
+      if (!props.monitorPlayback) {
+        setVideoFailed(false);
+      }
     }
 
     window.addEventListener("online", retryFailedMedia);
@@ -151,11 +267,18 @@ export default function SpotlightMediaFrame(
     return () => {
       window.removeEventListener("online", retryFailedMedia);
     };
-  }, [imageCandidateKey, imageCandidates.length, imageFailed, videoFailed]);
+  }, [
+    imageCandidateKey,
+    imageCandidates.length,
+    imageFailed,
+    props.monitorPlayback,
+    videoFailed,
+    videoPosterFailed,
+  ]);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !isCurrentOccurrenceVideo(video, occurrenceGeneration)) return;
 
     const shouldMute =
       props.audioEnabled === undefined
@@ -166,50 +289,28 @@ export default function SpotlightMediaFrame(
     if (!shouldMute) {
       video.volume = 1;
     }
-    setAudioUnlocked(false);
-    setAudioError("");
-
-    if (!(props.autoPlayVideo ?? false)) {
-      video.pause();
-      return;
-    }
-
-    // A preloaded Spotlight video can be promoted without remounting. Start it
-    // explicitly when autoplay changes from false to true; changing the DOM
-    // autoplay attribute alone is not reliable on mobile Safari.
-    if (shouldMute) {
-      video.currentTime = 0;
-      void video.play().catch(() => undefined);
-      return;
-    }
-
-    if (!shouldMute && (props.autoPlayVideo ?? false)) {
-      video.currentTime = 0;
-      void video
-        .play()
-        .then(() => {
-          video.muted = false;
-          video.defaultMuted = false;
-          video.volume = 1;
-          setAudioUnlocked(true);
-          setAudioError("");
-        })
-        .catch(() => {
-          video.muted = true;
-          video.defaultMuted = true;
-          setAudioUnlocked(false);
-          setAudioError("Tap for sound");
-        });
-    }
+    setAudioUnlocked(!shouldMute);
   }, [
     props.audioEnabled,
-    props.autoPlayVideo,
     props.mutedVideo,
-    props.videoUrl,
+    occurrenceGeneration,
   ]);
 
-  const imageSrc = imageCandidates[imageIndex] || "";
-  const videoSrc = safeStr(props.videoUrl);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isCurrentOccurrenceVideo(video, occurrenceGeneration)) return;
+    if (!(props.autoPlayVideo ?? false)) {
+      if (!userPlaybackRequestedRef.current) video.pause();
+      return;
+    }
+    requestVideoPlayback(video, occurrenceGeneration, 'autoplay');
+  }, [occurrenceGeneration, props.autoPlayVideo]);
+
+  const candidateImageSrc = imageCandidates[imageIndex] || '';
+  const imageSrc =
+    videoFailed && !videoPosterFailed
+      ? safeStr(props.videoPoster) || candidateImageSrc
+      : candidateImageSrc;
   useEffect(() => {
     if (videoSrc) retainedVideoSrcRef.current = videoSrc;
   }, [videoSrc]);
@@ -218,6 +319,10 @@ export default function SpotlightMediaFrame(
   const shouldShowAudioUnlock =
     Boolean(videoSrc) &&
     Boolean(props.showAudioUnlock);
+  const shouldShowPlaybackControl =
+    Boolean(videoSrc) &&
+    !videoFailed &&
+    Boolean(props.showPlaybackControl);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -231,7 +336,7 @@ export default function SpotlightMediaFrame(
       reportMediaReady({
         kind: 'video',
         durationSeconds: readableVideoDurationSeconds(video),
-      });
+      }, occurrenceGeneration, video);
       return;
     }
 
@@ -243,9 +348,13 @@ export default function SpotlightMediaFrame(
       image.naturalWidth > 0 &&
       mediaReportRef.current === 'pending'
     ) {
-      reportMediaReady({ kind: 'image', durationSeconds: null });
+      reportMediaReady({
+        kind: 'image',
+        durationSeconds: null,
+        fallbackFromVideo: videoFailed,
+      });
     }
-  }, [imageSrc, props.onMediaReady, videoFailed, videoSrc]);
+  }, [imageSrc, occurrenceGeneration, videoFailed, videoSrc]);
 
   function stopMediaControlEvent(event?: React.SyntheticEvent) {
     event?.preventDefault();
@@ -259,10 +368,354 @@ export default function SpotlightMediaFrame(
       : null;
   }
 
-  function reportMediaReady(details: SpotlightMediaReadyDetails) {
+  function resolvedSourceMatches(
+    currentSource: string,
+    expectedSource: string
+  ): boolean {
+    if (!currentSource || !expectedSource) return currentSource === expectedSource;
+    try {
+      return currentSource === new URL(expectedSource, document.baseURI).href;
+    } catch {
+      return currentSource === expectedSource;
+    }
+  }
+
+  function sourceMatchesOccurrence(
+    video: HTMLVideoElement,
+    generation: typeof occurrenceGeneration
+  ): boolean {
+    if (!generation.videoSrc) return true;
+    const currentSource = safeStr(video.currentSrc);
+    return currentSource
+      ? resolvedSourceMatches(currentSource, generation.videoSrc)
+      : safeStr(video.getAttribute('src')) === generation.videoSrc;
+  }
+
+  function isCurrentOccurrenceVideo(
+    video: HTMLVideoElement,
+    generation: typeof occurrenceGeneration
+  ): boolean {
+    return (
+      activeOccurrenceGenerationRef.current === generation &&
+      videoRef.current === video &&
+      sourceMatchesOccurrence(video, generation)
+    );
+  }
+
+  function isCurrentOccurrenceImage(
+    image: HTMLImageElement,
+    generation: typeof occurrenceGeneration,
+    expectedSource: string
+  ): boolean {
+    const currentSource = safeStr(image.currentSrc || image.src);
+    return (
+      activeOccurrenceGenerationRef.current === generation &&
+      imageRef.current === image &&
+      resolvedSourceMatches(currentSource, expectedSource)
+    );
+  }
+
+  function reportMediaReady(
+    details: Omit<SpotlightMediaReadyDetails, 'occurrenceId'>,
+    generation = occurrenceGeneration,
+    video?: HTMLVideoElement
+  ) {
+    if (activeOccurrenceGenerationRef.current !== generation) return;
+    if (video && !isCurrentOccurrenceVideo(video, generation)) return;
+    if (
+      details.kind === 'video' &&
+      ['fallback', 'unavailable'].includes(playbackTrackerRef.current.phase)
+    ) return;
     if (mediaReportRef.current === 'ready') return;
     mediaReportRef.current = 'ready';
-    props.onMediaReady?.(details);
+    onMediaReadyRef.current?.({
+      ...details,
+      occurrenceId: generation.occurrenceId,
+    });
+    if (details.kind === 'video') {
+      reportPlaybackTracker(
+        markSpotlightPlaybackReady(
+          playbackTrackerRef.current,
+          playbackNowMs(),
+          generation.occurrenceId
+        ),
+        generation
+      );
+    }
+  }
+
+  function playbackBufferAheadSeconds(video: HTMLVideoElement): number {
+    for (let index = 0; index < video.buffered.length; index += 1) {
+      if (
+        video.currentTime >= video.buffered.start(index) &&
+        video.currentTime <= video.buffered.end(index)
+      ) {
+        return Math.max(0, video.buffered.end(index) - video.currentTime);
+      }
+    }
+    return 0;
+  }
+
+  function reportPlaybackTracker(
+    nextTracker: SpotlightPlaybackTracker,
+    generation = occurrenceGeneration
+  ) {
+    if (
+      activeOccurrenceGenerationRef.current !== generation ||
+      nextTracker.occurrenceId !== generation.occurrenceId
+    ) {
+      return;
+    }
+    playbackTrackerRef.current = nextTracker;
+    const progressBucket = Math.floor(nextTracker.progressMs / 1000);
+    const signature = [
+      nextTracker.phase,
+      progressBucket,
+      nextTracker.retryCount,
+      nextTracker.pauseReason || '',
+    ].join('|');
+    if (playbackReportSignatureRef.current === signature) return;
+    playbackReportSignatureRef.current = signature;
+
+    const video = videoRef.current;
+    const quality =
+      video && typeof video.getVideoPlaybackQuality === 'function'
+        ? video.getVideoPlaybackQuality()
+        : null;
+    onPlaybackStateChangeRef.current?.({
+      occurrenceId: generation.occurrenceId,
+      phase: nextTracker.phase,
+      progressMs: nextTracker.progressMs,
+      retryCount: nextTracker.retryCount,
+      pauseReason: nextTracker.pauseReason,
+      bufferedAheadSeconds: video ? playbackBufferAheadSeconds(video) : 0,
+      droppedFrames: quality ? quality.droppedVideoFrames : null,
+      totalFrames: quality ? quality.totalVideoFrames : null,
+    });
+  }
+
+  function requestVideoPlayback(
+    video: HTMLVideoElement,
+    generation: typeof occurrenceGeneration,
+    reason: 'autoplay' | 'manual' | 'recovery' | 'loop'
+  ) {
+    if (!isCurrentOccurrenceVideo(video, generation)) return;
+    if (['fallback', 'unavailable'].includes(playbackTrackerRef.current.phase)) {
+      return;
+    }
+    if (manualPausedRef.current && reason !== 'manual') return;
+    if (typeof document !== 'undefined' && document.hidden && reason !== 'manual') {
+      return;
+    }
+    if (!video.paused && !video.ended) {
+      gestureBlockedRef.current = false;
+      setVideoPlaying(true);
+      return;
+    }
+    if (playRequestRef.current?.generation === generation) return;
+
+    const requestId = ++playRequestSequenceRef.current;
+    playRequestRef.current = { generation, requestId };
+    void video.play().then(
+      () => {
+        if (
+          !isCurrentOccurrenceVideo(video, generation) ||
+          playRequestRef.current?.requestId !== requestId
+        ) {
+          return;
+        }
+        playRequestRef.current = null;
+        gestureBlockedRef.current = false;
+        setVideoPlaying(true);
+        if (!video.muted && video.volume > 0) {
+          setAudioUnlocked(true);
+          setAudioError('');
+        }
+      },
+      () => {
+        if (
+          !isCurrentOccurrenceVideo(video, generation) ||
+          playRequestRef.current?.requestId !== requestId
+        ) {
+          return;
+        }
+        playRequestRef.current = null;
+        gestureBlockedRef.current = true;
+        setVideoPlaying(false);
+        setAudioError('Tap Play');
+        reportPlaybackTracker(
+          {
+            ...playbackTrackerRef.current,
+            phase: 'paused',
+            pauseReason: 'gesture-blocked',
+          },
+          generation
+        );
+      }
+    );
+  }
+
+  function failVideoToFallback(generation = occurrenceGeneration) {
+    if (activeOccurrenceGenerationRef.current !== generation) return;
+    playRequestRef.current = null;
+    playRequestSequenceRef.current += 1;
+    videoRef.current?.pause();
+    const hasPermittedFallback =
+      imageCandidates.length > 0 || Boolean(safeStr(props.videoPoster));
+    mediaReportRef.current = 'pending';
+    reportPlaybackTracker(
+      markSpotlightPlaybackTerminal(
+        playbackTrackerRef.current,
+        hasPermittedFallback ? 'fallback' : 'unavailable',
+        playbackNowMs(),
+        generation.occurrenceId
+      ),
+      generation
+    );
+    setVideoPlaying(false);
+    setVideoFailed(true);
+  }
+
+  function attemptVideoRecovery(generation = occurrenceGeneration) {
+    const video = videoRef.current;
+    if (
+      !video ||
+      !isCurrentOccurrenceVideo(video, generation) ||
+      playbackTrackerRef.current.retryCount >= 1
+    ) return;
+
+    retryResumeTimeRef.current = Number.isFinite(video.currentTime)
+      ? video.currentTime
+      : 0;
+    const retryTracker = beginSpotlightPlaybackRetry(
+      playbackTrackerRef.current,
+      generation.occurrenceId
+    );
+    retryPlayRequestedRef.current = false;
+    playRequestRef.current = null;
+    reportPlaybackTracker(retryTracker, generation);
+    video.pause();
+    video.load();
+  }
+
+  function pauseReasonForVideo(
+    video: HTMLVideoElement
+  ): SpotlightPlaybackPauseReason {
+    if (typeof document !== 'undefined' && document.hidden) {
+      return 'background';
+    }
+    if (manualPausedRef.current) return 'manual';
+    if (gestureBlockedRef.current) return 'gesture-blocked';
+
+    const playbackRequested =
+      Boolean(props.autoPlayVideo) ||
+      userPlaybackRequestedRef.current ||
+      playbackTrackerRef.current.phase === 'retrying';
+    if (!playbackRequested) return 'reduced-motion';
+    return null;
+  }
+
+  useEffect(() => {
+    if (
+      !props.monitorPlayback ||
+      !videoSrc ||
+      videoFailed ||
+      typeof window === 'undefined'
+    ) {
+      return;
+    }
+
+    function samplePlayback() {
+      const video = videoRef.current;
+      if (!video || !isCurrentOccurrenceVideo(video, occurrenceGeneration)) {
+        return;
+      }
+      const tracker = playbackTrackerRef.current;
+
+      const pauseReason = pauseReasonForVideo(video);
+      const result = sampleSpotlightPlayback(tracker, {
+        occurrenceId: occurrenceGeneration.occurrenceId,
+        nowMs: playbackNowMs(),
+        mediaTimeSeconds: video.currentTime,
+        durationSeconds: readableVideoDurationSeconds(video),
+        presentationDurationMs: props.presentationDurationMs,
+        expectedToProgress: pauseReason === null,
+        pauseReason,
+      });
+      if (result.ignored) return;
+      reportPlaybackTracker(result.tracker, occurrenceGeneration);
+      if (result.action === 'retry') {
+        attemptVideoRecovery(occurrenceGeneration);
+      } else if (result.action === 'fail') {
+        failVideoToFallback(occurrenceGeneration);
+      }
+    }
+
+    samplePlayback();
+    const interval = window.setInterval(
+      samplePlayback,
+      SPOTLIGHT_PLAYBACK_SAMPLE_MS
+    );
+    return () => window.clearInterval(interval);
+  }, [
+    props.autoPlayVideo,
+    props.monitorPlayback,
+    props.presentationDurationMs,
+    occurrenceGeneration,
+    videoFailed,
+    videoSrc,
+  ]);
+
+  function togglePlayback(event?: React.SyntheticEvent) {
+    stopMediaControlEvent(event);
+    const video = videoRef.current;
+    if (!video || !isCurrentOccurrenceVideo(video, occurrenceGeneration)) return;
+
+    if (!video.paused && !manualPausedRef.current) {
+      playRequestRef.current = null;
+      playRequestSequenceRef.current += 1;
+      manualPausedRef.current = true;
+      setManualPaused(true);
+      setVideoPlaying(false);
+      video.pause();
+      return;
+    }
+
+    manualPausedRef.current = false;
+    userPlaybackRequestedRef.current = true;
+    gestureBlockedRef.current = false;
+    setManualPaused(false);
+    requestVideoPlayback(video, occurrenceGeneration, 'manual');
+  }
+
+  function resumeRecoveredVideo(
+    video: HTMLVideoElement,
+    generation = occurrenceGeneration
+  ) {
+    if (
+      !isCurrentOccurrenceVideo(video, generation) ||
+      playbackTrackerRef.current.phase !== 'retrying' ||
+      retryPlayRequestedRef.current
+    ) return;
+    const resumeTime = retryResumeTimeRef.current;
+    if (
+      resumeTime !== null &&
+      Number.isFinite(resumeTime) &&
+      Number.isFinite(video.duration) &&
+      video.duration > 0
+    ) {
+      video.currentTime = Math.min(resumeTime, Math.max(0, video.duration - 0.1));
+    }
+    retryResumeTimeRef.current = null;
+
+    if (
+      manualPausedRef.current ||
+      (typeof document !== 'undefined' && document.hidden)
+    ) {
+      return;
+    }
+    retryPlayRequestedRef.current = true;
+    requestVideoPlayback(video, generation, 'recovery');
   }
 
   function toggleAudio(event?: React.SyntheticEvent) {
@@ -273,7 +726,7 @@ export default function SpotlightMediaFrame(
     lastAudioToggleRef.current = now;
 
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !isCurrentOccurrenceVideo(video, occurrenceGeneration)) return;
 
     if (audioUnlocked) {
       video.muted = true;
@@ -289,22 +742,8 @@ export default function SpotlightMediaFrame(
     video.defaultMuted = false;
     video.volume = 1;
     setAudioError("");
-    void video
-      .play()
-      .then(() => {
-        video.muted = false;
-        video.defaultMuted = false;
-        video.volume = 1;
-        setAudioUnlocked(true);
-        setAudioError("");
-        props.onAudioEnabledChange?.(true);
-      })
-      .catch(() => {
-        video.muted = true;
-        video.defaultMuted = true;
-        setAudioUnlocked(false);
-        setAudioError("Tap play, then Sound on");
-      });
+    setAudioUnlocked(true);
+    props.onAudioEnabledChange?.(true);
   }
 
   const frameStyle: React.CSSProperties = {
@@ -509,6 +948,50 @@ export default function SpotlightMediaFrame(
     </SecondaryButton>
   ) : null;
 
+  const playbackControlButton = shouldShowPlaybackControl ? (
+    <SecondaryButton
+      data-media-control='true'
+      data-spotlight-playback-control='true'
+      onClick={togglePlayback}
+      stableHeight={52}
+      debugId='spotlight-media-frame.toggle-playback'
+      style={{
+        position: 'absolute',
+        right: shouldShowAudioUnlock ? 66 : 14,
+        top: 14,
+        zIndex: 4,
+        width: 44,
+        minWidth: 44,
+        minHeight: 44,
+        padding: 0,
+        borderRadius: 999,
+        border: '1px solid rgba(226, 192, 106, 0.38)',
+        background: 'rgba(255, 255, 255, 0.94)',
+        color: '#071827',
+        fontSize: 20,
+        fontWeight: 900,
+        lineHeight: 1,
+        boxShadow:
+          '0 14px 28px rgba(2, 12, 27, 0.18), inset 0 1px 0 rgba(255,255,255,0.96)',
+        cursor: 'pointer',
+        touchAction: 'manipulation',
+        display: 'inline-grid',
+        placeItems: 'center',
+        ...props.playbackControlStyle,
+      }}
+      title={videoPlaying && !manualPaused ? 'Pause video' : 'Play video'}
+      aria-label={
+        videoPlaying && !manualPaused ? 'Pause video' : 'Play video'
+      }
+    >
+      <span aria-hidden='true' style={{ fontSize: 0 }}>
+        <span style={{ fontSize: 16 }}>
+          {videoPlaying && !manualPaused ? 'II' : '\u25B6'}
+        </span>
+      </span>
+    </SecondaryButton>
+  ) : null;
+
   const videoIsVisible = Boolean(videoSrc && !videoFailed);
   const retainedVideoSrc =
     videoSrc ||
@@ -529,28 +1012,64 @@ export default function SpotlightMediaFrame(
       loop={videoIsVisible && (props.loopVideo ?? false)}
       playsInline
       preload={props.preloadVideo || 'metadata'}
-      onError={() => {
-        if (videoSrc) setVideoFailed(true);
+      onError={(event) => {
+        const video = event.currentTarget;
+        if (!videoSrc || !isCurrentOccurrenceVideo(video, occurrenceGeneration)) {
+          return;
+        }
+        if (props.monitorPlayback && playbackTrackerRef.current.retryCount < 1) {
+          attemptVideoRecovery(occurrenceGeneration);
+          return;
+        }
+        failVideoToFallback(occurrenceGeneration);
       }}
       onLoadedData={(event) => {
-        if (videoIsVisible) {
+        if (
+          videoIsVisible &&
+          isCurrentOccurrenceVideo(event.currentTarget, occurrenceGeneration)
+        ) {
           reportMediaReady({
             kind: 'video',
             durationSeconds: readableVideoDurationSeconds(event.currentTarget),
-          });
+          }, occurrenceGeneration, event.currentTarget);
         }
       }}
       onCanPlay={(event) => {
-        if (videoIsVisible) {
+        if (
+          videoIsVisible &&
+          isCurrentOccurrenceVideo(event.currentTarget, occurrenceGeneration)
+        ) {
           reportMediaReady({
             kind: 'video',
             durationSeconds: readableVideoDurationSeconds(event.currentTarget),
-          });
+          }, occurrenceGeneration, event.currentTarget);
+          resumeRecoveredVideo(event.currentTarget, occurrenceGeneration);
+          if (props.autoPlayVideo ?? false) {
+            requestVideoPlayback(
+              event.currentTarget,
+              occurrenceGeneration,
+              'autoplay'
+            );
+          }
         }
       }}
       onLoadedMetadata={(event) => {
-        if (!videoIsVisible) return;
+        if (
+          !videoIsVisible ||
+          !isCurrentOccurrenceVideo(event.currentTarget, occurrenceGeneration)
+        ) return;
         const video = event.currentTarget;
+        const resumeTime = retryResumeTimeRef.current;
+        if (
+          resumeTime !== null &&
+          Number.isFinite(video.duration) &&
+          video.duration > 0
+        ) {
+          video.currentTime = Math.min(
+            resumeTime,
+            Math.max(0, video.duration - 0.1)
+          );
+        }
         const shouldMute =
           props.audioEnabled === undefined
             ? props.mutedVideo ?? false
@@ -559,30 +1078,97 @@ export default function SpotlightMediaFrame(
         video.defaultMuted = shouldMute;
         if (!shouldMute) {
           video.volume = 1;
-          void video
-            .play()
-            .then(() => {
-              setAudioUnlocked(true);
-              setAudioError("");
-            })
-            .catch(() => {
-              video.muted = true;
-              video.defaultMuted = true;
-              setAudioUnlocked(false);
-              setAudioError("Tap for sound");
-            });
-          return;
         }
-        setAudioUnlocked(false);
+        setAudioUnlocked(!shouldMute);
       }}
       onPlay={(event) => {
         const video = event.currentTarget;
+        if (!isCurrentOccurrenceVideo(video, occurrenceGeneration)) return;
+        const playbackExpected =
+          Boolean(props.autoPlayVideo) ||
+          userPlaybackRequestedRef.current ||
+          playbackTrackerRef.current.phase === 'retrying';
+        if (manualPausedRef.current || !playbackExpected) {
+          video.pause();
+          return;
+        }
+        gestureBlockedRef.current = false;
+        setVideoPlaying(true);
         if (videoIsVisible && !video.muted && video.volume > 0) {
           setAudioUnlocked(true);
         }
       }}
+      onPlaying={(event) => {
+        if (!isCurrentOccurrenceVideo(event.currentTarget, occurrenceGeneration)) {
+          return;
+        }
+        gestureBlockedRef.current = false;
+        setVideoPlaying(true);
+        reportPlaybackTracker(
+          {
+            ...playbackTrackerRef.current,
+            phase: 'playing',
+            pauseReason: null,
+          },
+          occurrenceGeneration
+        );
+      }}
+      onPause={(event) => {
+        if (!isCurrentOccurrenceVideo(event.currentTarget, occurrenceGeneration)) {
+          return;
+        }
+        setVideoPlaying(false);
+      }}
+      onWaiting={(event) => {
+        if (
+          props.monitorPlayback &&
+          isCurrentOccurrenceVideo(event.currentTarget, occurrenceGeneration) &&
+          pauseReasonForVideo(event.currentTarget) === null
+        ) {
+          reportPlaybackTracker(
+            markSpotlightPlaybackBuffering(
+              playbackTrackerRef.current,
+              occurrenceGeneration.occurrenceId
+            ),
+            occurrenceGeneration
+          );
+        }
+      }}
+      onStalled={(event) => {
+        if (
+          props.monitorPlayback &&
+          isCurrentOccurrenceVideo(event.currentTarget, occurrenceGeneration) &&
+          pauseReasonForVideo(event.currentTarget) === null
+        ) {
+          reportPlaybackTracker(
+            markSpotlightPlaybackBuffering(
+              playbackTrackerRef.current,
+              occurrenceGeneration.occurrenceId
+            ),
+            occurrenceGeneration
+          );
+        }
+      }}
+      onEnded={(event) => {
+        if (!isCurrentOccurrenceVideo(event.currentTarget, occurrenceGeneration)) {
+          return;
+        }
+        setVideoPlaying(false);
+        if (!(props.loopVideo ?? false)) {
+          reportPlaybackTracker(
+            markSpotlightPlaybackTerminal(
+              playbackTrackerRef.current,
+              'completed',
+              playbackNowMs(),
+              occurrenceGeneration.occurrenceId
+            ),
+            occurrenceGeneration
+          );
+        }
+      }}
       onVolumeChange={(event) => {
         const video = event.currentTarget;
+        if (!isCurrentOccurrenceVideo(video, occurrenceGeneration)) return;
         if (
           videoIsVisible &&
           !video.muted &&
@@ -602,11 +1188,12 @@ export default function SpotlightMediaFrame(
         }
 
         const video = event.currentTarget;
+        if (!isCurrentOccurrenceVideo(video, occurrenceGeneration)) return;
         if (video.currentTime < maxVideoSeconds) return;
 
         if (props.loopVideo ?? false) {
           video.currentTime = 0;
-          void video.play().catch(() => undefined);
+          requestVideoPlayback(video, occurrenceGeneration, 'loop');
           return;
         }
 
@@ -625,15 +1212,41 @@ export default function SpotlightMediaFrame(
       decoding="async"
       fetchPriority={props.imageFetchPriority || 'auto'}
       sizes={props.imageSizes}
-      onLoad={() => {
+      onLoad={(event) => {
+        if (
+          !isCurrentOccurrenceImage(
+            event.currentTarget,
+            occurrenceGeneration,
+            imageSrc
+          )
+        ) return;
         // A cover is not the effective medium while its video is pending.
         // It becomes the governed image only when there is no video or the
         // video has failed.
         if (!videoSrc || videoFailed) {
-          reportMediaReady({ kind: 'image', durationSeconds: null });
+          reportMediaReady({
+            kind: 'image',
+            durationSeconds: null,
+            fallbackFromVideo: videoFailed,
+          });
         }
       }}
-      onError={() => {
+      onError={(event) => {
+        if (
+          !isCurrentOccurrenceImage(
+            event.currentTarget,
+            occurrenceGeneration,
+            imageSrc
+          )
+        ) return;
+        if (
+          videoFailed &&
+          !videoPosterFailed &&
+          safeStr(props.videoPoster) === imageSrc
+        ) {
+          setVideoPosterFailed(true);
+          return;
+        }
         setImageIndex((prev) => {
           const next = prev + 1;
           if (next < imageCandidates.length) {
@@ -659,6 +1272,7 @@ export default function SpotlightMediaFrame(
             : null}
         </div>
         {audioUnlockButton}
+        {playbackControlButton}
         {fallbackNotice}
       </div>
     );
@@ -672,6 +1286,7 @@ export default function SpotlightMediaFrame(
           {videoMediaElement}
         </div>
         {audioUnlockButton}
+        {playbackControlButton}
       </div>
     );
   }
