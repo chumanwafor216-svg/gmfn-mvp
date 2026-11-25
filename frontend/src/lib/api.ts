@@ -7079,6 +7079,15 @@ export async function getPublicMarketplaceShopByGmfnId(
   );
 }
 
+export async function listSavedMarketplaceProducts(): Promise<any> {
+  return httpJson(
+    "/marketplace/products/saved",
+    "GET",
+    undefined,
+    { header_clan_id: null }
+  );
+}
+
 
 export async function saveMarketplaceProduct(productId: number): Promise<any> {
   return httpJson(

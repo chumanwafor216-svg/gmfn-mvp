@@ -209,6 +209,12 @@ assertContains(
   /Who can provide something[\s\S]*?Browse eligible shops and service providers in this community[\s\S]*?debugId="marketplace\.job\.find-people-services"[\s\S]*?openMarketplaceSection\(event, "members", "marketplace-members-shops"\)[\s\S]*?Open directory/,
   "Marketplace front must expose one neutral entry into the authorised Shops & Services directory."
 );
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /listSavedMarketplaceProducts[\s\S]*?normalizeSavedMarketplaceProduct[\s\S]*?visibilityMode === "vault_private"[\s\S]*?data-marketplace-saved-products="true"[\s\S]*?data-marketplace-saved-products-list="true"[\s\S]*?Private to you\.[\s\S]*?savedMarketplaceProductPath\(product\)/,
+  "Marketplace Shops and Services must offer compact private saved-product retrieval without exposing Vault products or creating another page."
+);
 
 assertContains(
   marketplaceFile,

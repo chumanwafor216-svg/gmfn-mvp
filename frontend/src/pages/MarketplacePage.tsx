@@ -64,6 +64,7 @@ import {
   getLoanGuarantorSuggestions,
   getLoanSummary,
   getMarketplaceProducts,
+  listSavedMarketplaceProducts,
   getMarketplaceShopDirectory,
   listMarketplaceListingReviewQueue,
   getProtectedTrade,
@@ -303,6 +304,16 @@ type MarketplaceDirectoryProduct = {
   videoUrl: string;
   visibilityMode: string;
   createdAt: string;
+};
+
+type SavedMarketplaceProduct = {
+  id: number;
+  sellerGmfnId: string;
+  title: string;
+  shopName: string;
+  price: string;
+  currency: string;
+  blockNumber: number;
 };
 
 export type RepostProductOption = {
@@ -1701,6 +1712,54 @@ function normalizeMarketplaceDirectoryProduct(
     createdAt: firstTruthy(src?.created_at, src?.createdAt),
   };
 }
+
+function normalizeSavedMarketplaceProduct(
+  raw: any
+): SavedMarketplaceProduct | null {
+  const src = raw?.item || raw?.product || raw;
+  const id = positiveNumber(firstDefined(src?.id, src?.product_id));
+  const sellerGmfnId = firstTruthy(src?.seller_gmfn_id, src?.sellerGmfnId);
+  const visibilityMode = firstTruthy(
+    src?.visibility_mode,
+    src?.visibilityMode,
+    "community_visible"
+  );
+  if (!id || !sellerGmfnId || visibilityMode === "vault_private") return null;
+
+  return {
+    id,
+    sellerGmfnId,
+    title: firstTruthy(src?.name, src?.title, `Saved product ${id}`),
+    shopName: firstPublicIdentity(
+      src?.origin_shop_name,
+      src?.shop_name,
+      src?.shop?.name
+    ),
+    price: firstTruthy(src?.price, src?.price_text, src?.amount),
+    currency: firstTruthy(src?.currency),
+    blockNumber: positiveNumber(
+      firstDefined(
+        src?.public_block_number,
+        src?.slot_number,
+        src?.display_block_number
+      )
+    ),
+  };
+}
+
+function savedMarketplaceProductPath(product: SavedMarketplaceProduct): string {
+  const basePath = publicShopPath(product.sellerGmfnId);
+  if (!basePath) return "";
+  const params = new URLSearchParams({
+    product_id: String(product.id),
+    source: "saved-products",
+  });
+  if (product.blockNumber > 0) {
+    params.set("block", String(product.blockNumber));
+  }
+  return `${basePath}?${params.toString()}`;
+}
+
 function normalizeRepostProductOption(raw: any): RepostProductOption | null {
   const src = raw?.item || raw?.product || raw;
   const id = positiveNumber(src?.id || src?.product_id);
@@ -4392,6 +4451,15 @@ export default function MarketplacePage() {
   const [marketplaceDirectoryProducts, setMarketplaceDirectoryProducts] = useState<
     MarketplaceDirectoryProduct[]
   >([]);
+  const [savedMarketplaceProducts, setSavedMarketplaceProducts] = useState<
+    SavedMarketplaceProduct[]
+  >([]);
+  const [savedMarketplaceProductsLoading, setSavedMarketplaceProductsLoading] =
+    useState(false);
+  const [savedMarketplaceProductsLoaded, setSavedMarketplaceProductsLoaded] =
+    useState(false);
+  const [savedMarketplaceProductsError, setSavedMarketplaceProductsError] =
+    useState("");
   const [marketplaceTrust, setMarketplaceTrust] = useState<any>(null);
   const [trustSlip, setTrustSlip] = useState<any>(null);
   const [marketplaceWisdom, setMarketplaceWisdom] = useState<{
@@ -6176,6 +6244,26 @@ export default function MarketplacePage() {
   useEffect(() => {
     void loadPage();
   }, [loadPage, selectedClanId]);
+
+  const loadSavedMarketplaceProducts = useCallback(async () => {
+    if (savedMarketplaceProductsLoading) return;
+    setSavedMarketplaceProductsLoading(true);
+    setSavedMarketplaceProductsError("");
+    try {
+      const response = await listSavedMarketplaceProducts();
+      const products = rowsOf<any>(response?.products || response)
+        .map(normalizeSavedMarketplaceProduct)
+        .filter((item): item is SavedMarketplaceProduct => Boolean(item));
+      setSavedMarketplaceProducts(products);
+      setSavedMarketplaceProductsLoaded(true);
+    } catch {
+      setSavedMarketplaceProductsError(
+        "Saved products could not be loaded. Your existing saves were not changed."
+      );
+    } finally {
+      setSavedMarketplaceProductsLoading(false);
+    }
+  }, [savedMarketplaceProductsLoading]);
 
   const refreshMarketplaceDirectory = useCallback(async () => {
     if (!activeCommunityId) return;
@@ -9849,6 +9937,133 @@ export default function MarketplacePage() {
                 </span>
               </div>
             ) : null}
+
+            <details
+              data-marketplace-saved-products="true"
+              onToggle={(event) => {
+                if (event.currentTarget.open) {
+                  void loadSavedMarketplaceProducts();
+                }
+              }}
+              style={{
+                marginTop: 10,
+                borderTop: "1px solid rgba(11,107,59,0.14)",
+                paddingTop: 8,
+              }}
+            >
+              <StableDisclosureSummary
+                debugId="marketplace.saved-products.toggle"
+                stableHeight={40}
+                style={{
+                  color: "#0B6B3B",
+                  fontSize: 12.5,
+                  fontWeight: 950,
+                }}
+              >
+                Saved products
+              </StableDisclosureSummary>
+              <div
+                data-marketplace-saved-products-list="true"
+                style={{
+                  marginTop: 8,
+                  display: "grid",
+                  gap: 8,
+                  maxHeight: isCompact ? 260 : 320,
+                  overflowY: "auto",
+                  overscrollBehavior: "contain",
+                }}
+              >
+                <div style={{ ...marketplaceLiveMetaStyle(isCompact), fontSize: 11.5 }}>
+                  Private to you. Open the original Public Shop to review or remove a save.
+                </div>
+                {savedMarketplaceProductsLoading ? (
+                  <div style={marketplaceLiveRowStyle(isCompact)}>
+                    <div style={marketplaceLiveMetaStyle(isCompact)}>
+                      Loading your saved products.
+                    </div>
+                  </div>
+                ) : savedMarketplaceProductsError ? (
+                  <div style={marketplaceLiveRowStyle(isCompact)}>
+                    <div style={marketplaceLiveMetaStyle(isCompact)}>
+                      {savedMarketplaceProductsError}
+                    </div>
+                    <StableButton
+                      type="button"
+                      debugId="marketplace.saved-products.retry"
+                      onClick={() => void loadSavedMarketplaceProducts()}
+                      stableHeight={40}
+                      style={{
+                        ...marketplaceActionStyle("secondary"),
+                        marginTop: 8,
+                        width: "100%",
+                      }}
+                    >
+                      Try again
+                    </StableButton>
+                  </div>
+                ) : savedMarketplaceProductsLoaded && !savedMarketplaceProducts.length ? (
+                  <div style={marketplaceLiveRowStyle(isCompact)}>
+                    <div style={marketplaceLiveMetaStyle(isCompact)}>
+                      You have no saved products yet.
+                    </div>
+                  </div>
+                ) : (
+                  savedMarketplaceProducts.map((product) => {
+                    const priceText = [product.currency, product.price]
+                      .filter(Boolean)
+                      .join(" ");
+                    return (
+                      <div
+                        key={product.id}
+                        data-marketplace-saved-product-id={product.id}
+                        style={marketplaceLiveRowStyle(isCompact)}
+                      >
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "minmax(0, 1fr) auto",
+                            gap: 8,
+                            alignItems: "center",
+                          }}
+                        >
+                          <div style={{ minWidth: 0 }}>
+                            <div
+                              style={{
+                                color: "#07172C",
+                                fontSize: isCompact ? 13.5 : 14.5,
+                                fontWeight: 950,
+                                lineHeight: 1.2,
+                                overflowWrap: "break-word",
+                              }}
+                            >
+                              {product.title}
+                            </div>
+                            <div style={{ marginTop: 3, ...marketplaceLiveMetaStyle(isCompact) }}>
+                              {[product.shopName, priceText].filter(Boolean).join(" · ") ||
+                                "Saved product"}
+                            </div>
+                          </div>
+                          <StableCtaLink
+                            to={savedMarketplaceProductPath(product)}
+                            debugId={`marketplace.saved-products.${product.id}.open`}
+                            aria-label={`Open saved product ${product.title}`}
+                            stableHeight={40}
+                            style={{
+                              ...marketplaceActionStyle("secondary"),
+                              minWidth: 84,
+                              padding: "7px 9px",
+                              fontSize: 11.5,
+                            }}
+                          >
+                            Open
+                          </StableCtaLink>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </details>
           </div>
 
           {hiddenNeedProviderMatches.length ? (

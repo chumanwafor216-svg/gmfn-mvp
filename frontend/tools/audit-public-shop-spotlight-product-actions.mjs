@@ -43,8 +43,16 @@ requirePattern(
   "Sharing must preserve the exact source owner, product, and block when available."
 );
 requirePattern(
-  /data-spotlight-product-action="save"[\s\S]*?spotlightProductSaved \? "\\u2665" : "\\u2661"/,
-  "The heart control must remain an accessible preference toggle without a vanity count."
+  /function savedProductState\([\s\S]*?hasOwnProperty\.call\(overrides, key\)[\s\S]*?async function toggleProductSave\(product: ShopProduct\)[\s\S]*?intendedSavedState[\s\S]*?typeof result\?\.saved === "boolean"[\s\S]*?Remove from saved products[\s\S]*?Save product privately/,
+  "Private save must preserve explicit false state for unsave/re-save and recover safely from incomplete success payloads."
+);
+requirePattern(
+  /spotlightOwnershipCheckRequired[\s\S]*?spotlightOwnershipResolved[\s\S]*?signedInOwnsSpotlightSourceShop[\s\S]*?spotlightSelfActionsBlocked[\s\S]*?\{!spotlightSelfActionsBlocked \? \([\s\S]*?data-spotlight-product-action="save"[\s\S]*?data-spotlight-product-action="ask-seller"[\s\S]*?shop-gallery\.spotlight-product\.share[\s\S]*?data-spotlight-product-action="follow-shop"/,
+  "Advertised-product owners must not receive self-save, self-contact, or self-follow controls while visitor Share stays available."
+);
+requirePattern(
+  /ariaLabel="Share this product"[\s\S]*?debugId="shop-gallery\.spotlight-product\.share"[\s\S]*?public_shop_spotlight_product_share_/,
+  "Visitor sharing must use Share terminology and analytics while owner Paid Repost remains separate."
 );
 requirePattern(
   /sourceClanName/,

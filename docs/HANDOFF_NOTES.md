@@ -1,5 +1,17 @@
 # Active Handoff Notes
 
+## Spotlight Phase A functionality candidate - 2026-11-25
+
+- Work remains uncommitted in the preserved isolated worktree on `codex/spotlight-unified-frame-review-20261125` at pre-change HEAD `756f94076889b11cfba4de2be60e009b695c4daf`. No push, merge, deployment, dependency installation, new worktree or production write occurred.
+- Private product Save now treats an explicit local `false` as authoritative, so Save -> Unsave -> Re-save works even when the original Public Shop payload said `is_saved: true`. Failed requests leave the last confirmed state intact, and incomplete success payloads fall back only to the requested target state.
+- The existing authenticated `GET /marketplace/products/saved` API now has a frontend wrapper and a bounded, lazy `Saved products` disclosure inside Marketplace `Shops & Services`. It filters Vault-private rows, shows no public save count, and returns each item to its canonical Public Shop product rather than adding another page.
+- Spotlight visitor sharing is labelled and instrumented as `Share`. The existing owner-only `Paid Repost` handoff, pricing and entitlement path remain unchanged.
+- Authenticated ownership is checked against the advertised source Shop, not merely the host Public Shop. While that check is pending or unavailable, self-save/contact/follow actions stay blocked; confirmed source-Shop owners do not receive them. Owners of the host Shop can still act as visitors on another Shop's advertised product, and existing owner management controls remain.
+- No Spotlight rotation, selection, qualification, exposure, fairness, dwell, media, payment, pricing, entitlement, permission API, backend route, schema or persistence behavior changed.
+- Passing lightweight checks: Phase A Spotlight product actions, Marketplace front package, Public Shop button inventory, share/tag actions, Spotlight controls, Spotlight presentation contract, Spotlight premium media, Spotlight system feed, JavaScript diff whitespace.
+- Unverified under current storage restrictions: TypeScript/Vite build, Spotlight presentation-policy transpile test and browser behavior. `typescript`, `vite` and `@playwright/test` remain unavailable and were not installed. The broad Marketplace inventories also retain stale pre-existing count/directory failures; Phase A adds two authorised saved-product action templates. The protected-button suite additionally retains its documented DemandBox/voice raw-action failures and Playwright-dependent gaps.
+- Free space remained approximately `31.5 GiB`, above the founder's `20 GiB` stop threshold.
+
 ## Founder-approved unified Public Shop Spotlight layout - 2026-11-25
 
 - Work stayed isolated on `codex/spotlight-unified-frame-review-20261125`, based on `359b691ece9523ca95887cb34029ad465469a111`. The local frontend release-candidate commit is `6c70d322cf0e5d72cbceddc006b655bdc04538f2`.

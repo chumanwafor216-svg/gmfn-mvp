@@ -212,7 +212,7 @@ const expectedActionOrder = [
   "shop-gallery.spotlight-product.toggle",
   "shop-gallery.spotlight-product.save",
   "shop-gallery.spotlight-product.ask-seller",
-  "shop-gallery.spotlight-product.repost",
+  "shop-gallery.spotlight-product.share",
   "shop-gallery.spotlight-product.follow-shop",
   "shop-gallery.spotlight-product.similar",
   "shop-gallery.vault.owner-shortcut",
