@@ -322,8 +322,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /const spotlightContactAvailable = Boolean\([\s\S]*?data-spotlight-information-panel="true"[\s\S]*?\{spotlightContactAvailable \? \([\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?: null\}[\s\S]*?data-spotlight-screen="true"[\s\S]*?heroImage && !ownerSpotlightStatusView && !miniSpotlight/,
-  "Compact Spotlight contact must remain inside the factual information console, disappear without a live contact, and never reuse shop hero media for owner status."
+  /const spotlightContactAvailable = Boolean\([\s\S]*?data-spotlight-action-row="true"[\s\S]*?\{spotlightContactAvailable \? \([\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?: null\}[\s\S]*?data-spotlight-information-overlay="true"[\s\S]*?data-spotlight-screen="true"[\s\S]*?heroImage && !ownerSpotlightStatusView && !miniSpotlight/,
+  "Spotlight contact must remain in the normal-flow action row, disappear without a live contact, preserve the in-media information overlay, and never reuse shop hero media for owner status."
 );
 
 assertContains(

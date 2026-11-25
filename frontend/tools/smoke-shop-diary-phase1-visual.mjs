@@ -480,6 +480,17 @@ async function collectMetrics(page) {
     const whatsappActionRect = whatsappAction?.getBoundingClientRect();
     const spotlight = document.querySelector(".public-shop-spotlight");
     const spotlightRect = spotlight?.getBoundingClientRect();
+    const spotlightScreen = spotlight?.querySelector('[data-spotlight-screen="true"]');
+    const spotlightOverlay = spotlight?.querySelector('[data-spotlight-information-overlay="true"]');
+    const spotlightActionRow = spotlight?.querySelector('[data-spotlight-action-row="true"]');
+    const spotlightProductRail = spotlight?.querySelector('[data-spotlight-product-actions="true"]');
+    const spotlightScreenRect = spotlightScreen?.getBoundingClientRect();
+    const spotlightOverlayRect = spotlightOverlay?.getBoundingClientRect();
+    const spotlightActionRowRect = spotlightActionRow?.getBoundingClientRect();
+    const spotlightProductRailRect = spotlightProductRail?.getBoundingClientRect();
+    const spotlightActionRects = Array.from(spotlightActionRow?.children || []).map(
+      (node) => node.getBoundingClientRect()
+    );
     const shopEntranceVideo = document.querySelector('[data-gsn-shop-entrance-video="true"]');
     const shopEntranceRect = shopEntranceVideo?.getBoundingClientRect();
     const shopIdentityOverlay = document.querySelector('[data-public-shop-identity-overlay="true"]');
@@ -587,6 +598,23 @@ async function collectMetrics(page) {
       liveSpotlight: more?.getAttribute("data-public-shop-live-spotlight") || null,
       spotlightDisplay: spotlight ? getComputedStyle(spotlight).display : null,
       spotlightHeight: spotlightRect ? Math.round(spotlightRect.height) : null,
+      spotlightLayout: spotlight?.getAttribute("data-spotlight-layout") || null,
+      spotlightInformationPanelPresent: Boolean(
+        spotlight?.querySelector('[data-spotlight-information-panel="true"]')
+      ),
+      spotlightScreenTop: spotlightScreenRect ? Math.round(spotlightScreenRect.top) : null,
+      spotlightScreenBottom: spotlightScreenRect ? Math.round(spotlightScreenRect.bottom) : null,
+      spotlightScreenHeight: spotlightScreenRect ? Math.round(spotlightScreenRect.height) : null,
+      spotlightOverlayTop: spotlightOverlayRect ? Math.round(spotlightOverlayRect.top) : null,
+      spotlightOverlayRight: spotlightOverlayRect ? Math.round(spotlightOverlayRect.right) : null,
+      spotlightOverlayBottom: spotlightOverlayRect ? Math.round(spotlightOverlayRect.bottom) : null,
+      spotlightActionRowTop: spotlightActionRowRect ? Math.round(spotlightActionRowRect.top) : null,
+      spotlightActionRowBottom: spotlightActionRowRect ? Math.round(spotlightActionRowRect.bottom) : null,
+      spotlightActionCount: spotlightActionRects.length,
+      spotlightActionWidths: spotlightActionRects.map((rect) => Math.round(rect.width)),
+      spotlightProductRailLeft: spotlightProductRailRect
+        ? Math.round(spotlightProductRailRect.left)
+        : null,
       revealActionTops: [productRevealActionRect?.top, spotlightRevealActionRect?.top]
         .map((value) => typeof value === "number" ? Math.round(value) : null),
       revealActionHeights: [productRevealActionRect?.height, spotlightRevealActionRect?.height]
@@ -714,7 +742,9 @@ async function run() {
       { name: "14-public-shop-logged-out-open-product-390", scenario: "image", route: "/shop/GMFN-U-DIARY?product_id=2#product-2", width: 390, expect: "Diary Kitchen. Ask about stock.", authenticated: false },
       { name: "15-shop-control-share-update-390", scenario: "text", route: "/app/shop-control#shop-assets-diary", width: 390, expect: "Choose channel", openShare: true },
       { name: "16-public-shop-exact-update-390", scenario: "text", route: "/shop/GMFN-U-DIARY?diary_entry_id=704#shop-diaries", width: 390, expect: "Opened bookings" },
-      { name: "17-public-shop-live-spotlight-390", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 390, expect: "Baby skin care set.", spotlight: true },
+      { name: "17-public-shop-live-spotlight-360", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 360, height: 780, expect: "Baby skin care set.", spotlight: true },
+      { name: "17-public-shop-live-spotlight-390", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 390, height: 844, expect: "Baby skin care set.", spotlight: true },
+      { name: "17-public-shop-live-spotlight-430", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 430, height: 932, expect: "Baby skin care set.", spotlight: true },
       { name: "18-shop-picture-entrance-390", scenario: "image", route: "/app/shop-control#shop-assets-picture", width: 390, expect: "Every public shop uses the approved My GSN Shop entrance." },
       { name: "19-public-shop-alternate-owner-360", scenario: "image", route: "/shop/GMFN-U-DIARY", width: 360, expect: "Ardent Ebony Uplift LTD", shopName: "Ardent Ebony Uplift LTD" },
       { name: "20-public-shop-desktop-1024", scenario: "image", route: "/shop/GMFN-U-DIARY#shop-diaries", width: 1024, height: 900, expect: "Shop Update", authenticated: false },
@@ -1192,7 +1222,7 @@ async function run() {
           throw new Error(`${item.name} did not place the exact shared Shop Update before Products & Services.`);
         }
       }
-      if (item.name === "17-public-shop-live-spotlight-390") {
+      if (item.spotlight) {
         if (!metrics.moreOpen || metrics.liveSpotlight !== "true") {
           throw new Error("A resolved live Spotlight did not remain open until intentionally closed.");
         }
@@ -1214,7 +1244,8 @@ async function run() {
           metrics.productUpdateTickerHeight !== 44 ||
           metrics.productUpdateTickerTop === null ||
           metrics.productUpdateTickerTop <= Math.max(...metrics.revealActionTops) ||
-          !String(metrics.productUpdateTickerLabel || "").endsWith("P&S Update") ||
+          !String(metrics.productUpdateTickerLabel || "").includes("P&S Update") ||
+          !String(metrics.productUpdateTickerLabel || "").includes("Diary Community") ||
           !String(metrics.productUpdateTickerAriaLabel || "").includes("Delivered a weekend food tray") ||
           metrics.productUpdateTickerAnimationName !== "public-shop-product-update-scroll" ||
           !metrics.inlineWelcomeVoicePresent ||
@@ -1223,7 +1254,7 @@ async function run() {
           !metrics.ownerShopUpdateShortcutPresent ||
           metrics.ownerShopUpdateShortcutWidth !== 42 ||
           metrics.ownerShopUpdateShortcutVisualWidth !== 30 ||
-          metrics.productUpdateLabelWidth > 115
+          metrics.productUpdateLabelWidth > 170
         ) {
           throw new Error(
             "The owner duplicate Marketplace row did not become the compact rolling Products and Services Update: " +
@@ -1243,6 +1274,51 @@ async function run() {
                 ownerShortcutWidth: metrics.ownerShopUpdateShortcutWidth,
                 ownerShortcutVisualWidth: metrics.ownerShopUpdateShortcutVisualWidth,
                 labelWidth: metrics.productUpdateLabelWidth,
+              })
+          );
+        }
+        if (
+          metrics.spotlightLayout !== "unified-spotlight-stage" ||
+          metrics.spotlightInformationPanelPresent ||
+          metrics.spotlightScreenHeight === null ||
+          metrics.spotlightScreenHeight < 510 ||
+          metrics.spotlightScreenHeight > 620 ||
+          metrics.spotlightScreenTop === null ||
+          metrics.productUpdateTickerBottom === null ||
+          Math.abs(metrics.spotlightScreenTop - metrics.productUpdateTickerBottom) > 1 ||
+          metrics.spotlightOverlayTop === null ||
+          metrics.spotlightOverlayBottom === null ||
+          metrics.spotlightScreenBottom === null ||
+          metrics.spotlightOverlayTop < metrics.spotlightScreenTop - 1 ||
+          metrics.spotlightOverlayBottom > metrics.spotlightScreenBottom + 1 ||
+          metrics.spotlightActionRowTop === null ||
+          Math.abs(metrics.spotlightActionRowTop - metrics.spotlightScreenBottom) > 1 ||
+          metrics.spotlightActionCount !== 3 ||
+          metrics.spotlightActionWidths.some((width) => width < 44) ||
+          (metrics.spotlightProductRailLeft !== null &&
+            metrics.spotlightOverlayRight !== null &&
+            metrics.spotlightOverlayRight > metrics.spotlightProductRailLeft + 1) ||
+          metrics.scrollWidth > metrics.innerWidth
+        ) {
+          throw new Error(
+            `${item.name} did not preserve the approved unified Spotlight geometry: ` +
+              JSON.stringify({
+                layout: metrics.spotlightLayout,
+                separatePanel: metrics.spotlightInformationPanelPresent,
+                tickerBottom: metrics.productUpdateTickerBottom,
+                screenTop: metrics.spotlightScreenTop,
+                screenBottom: metrics.spotlightScreenBottom,
+                screenHeight: metrics.spotlightScreenHeight,
+                overlayTop: metrics.spotlightOverlayTop,
+                overlayRight: metrics.spotlightOverlayRight,
+                overlayBottom: metrics.spotlightOverlayBottom,
+                productRailLeft: metrics.spotlightProductRailLeft,
+                actionRowTop: metrics.spotlightActionRowTop,
+                actionRowBottom: metrics.spotlightActionRowBottom,
+                actionCount: metrics.spotlightActionCount,
+                actionWidths: metrics.spotlightActionWidths,
+                scrollWidth: metrics.scrollWidth,
+                innerWidth: metrics.innerWidth,
               })
           );
         }

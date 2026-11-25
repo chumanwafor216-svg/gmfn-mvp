@@ -574,7 +574,10 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
   await spotlightWhatsApp.waitFor({ state: "visible", timeout: 15_000 });
   const spotlightScreen = spotlightRail.locator('[data-spotlight-screen="true"]');
   const spotlightInformation = spotlightRail.locator(
-    '[data-spotlight-information-panel="true"]'
+    '[data-spotlight-information-overlay="true"]'
+  );
+  const spotlightActionRow = spotlightRail.locator(
+    '[data-spotlight-action-row="true"]'
   );
   const spotlightDisclosure = spotlightRail.locator(
     '[data-spotlight-information-disclosure="true"]'
@@ -583,15 +586,16 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
     '[data-spotlight-information-details="true"]'
   );
   const spotlightDetailsToggle = spotlightDisclosure.locator('summary');
-  const [railBounds, screenBounds, informationBounds, whatsappBounds] =
+  const [railBounds, screenBounds, informationBounds, actionRowBounds, whatsappBounds] =
     await Promise.all([
       spotlightRail.boundingBox(),
       spotlightScreen.boundingBox(),
       spotlightInformation.boundingBox(),
+      spotlightActionRow.boundingBox(),
       spotlightWhatsApp.boundingBox(),
     ]);
-  if ((await spotlightRail.getAttribute("data-spotlight-layout")) !== "screen-and-information") {
-    throw new Error("Public Shop Spotlight lost the approved screen-and-information layout marker.");
+  if ((await spotlightRail.getAttribute("data-spotlight-layout")) !== "unified-spotlight-stage") {
+    throw new Error("Public Shop Spotlight lost the approved unified-stage layout marker.");
   }
   if ((await spotlightDisclosure.getAttribute("open")) !== null) {
     throw new Error("Compact Spotlight information should start collapsed on phone.");
@@ -623,21 +627,28 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
     !railBounds ||
     !screenBounds ||
     !informationBounds ||
+    !actionRowBounds ||
     !whatsappBounds ||
-    screenBounds.height < 390 ||
-    informationBounds.y < screenBounds.y + screenBounds.height - 1 ||
+    screenBounds.height < 510 ||
+    screenBounds.height > 621 ||
+    informationBounds.y < screenBounds.y - 1 ||
+    informationBounds.y + informationBounds.height > screenBounds.y + screenBounds.height + 1 ||
     screenBounds.x < railBounds.x - 1 ||
     screenBounds.x + screenBounds.width > railBounds.x + railBounds.width + 1 ||
-    informationBounds.x < railBounds.x - 1 ||
-    informationBounds.x + informationBounds.width > railBounds.x + railBounds.width + 1 ||
-    whatsappBounds.x < informationBounds.x - 1 ||
-    whatsappBounds.x + whatsappBounds.width > informationBounds.x + informationBounds.width + 1
+    informationBounds.x < screenBounds.x - 1 ||
+    informationBounds.x + informationBounds.width > screenBounds.x + screenBounds.width + 1 ||
+    Math.abs(actionRowBounds.y - (screenBounds.y + screenBounds.height)) > 1 ||
+    actionRowBounds.x < railBounds.x - 1 ||
+    actionRowBounds.x + actionRowBounds.width > railBounds.x + railBounds.width + 1 ||
+    whatsappBounds.x < actionRowBounds.x - 1 ||
+    whatsappBounds.x + whatsappBounds.width > actionRowBounds.x + actionRowBounds.width + 1
   ) {
     throw new Error(
       `Compact Spotlight collapsed geometry is invalid: ${JSON.stringify({
         railBounds,
         screenBounds,
         informationBounds,
+        actionRowBounds,
         whatsappBounds,
       })}`
     );
@@ -657,16 +668,24 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
       );
     }
   }
-  const expandedScreenBounds = await spotlightScreen.boundingBox();
+  const [expandedScreenBounds, expandedInformationBounds] = await Promise.all([
+    spotlightScreen.boundingBox(),
+    spotlightInformation.boundingBox(),
+  ]);
   if (
     !expandedScreenBounds ||
+    !expandedInformationBounds ||
     Math.abs(expandedScreenBounds.y - screenBounds.y) > 1 ||
-    Math.abs(expandedScreenBounds.height - screenBounds.height) > 1
+    Math.abs(expandedScreenBounds.height - screenBounds.height) > 1 ||
+    expandedInformationBounds.y < expandedScreenBounds.y - 1 ||
+    expandedInformationBounds.y + expandedInformationBounds.height >
+      expandedScreenBounds.y + expandedScreenBounds.height + 1
   ) {
     throw new Error(
-      `Opening Spotlight information moved or resized the media screen: ${JSON.stringify({
+      `Opening Spotlight information moved the media or escaped its overlay bounds: ${JSON.stringify({
         screenBounds,
         expandedScreenBounds,
+        expandedInformationBounds,
       })}`
     );
   }

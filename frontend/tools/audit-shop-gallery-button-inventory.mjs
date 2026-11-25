@@ -665,8 +665,8 @@ assertNotContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?firstMeaningful\(miniSpotlightView\.priceLabel, "Spotlight"\)[\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?spotlightWhatsAppAvailable \? "WhatsApp" : "Call advertiser"/,
-  "Public Shop Spotlight must keep only the optional price badge and one source-aware contact handle for the active promotion."
+  /className="public-shop-spotlight-action-row"[\s\S]*?data-spotlight-action-row="true"[\s\S]*?Spotlight[\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?spotlightWhatsAppAvailable \? "WhatsApp" : "Call advertiser"/,
+  "Public Shop Spotlight must keep one bottom action row with the Spotlight identity, owner shortcut when authorised, and one source-aware contact handle."
 );
 
 assertNotContains(
@@ -699,18 +699,47 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?border: isCompact \? "1px solid rgba\(13,95,168,0\.28\)" : "1px solid rgba\(255,255,255,0\.92\)"[\s\S]*?linear-gradient\(135deg, #FFFFFF 0%, #F7FBFF 48%, #EEF6FF 100%\)/,
-  "Public Shop Spotlight must keep polished blue brand framing instead of the rejected gold phone slab."
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?data-spotlight-layout="unified-spotlight-stage"[\s\S]*?border: 0[\s\S]*?background: "transparent"[\s\S]*?boxShadow: "none"/,
+  "Public Shop Spotlight must use the approved unified stage instead of restoring a separate white information card."
 );
 
 assertContains(
-  /const spotlightScreenHeight = isCompact[\s\S]*?"clamp\(390px, 112vw, 470px\)"[\s\S]*?: 430;[\s\S]*?className="public-shop-section public-shop-spotlight"[\s\S]*?data-spotlight-layout="screen-and-information"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?"minmax\(0, 1\.25fr\) minmax\(300px, 0\.75fr\)"[\s\S]*?data-spotlight-information-panel="true"[\s\S]*?gridColumn: isCompact \? "1" : "2"[\s\S]*?data-spotlight-source-line="true"[\s\S]*?data-spotlight-information-detail="true"[\s\S]*?data-spotlight-fact-line="true"[\s\S]*?minHeight: spotlightScreenHeight[\s\S]*?height: spotlightScreenHeight[\s\S]*?gridColumn: "1"[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,
-  "Public Shop Spotlight must keep the enlarged media screen, separate factual information console, one-column phone stack, and media-first desktop composition without stretching.",
+  /const spotlightScreenHeight = isCompact[\s\S]*?"clamp\(510px, 66svh, 620px\)"[\s\S]*?: "clamp\(500px, 64vh, 680px\)";[\s\S]*?data-spotlight-layout="unified-spotlight-stage"[\s\S]*?data-spotlight-information-shell="true"[\s\S]*?display: "contents"[\s\S]*?data-spotlight-action-row="true"[\s\S]*?data-spotlight-information-overlay="true"[\s\S]*?maxHeight: "45%"[\s\S]*?data-spotlight-screen="true"[\s\S]*?minHeight: spotlightScreenHeight[\s\S]*?height: spotlightScreenHeight[\s\S]*?objectFit: "contain"[\s\S]*?objectPosition: "center"/,
+  "Public Shop Spotlight must keep the responsive enlarged media, layout-neutral information shell, in-media disclosure overlay, normal-flow action row, and unchanged media fit.",
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?isCompact[\s\S]*?"radial-gradient\(circle at 88% 4%, rgba\(47,128,237,0\.18\) 0%, transparent 32%\), radial-gradient\(circle at 7% 4%, rgba\(255,255,255,0\.86\) 0%, transparent 34%\), linear-gradient\(145deg, #F8FBFF 0%, #EAF4FF 46%, #DCEBFA 100%\)"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"/,
-  "Public Shop Spotlight compact card must keep a stacked product-information layout on phone with the blue brand frame."
+  /className="public-shop-spotlight-stage"[\s\S]*?gridTemplateColumns: "minmax\(0, 1fr\)"[\s\S]*?gridColumn: "1"[\s\S]*?gridRow: "2"/,
+  "Public Shop Spotlight must keep one responsive media-first column with its action row directly below the screen."
+);
+
+assertNotContains(
+  /data-spotlight-information-panel="true"|data-spotlight-layout="screen-and-information"/,
+  "Public Shop Spotlight must not restore the removed separate information panel or its former layout contract."
+);
+
+assertContains(
+  /const shopUpdateContextText = firstMeaningful\([\s\S]*?shopCommunityText,[\s\S]*?spotlightCommunityLabel[\s\S]*?className="public-shop-product-update-label-copy"[\s\S]*?<strong>P&amp;S Update<\/strong>[\s\S]*?shopUpdateContextText \? <small>\{shopUpdateContextText\}<\/small> : null/,
+  "The compact P&S Update label must use the current shop community first, then the active Spotlight community, without a fabricated location."
+);
+
+assertNotContains(
+  /Aberdeen/,
+  "Public Shop Spotlight must not hardcode the screenshot's example location."
+);
+
+assertFileContains(
+  publicShopStylesFile,
+  publicShopStylesSource,
+  /\.public-shop-product-update-ticker ~ details\[data-public-shop-more=secondary\][\s\S]*?padding: 0 7px 7px;[\s\S]*?border-top: 0;[\s\S]*?\.public-shop-spotlight-stage[\s\S]*?linear-gradient\(180deg, #061827 0%, #04101c 100%\)[\s\S]*?\.public-shop-spotlight-action-row[\s\S]*?border-top: 0;/,
+  "The P&S ticker, dark Spotlight stage, and bottom action row must retain one joined outer presentation without an internal top gap."
+);
+
+assertFileContains(
+  shopDiaryVisualSmokeFile,
+  shopDiaryVisualSmokeSource,
+  /17-public-shop-live-spotlight-360[\s\S]*?17-public-shop-live-spotlight-390[\s\S]*?17-public-shop-live-spotlight-430[\s\S]*?spotlightLayout !== "unified-spotlight-stage"[\s\S]*?spotlightInformationPanelPresent[\s\S]*?spotlightScreenHeight < 510[\s\S]*?spotlightScreenHeight > 620[\s\S]*?spotlightActionCount !== 3[\s\S]*?scrollWidth > metrics\.innerWidth/,
+  "The Public Shop visual smoke must cover unified Spotlight geometry and overflow at 360px, 390px, and 430px."
 );
 assertContains(
   /const \[spotlightInformationOpen, setSpotlightInformationOpen\][\s\S]*?window\.innerWidth > 980[\s\S]*?data-spotlight-information-disclosure="true"[\s\S]*?open=\{spotlightInformationOpen\}[\s\S]*?debugId="shop-gallery\.spotlight\.information-toggle"[\s\S]*?aria-expanded=\{spotlightInformationOpen\}[\s\S]*?\{spotlightInformationOpen \? "\\u25B4" : "\\u25BE"\}[\s\S]*?data-spotlight-information-details="true"[\s\S]*?data-spotlight-screen="true"/,
