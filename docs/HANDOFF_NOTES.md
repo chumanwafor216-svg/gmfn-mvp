@@ -1,5 +1,17 @@
 # Active Handoff Notes
 
+## Founder-approved unified Public Shop Spotlight layout - 2026-11-25
+
+- Work stayed isolated on `codex/spotlight-unified-frame-review-20261125`, based on `359b691ece9523ca95887cb34029ad465469a111`. The local frontend release-candidate commit is `6c70d322cf0e5d72cbceddc006b655bdc04538f2`.
+- The compact `P&S Update` ticker now includes the current shop community, falling back to the active Spotlight community and never hardcoding the screenshot's example location. Its 44px contract, owner-only Shop Update shortcut, rotating message and deliberate voice control remain intact.
+- Public Shop Spotlight now uses `data-spotlight-layout="unified-spotlight-stage"`: the former separate white information card no longer occupies vertical space, its source/title/description/facts remain available through a bounded in-media disclosure overlay, and the existing Spotlight badge, owner-only `+` and source-aware WhatsApp/call action sit in one normal-flow row below the media.
+- Compact media height is `clamp(510px, 66svh, 620px)` and wider presentation uses `clamp(500px, 64vh, 680px)`. Existing `contain` media fit, active video identity, audio state, loading/fallback behavior, reduced-motion handling, loop, dwell, qualification, rotation, selection and fairness logic were not changed.
+- Focused verification passed: Shop Diary Phase 1, Public Shop button inventory, Spotlight controls, presentation contract, premium-media audit, system-feed audit, eight presentation-policy cases, TSX transpile diagnostics, JavaScript syntax checks and `git diff --check`.
+- The broad protected-button audit still reports unrelated pre-existing raw DemandBox/voice/media actions. Its browser sub-audits also cannot start because `@playwright/test` is not installed in any preserved dependency tree.
+- Production build and fresh 360/390/430 browser screenshots remain unverified because the storage recovery removed every complete frontend dependency tree. `npm run build` stops before compilation because `tsc` is unavailable; browser smoke stops because `@playwright/test` is unavailable. No package installation was performed under the storage directive.
+- The only preserved pre-change fixture image is `frontend/screenshots/spotlight-unified-frame/before/public-shop-live-spotlight-before-390.png` with SHA-256 `9647A5891771D30F15FD0CE6842F31469C6E71C07D22A7E455F1D5C2F8CE11C4`. It is historical evidence, not a newly captured exact-baseline screenshot. No post-change screenshot is claimed.
+- Free space was `31.833 GiB` at verification start and `31.728 GiB` before the release-candidate handoff. The 20 GiB founder threshold remained protected. No cleanup, clone, new worktree, dependency installation, push, merge, deployment, cloud upload or production change occurred.
+
 ## Expanded Spotlight premium media presentation - 2026-11-24
 
 - The expanded Live Spotlight keeps the approved integrated `P&S Update` structure while presenting the advert as one continuous premium dark-navy media surface; the removed `GSN TODAY` interruption remains absent.
