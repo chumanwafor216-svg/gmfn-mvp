@@ -31,8 +31,10 @@ import {
 import { buildGsnPaymentInstructionPackage } from "../lib/gsnSnapshotPaper";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
+  SPOTLIGHT_MIN_IMAGE_SHORT_EDGE,
   SPOTLIGHT_MAX_VIDEO_BYTES,
-  SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_MIN_VIDEO_SHORT_EDGE,
   SPOTLIGHT_VIDEO_QUALITY_GUIDANCE,
 } from "../lib/spotlightPilot";
 import {
@@ -976,6 +978,7 @@ export default function SubscriptionSpotlightPage() {
       });
       const prepared = await prepareSpotlightImageFile(file, {
         maxBytes: SPOTLIGHT_MAX_IMAGE_BYTES,
+        minShortEdge: SPOTLIGHT_MIN_IMAGE_SHORT_EDGE,
       });
       if (!mountedRef.current || imagePrepRef.current !== job) return;
       setImageFile(prepared.file);
@@ -1020,7 +1023,8 @@ export default function SubscriptionSpotlightPage() {
       });
       const prepared = await prepareSpotlightVideoFile(file, {
         maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
-        maxDurationSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+        maxDurationSeconds: SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS,
+        minShortEdge: SPOTLIGHT_MIN_VIDEO_SHORT_EDGE,
       });
       if (!mountedRef.current || videoPrepRef.current !== job) return;
       setVideoFile(prepared.file);
@@ -1060,7 +1064,8 @@ export default function SubscriptionSpotlightPage() {
           shopId: Number(shop.id),
           title: message,
         },
-        videoSound
+        videoSound,
+        'spotlight'
       );
       if (!mountedRef.current) return;
       const url = firstTruthy(res?.video_url, res?.url, res?.file_url, res?.path, res?.item?.video_url, res?.data?.video_url);
@@ -1139,7 +1144,7 @@ export default function SubscriptionSpotlightPage() {
       let imageUrl = "";
       let videoUrl = "";
       if (imageFile) {
-        const res = await uploadMarketplaceImageFile(imageFile, shopClanId || null);
+        const res = await uploadMarketplaceImageFile(imageFile, shopClanId || null, "spotlight");
         if (!mountedRef.current) return;
         imageUrl = firstTruthy(res?.image_url, res?.url, res?.file_url, res?.path, res?.item?.image_url, res?.data?.image_url);
         if (!imageUrl) throw new Error("Image upload completed but did not return a usable image link.");
@@ -1152,7 +1157,8 @@ export default function SubscriptionSpotlightPage() {
           videoDurationSeconds,
           shopClanId || null,
           null,
-          videoSound
+          videoSound,
+          'spotlight'
         );
         if (!mountedRef.current) return;
         videoUrl = firstTruthy(res?.video_url, res?.url, res?.file_url, res?.path, res?.item?.video_url, res?.data?.video_url);

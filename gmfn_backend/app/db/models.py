@@ -4530,6 +4530,38 @@ class MarketplaceProductSave(Base):
     )
 
 
+class MarketplaceProductLike(Base):
+    __tablename__ = "marketplace_product_likes"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "product_id",
+            "user_id",
+            name="uq_marketplace_product_likes_product_user",
+        ),
+        Index("ix_marketplace_product_likes_user", "user_id", "created_at"),
+        Index("ix_marketplace_product_likes_product", "product_id", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("marketplace_products.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+
 class MarketplaceMediaDeletionTask(Base):
     """Durable retry record for managed media whose owning payload was deleted."""
 

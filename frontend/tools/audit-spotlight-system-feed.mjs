@@ -598,7 +598,7 @@ assertContains(
 
 assertContains(
   "frontend/src/lib/spotlightPilot.ts",
-  /SPOTLIGHT_PILOT_ROTATION_MS = 10000[\s\S]*?SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS = 10[\s\S]*?SPOTLIGHT_PAID_ROTATION_WEIGHT = 3[\s\S]*?function spotlightRotationWeight[\s\S]*?export function buildSpotlightRotationQueue/,
+  /SPOTLIGHT_PILOT_ROTATION_MS = 12000[\s\S]*?SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS = 12[\s\S]*?SPOTLIGHT_PAID_ROTATION_WEIGHT = 3[\s\S]*?function spotlightRotationWeight[\s\S]*?export function buildSpotlightRotationQueue/,
   "Frontend Spotlight pilot controls must keep ten-second media rotation and the shared paid rotation queue helper."
 );
 

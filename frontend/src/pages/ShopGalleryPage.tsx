@@ -32,6 +32,10 @@ import {
   getPublicMarketplaceShopByGmfnId,
   saveMarketplaceProduct,
   unsaveMarketplaceProduct,
+  listSavedMarketplaceProducts,
+  listLikedMarketplaceProducts,
+  likeMarketplaceProduct,
+  unlikeMarketplaceProduct,
   getPublicShopDiaryEntries,
   type ShopDiaryEntryRecord,
   getSelectedClanId,
@@ -66,7 +70,7 @@ import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import { OWNER_SHOP_HASHES } from "../lib/ownerShopHandles";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import {
-  SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_REFRESH_MS,
 } from "../lib/spotlightPilot";
 import {
@@ -2110,6 +2114,9 @@ export default function ShopGalleryPage() {
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [savedProductIds, setSavedProductIds] = useState<Record<string, boolean>>({});
   const [savingProductId, setSavingProductId] = useState<number | null>(null);
+  const [likedProductIds, setLikedProductIds] = useState<Record<string, boolean>>({});
+  const [likingProductId, setLikingProductId] = useState<number | null>(null);
+  const [spotlightImmersiveOpen, setSpotlightImmersiveOpen] = useState(false);
   const [shopDiaryEntries, setShopDiaryEntries] = useState<ShopDiaryEntryRecord[]>([]);
   const [openProductId, setOpenProductId] = useState<number | null>(null);
   const [brokenProductMediaUrls, setBrokenProductMediaUrls] = useState<
@@ -4010,7 +4017,54 @@ export default function ShopGalleryPage() {
     spotlightSourceProductId &&
       savedProductState(savedProductIds, spotlightSourceProductId)
   );
+  const spotlightProductLiked = Boolean(
+    spotlightSourceProductId &&
+      savedProductState(likedProductIds, spotlightSourceProductId)
+  );
 
+  useEffect(() => {
+    if (!getAccessToken() || !spotlightSourceProductId) return;
+    let alive = true;
+
+    void Promise.all([
+      listSavedMarketplaceProducts(),
+      listLikedMarketplaceProducts(),
+    ])
+      .then(([savedResponse, likedResponse]) => {
+        if (!alive) return;
+        const savedIds: Record<string, boolean> = {};
+        const likedIds: Record<string, boolean> = {};
+        for (const product of Array.isArray(savedResponse?.products) ? savedResponse.products : []) {
+          const productId = positiveNumber(product?.id);
+          if (productId) savedIds[String(productId)] = true;
+        }
+        for (const product of Array.isArray(likedResponse?.products) ? likedResponse.products : []) {
+          const productId = positiveNumber(product?.id);
+          if (productId) likedIds[String(productId)] = true;
+        }
+        setSavedProductIds(savedIds);
+        setLikedProductIds(likedIds);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      alive = false;
+    };
+  }, [spotlightSourceProductId]);
+
+  useEffect(() => {
+    if (!spotlightImmersiveOpen || typeof document === "undefined") return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSpotlightImmersiveOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [spotlightImmersiveOpen]);
   useEffect(() => {
     setSpotlightProductActionsOpen(true);
   }, [spotlightSourceProductId, spotlightSourceShopId]);
@@ -4805,7 +4859,11 @@ export default function ShopGalleryPage() {
   ]);
 
   const publicShopSpotlightActive = Boolean(miniSpotlight);
-  const spotlightScreenHeight = isCompact
+  const spotlightScreenHeight = spotlightImmersiveOpen
+    ? isCompact
+      ? "calc(100dvh - 64px)"
+      : "calc(100dvh - 72px)"
+    : isCompact
     ? "clamp(510px, 66svh, 620px)"
     : "clamp(500px, 64vh, 680px)";
   const spotlightAdvertiserLabel = firstMeaningful(
@@ -5832,6 +5890,57 @@ export default function ShopGalleryPage() {
     }
   }
 
+  async function toggleSpotlightProductLike() {
+    const productId = spotlightSourceProductId;
+    if (!productId || likingProductId === productId) return;
+    if (spotlightSelfActionsBlocked) {
+      setNotice({
+        tone: "error",
+        text: signedInOwnsSpotlightSourceShop
+          ? "Shop owners cannot like their own advertised products."
+          : "GSN is still checking who owns this advertised product.",
+      });
+      return;
+    }
+    if (!getAccessToken()) {
+      setNotice({ tone: "error", text: "Sign in to like this product privately." });
+      return;
+    }
+
+    const intendedLikedState = !spotlightProductLiked;
+    setLikingProductId(productId);
+    try {
+      const result = spotlightProductLiked
+        ? await unlikeMarketplaceProduct(productId)
+        : await likeMarketplaceProduct(productId);
+      const liked =
+        typeof result?.liked === "boolean" ? result.liked : intendedLikedState;
+      setLikedProductIds((current) => ({
+        ...current,
+        [String(productId)]: liked,
+      }));
+      setNotice({
+        tone: "success",
+        text: liked
+          ? "Liked privately. No public count or seller notification was created."
+          : "Private Like removed.",
+      });
+    } catch {
+      setNotice({ tone: "error", text: "Could not update this private Like. Please try again." });
+    } finally {
+      setLikingProductId(null);
+    }
+  }
+
+  function showSpotlightBusinessArea() {
+    if (!spotlightCommunityLabel) return;
+    setSpotlightInformationOpen(true);
+    pauseSpotlightPresentationRotation();
+    setNotice({
+      tone: "success",
+      text: `Business area: ${spotlightCommunityLabel}. This is the seller's public community area, not an exact address.`,
+    });
+  }
   async function contactSpotlightProductSeller() {
     pauseSpotlightPresentationRotation();
     const productId = spotlightSourceProductId;
@@ -7968,6 +8077,7 @@ export default function ShopGalleryPage() {
               ownerSpotlightStatusView?.state || "visitor"
             }
             data-spotlight-layout="unified-spotlight-stage"
+            data-spotlight-immersive={spotlightImmersiveOpen ? "true" : "false"}
             onPointerEnter={pauseSpotlightPresentationRotation}
             onPointerDown={pauseSpotlightPresentationRotation}
             onFocusCapture={(event) => {
@@ -7983,14 +8093,18 @@ export default function ShopGalleryPage() {
               pauseSpotlightPresentationRotation();
             }}
             style={{
-              position: "relative",
+              position: spotlightImmersiveOpen ? "fixed" : "relative",
+              inset: spotlightImmersiveOpen ? 0 : undefined,
+              zIndex: spotlightImmersiveOpen ? 10000 : undefined,
+              width: spotlightImmersiveOpen ? "100dvw" : undefined,
+              height: spotlightImmersiveOpen ? "100dvh" : undefined,
               overflow: "hidden",
               scrollMarginTop: isCompact ? 96 : 88,
-              borderRadius: isCompact ? 0 : 22,
+              borderRadius: spotlightImmersiveOpen ? 0 : isCompact ? 0 : 22,
               padding: 0,
               minHeight: 0,
               border: 0,
-              background: "transparent",
+              background: spotlightImmersiveOpen ? "#020C1B" : "transparent",
               boxShadow: "none",
             }}
           >
@@ -8000,6 +8114,8 @@ export default function ShopGalleryPage() {
                 position: "relative",
                 display: "grid",
                 gridTemplateColumns: "minmax(0, 1fr)",
+                gridTemplateRows: "minmax(0, 1fr) auto",
+                height: spotlightImmersiveOpen ? "100%" : undefined,
                 gap: 0,
                 alignItems: "stretch",
                 minHeight: 0,
@@ -8138,7 +8254,7 @@ export default function ShopGalleryPage() {
                     position: "absolute",
                     left: isCompact ? 10 : 14,
                     right: isCompact ? 64 : 76,
-                    bottom: isCompact ? 10 : 14,
+                    bottom: isCompact ? 74 : 86,
                     zIndex: 4,
                     minWidth: 0,
                     maxHeight: "45%",
@@ -8324,6 +8440,14 @@ export default function ShopGalleryPage() {
                     ))}
                   </div>
                 ) : null}
+                {spotlightProductLinked ? (
+                  <div
+                    data-spotlight-protected-sales-path="true"
+                    style={{ color: "#D7E8F7", fontSize: 11, lineHeight: 1.35, fontWeight: 760 }}
+                  >
+                    Contact Seller opens a GSN enquiry first. Any transaction continues through the existing Protected Sales workflow; Spotlight is not verification or a completed sale.
+                  </div>
+                ) : null}
                 {!isCompact && (!ownerSpotlightStatusView || ownerSpotlightStatusView.detail) ? (
                   <div
                     style={{
@@ -8472,7 +8596,7 @@ export default function ShopGalleryPage() {
                       minWidth: isCompact ? 44 : 38,
                       minHeight: isCompact ? 44 : 38,
                     }}
-                    maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
+                    maxVideoSeconds={SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS}
                     frameStyle={{
                       width: "100%",
                       height: spotlightScreenHeight,
@@ -8527,7 +8651,7 @@ export default function ShopGalleryPage() {
                       loopVideo={false}
                       preloadVideo='auto'
                       showAudioUnlock={false}
-                      maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
+                      maxVideoSeconds={SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS}
                       frameStyle={{
                         position: 'absolute',
                         inset: 0,
@@ -8584,6 +8708,28 @@ export default function ShopGalleryPage() {
                     )}
                   </div>
                 )}
+                <SecondaryButton
+                  onClick={() => {
+                    setSpotlightImmersiveOpen((open) => !open);
+                    pauseSpotlightPresentationRotation();
+                  }}
+                  minWidth={0}
+                  stableHeight={isCompact ? 42 : 46}
+                  debugId="shop-gallery.spotlight.immersive"
+                  aria-label={spotlightImmersiveOpen ? "Close full-screen Spotlight" : "Open full-screen Spotlight"}
+                  title={spotlightImmersiveOpen ? "Close full screen" : "Full screen"}
+                  data-spotlight-view-action="immersive"
+                  style={{
+                    ...spotlightProductRailButtonStyle(isCompact, "linear-gradient(180deg, #07172C 0%, #0B4E8A 100%)"),
+                    position: "absolute",
+                    right: isCompact ? 9 : 12,
+                    bottom: isCompact ? 12 : 14,
+                    zIndex: 7,
+                    color: "#FFFFFF",
+                  }}
+                >
+                  <span aria-hidden="true">{spotlightImmersiveOpen ? "\u00D7" : "\u26F6"}</span>
+                </SecondaryButton>
                 {spotlightProductLinked ? (
                   <>
                     {spotlightProductActionsOpen ? (
@@ -8596,7 +8742,7 @@ export default function ShopGalleryPage() {
                           top: isCompact ? 10 : 14,
                           bottom: "auto",
                           zIndex: 5,
-                          display: "grid",
+                          display: "none",
                           gap: 3,
                           padding: isCompact ? "9px 11px" : "11px 13px",
                           borderRadius: 16,
@@ -8734,6 +8880,26 @@ export default function ShopGalleryPage() {
                                 </span>
                               </SecondaryButton>
                               <SecondaryButton
+                                onClick={() => void toggleSpotlightProductLike()}
+                                disabled={likingProductId === spotlightSourceProductId}
+                                minWidth={0}
+                                stableHeight={isCompact ? 42 : 46}
+                                debugId="shop-gallery.spotlight-product.like"
+                                aria-label={spotlightProductLiked ? "\u2665" : "\u2661"}
+                                title={spotlightProductLiked ? "\u2665" : "\u2661"}
+                                data-spotlight-product-action="like"
+                                style={spotlightProductRailButtonStyle(
+                                  isCompact,
+                                  spotlightProductLiked
+                                    ? "linear-gradient(180deg, #FFE8EE 0%, #FFB9C9 100%)"
+                                    : "linear-gradient(180deg, #FFFFFF 0%, #FFF0F4 100%)"
+                                )}
+                              >
+                                <span aria-hidden="true" style={{ color: "#BE123C" }}>
+                                  {spotlightProductLiked ? "\u2665" : "\u2661"}
+                                </span>
+                              </SecondaryButton>
+                              <SecondaryButton
                                 onClick={() =>
                                   void contactSpotlightProductSeller()
                                 }
@@ -8822,6 +8988,23 @@ export default function ShopGalleryPage() {
                               <span aria-hidden="true">
                                 {spotlightShopFollowState.isFollowing ? "\u2713" : "+"}
                               </span>
+                            </SecondaryButton>
+                          ) : null}
+                          {spotlightCommunityLabel ? (
+                            <SecondaryButton
+                              onClick={showSpotlightBusinessArea}
+                              minWidth={0}
+                              stableHeight={isCompact ? 42 : 46}
+                              debugId="shop-gallery.spotlight-product.business-area"
+                              aria-label={`Show public business area ${spotlightCommunityLabel}`}
+                              title="Business area"
+                              data-spotlight-product-action="business-area"
+                              style={spotlightProductRailButtonStyle(
+                                isCompact,
+                                "linear-gradient(180deg, #FFFFFF 0%, #E6F7FF 100%)"
+                              )}
+                            >
+                              <span aria-hidden="true">{"\u2316"}</span>
                             </SecondaryButton>
                           ) : null}
                           <SecondaryButton
@@ -9401,7 +9584,7 @@ export default function ShopGalleryPage() {
                             backdropFilter: "blur(6px)",
                             overflowAnchor: "none",
                           }}
-                          maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
+                          maxVideoSeconds={SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS}
                           frameStyle={{
                             width: "100%",
                             height: "100%",

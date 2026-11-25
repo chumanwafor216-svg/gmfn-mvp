@@ -225,7 +225,7 @@ def test_public_shop_presentation_fetch_reserves_round_but_consumes_nothing(
         "passive_rotation_ms": 5000,
         "image_rotation_ms": 5000,
         "video_min_rotation_ms": 8000,
-        "video_max_rotation_ms": 10000,
+        "video_max_rotation_ms": 12000,
         "max_items_per_window": 2,
         "qualifying_visible_ms": 1000,
         "minimum_visible_ratio": 0.6,

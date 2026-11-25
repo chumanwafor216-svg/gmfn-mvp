@@ -2,17 +2,20 @@
 // only tune these timing/media values here. Backend quota override lives in
 // gmfn_backend/app/api/routes/marketplace.py.
 export const SPOTLIGHT_PILOT_REFRESH_MS = 30000;
-export const SPOTLIGHT_PILOT_ROTATION_MS = 10000;
+export const SPOTLIGHT_PILOT_ROTATION_MS = 12000;
 export const SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS = 10;
+export const SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS = 12;
 
 export const SPOTLIGHT_MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+export const SPOTLIGHT_MIN_IMAGE_SHORT_EDGE = 720;
 export const SPOTLIGHT_MAX_VIDEO_BYTES = 15 * 1024 * 1024;
 export const SPOTLIGHT_MAX_SOURCE_VIDEO_BYTES = 300 * 1024 * 1024;
 export const SPOTLIGHT_MAX_SERVER_PREPARATION_VIDEO_BYTES = 100 * 1024 * 1024;
-export const SPOTLIGHT_MIN_VIDEO_SHORT_EDGE = 360;
+export const SPOTLIGHT_MIN_VIDEO_SHORT_EDGE = 576;
+export const SPOTLIGHT_MIN_VIDEO_FPS = 24;
 export const SPOTLIGHT_MAX_VIDEO_ASPECT_RATIO = 2.4;
 export const SPOTLIGHT_VIDEO_QUALITY_GUIDANCE =
-  "Before recording, clean the lens, use good light, hold the phone steady, keep the product centred, and choose a quiet place. Upload a clear, playable portrait, square, or landscape video. Common social-video downloads are accepted when they remain usable. You do not need to cut it yourself: GSN prepares the file and keeps only the opening 10 seconds. Only unreadable, extremely small, unusually narrow, or very choppy video is rejected.";
+  "Before recording, clean the lens, use good light, hold the phone steady, keep the product centred, and choose a quiet place. Upload a clear, playable portrait, square, or landscape video. Common social-video downloads are accepted when they remain usable. You do not need to cut it yourself: GSN prepares the file and keeps only the opening 12 seconds. Spotlight video must be at least 576 pixels on its short edge and at least 24 frames per second. Unreadable, undersized, unusually narrow, or choppy video is rejected.";
 
 export const SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL = Math.max(
   1,

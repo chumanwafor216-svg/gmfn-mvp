@@ -27,6 +27,11 @@ MIN_VIDEO_DURATION_SECONDS = 1.0
 MAX_VIDEO_ASPECT_RATIO = 2.4
 MAX_VIDEO_DURATION_SECONDS = 10.0
 MAX_VIDEO_LONG_EDGE = 1280
+SPOTLIGHT_MIN_VIDEO_SHORT_EDGE = 576
+SPOTLIGHT_MIN_VIDEO_FPS = 24.0
+SPOTLIGHT_MAX_VIDEO_DURATION_SECONDS = 12.0
+SPOTLIGHT_MAX_VIDEO_LONG_EDGE = 1920
+SPOTLIGHT_MAX_NORMALIZED_VIDEO_BYTES = 20 * 1024 * 1024
 # The source ceiling is deliberately higher than the published-file ceiling.
 # Members may select an ordinary phone recording without knowing its duration
 # or encoded size; GSN then keeps and normalises only the opening public clip.
@@ -641,6 +646,8 @@ def inspect_video(
     *,
     defer_min_duration_check: bool = False,
     defer_unknown_fps_check: bool = False,
+    min_short_edge: int = MIN_VIDEO_SHORT_EDGE,
+    min_fps: float = MIN_VIDEO_FPS,
 ) -> VideoInspection:
     source_path = Path(path)
     if not source_path.is_file() or source_path.stat().st_size <= 0:
@@ -689,6 +696,8 @@ def inspect_video(
         inspection,
         defer_min_duration_check=defer_min_duration_check,
         defer_unknown_fps_check=defer_unknown_fps_check,
+        min_short_edge=min_short_edge,
+        min_fps=min_fps,
     )
     return inspection
 
@@ -698,6 +707,8 @@ def _validate_video_quality(
     *,
     defer_min_duration_check: bool = False,
     defer_unknown_fps_check: bool = False,
+    min_short_edge: int = MIN_VIDEO_SHORT_EDGE,
+    min_fps: float = MIN_VIDEO_FPS,
 ) -> None:
     if inspection.width <= 0 or inspection.height <= 0:
         raise MediaQualityError(
@@ -712,7 +723,7 @@ def _validate_video_quality(
             "video_too_short",
             "The video must be at least 1 second long.",
         )
-    if inspection.short_edge < MIN_VIDEO_SHORT_EDGE:
+    if inspection.short_edge < min_short_edge:
         raise MediaQualityError(
             "video_resolution_too_low",
             (
@@ -734,7 +745,7 @@ def _validate_video_quality(
             "video_frame_rate_unknown",
             "GSN could not confirm this video's frame rate. Record or export it again before uploading.",
         )
-    if inspection.fps < MIN_VIDEO_FPS:
+    if inspection.fps < min_fps:
         raise MediaQualityError(
             "video_frame_rate_too_low",
             (
@@ -766,8 +777,12 @@ def _source_has_audio(ffmpeg_exe: str, source_path: Path) -> bool:
     return bool(re.search(r"Stream #[^\r\n]+Audio:", probe.stderr or "", re.IGNORECASE))
 
 
-def _normalized_dimensions(inspection: VideoInspection) -> tuple[int, int]:
-    scale = min(1.0, MAX_VIDEO_LONG_EDGE / max(inspection.long_edge, 1))
+def _normalized_dimensions(
+    inspection: VideoInspection,
+    *,
+    max_long_edge: int = MAX_VIDEO_LONG_EDGE,
+) -> tuple[int, int]:
+    scale = min(1.0, max_long_edge / max(inspection.long_edge, 1))
     width = max(2, int(round(inspection.width * scale)))
     height = max(2, int(round(inspection.height * scale)))
     if width % 2:
@@ -828,9 +843,29 @@ def normalize_marketplace_video(
     finish_profile: VideoFinishProfile | None = None,
     sound_path: str | Path | None = None,
     sound_mode: str | None = None,
+    delivery_profile: str = 'marketplace',
 ) -> NormalizedVideo:
     input_path = Path(source_path)
     destination = Path(output_path)
+    selected_delivery_profile = str(delivery_profile or 'marketplace').strip().lower()
+    if selected_delivery_profile not in {'marketplace', 'spotlight'}:
+        raise MediaQualityError(
+            'video_delivery_profile_invalid',
+            'Choose a supported GSN media delivery profile.',
+        )
+    is_spotlight_delivery = selected_delivery_profile == 'spotlight'
+    minimum_short_edge = (
+        SPOTLIGHT_MIN_VIDEO_SHORT_EDGE if is_spotlight_delivery else MIN_VIDEO_SHORT_EDGE
+    )
+    minimum_fps = SPOTLIGHT_MIN_VIDEO_FPS if is_spotlight_delivery else MIN_VIDEO_FPS
+    maximum_duration_seconds = (
+        SPOTLIGHT_MAX_VIDEO_DURATION_SECONDS
+        if is_spotlight_delivery
+        else MAX_VIDEO_DURATION_SECONDS
+    )
+    maximum_long_edge = (
+        SPOTLIGHT_MAX_VIDEO_LONG_EDGE if is_spotlight_delivery else MAX_VIDEO_LONG_EDGE
+    )
     # Some otherwise playable phone/social-video containers expose a usable
     # picture stream but report zero source duration or frame rate to the
     # lightweight metadata reader. Do not accept missing metadata as a low-
@@ -840,6 +875,8 @@ def normalize_marketplace_video(
         input_path,
         defer_min_duration_check=True,
         defer_unknown_fps_check=True,
+        min_short_edge=minimum_short_edge,
+        min_fps=minimum_fps,
     )
 
     try:
@@ -851,8 +888,8 @@ def normalize_marketplace_video(
         ) from exc
 
     destination.parent.mkdir(parents=True, exist_ok=True)
-    width, height = _normalized_dimensions(inspection)
-    output_fps = min(30.0, max(MIN_VIDEO_FPS, round(inspection.fps)))
+    width, height = _normalized_dimensions(inspection, max_long_edge=maximum_long_edge)
+    output_fps = min(30.0, max(minimum_fps, round(inspection.fps)))
     has_audio = _source_has_audio(ffmpeg_exe, input_path)
     added_sound_path = Path(sound_path) if sound_path is not None else None
     selected_sound_mode = str(sound_mode or "").strip().lower() or None
@@ -880,7 +917,7 @@ def normalize_marketplace_video(
     finish_seconds = (
         int(finish_profile.duration_seconds)
         if finish_profile is not None
-        else int(MAX_VIDEO_DURATION_SECONDS)
+        else int(maximum_duration_seconds)
     )
     if finish_profile is not None and finish_seconds not in {5, 10}:
         raise MediaQualityError('video_finish_duration_invalid', 'Choose a 5-second or 10-second GSN finish.')
@@ -978,6 +1015,11 @@ def normalize_marketplace_video(
         command.append("-an")
     command.append(str(destination))
 
+    if is_spotlight_delivery and finish_profile is None:
+        command[command.index("-crf") + 1] = "20"
+        command[command.index("-maxrate") + 1] = "5000k"
+        command[command.index("-bufsize") + 1] = "10000k"
+
     filter_parts: list[str] = []
     if (
         finish_profile is not None
@@ -1070,7 +1112,13 @@ def normalize_marketplace_video(
         )
 
     output_size = destination.stat().st_size
-    output_limit = MAX_GSN_NATURAL_FINISH_BYTES if finish_profile is not None else MAX_NORMALIZED_VIDEO_BYTES
+    output_limit = (
+        MAX_GSN_NATURAL_FINISH_BYTES
+        if finish_profile is not None
+        else SPOTLIGHT_MAX_NORMALIZED_VIDEO_BYTES
+        if is_spotlight_delivery
+        else MAX_NORMALIZED_VIDEO_BYTES
+    )
     if output_size <= 0 or output_size > output_limit:
         destination.unlink(missing_ok=True)
         raise MediaQualityError(
@@ -1078,7 +1126,11 @@ def normalize_marketplace_video(
             "The prepared video is still too large. Use a shorter or less complex recording.",
         )
 
-    output_inspection = inspect_video(destination)
+    output_inspection = inspect_video(
+        destination,
+        min_short_edge=minimum_short_edge,
+        min_fps=minimum_fps,
+    )
     output_has_audio = _source_has_audio(ffmpeg_exe, destination)
     if added_sound_path is not None and not output_has_audio:
         destination.unlink(missing_ok=True)
@@ -1090,7 +1142,7 @@ def normalize_marketplace_video(
         destination.unlink(missing_ok=True)
         raise MediaQualityError(
             "video_trim_failed",
-            "GSN could not keep this video within the 10-second limit. Export a shorter clip and try again.",
+            f"GSN could not keep this video within the {finish_seconds}-second limit. Export a shorter clip and try again.",
         )
 
     effective_duration = max(

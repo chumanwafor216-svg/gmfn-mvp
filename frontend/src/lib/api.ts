@@ -7107,6 +7107,32 @@ export async function unsaveMarketplaceProduct(productId: number): Promise<any> 
   );
 }
 
+export async function listLikedMarketplaceProducts(): Promise<any> {
+  return httpJson(
+    "/marketplace/products/liked",
+    "GET",
+    undefined,
+    { header_clan_id: null }
+  );
+}
+
+export async function likeMarketplaceProduct(productId: number): Promise<any> {
+  return httpJson(
+    `/marketplace/products/${encodeURIComponent(String(productId))}/like`,
+    "PUT",
+    undefined,
+    { header_clan_id: null }
+  );
+}
+
+export async function unlikeMarketplaceProduct(productId: number): Promise<any> {
+  return httpJson(
+    `/marketplace/products/${encodeURIComponent(String(productId))}/like`,
+    "DELETE",
+    undefined,
+    { header_clan_id: null }
+  );
+}
 export type ShopDiaryEvidenceClass =
   | "owner_update"
   | "system_recorded"
@@ -9494,10 +9520,12 @@ export async function uploadMarketplaceFileToR2(
 
 export async function uploadMarketplaceImageFile(
   file: File,
-  clanId?: number | null
+  clanId?: number | null,
+  deliveryProfile?: "marketplace" | "spotlight"
 ): Promise<any> {
   const fd = new FormData();
   fd.append("file", file);
+  if (deliveryProfile) fd.append("delivery_profile", deliveryProfile);
 
   const effectiveClanId = Number(clanId ?? getSelectedClanId() ?? 0);
   if (effectiveClanId > 0) {
@@ -9563,6 +9591,7 @@ export async function uploadMarketplaceImageReelFile(
     fd.append("sound_rights_confirmed", String(sound.rightsConfirmed));
   }
 
+
   const effectiveClanId = Number(clanId ?? getSelectedClanId() ?? 0);
   if (effectiveClanId > 0) {
     fd.append("clan_id", String(effectiveClanId));
@@ -9592,7 +9621,8 @@ export async function uploadMarketplaceVideoFile(
   durationSeconds?: number | null,
   clanId?: number | null,
   finish?: MarketplaceVideoFinishOptions | null,
-  sound?: MarketplaceVideoSoundOptions | null
+  sound?: MarketplaceVideoSoundOptions | null,
+  deliveryProfile?: "marketplace" | "spotlight"
 ): Promise<any> {
   const fd = new FormData();
   fd.append("file", file);
@@ -9617,6 +9647,10 @@ export async function uploadMarketplaceVideoFile(
     fd.append("sound_file", sound.file);
     fd.append("sound_mode", sound.mode);
     fd.append("sound_rights_confirmed", String(sound.rightsConfirmed));
+  }
+
+  if (deliveryProfile) {
+    fd.append("delivery_profile", deliveryProfile);
   }
 
   const headers: Record<string, string> = {

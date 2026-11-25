@@ -12,7 +12,7 @@ import {
 } from "../lib/api";
 import { resolveCtaTarget, type CtaTarget } from "../lib/ctaTargets";
 import {
-  SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_REFRESH_MS,
   SPOTLIGHT_PILOT_ROTATION_MS,
 } from "../lib/spotlightPilot";
@@ -574,7 +574,7 @@ export default function CommunityMarketplaceSpotlight() {
                 loopVideo={Boolean(activeItemView.heroVideoSrc)}
                 showAudioUnlock={Boolean(activeItemView.heroVideoSrc)}
                 audioUnlockLabel="Sound on"
-                maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
+                maxVideoSeconds={SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS}
               />
             ) : (
               <div

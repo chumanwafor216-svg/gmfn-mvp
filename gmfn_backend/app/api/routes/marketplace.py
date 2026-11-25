@@ -7884,6 +7884,67 @@ def unsave_marketplace_product(
         db.delete(row)
         db.commit()
     return {"ok": True, "saved": False, "product_id": int(product_id)}
+@router.get("/products/liked")
+def list_liked_marketplace_products(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    rows = (
+        db.query(MarketplaceProduct)
+        .join(MarketplaceProductLike, MarketplaceProductLike.product_id == MarketplaceProduct.id)
+        .filter(MarketplaceProductLike.user_id == int(current_user.id))
+        .filter(MarketplaceProduct.is_active.is_(True))
+        .order_by(MarketplaceProductLike.created_at.desc(), MarketplaceProductLike.id.desc())
+        .all()
+    )
+    return {"ok": True, "products": _products_out(db, rows)}
+
+
+@router.put("/products/{product_id}/like")
+def like_marketplace_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    product, shop = _get_saveable_product(db, product_id=product_id, current_user=current_user)
+    existing = (
+        db.query(MarketplaceProductLike)
+        .filter(
+            MarketplaceProductLike.product_id == int(product.id),
+            MarketplaceProductLike.user_id == int(current_user.id),
+        )
+        .first()
+    )
+    if existing:
+        return {"ok": True, "liked": True, "already_liked": True, "product_id": int(product.id)}
+    db.add(MarketplaceProductLike(product_id=int(product.id), user_id=int(current_user.id)))
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return {"ok": True, "liked": True, "already_liked": True, "product_id": int(product.id)}
+    return {"ok": True, "liked": True, "product_id": int(product.id), "shop_id": int(shop.id)}
+
+
+@router.delete("/products/{product_id}/like")
+def unlike_marketplace_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    row = (
+        db.query(MarketplaceProductLike)
+        .filter(
+            MarketplaceProductLike.product_id == int(product_id),
+            MarketplaceProductLike.user_id == int(current_user.id),
+        )
+        .first()
+    )
+    if row:
+        db.delete(row)
+        db.commit()
+    return {"ok": True, "liked": False, "product_id": int(product_id)}
+
 @router.get("/products/{product_id}/repost-targets")
 def recommend_marketplace_repost_targets(
     product_id: int,

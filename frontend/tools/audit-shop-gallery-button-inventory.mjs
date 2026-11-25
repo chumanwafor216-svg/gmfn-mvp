@@ -31,9 +31,9 @@ const findings = [];
 
 const expectedPageSourceActions = {
   PrimaryButton: 7,
-  SecondaryButton: 20,
+  SecondaryButton: 23,
   StableCtaLink: 8,
-  total: 35,
+  total: 38,
 };
 const expectedExistingWorkflowPlusShortcuts = 4;
 const expectedNativeFieldCount = 0;
@@ -699,12 +699,12 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?data-spotlight-layout="unified-spotlight-stage"[\s\S]*?border: 0[\s\S]*?background: "transparent"[\s\S]*?boxShadow: "none"/,
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?data-spotlight-layout="unified-spotlight-stage"[\s\S]*?position: spotlightImmersiveOpen \? "fixed" : "relative"[\s\S]*?border: 0[\s\S]*?background: spotlightImmersiveOpen \? "#020C1B" : "transparent"[\s\S]*?boxShadow: "none"/,
   "Public Shop Spotlight must use the approved unified stage instead of restoring a separate white information card."
 );
 
 assertContains(
-  /const spotlightScreenHeight = isCompact[\s\S]*?"clamp\(510px, 66svh, 620px\)"[\s\S]*?: "clamp\(500px, 64vh, 680px\)";[\s\S]*?data-spotlight-layout="unified-spotlight-stage"[\s\S]*?data-spotlight-information-shell="true"[\s\S]*?display: "contents"[\s\S]*?data-spotlight-action-row="true"[\s\S]*?data-spotlight-information-overlay="true"[\s\S]*?maxHeight: "45%"[\s\S]*?data-spotlight-screen="true"[\s\S]*?minHeight: spotlightScreenHeight[\s\S]*?height: spotlightScreenHeight[\s\S]*?objectFit: "contain"[\s\S]*?objectPosition: "center"/,
+  /const spotlightScreenHeight = spotlightImmersiveOpen[\s\S]*?"calc\(100dvh - 64px\)"[\s\S]*?"calc\(100dvh - 72px\)"[\s\S]*?"clamp\(510px, 66svh, 620px\)"[\s\S]*?: "clamp\(500px, 64vh, 680px\)";[\s\S]*?data-spotlight-layout="unified-spotlight-stage"[\s\S]*?data-spotlight-information-shell="true"[\s\S]*?display: "contents"[\s\S]*?data-spotlight-action-row="true"[\s\S]*?data-spotlight-information-overlay="true"[\s\S]*?maxHeight: "45%"[\s\S]*?data-spotlight-screen="true"[\s\S]*?minHeight: spotlightScreenHeight[\s\S]*?height: spotlightScreenHeight[\s\S]*?objectFit: "contain"[\s\S]*?objectPosition: "center"/,
   "Public Shop Spotlight must keep the responsive enlarged media, layout-neutral information shell, in-media disclosure overlay, normal-flow action row, and unchanged media fit.",
 );
 

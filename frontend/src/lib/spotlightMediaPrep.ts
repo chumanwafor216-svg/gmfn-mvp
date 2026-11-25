@@ -68,14 +68,12 @@ export async function prepareSpotlightImageFile(
   options?: {
     maxBytes?: number;
     maxDimension?: number;
+    minShortEdge?: number;
   }
 ): Promise<PreparedSpotlightMedia> {
   const maxBytes = Number(options?.maxBytes || 10 * 1024 * 1024);
   const maxDimension = Number(options?.maxDimension || 1920);
-
-  if (Number(file.size || 0) <= maxBytes) {
-    return { file, message: null };
-  }
+  const minShortEdge = Math.max(0, Number(options?.minShortEdge || 0));
 
   const objectUrl = URL.createObjectURL(file);
 
@@ -86,6 +84,17 @@ export async function prepareSpotlightImageFile(
       1,
       Number(image.naturalHeight || image.height || 1)
     );
+    if (minShortEdge > 0 && Math.min(originalWidth, originalHeight) < minShortEdge) {
+      throw new Error(
+        `This picture is ${originalWidth}x${originalHeight}. Spotlight requires at least ${minShortEdge} pixels on its short edge for a sharp full-screen presentation.`
+      );
+    }
+    if (
+      Number(file.size || 0) <= maxBytes &&
+      Math.max(originalWidth, originalHeight) <= maxDimension
+    ) {
+      return { file, message: null };
+    }
 
     let width = originalWidth;
     let height = originalHeight;
@@ -403,7 +412,7 @@ export async function prepareSpotlightVideoFile(
 ): Promise<PreparedSpotlightMedia> {
   const maxBytes = Number(options?.maxBytes || 15 * 1024 * 1024);
   const maxSourceBytes = Number(options?.maxSourceBytes || 100 * 1024 * 1024);
-  const maxDurationSeconds = Number(options?.maxDurationSeconds || 10);
+  const maxDurationSeconds = Number(options?.maxDurationSeconds || 12);
   const minShortEdge = Number(
     options?.minShortEdge || DEFAULT_MIN_VIDEO_SHORT_EDGE
   );

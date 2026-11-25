@@ -7,7 +7,7 @@ export type PublicShopSpotlightRotationInput = {
 
 export const PUBLIC_SHOP_SPOTLIGHT_IMAGE_ROTATION_MS = 5000;
 export const PUBLIC_SHOP_SPOTLIGHT_VIDEO_MIN_ROTATION_MS = 8000;
-export const PUBLIC_SHOP_SPOTLIGHT_VIDEO_MAX_ROTATION_MS = 10000;
+export const PUBLIC_SHOP_SPOTLIGHT_VIDEO_MAX_ROTATION_MS = 12000;
 // Compatibility/default value for older policy consumers. Images use this
 // exact dwell; videos use the duration-aware policy below.
 export const PUBLIC_SHOP_SPOTLIGHT_PRESENTATION_ROTATION_MS =

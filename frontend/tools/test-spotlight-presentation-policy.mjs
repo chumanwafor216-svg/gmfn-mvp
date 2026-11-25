@@ -30,9 +30,9 @@ const cases = [
   { label: 'seven-second video', input: { mediaKind: 'video', videoDurationSeconds: 7 }, expected: 8_000 },
   { label: 'nine-second video', input: { mediaKind: 'video', videoDurationSeconds: 9 }, expected: 9_000 },
   { label: 'ten-second video', input: { mediaKind: 'video', videoDurationSeconds: 10 }, expected: 10_000 },
-  { label: 'twelve-second video', input: { mediaKind: 'video', videoDurationSeconds: 12 }, expected: 10_000 },
-  { label: 'missing-duration video', input: { mediaKind: 'video', videoDurationSeconds: null }, expected: 10_000 },
-  { label: 'non-finite video', input: { mediaKind: 'video', videoDurationSeconds: Number.POSITIVE_INFINITY }, expected: 10_000 },
+  { label: 'twelve-second video', input: { mediaKind: 'video', videoDurationSeconds: 12 }, expected: 12_000 },
+  { label: 'missing-duration video', input: { mediaKind: 'video', videoDurationSeconds: null }, expected: 12_000 },
+  { label: 'non-finite video', input: { mediaKind: 'video', videoDurationSeconds: Number.POSITIVE_INFINITY }, expected: 12_000 },
 ];
 
 const failures = cases.flatMap((testCase) => {

@@ -59,10 +59,12 @@ import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildGsnVaultInviteMessage } from "../lib/gsnSnapshotPaper";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
+  SPOTLIGHT_MIN_IMAGE_SHORT_EDGE,
   SPOTLIGHT_MAX_SERVER_PREPARATION_VIDEO_BYTES,
   SPOTLIGHT_MAX_SOURCE_VIDEO_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
-  SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_MIN_VIDEO_SHORT_EDGE,
 } from "../lib/spotlightPilot";
 import {
   PUBLIC_SHOP_SPOTLIGHT_ANCHOR,
@@ -6728,6 +6730,7 @@ export default function ShopControlPage() {
       });
       const prepared = await prepareSpotlightImageFile(file, {
         maxBytes: SPOTLIGHT_MAX_IMAGE_BYTES,
+        minShortEdge: SPOTLIGHT_MIN_IMAGE_SHORT_EDGE,
       });
 
       if (spotlightImagePrepJobRef.current !== prepJob) return;
@@ -6821,7 +6824,8 @@ export default function ShopControlPage() {
       const prepared = await prepareSpotlightVideoFile(file, {
         maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
         maxSourceBytes: SPOTLIGHT_MAX_SERVER_PREPARATION_VIDEO_BYTES,
-        maxDurationSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+        maxDurationSeconds: SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS,
+        minShortEdge: SPOTLIGHT_MIN_VIDEO_SHORT_EDGE,
       });
 
       if (spotlightVideoPrepJobRef.current !== prepJob) return;
@@ -6889,7 +6893,8 @@ export default function ShopControlPage() {
           shopId: Number(activeShop.id),
           title: firstTruthy(spotlightProductName, spotlightMessage),
         },
-        spotlightVideoSound
+        spotlightVideoSound,
+        'spotlight'
       );
       if (
         spotlightVideoSound &&
@@ -7158,7 +7163,8 @@ export default function ShopControlPage() {
       if (spotlightImageFile) {
         const uploadRes = await uploadMarketplaceImageFile(
           spotlightImageFile,
-          targetClanId || null
+          targetClanId || null,
+          "spotlight"
         );
         imageUrl = firstTruthy(
           uploadRes?.image_url,
@@ -7182,12 +7188,13 @@ export default function ShopControlPage() {
         const uploadRes = await uploadMarketplaceVideoFile(
           spotlightVideoFile,
           spotlightVideoDurationSeconds != null &&
-            spotlightVideoDurationSeconds <= SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS
+            spotlightVideoDurationSeconds <= SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS
             ? spotlightVideoDurationSeconds
             : null,
           targetClanId || null,
           null,
-          spotlightVideoSound
+          spotlightVideoSound,
+          'spotlight'
         );
         videoUrl = firstTruthy(
           uploadRes?.video_url,
@@ -7560,7 +7567,7 @@ export default function ShopControlPage() {
     setSpotlightFlowStep,
     spotlightImagePreviewUrl,
     spotlightVideoPreviewUrl: spotlightFinishedVideoUrl || spotlightVideoPreviewUrl,
-    spotlightPilotMaxVideoSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+    spotlightPilotMaxVideoSeconds: SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS,
     spotlightPreviewMessage,
     spotlightPreviewHasPicture,
     spotlightPreviewHasVideo,

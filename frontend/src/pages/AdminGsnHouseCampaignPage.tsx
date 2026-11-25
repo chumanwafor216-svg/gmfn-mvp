@@ -39,9 +39,11 @@ import {
 } from "../lib/spotlightMediaPrep";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
+  SPOTLIGHT_MIN_IMAGE_SHORT_EDGE,
   SPOTLIGHT_MAX_SERVER_PREPARATION_VIDEO_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
-  SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_MIN_VIDEO_SHORT_EDGE,
 } from "../lib/spotlightPilot";
 import { structuredErrorMessage } from "../lib/structuredErrors";
 import "./AdminGsnHouseCampaignPage.css";
@@ -1024,7 +1026,8 @@ export default function AdminGsnHouseCampaignPage() {
             const prepared = await prepareSpotlightVideoFile(file, {
               maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
               maxSourceBytes: SPOTLIGHT_MAX_SERVER_PREPARATION_VIDEO_BYTES,
-              maxDurationSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+              maxDurationSeconds: SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS,
+              minShortEdge: SPOTLIGHT_MIN_VIDEO_SHORT_EDGE,
             });
             preparedItem = {
               key: mediaFileKey(file),
@@ -1036,6 +1039,7 @@ export default function AdminGsnHouseCampaignPage() {
           } else {
             const prepared = await prepareSpotlightImageFile(file, {
               maxBytes: SPOTLIGHT_MAX_IMAGE_BYTES,
+              minShortEdge: SPOTLIGHT_MIN_IMAGE_SHORT_EDGE,
             });
             preparedItem = {
               key: mediaFileKey(file),
@@ -1176,14 +1180,15 @@ export default function AdminGsnHouseCampaignPage() {
                 ? await uploadMarketplaceVideoFile(
                     item.file,
                     item.durationSeconds != null &&
-                      item.durationSeconds <= SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS
+                      item.durationSeconds <= SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS
                       ? item.durationSeconds
                       : null,
                     null,
                     null,
-                    item.sound || null
+                    item.sound || null,
+                    'spotlight'
                   )
-                : await uploadMarketplaceImageFile(item.file, null);
+                : await uploadMarketplaceImageFile(item.file, null, "spotlight");
           } catch (error) {
             failedItem = item;
             throw error;

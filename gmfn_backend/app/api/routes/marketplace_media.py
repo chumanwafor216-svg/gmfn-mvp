@@ -26,6 +26,9 @@ from app.services.marketplace_media_quality_service import (
     MAX_VIDEO_DURATION_SECONDS as QUALITY_MAX_VIDEO_DURATION_SECONDS,
     MIN_VIDEO_FPS,
     MIN_VIDEO_SHORT_EDGE,
+    SPOTLIGHT_MAX_VIDEO_DURATION_SECONDS,
+    SPOTLIGHT_MIN_VIDEO_FPS,
+    SPOTLIGHT_MIN_VIDEO_SHORT_EDGE,
     MediaQualityError,
     VideoFinishProfile,
     normalize_marketplace_image,
@@ -498,6 +501,7 @@ async def upload_marketplace_file_direct(
 async def upload_marketplace_image(
     file: UploadFile = File(...),
     clan_id: Optional[int] = Form(default=None),
+    delivery_profile: str = Form(default="marketplace"),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     _ensure_dirs()
@@ -517,6 +521,17 @@ async def upload_marketplace_image(
     temporary_path = _image_upload_dir() / f".{_random_name('.processing')}"
     try:
         normalized = normalize_marketplace_image(data, temporary_path)
+        selected_delivery_profile = str(delivery_profile or "marketplace").strip().lower()
+        if selected_delivery_profile not in {"marketplace", "spotlight"}:
+            raise MediaQualityError("image_delivery_profile_invalid", "Choose a supported GSN media delivery profile.")
+        if (
+            selected_delivery_profile == "spotlight"
+            and min(normalized.output_width, normalized.output_height) < 720
+        ):
+            raise MediaQualityError(
+                "image_resolution_too_low",
+                "Spotlight pictures must be at least 720 pixels on their short edge for a sharp full-screen presentation.",
+            )
     except MediaQualityError as exc:
         temporary_path.unlink(missing_ok=True)
         raise HTTPException(
@@ -536,6 +551,7 @@ async def upload_marketplace_image(
         "url": _public_url_for("images", filename),
         "clan_id": clan_id,
         "quality_verified": True,
+        "delivery_profile": selected_delivery_profile,
         "finish": "gsn_clear",
         "preparation": normalized.as_dict(),
         "boundary": "GSN applied a conservative non-generative finish; it did not invent detail or change product identity.",
@@ -724,6 +740,7 @@ async def upload_marketplace_video(
     finish_duration_seconds: Optional[int] = Form(default=None),
     finish_shop_id: Optional[int] = Form(default=None),
     finish_title: Optional[str] = Form(default=None),
+    delivery_profile: str = Form(default="marketplace"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
@@ -736,6 +753,9 @@ async def upload_marketplace_video(
     _validate_content_type("video", content_type, ext)
 
     selected_sound_mode = str(sound_mode or "").strip().lower() or None
+    selected_delivery_profile = str(delivery_profile or "marketplace").strip().lower()
+    if selected_delivery_profile not in {"marketplace", "spotlight"}:
+        raise HTTPException(status_code=400, detail="Unknown media delivery profile.")
     sound_ext = _safe_ext(sound_file.filename) if sound_file is not None else ""
     if sound_file is not None:
         if selected_sound_mode not in {"mix", "replace"}:
@@ -840,6 +860,7 @@ async def upload_marketplace_video(
             finish_profile=selected_finish,
             sound_path=sound_input_path,
             sound_mode=selected_sound_mode,
+            delivery_profile=selected_delivery_profile,
         )
         shutil.move(str(output_path), str(filepath))
     except MediaQualityError as exc:
@@ -849,10 +870,22 @@ async def upload_marketplace_video(
                 "code": exc.code,
                 "message": str(exc),
                 "standard": {
-                    "minimum_short_edge": MIN_VIDEO_SHORT_EDGE,
-                    "minimum_fps": MIN_VIDEO_FPS,
+                    "minimum_short_edge": (
+                        SPOTLIGHT_MIN_VIDEO_SHORT_EDGE
+                        if selected_delivery_profile == "spotlight"
+                        else MIN_VIDEO_SHORT_EDGE
+                    ),
+                    "minimum_fps": (
+                        SPOTLIGHT_MIN_VIDEO_FPS
+                        if selected_delivery_profile == "spotlight"
+                        else MIN_VIDEO_FPS
+                    ),
                     "maximum_aspect_ratio": MAX_VIDEO_ASPECT_RATIO,
-                    "maximum_public_seconds": int(MAX_VIDEO_DURATION_SECONDS),
+                    "maximum_public_seconds": int(
+                        SPOTLIGHT_MAX_VIDEO_DURATION_SECONDS
+                        if selected_delivery_profile == "spotlight"
+                        else MAX_VIDEO_DURATION_SECONDS
+                    ),
                     "output_format": "MP4",
                 },
             },
@@ -874,7 +907,12 @@ async def upload_marketplace_video(
         "max_source_bytes": MAX_SOURCE_VIDEO_BYTES,
         "duration_seconds": normalized.output.duration_seconds,
         "source_duration_seconds": normalized.source.duration_seconds,
-        "max_video_seconds": MAX_VIDEO_DURATION_SECONDS,
+        "max_video_seconds": (
+            SPOTLIGHT_MAX_VIDEO_DURATION_SECONDS
+            if selected_delivery_profile == "spotlight"
+            else MAX_VIDEO_DURATION_SECONDS
+        ),
+        "delivery_profile": selected_delivery_profile,
         "trimmed": normalized.trimmed,
         "quality_verified": True,
         "quality": normalized.as_dict(),
