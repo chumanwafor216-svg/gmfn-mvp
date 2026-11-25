@@ -30,6 +30,7 @@ from app.db.models import (
     MarketplaceAttentionEvent,
     MarketplaceBroadcast,
     MarketplaceProduct,
+    MarketplaceProductLike,
     MarketplaceProductRepost,
     MarketplaceProductSave,
     MarketplaceReview,
