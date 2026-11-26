@@ -494,6 +494,14 @@ async function collectMetrics(page) {
     );
     const shopEntranceVideo = document.querySelector('[data-gsn-shop-entrance-video="true"]');
     const shopEntranceRect = shopEntranceVideo?.getBoundingClientRect();
+    const shopEntranceStyle = shopEntranceVideo
+      ? getComputedStyle(shopEntranceVideo)
+      : null;
+    const shopSignboard = document.querySelector(".public-shop-signboard");
+    const shopSignboardStyle = shopSignboard ? getComputedStyle(shopSignboard) : null;
+    const shopHero = document.querySelector('[data-public-shop-photo-hero="true"]');
+    const shopHeroRect = shopHero?.getBoundingClientRect();
+    const shopHeroStyle = shopHero ? getComputedStyle(shopHero) : null;
     const shopIdentityOverlay = document.querySelector('[data-public-shop-identity-overlay="true"]');
     const shopIdentityOverlayRect = shopIdentityOverlay?.getBoundingClientRect();
     const shopIdentityOverlayStyle = shopIdentityOverlay
@@ -690,6 +698,18 @@ async function collectMetrics(page) {
       shopEntranceInline:
         shopEntranceVideo instanceof HTMLVideoElement ? shopEntranceVideo.playsInline : null,
       shopEntranceBottom: shopEntranceRect ? Math.round(shopEntranceRect.bottom) : null,
+      shopEntranceObjectFit: shopEntranceStyle?.objectFit || null,
+      shopSignboardPadding: shopSignboardStyle?.padding || null,
+      shopSignboardBorderWidth: shopSignboardStyle?.borderTopWidth || null,
+      shopSignboardOutlineWidth: shopSignboardStyle?.outlineWidth || null,
+      shopSignboardBackgroundImage: shopSignboardStyle?.backgroundImage || null,
+      shopHeroBoundary: shopHero?.getAttribute("data-shop-hero-boundary") || null,
+      shopHeroWidth: shopHeroRect ? Math.round(shopHeroRect.width) : null,
+      shopHeroHeight: shopHeroRect ? Math.round(shopHeroRect.height) : null,
+      shopHeroBorderLeftWidth: shopHeroStyle?.borderLeftWidth || null,
+      shopHeroBorderRightWidth: shopHeroStyle?.borderRightWidth || null,
+      shopHeroBorderTopWidth: shopHeroStyle?.borderTopWidth || null,
+      shopHeroBorderBottomWidth: shopHeroStyle?.borderBottomWidth || null,
       shopIdentityOverlayHeight: shopIdentityOverlayRect
         ? Math.round(shopIdentityOverlayRect.height)
         : null,
@@ -1033,6 +1053,37 @@ async function run() {
       }
       if (item.name.includes("public-shop")) {
         const maximumIdentityOverlayHeight = item.width <= 520 ? 120 : 160;
+        if (
+          metrics.shopHeroBoundary !== "single-neon" ||
+          metrics.shopEntranceObjectFit !== "cover" ||
+          metrics.shopSignboardPadding !== "0px" ||
+          metrics.shopSignboardBorderWidth !== "0px" ||
+          metrics.shopSignboardOutlineWidth !== "0px" ||
+          metrics.shopSignboardBackgroundImage !== "none" ||
+          metrics.shopHeroBorderLeftWidth !== metrics.shopHeroBorderRightWidth ||
+          metrics.shopHeroBorderTopWidth !== metrics.shopHeroBorderBottomWidth ||
+          metrics.shopHeroBorderLeftWidth !== "1px"
+        ) {
+          throw new Error(
+            `${item.name} restored an artificial Shop frame or asymmetric hero boundary: ` +
+              JSON.stringify({
+                boundary: metrics.shopHeroBoundary,
+                objectFit: metrics.shopEntranceObjectFit,
+                signboardPadding: metrics.shopSignboardPadding,
+                signboardBorder: metrics.shopSignboardBorderWidth,
+                signboardOutline: metrics.shopSignboardOutlineWidth,
+                signboardBackground: metrics.shopSignboardBackgroundImage,
+                heroWidth: metrics.shopHeroWidth,
+                heroHeight: metrics.shopHeroHeight,
+                heroBorders: [
+                  metrics.shopHeroBorderTopWidth,
+                  metrics.shopHeroBorderRightWidth,
+                  metrics.shopHeroBorderBottomWidth,
+                  metrics.shopHeroBorderLeftWidth,
+                ],
+              })
+          );
+        }
         if (
           !metrics.neonEnvironmentPresent ||
           !String(metrics.neonShellBackground || "").includes("radial-gradient") ||

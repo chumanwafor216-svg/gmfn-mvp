@@ -72,7 +72,6 @@
   gap: 18px;
 }
 
-.public-shop-neon-environment .public-shop-signboard,
 .public-shop-neon-environment .public-shop-section,
 .public-shop-neon-environment [data-public-shop-more="secondary"] > summary {
   outline: 1px solid rgba(68, 166, 255, 0.76);
@@ -445,13 +444,13 @@
 }
 
 .public-shop-signboard {
-  background: var(--hero-bg);
-  border: 2px solid var(--hero-border);
-  border-radius: 34px;
-  padding: 30px 24px;
-  text-align: center;
-  box-shadow: var(--shadow-heavy);
-  overflow: hidden;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  text-align: left;
+  box-shadow: none;
+  overflow: visible;
 }
 
 .public-shop-title {
@@ -858,8 +857,8 @@
   }
 
   .public-shop-signboard {
-    border-radius: 22px;
-    padding: 14px 13px 13px;
+    border-radius: 0;
+    padding: 0;
   }
 
   .public-shop-title {

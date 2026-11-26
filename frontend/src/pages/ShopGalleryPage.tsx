@@ -6824,38 +6824,15 @@ export default function ShopGalleryPage() {
           className="public-shop-signboard"
           style={{
             position: "relative",
-            overflow: "hidden",
-            borderRadius: isCompact ? 18 : 30,
-            padding: isCompact ? 8 : 14,
-            border: "1px solid rgba(214,170,69,0.46)",
-            background:
-              "radial-gradient(circle at 20% 8%, rgba(246,196,83,0.18) 0%, transparent 28%), radial-gradient(circle at 92% 2%, rgba(47,128,237,0.10) 0%, transparent 32%), linear-gradient(145deg, #FFFFFF 0%, #FFFCF4 54%, #F6FBFF 100%)",
-            boxShadow:
-              "0 22px 48px rgba(8,38,67,0.13), 0 0 0 4px rgba(255,255,255,0.42), inset 0 1px 0 rgba(255,255,255,0.96)",
+            overflow: "visible",
+            borderRadius: 0,
+            padding: 0,
+            border: 0,
+            outline: "none",
+            background: "transparent",
+            boxShadow: "none",
           }}
         >
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "repeating-linear-gradient(135deg, transparent 0 34px, rgba(214,170,69,0.035) 34px 35px), radial-gradient(circle at 72% 18%, rgba(214,170,69,0.10) 0%, transparent 28%)",
-              pointerEvents: "none",
-            }}
-          />
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              right: isCompact ? 12 : 38,
-              top: isCompact ? 14 : 32,
-              opacity: isCompact ? 0.045 : 0.08,
-              pointerEvents: "none",
-            }}
-          >
-            <GSNBrandMark width={isCompact ? 58 : 150} height={isCompact ? 76 : 196} />
-          </div>
           <PublicShopPhotoHero
             source={shopHeroSource}
             compact={isCompact}

@@ -31,25 +31,29 @@ export default function PublicShopPhotoHero({
   return (
     <section
       data-public-shop-photo-hero="true"
+      data-shop-hero-boundary="single-neon"
       data-shop-hero-source={source.kind}
       aria-label={`${shopName} shop identity`}
       style={{
         position: "relative",
+        width: "100%",
+        aspectRatio: "430 / 414",
         minHeight: compact ? 348 : 500,
         overflow: "hidden",
-        borderRadius: compact ? 16 : 26,
+        isolation: "isolate",
+        borderRadius: compact ? 18 : 22,
         color: "#FFFFFF",
-        background: "#061827",
-        border: "1px solid rgba(246,215,122,0.54)",
+        background: "#041425",
+        border: "1px solid rgba(83,189,255,0.86)",
         boxShadow:
-          "0 22px 44px rgba(3,20,36,0.22), inset 0 1px 0 rgba(255,255,255,0.18)",
+          "0 0 18px rgba(58,151,255,0.34), 0 0 30px rgba(142,72,255,0.18)",
       }}
     >
       <div
         data-previous-shop-hero-source={source.kind}
         style={{ position: "absolute", inset: 0 }}
       >
-        <GsnShopEntranceAnimation compact={compact} />
+        <GsnShopEntranceAnimation compact={compact} fit="cover" />
       </div>
 
       <div
@@ -63,30 +67,14 @@ export default function PublicShopPhotoHero({
         }}
       />
       <div
-        aria-hidden="true"
         style={{
           position: "absolute",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: compact ? 11 : 16,
-          background:
-            "linear-gradient(180deg, #F6D77A 0%, #B78928 48%, #F8DF92 100%)",
-          clipPath: "polygon(0 0, 100% 0, 55% 46%, 100% 100%, 0 100%)",
-          opacity: 0.92,
-          pointerEvents: "none",
-        }}
-      />
-
-      <div
-        style={{
-          position: "relative",
+          inset: 0,
           zIndex: 2,
-          minHeight: compact ? 348 : 500,
           display: "grid",
           alignContent: "space-between",
           gap: compact ? 14 : 28,
-          padding: compact ? "15px 16px 16px 24px" : "24px 28px 26px 40px",
+          padding: compact ? "14px 14px 12px" : "22px 24px 20px",
         }}
       >
         <div
@@ -105,8 +93,9 @@ export default function PublicShopPhotoHero({
               borderRadius: "50%",
               display: "grid",
               placeItems: "center",
-              background: "rgba(3,20,36,0.70)",
-              border: "1px solid rgba(246,215,122,0.54)",
+              background: "rgba(3,20,36,0.28)",
+              border: 0,
+              boxShadow: "0 8px 20px rgba(0,0,0,0.18)",
             }}
           >
             <GSNBrandMark width={compact ? 23 : 31} height={compact ? 29 : 39} />
@@ -143,25 +132,24 @@ export default function PublicShopPhotoHero({
             display: "grid",
             gap: compact ? 7 : 11,
             alignSelf: "end",
-            width: compact ? "100%" : "min(70%, 650px)",
-            maxWidth: 650,
-            padding: compact ? "8px 10px 9px" : "12px 14px 13px",
-            borderRadius: compact ? 13 : 18,
+            width: "100%",
+            maxWidth: "none",
+            padding: compact ? "24px 10px 9px" : "46px 14px 13px",
+            borderRadius: 0,
             background:
-              "linear-gradient(180deg, rgba(3,20,36,0.04) 0%, rgba(3,20,36,0.25) 100%)",
-            border: "1px solid rgba(246,215,122,0.16)",
-            boxShadow: "0 8px 22px rgba(0,0,0,0.12)",
-            backdropFilter: "blur(1px)",
+              "linear-gradient(180deg, rgba(3,20,36,0) 0%, rgba(3,20,36,0.25) 38%, rgba(2,12,27,0.76) 100%)",
+            border: 0,
+            boxShadow: "none",
           }}
         >
           <h1
             style={{
               margin: 0,
-              maxWidth: compact ? 285 : 620,
+              maxWidth: "100%",
               color: "#FFFFFF",
               fontFamily: "'Inter', 'Segoe UI', 'Arial Black', Arial, sans-serif",
-              fontSize: compact ? 21 : 36,
-              lineHeight: compact ? 1.02 : 0.98,
+              fontSize: compact ? "clamp(18px, 6vw, 24px)" : "clamp(30px, 4vw, 42px)",
+              lineHeight: 1.04,
               fontWeight: 950,
               letterSpacing: compact ? -0.7 : -1.3,
               textShadow:

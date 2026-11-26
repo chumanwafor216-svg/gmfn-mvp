@@ -74,13 +74,21 @@ requireText("entrance", "onPlaying={hideLoopCover}", "The loop cover must clear 
 requireText("entrance", "/branding/gsn-shop-entrance-approved.mp4", "The approved cropped storefront asset is missing.");
 requireText("entrance", "/branding/gsn-shop-entrance-approved-poster.jpg", "The approved storefront poster fallback is missing.");
 requireText("publicHero", 'data-public-shop-photo-hero="true"', "The full-width Public Shop photo hero contract is missing.");
+requireText("publicHero", 'data-shop-hero-boundary="single-neon"', "Public Shop must keep one restrained neon hero boundary.");
 requireText("publicHero", "<GsnShopEntranceAnimation", "Public Shop must reuse the approved animated entrance.");
+requireText("publicHero", 'fit="cover"', "The approved entrance must fill the hero without artificial letterboxing.");
+requireText("publicHero", 'aspectRatio: "430 / 414"', "The hero must preserve the approved entrance proportions.");
 requireText("publicHero", 'minHeight: compact ? 348 : 500', "The Public Shop hero must reserve enough space for the animated entrance.");
 requireText("publicHero", 'data-public-shop-identity-overlay="true"', "The transparent shop-identity overlay contract is missing.");
 requireText("publicHero", 'data-public-shop-identity-actions="true"', "Shop category and owner Edit Shop must share one compact identity-action row.");
 requireText("publicHero", 'flexWrap: compact ? "nowrap" : "wrap"', "The phone identity actions must not stack over the shop entrance.");
 requireText("publicHero", 'rgba(3,20,36,0.25)', "Shop identity must remain readable without hiding the animated entrance behind an opaque card.");
 forbidText("publicHero", 'background: "rgba(3,20,36,0.50)"', "The old obstructive shop-identity card must not return.");
+forbidText("publicHero", 'clipPath: "polygon(0 0, 100% 0, 55% 46%, 100% 100%, 0 100%)"', "The artificial gold strip must not return.");
+requireText("gallery", 'className="public-shop-signboard"', "The Public Shop signboard wrapper is missing.");
+requireText("gallery", 'outline: "none"', "The signboard wrapper must not add a second boundary around the hero.");
+requireText("gallery", 'background: "transparent"', "The heavy white signboard frame must remain removed.");
+forbidText("gallery", 'repeating-linear-gradient(135deg, transparent 0 34px', "The redundant signboard decoration must not return.");
 
 requireText("gallery", "selectShopHeroSource({", "Public Shop must use the deterministic selector.");
 requireText("gallery", "image_url_available === false", "Public Shop must respect backend media availability.");
