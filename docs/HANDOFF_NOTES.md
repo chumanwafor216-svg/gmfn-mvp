@@ -7696,3 +7696,17 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Shop owners retain a compact listen action, while the former large voice-note overlay no longer blocks product media or product information.
 - No backend, schema, visibility, lifecycle, privacy, payment, trade or owner-management contract changed.
 - Verification: Shop gallery inventory, Shop Diary Phase 1 and audio waveform audits pass; `git diff --check` passes. The isolated checkout could not run the full frontend build because dependencies are not installed locally; GitHub CI is required for full build evidence.
+
+# Demand Box complete journey simplification - 2026-11-26
+
+- Isolated branch: `codex/demand-box-complete-journey-20261126`; baseline `ba0c735748c0d65f3832a1c8b33333d8497fd2a9`.
+- Demand Box now exposes two primary request tabs: `All requests` and `My requests`. Relevance remains prioritised inside All, with Relevant, Tagged, Questions, Urgent and Need types retained under filters. Compact request search remains on the entrance.
+- Open requests now flow from request details to possible matches, an in-place Ask Seller card, Protected Trade and View shop, then a collapsible integrated conversation and the existing Fulfilled, Cancel and Copy actions.
+- Ask Seller uses the existing server-validated demand/product/shop handoff. GSN private chat is primary; authorised WhatsApp is an explicit alternative and never opens automatically. The existing invitation route appears only if the backend identifies a non-GSN seller.
+- Private conversations now poll the existing response API while visible, refresh on focus/reconnection, preserve drafts and active recording state, de-duplicate messages, keep chronological left/right bubbles, acknowledge durable unread state per peer and show a new-message control instead of forcing scroll while older history is being read.
+- The compact composer keeps text, voice, photo, video, document and link attachments; microphone changes to Send when content is ready. Protected Trade reuses the existing validated route and no separate transaction engine was added.
+- Backend additions are limited to durable response `read_at` state, unread summary/read acknowledgement, validated request-owner initiation to the matched active shop owner, and private document attachment validation. Migration: `20261126_add_demand_response_read_state`; historical responses are backfilled as read.
+- Verification: complete affected backend files `41 passed`; Demand Box front-package audit passed; expanded-search audit passed; Python compilation, Node syntax checks, Alembic single-head check and `git diff --check` passed.
+- Blockers: this isolated worktree has no `node_modules`, so TypeScript/Vite build and Playwright phone smoke could not execute without an unauthorised dependency installation. The broad protected-button suite also retains pre-existing raw controls in `VoiceNoteRecorder.tsx`, a pre-existing Marketplace tap audit failure, and Playwright-dependent audits unavailable without dependencies.
+- Storage after implementation remained above the mandatory threshold. No dependency installation, production data write, migration execution against production, push, merge or deployment was performed at this checkpoint.
+- The inherited conflict markers earlier in this document were preserved and not resolved by this work.

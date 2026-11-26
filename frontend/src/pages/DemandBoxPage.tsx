@@ -26,6 +26,7 @@ import {
   createMarketplaceRequestRelayRun,
   getDemandSupplyMatches,
   getDemandSupplySellerContact,
+  getDemandResponseUnreadSummary,
   getMarketplaceRelayPolicy,
   getMarketplaceRequestRelayCandidates,
   getCurrentClan,
@@ -1175,6 +1176,8 @@ export default function DemandBoxPage() {
   const [openDemandRecordKey, setOpenDemandRecordKey] = useState("");
   const [openDemandDetailTab, setOpenDemandDetailTab] = useState("");
   const [showMoreQueueRows, setShowMoreQueueRows] = useState(false);
+  const [requestSearch, setRequestSearch] = useState("");
+  const [unreadByRequest, setUnreadByRequest] = useState<Record<string, number>>({});
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -1430,6 +1433,37 @@ export default function DemandBoxPage() {
   const showNotice = useCallback((tone: NoticeTone, text: string) => {
     setNotice({ tone, text });
   }, []);
+
+  const refreshUnreadSummary = useCallback(async () => {
+    try {
+      const summary = await getDemandResponseUnreadSummary();
+      const next: Record<string, number> = {};
+      for (const row of summary?.requests || []) {
+        const requestId = positiveNumber(row.marketplace_request_id);
+        const unreadCount = positiveNumber(row.unread_count);
+        if (requestId && unreadCount) next[String(requestId)] = unreadCount;
+      }
+      setUnreadByRequest(next);
+    } catch {
+      // The request list remains usable if unread reconciliation is temporarily unavailable.
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshUnreadSummary();
+    const refresh = () => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      void refreshUnreadSummary();
+    };
+    const timer = window.setInterval(refresh, 10000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [refreshUnreadSummary]);
 
   const loadOlderVisibleDemandRows = useCallback(async () => {
     const effectiveClanId = Number(selectedClanId || 0);
@@ -2155,12 +2189,13 @@ export default function DemandBoxPage() {
 
     const contactKey = `${demandId}:${productId}:${shopId}`;
     if (preparingSellerContactKey) return;
-
-    const contactWindow =
-      typeof window !== "undefined" ? window.open("", "_blank") : null;
-    if (contactWindow) {
-      contactWindow.opener = null;
-      contactWindow.document.title = "Opening WhatsApp...";
+    if (
+      sellerContactHandoff?.demand_id === demandId &&
+      sellerContactHandoff?.product_id === productId &&
+      sellerContactHandoff?.shop_id === shopId
+    ) {
+      setSellerContactHandoff(null);
+      return;
     }
 
     setPreparingSellerContactKey(contactKey);
@@ -2169,31 +2204,7 @@ export default function DemandBoxPage() {
         shop_id: shopId,
       });
       setSellerContactHandoff({ ...contact, shopPath });
-
-      const chatUrl = buildWhatsAppChatUrl(
-        contact.whatsapp_number,
-        contact.prepared_message
-      );
-      if (!contact.contact_available || !chatUrl) {
-        contactWindow?.close();
-        showNotice(
-          "error",
-          "Seller WhatsApp is not available for this match. View Shop to use any contact method the owner has made available."
-        );
-        return;
-      }
-
-      if (contactWindow) {
-        contactWindow.location.replace(chatUrl);
-      } else if (typeof window !== "undefined") {
-        window.location.assign(chatUrl);
-      }
-      showNotice(
-        "success",
-        "WhatsApp opened with your request and matched listing already included."
-      );
     } catch (error: any) {
-      contactWindow?.close();
       showNotice(
         "error",
         String(error?.message || "This seller contact could not be prepared safely.")
@@ -2203,22 +2214,14 @@ export default function DemandBoxPage() {
     }
   }
 
-  function returnToDemandRequest(demandId: number) {
-    setSellerContactHandoff(null);
-    setActiveQueueLane("mine");
-    setShowMoreQueueRows(false);
-    setOpenDemandRecordKey(String(demandId));
-    if (typeof window === "undefined") return;
-    window.requestAnimationFrame(() => {
-      const targetId = `demand-request-${demandId}`;
-      const target = document.getElementById(targetId);
-      if (!target) return;
-      revealElementWithoutJump(target, {
-        surface: "demand-box",
-        targetId,
-        reason: "seller-contact-return",
-      });
-    });
+  function openMatchedSellerWhatsApp(contact: DemandSellerHandoffState) {
+    const chatUrl = buildWhatsAppChatUrl(contact.whatsapp_number, contact.prepared_message);
+    if (!contact.contact_available || !chatUrl || typeof window === "undefined") {
+      showNotice("error", "This seller has not authorised WhatsApp contact for this listing.");
+      return;
+    }
+    window.open(chatUrl, "_blank", "noopener,noreferrer");
+    showNotice("success", "WhatsApp opened as an alternative. No message was sent by GSN.");
   }
   function renderDemandMatchPanel(
     row: DemandRow,
@@ -2276,10 +2279,16 @@ export default function DemandBoxPage() {
               && positiveNumber(row?.id || match.demand_id) > 0
               && positiveNumber(match.product_id) > 0
               && positiveNumber(match.shop_id) > 0;
-            const actionCount = 1 + (canAskSeller ? 1 : 0) + (canOpenProtectedTrade ? 1 : 0);
+            const actionCount = 1;
             const spreadCompactActions = isCompact && actionCount > 1;
             const contactKey = `${rowId}:${positiveNumber(match.product_id)}:${positiveNumber(match.shop_id)}`;
             const preparingContact = preparingSellerContactKey === contactKey;
+            const selectedContact =
+              sellerContactHandoff?.demand_id === rowId &&
+              sellerContactHandoff?.product_id === positiveNumber(match.product_id) &&
+              sellerContactHandoff?.shop_id === positiveNumber(match.shop_id)
+                ? sellerContactHandoff
+                : null;
             return (
               <div
                 key={`${match.product_id}-${match.shop_id}`}
@@ -2372,92 +2381,107 @@ export default function DemandBoxPage() {
                       Ask seller
                     </PrimaryButton>
                   ) : null}
-                  {canOpenProtectedTrade ? (
+                  {!canAskSeller ? (
                     <StableCtaLink
-                      to={tradeTo}
-                      debugId={`${debugBase}.protected-trade.${match.product_id}`}
-                      aria-label={`Continue to protected trade for ${title}`}
-                      data-gsn-demand-protected-trade="validated"
+                      to={to}
+                      onClick={() => trackDemandMatchAttention("supply_opened", match, rowId)}
+                      debugId={`${debugBase}.supply.${match.product_id}`}
+                      aria-label={`View Shop: ${title} from ${shopName}`}
+                      data-gsn-demand-match-action="compact"
                       stableHeight={44}
-                      minWidth={spreadCompactActions ? 0 : 92}
-                      style={{
-                        borderRadius: 12,
-                        padding: "8px 7px",
-                        fontSize: 12,
-                        fontWeight: 900,
-                        lineHeight: 1.1,
-                        width: spreadCompactActions ? "100%" : undefined,
-                        whiteSpace: isCompact ? "normal" : "nowrap",
-                      }}
+                      style={{ borderRadius: 12, padding: "8px 10px", fontSize: 12, fontWeight: 900 }}
                     >
-                      {isCompact ? "Protected trade" : "Continue to protected trade"}
+                      View shop
                     </StableCtaLink>
                   ) : null}
-                  <StableCtaLink
-                    to={to}
-                    onClick={() => trackDemandMatchAttention("supply_opened", match, rowId)}
-                    debugId={`${debugBase}.supply.${match.product_id}`}
-                    aria-label={`View Shop: ${title} from ${shopName}`}
-                    data-gsn-demand-match-action="compact"
-                    stableHeight={44}
-                    minWidth={spreadCompactActions ? 0 : 58}
+                </div>
+                {selectedContact ? (
+                  <div
+                    data-gsn-demand-ask-seller-card="expanded"
+                    data-gsn-demand-seller-contact-result={selectedContact.contact_available ? "prepared" : "unavailable"}
                     style={{
-                      borderRadius: 12,
-                      padding: "8px 7px",
-                      fontSize: 12,
-                      fontWeight: 900,
-                      width: spreadCompactActions ? "100%" : undefined,
-                      whiteSpace: "nowrap",
+                      gridColumn: "1 / -1",
+                      padding: 10,
+                      borderRadius: 14,
+                      border: "1px solid rgba(11,108,227,0.18)",
+                      background: "#F6FAFF",
+                      display: "grid",
+                      gap: 9,
+                      minWidth: 0,
                     }}
                   >
-                    Shop ›
-                  </StableCtaLink>
-                </div>
+                    <div>
+                      <div style={{ color: "#0B1F33", fontSize: 14, fontWeight: 950 }}>
+                        Ask {selectedContact.shop_name}
+                      </div>
+                      <div style={{ marginTop: 2, color: "#587087", fontSize: 11.5, lineHeight: 1.35 }}>
+                        Chat on GSN is recommended. Contact does not confirm availability, agreement, payment, or protection.
+                      </div>
+                    </div>
+                    <div style={{ color: "#0B4FA8", fontSize: 12, fontWeight: 900 }}>
+                      GSN conversation (recommended)
+                    </div>
+                    <DemandResponsePanel
+                      requestId={rowId}
+                      ownerUserId={positiveNumber(row?.user_id)}
+                      currentUser={me}
+                      isOwner
+                      compact
+                      requestTitle={safeStr(row?.title) || "Request"}
+                      requestDetail={`${title} · ${shopName}`}
+                      preferredRecipientUserId={positiveNumber(selectedContact.seller_user_id)}
+                      preferredRecipientName={selectedContact.shop_name}
+                      supplyProductId={positiveNumber(match.product_id)}
+                      supplyShopId={positiveNumber(match.shop_id)}
+                      protectedTradePath={canOpenProtectedTrade ? tradeTo : ""}
+                      onUnreadChanged={refreshUnreadSummary}
+                    />
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: selectedContact.contact_available
+                          ? "repeat(2, minmax(0, 1fr))"
+                          : "minmax(0, 1fr)",
+                        gap: 7,
+                      }}
+                    >
+                      {selectedContact.contact_available ? (
+                        <SecondaryButton
+                          type="button"
+                          onClick={() => openMatchedSellerWhatsApp(selectedContact)}
+                          debugId={`${debugBase}.seller-contact.whatsapp`}
+                          stableHeight={42}
+                          style={{ borderRadius: 12, fontSize: 12 }}
+                        >
+                          Continue on WhatsApp
+                        </SecondaryButton>
+                      ) : null}
+                      <StableCtaLink
+                        to={to}
+                        onClick={() => trackDemandMatchAttention("supply_opened", match, rowId)}
+                        debugId={`${debugBase}.seller-contact.view-shop`}
+                        stableHeight={42}
+                        style={{ borderRadius: 12, fontSize: 12 }}
+                      >
+                        View shop
+                      </StableCtaLink>
+                    </div>
+                    {selectedContact.seller_is_gsn_member === false ? (
+                      <StableCtaLink
+                        to={routeTarget("buildFirstCircle", selectedClanId, `${debugBase}.seller-contact.invite`)}
+                        debugId={`${debugBase}.seller-contact.invite`}
+                        stableHeight={42}
+                        style={{ borderRadius: 12, fontSize: 12 }}
+                      >
+                        Invite seller to GSN
+                      </StableCtaLink>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             );
           })}
         </div>
-        {sellerContactHandoff?.demand_id === rowId ? (
-          <div
-            data-gsn-demand-seller-contact-result={
-              sellerContactHandoff.contact_available ? "prepared" : "unavailable"
-            }
-            style={{
-              padding: "10px 11px",
-              borderRadius: 14,
-              border: "1px solid rgba(13,95,168,0.13)",
-              background: sellerContactHandoff.contact_available ? "#EFFAF4" : "#FFF8E8",
-              display: "grid",
-              gap: 8,
-            }}
-          >
-            <div style={{ color: "#17324A", fontSize: 12, fontWeight: 850, lineHeight: 1.35 }}>
-              {sellerContactHandoff.contact_available
-                ? `WhatsApp prepared for ${sellerContactHandoff.shop_name}.`
-                : "Seller WhatsApp is not available from this match."}
-              {" "}Contacting a seller does not mean an agreement has been reached.
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 7 }}>
-              <SecondaryButton
-                type="button"
-                onClick={() => returnToDemandRequest(rowId)}
-                debugId={`${debugBase}.seller-contact.back-to-request`}
-                stableHeight={42}
-                style={{ borderRadius: 12, fontSize: 12 }}
-              >
-                Back to request
-              </SecondaryButton>
-              <StableCtaLink
-                to={sellerContactHandoff.shopPath}
-                debugId={`${debugBase}.seller-contact.view-shop`}
-                stableHeight={42}
-                style={{ borderRadius: 12, fontSize: 12 }}
-              >
-                View Shop
-              </StableCtaLink>
-            </div>
-          </div>
-        ) : null}
         <div style={{ ...helperText(), fontSize: 11.5, lineHeight: 1.3 }}>
           Community connection is context, not professional verification or guaranteed trust.
         </div>
@@ -2591,6 +2615,9 @@ export default function DemandBoxPage() {
     const debugIndex = `${debugBase}.${fallbackIndex}`;
     const rowKey = safeStr(row?.id) || debugIndex;
     const rowId = Number(row?.id || 0);
+    const unreadCount = rowId ? Number(unreadByRequest[String(rowId)] || 0) : 0;
+    const sellerConversationExpanded =
+      positiveNumber(sellerContactHandoff?.demand_id) === rowId;
     const busy = updatingDemandId === rowId;
     const canClose = options.canClose === true;
     const trustPosture = requesterTrustPostureLabel(row);
@@ -2723,6 +2750,22 @@ export default function DemandBoxPage() {
                   />
                   {demandStatusLabel(row)}
                 </span>
+                {unreadCount > 0 ? (
+                  <span
+                    data-gsn-demand-unread-count={unreadCount}
+                    style={{
+                      minHeight: 28,
+                      padding: "6px 9px",
+                      borderRadius: 999,
+                      color: "#FFFFFF",
+                      background: "#0B6CE3",
+                      fontSize: 11,
+                      fontWeight: 950,
+                    }}
+                  >
+                    {unreadCount} unread
+                  </span>
+                ) : null}
                 <span
                   aria-hidden="true"
                   data-gsn-demand-request-icon="compact"
@@ -2833,6 +2876,21 @@ export default function DemandBoxPage() {
                   style={{ width: 7, height: 7, borderRadius: 999, background: "#22A447" }}
                 />
                 <span>{demandStatusLabel(row)}</span>
+                {unreadCount > 0 ? (
+                  <span
+                    data-gsn-demand-unread-count={unreadCount}
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: 999,
+                      background: "#0B6CE3",
+                      color: "#FFFFFF",
+                      fontSize: 10,
+                      fontWeight: 950,
+                    }}
+                  >
+                    {unreadCount} unread
+                  </span>
+                ) : null}
                 <span aria-hidden="true" style={{ color: "#9AAABD" }}>·</span>
                 <span>{scope === "community" ? requesterName(row) : "Your request"}</span>
               </div>
@@ -3010,29 +3068,6 @@ export default function DemandBoxPage() {
               ) : null}
             </div>
           ) : null}
-          {rowId ? (
-            <div
-              data-gsn-demand-respond-in-place="true"
-              data-gsn-demand-conversation-zone="primary"
-              style={{
-                padding: isCompact ? "0 12px" : undefined,
-                marginTop: 10,
-                marginBottom: isCompact ? 2 : undefined,
-              }}
-            >
-              <DemandResponsePanel
-                requestId={rowId}
-                ownerUserId={positiveNumber(row?.user_id)}
-                currentUser={me}
-                isOwner={scope === "owner"}
-                compact={isCompact}
-                requestTitle={safeStr(row?.title) || "Request"}
-                requestDetail={safeStr(row?.description)}
-                requestHasVoice={Boolean(positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at)}
-              />
-            </div>
-          ) : null}
-
           {isCompact ? (
             <div style={{ padding: "12px 12px 0" }}>
               <div
@@ -3219,6 +3254,42 @@ export default function DemandBoxPage() {
           {renderDemandMatchPanel(row, matchState, debugBase)}
           {renderExpandedSearchPanel(row, matchState, debugBase)}
 
+          {rowId && !sellerConversationExpanded ? (
+            <details
+              data-gsn-demand-conversations="integrated"
+              open={!isCompact || unreadCount > 0 ? true : undefined}
+              style={{ ...detailsShell(), marginTop: 12 }}
+            >
+              <StableDisclosureSummary
+                style={{ ...detailsSummary(), padding: "12px 14px", fontSize: 14 }}
+                stableHeight={48}
+                debugId={`${debugBase}.conversations`}
+              >
+                <span>Conversations</span>
+                <span style={{ color: unreadCount > 0 ? "#0B6CE3" : "#64748B", fontSize: 12, fontWeight: 900 }}>
+                  {unreadCount > 0 ? `${unreadCount} unread` : "Private messages"}
+                </span>
+              </StableDisclosureSummary>
+              <div
+                data-gsn-demand-respond-in-place="true"
+                data-gsn-demand-conversation-zone="primary"
+                style={{ padding: isCompact ? "0 8px 8px" : "0 12px 12px" }}
+              >
+                <DemandResponsePanel
+                  requestId={rowId}
+                  ownerUserId={positiveNumber(row?.user_id)}
+                  currentUser={me}
+                  isOwner={scope === "owner"}
+                  compact={isCompact}
+                  requestTitle={safeStr(row?.title) || "Request"}
+                  requestDetail={safeStr(row?.description)}
+                  requestHasVoice={Boolean(positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at)}
+                  onUnreadChanged={refreshUnreadSummary}
+                />
+              </div>
+            </details>
+          ) : null}
+
           <div
             data-gsn-demand-action-dock={isCompact ? "compact" : "standard"}
             style={
@@ -3325,10 +3396,10 @@ export default function DemandBoxPage() {
   const shouldOpenDemandQueues = useMemo(() => {
     return ["open", "queue", "all", "tagged", "for_me", "community", "mine", "ask_community", "ask-community", "urgent", "categories"].includes(explicitQueueMode);
   }, [explicitQueueMode]);
-  const allOpenRows = useMemo(
-    () => uniqueDemandRows([...visibleRows, ...myOpenRows]),
-    [myOpenRows, visibleRows]
-  );
+  const allOpenRows = useMemo(() => {
+    const relevant = visibleRows.filter(isTaggedForMe);
+    return uniqueDemandRows([...relevant, ...visibleRows, ...myOpenRows]);
+  }, [myOpenRows, visibleRows]);
   const urgentRows = useMemo(() => allOpenRows.filter(isUrgentDemand), [allOpenRows]);
   const askCommunityRows = useMemo(
     () => allOpenRows.filter(isAskCommunityDemand),
@@ -3378,16 +3449,33 @@ export default function DemandBoxPage() {
   }, [allOpenRows, askCommunityRows, directDemandId, myOpenRows, taggedRows, urgentRows, visibleRows]);
   const queueLanes = useMemo<Array<{ key: DemandQueueLane; label: string; count: number; icon: GsnIconName; detail: string }>>(
     () => [
-      { key: "open", label: "All", count: allOpenRows.length, icon: "briefcase", detail: "Every loaded open request" },
+      { key: "open", label: "All requests", count: allOpenRows.length, icon: "briefcase", detail: "Open requests, with relevant needs first" },
       { key: "tagged", label: "Tagged", count: taggedRows.length, icon: "tag", detail: "Requests mentioning your GSN handle" },
-      { key: "for_me", label: "For you", count: visibleRows.length, icon: "community", detail: "Community requests you can answer" },
-      { key: "mine", label: "Yours", count: myOpenRows.length, icon: "user", detail: "Needs you posted" },
+      { key: "for_me", label: "Relevant to me", count: visibleRows.length, icon: "community", detail: "Community requests you can answer" },
+      { key: "mine", label: "My requests", count: myOpenRows.length, icon: "user", detail: "Needs you posted" },
       { key: "ask_community", label: "Questions", count: askCommunityRows.length, icon: "community", detail: "Questions posted through DemandBox" },
       { key: "urgent", label: "Urgent", count: urgentRows.length, icon: "alert", detail: "Needs time attention" },
       { key: "categories", label: "Need types", count: categoryBuckets.length, icon: "tag", detail: "Grouped by need type" },
     ],
     [allOpenRows.length, askCommunityRows.length, categoryBuckets.length, myOpenRows.length, taggedRows.length, urgentRows.length, visibleRows.length]
   );
+  const activeQueueRows = useMemo(() => {
+    const rows = queueLaneRows[activeQueueLane] || [];
+    const query = requestSearch.trim().toLowerCase();
+    if (!query) return rows;
+    return rows.filter((row) =>
+      [
+        row.title,
+        row.description,
+        row.category,
+        row.area,
+        row.requester_display_name,
+        row.requester_name,
+        row.marketplace_name,
+        row.clan_name,
+      ].some((value) => safeStr(value).toLowerCase().includes(query))
+    );
+  }, [activeQueueLane, queueLaneRows, requestSearch]);
   const visibleRowsForDemandIntelligence = useMemo(() => {
     if (activeQueueLane === "categories") {
       return categoryBuckets.flatMap((bucket) => bucket.rows.slice(0, 4)).slice(0, isCompact ? 12 : 24);
@@ -3456,7 +3544,7 @@ export default function DemandBoxPage() {
 
     if (directLanes.includes(normalizedQueueMode as DemandQueueLane)) {
       demandQueueIntentAppliedRef.current = true;
-      setActiveQueueLane(normalizedQueueMode as DemandQueueLane);
+      setActiveQueueLane(normalizedQueueMode === "for_me" ? "open" : normalizedQueueMode as DemandQueueLane);
       return;
     }
 
@@ -3475,9 +3563,7 @@ export default function DemandBoxPage() {
     setActiveQueueLane(
       myOpenRows.some((row) => positiveNumber(row?.id) === directDemandId)
         ? "mine"
-        : visibleRows.some((row) => positiveNumber(row?.id) === directDemandId)
-          ? "for_me"
-          : "open"
+        : "open"
     );
     setShowMoreQueueRows(false);
     setOpenDemandRecordKey(String(directDemandId));
@@ -3486,11 +3572,7 @@ export default function DemandBoxPage() {
     if (loading || demandQueueIntentAppliedRef.current) return;
     if (directDemandId || shouldOpenDemandQueues) return;
     demandQueueIntentAppliedRef.current = true;
-    if (visibleRows.length > 0) {
-      setActiveQueueLane("for_me");
-    } else if (myOpenRows.length > 0) {
-      setActiveQueueLane("mine");
-    }
+    setActiveQueueLane("open");
   }, [directDemandId, loading, myOpenRows.length, shouldOpenDemandQueues, visibleRows.length]);
   const routeAskCommunityMode = ["ask_community", "ask-community", "market_need_pulse"].includes(demandMode);
   const hasLegacyCreateHash = location.hash === "#demand-box-create";
@@ -4070,7 +4152,7 @@ export default function DemandBoxPage() {
                   border: "1px solid rgba(255,255,255,0.18)",
                 }}
               >
-                Yours {myOpenRows.length} · For you {visibleRows.length}
+                All {allOpenRows.length} · Mine {myOpenRows.length}
               </span>
             </div>
           </div>
@@ -4227,7 +4309,7 @@ export default function DemandBoxPage() {
                 fontWeight: 700,
               }}
             >
-              <span aria-hidden="true">�</span>
+              <span aria-hidden="true">×</span>
             </SecondaryButton>
             <details
               data-gsn-demand-community-context="selected"
@@ -4632,6 +4714,8 @@ export default function DemandBoxPage() {
                 <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
                   <input
                     type="file"
+                    data-gmfn-action-root="true"
+                    data-cta-id="demand-box.request.attachment-file"
                     accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
                     onChange={(event) => {
                       const selected = event.target.files?.[0] || null;
@@ -4837,12 +4921,51 @@ export default function DemandBoxPage() {
             </div>
           ) : null}
 
+          <label
+            data-gsn-demand-request-search="compact"
+            style={{
+              marginTop: isCompact ? 0 : 14,
+              minHeight: 46,
+              display: "grid",
+              gridTemplateColumns: "auto minmax(0, 1fr)",
+              alignItems: "center",
+              gap: 8,
+              padding: "0 12px",
+              borderRadius: 16,
+              border: "1px solid rgba(94,217,255,0.42)",
+              background: isCompact ? "rgba(2,28,50,0.82)" : "#F8FBFF",
+              color: isCompact ? "#F8FBFF" : "#29445E",
+            }}
+          >
+            <GsnLegacyIcon name="search" size={20} />
+            <input
+              type="search"
+              value={requestSearch}
+              onChange={(event) => {
+                setRequestSearch(event.target.value);
+                setShowMoreQueueRows(true);
+              }}
+              placeholder="Search requests"
+              aria-label="Search requests"
+              style={{
+                width: "100%",
+                minWidth: 0,
+                minHeight: 44,
+                border: 0,
+                outline: 0,
+                background: "transparent",
+                color: "inherit",
+                font: "inherit",
+              }}
+            />
+          </label>
+
           <div
             data-gsn-demand-queue-lanes="true"
             style={{
-              marginTop: isCompact ? 0 : 14,
+              marginTop: 10,
               display: "grid",
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
               gap: isCompact ? 0 : 10,
               padding: isCompact ? 3 : undefined,
               borderRadius: isCompact ? 19 : undefined,
@@ -4853,7 +4976,7 @@ export default function DemandBoxPage() {
                 : undefined,
             }}
           >
-            {queueLanes.filter((lane) => ["open", "for_me", "mine"].includes(lane.key)).map((lane) => {
+            {queueLanes.filter((lane) => ["open", "mine"].includes(lane.key)).map((lane) => {
               const active = activeQueueLane === lane.key;
               const Button = active ? PrimaryButton : SecondaryButton;
 
@@ -4946,7 +5069,7 @@ export default function DemandBoxPage() {
                 gap: 10,
               }}
             >
-              {queueLanes.filter((lane) => ["tagged", "ask_community", "urgent", "categories"].includes(lane.key)).map((lane) => {
+              {queueLanes.filter((lane) => ["for_me", "tagged", "ask_community", "urgent", "categories"].includes(lane.key)).map((lane) => {
                 const active = activeQueueLane === lane.key;
                 const Button = active ? PrimaryButton : SecondaryButton;
                 return (
@@ -5057,7 +5180,7 @@ export default function DemandBoxPage() {
               data-gsn-demand-queue-results="true"
               style={{ marginTop: 14, display: "grid", gap: 12 }}
             >
-              {(queueLaneRows[activeQueueLane] || []).length === 0
+              {activeQueueRows.length === 0
                 ? renderQueueEmptyState(
                     activeQueueLane === "mine" ? "document" : activeQueueLane === "urgent" ? "alert" : activeQueueLane === "tagged" ? "tag" : "community",
                     activeQueueLane === "mine"
@@ -5077,7 +5200,7 @@ export default function DemandBoxPage() {
                           ? "Use All open when you need to see every loaded community request."
                           : "When someone in this community asks for help, their request will appear here."
                   )
-                : (queueLaneRows[activeQueueLane] || [])
+                : activeQueueRows
                     .slice(0, isCompact ? (showMoreQueueRows ? 12 : 1) : 24)
                     .map((row, index) =>
                       renderDemandRecord(
@@ -5090,7 +5213,7 @@ export default function DemandBoxPage() {
                         }
                       )
                     )}
-              {isCompact && (queueLaneRows[activeQueueLane] || []).length > 1 ? (
+              {isCompact && activeQueueRows.length > 1 ? (
                 <SecondaryButton
                   type="button"
                   onClick={() => {
@@ -5105,7 +5228,7 @@ export default function DemandBoxPage() {
                   {showMoreQueueRows ? "Show fewer needs" : "View more needs"}
                 </SecondaryButton>
               ) : null}
-              {(queueLaneRows[activeQueueLane] || []).length > (isCompact ? 12 : 24) ? (
+              {activeQueueRows.length > (isCompact ? 12 : 24) ? (
                 <div style={{ ...helperText(), ...innerCard("#F8FBFF") }}>
                   Showing the first {isCompact ? 12 : 24} rows in this lane. Use
                   Need types, Urgent, or Tagged to narrow the queue, or load older community requests if more are available.

@@ -10531,7 +10531,17 @@ export type MarketplaceRequestResponseItem = {
   audio_deleted_at?: string | null;
   media_attachments?: MarketplaceRequestAttachmentItem[];
   created_at: string;
+  read_at?: string | null;
+  is_unread?: boolean;
   is_mine?: boolean;
+};
+
+export type DemandResponseUnreadSummary = {
+  total_unread: number;
+  requests: Array<{
+    marketplace_request_id: number;
+    unread_count: number;
+  }>;
 };
 
 export async function listMarketplaceRequestResponses(
@@ -10543,12 +10553,29 @@ export async function listMarketplaceRequestResponses(
   );
 }
 
+export async function getDemandResponseUnreadSummary(): Promise<DemandResponseUnreadSummary> {
+  return httpJson("/demand-box/responses/unread-summary", "GET");
+}
+
+export async function markMarketplaceRequestResponsesRead(
+  requestId: number,
+  peerUserId?: number,
+): Promise<{ marketplace_request_id: number; peer_user_id?: number | null; marked_read: number }> {
+  return httpJson(
+    `/demand-box/requests/${encodeURIComponent(String(requestId))}/responses/read`,
+    "POST",
+    peerUserId ? { peer_user_id: peerUserId } : {},
+  );
+}
+
 export async function createMarketplaceRequestResponse(
   requestId: number,
   payload: {
     text?: string;
     client_response_id: string;
     recipient_user_id?: number;
+    supply_product_id?: number;
+    supply_shop_id?: number;
     show_sender_photo?: boolean;
   },
   audio?: File | null
@@ -10567,7 +10594,7 @@ export async function createMarketplaceRequestResponse(
 export async function createDemandMediaAttachment(
   parent: "request" | "response",
   parentId: number,
-  input: { kind: "image" | "video" | "link"; file?: File | null; link?: string },
+  input: { kind: "image" | "video" | "document" | "link"; file?: File | null; link?: string },
 ): Promise<MarketplaceRequestAttachmentItem> {
   const form = new FormData();
   form.set("kind", input.kind);
@@ -10750,6 +10777,8 @@ export type DemandSupplyMatchItem = {
   demand_area?: string | null;
   product_title: string;
   shop_name: string;
+  seller_user_id: number;
+  seller_is_gsn_member?: boolean;
   reason_codes?: string[] | null;
   public_shop_path?: string | null;
 };

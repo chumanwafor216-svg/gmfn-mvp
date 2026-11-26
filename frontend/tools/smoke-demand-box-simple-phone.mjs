@@ -190,12 +190,28 @@ async function installApiMocks(page, apiCalls) {
         demand_area: "Onitsha",
         product_title: "Freezer repair visit",
         shop_name: "Onitsha Cooling Repairs",
+        seller_user_id: 900,
+        seller_is_gsn_member: true,
         whatsapp_number: "+2348012345678",
         contact_available: true,
         public_shop_path: "/shop/GSN-U-900?product_id=900&clan_id=8",
         back_to_request_path: "/app/demand-box?demand_id=72",
         prepared_message: "Hello Onitsha Cooling Repairs.\nI found Freezer repair visit as a possible match for my GSN request:\n\"Need a freezer repair\"\nDetails: The freezer stopped cooling yesterday.\nArea: Onitsha\nIs it available? Please confirm the price and fulfilment arrangement.\nThis message starts a conversation; no agreement has been made yet.",
         boundary_note: "Contact only; no agreement has been made.",
+      }));
+    }
+    if (path === "/demand-box/responses/unread-summary" && method === "GET") {
+      return route.fulfill(json({
+        total_unread: 2,
+        requests: [{ marketplace_request_id: 72, unread_count: 2 }],
+      }));
+    }
+    if (/^\/demand-box\/requests\/\d+\/responses\/read$/.test(path) && method === "POST") {
+      apiCalls.readAcknowledgements += 1;
+      return route.fulfill(json({
+        marketplace_request_id: Number(path.split("/")[3] || 0),
+        peer_user_id: Number(request.postDataJSON()?.peer_user_id || 0) || null,
+        marked_read: 1,
       }));
     }
     if (/^\/demand-box\/requests\/\d+\/responses$/.test(path) && method === "GET") {
@@ -211,6 +227,8 @@ async function installApiMocks(page, apiCalls) {
           author_profile_image_url: "/src/assets/dashboard/dashboard-trustslip-verification.jpg",
           text: "I can inspect the freezer after 4pm.",
           created_at: "2026-11-07T15:42:00Z",
+          read_at: null,
+          is_unread: true,
           is_mine: false,
         },
         {
@@ -223,6 +241,8 @@ async function installApiMocks(page, apiCalls) {
           author_profile_image_url: "/src/assets/dashboard/dashboard-trustslip-verification.jpg",
           text: "Thank you. Please message me when you are nearby.",
           created_at: "2026-11-07T15:45:00Z",
+          read_at: "2026-11-07T15:46:00Z",
+          is_unread: false,
           is_mine: true,
         },
         {
@@ -235,9 +255,29 @@ async function installApiMocks(page, apiCalls) {
           author_profile_image_url: null,
           text: "I can also inspect it tomorrow morning.",
           created_at: "2026-11-07T15:49:00Z",
+          read_at: null,
+          is_unread: true,
           is_mine: false,
         },
       ] : []));
+    }
+    if (/^\/demand-box\/requests\/\d+\/responses$/.test(path) && method === "POST") {
+      apiCalls.responsePosts += 1;
+      const payload = JSON.parse(request.postData()?.match(/payload_json=([^&]+)/)?.[1] ? decodeURIComponent(request.postData().match(/payload_json=([^&]+)/)[1]) : "{}");
+      return route.fulfill(json({
+        id: 700 + apiCalls.responsePosts,
+        marketplace_request_id: Number(path.split("/")[3] || 0),
+        author_user_id: 216,
+        recipient_user_id: Number(payload.recipient_user_id || 900),
+        author_display_name: "Ada Example",
+        author_gmfn_id: "GSN-U-216",
+        text: payload.text || "",
+        created_at: "2026-11-26T08:00:00Z",
+        read_at: null,
+        is_unread: false,
+        is_mine: true,
+        media_attachments: [],
+      }));
     }
     if (/^\/demand-box\/audio\/\d+\/delete$/.test(path) && method === "POST") {
       const body = request.postDataJSON();
@@ -283,7 +323,13 @@ async function installApiMocks(page, apiCalls) {
 
 async function verifyViewport(browser, baseURL, viewport) {
   const page = await browser.newPage({ viewport, deviceScaleFactor: 2, isMobile: true });
-  const apiCalls = { textRequestPosts: 0, voiceRequestPosts: 0, sellerContactGets: 0 };
+  const apiCalls = {
+    textRequestPosts: 0,
+    voiceRequestPosts: 0,
+    sellerContactGets: 0,
+    responsePosts: 0,
+    readAcknowledgements: 0,
+  };
   page.setDefaultTimeout(45000);
   page.on("pageerror", (error) => console.error("Browser page error:", error));
   page.on("console", (message) => {
@@ -325,7 +371,9 @@ async function verifyViewport(browser, baseURL, viewport) {
     }
     window.MediaRecorder = FakeMediaRecorder;
     window.__gsnOpenedSellerChatUrl = "";
-    window.open = () => ({
+    window.open = (url) => {
+      window.__gsnOpenedSellerChatUrl = String(url || "");
+      return {
       opener: null,
       document: { title: "" },
       location: {
@@ -334,7 +382,8 @@ async function verifyViewport(browser, baseURL, viewport) {
         },
       },
       close() {},
-    });
+      };
+    };
   });
 
   await page.goto(baseURL + "/app/demand-box?queue=open", { waitUntil: "domcontentloaded", timeout: 180000 });
@@ -365,7 +414,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   if (frontScreenshotPath && viewport.width === 390) {
     await page.screenshot({ path: frontScreenshotPath, fullPage: true });
   }
-  for (const label of ["All 2", "For you 1", "Yours 1"]) {
+  for (const label of ["All requests 2", "My requests 1"]) {
     assert(await queue.getByRole("button", { name: label, exact: true }).isVisible(), "Missing primary filter: " + label);
   }
   assert(!(await queue.getByRole("button", { name: /Tagged/ }).isVisible().catch(() => false)), "Tagged is exposed before More filters opens.");
@@ -384,28 +433,22 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "Opening a request did not expose exactly one card.");
   assert(await transportCard.locator('[data-gsn-demand-request-hero="request"]').isVisible(), "Opened request hero is missing.");
   assert(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible(), "The complete request message did not open with the request.");
-  const transportConversationZone = transportCard.locator('[data-gsn-demand-conversation-zone="primary"]');
-  assert(await transportConversationZone.isVisible(), "The primary conversation zone did not open with the request.");
-  const transportPrivateReplies = transportCard.locator('[data-gsn-demand-private-replies="true"]');
-  assert((await transportPrivateReplies.getAttribute("data-gsn-demand-conversation-access")) === "available", "Conversation access was not established before rendering the responder surface.");
-  assert(await transportPrivateReplies.locator('[data-gsn-demand-conversation-heading="true"]').isVisible(), "The compact private conversation heading is missing.");
-  assert(await transportPrivateReplies.isVisible(), "Private replies still require another navigation step.");
-  const quickReplies = transportCard.locator('[data-gsn-demand-seller-quick-replies="editable"]');
-  assert(await quickReplies.isVisible(), "The optional seller-response helpers are missing for an authorised responder.");
-  for (const reply of ["I can help.", "Unavailable.", "I need more details."]) {
-    assert(await quickReplies.getByRole("button", { name: reply, exact: true }).isVisible(), "Missing seller-response helper: " + reply);
-  }
-  await quickReplies.getByRole("button", { name: "I can help.", exact: true }).click();
-  const responderText = transportCard.getByPlaceholder("Write a private reply");
-  assert((await responderText.inputValue()) === "I can help.", "A seller helper did not populate ordinary editable text.");
-  await responderText.fill("I can help. I can come after 4pm.");
-  assert((await responderText.inputValue()).includes("after 4pm"), "Seller helper text is not editable before sending.");
   const matchPanel = transportCard.locator('[data-gsn-demand-supply-intelligence="true"]');
   await matchPanel.waitFor();
-  const conversationBeforeMatch = await transportConversationZone.evaluate((node, match) =>
-    Boolean(match && (node.compareDocumentPosition(match) & Node.DOCUMENT_POSITION_FOLLOWING))
-  , await matchPanel.elementHandle());
-  assert(conversationBeforeMatch, "The primary conversation zone must remain before secondary matching actions.");
+  const transportConversations = transportCard.locator('[data-gsn-demand-conversations="integrated"]');
+  const matchBeforeConversation = await matchPanel.evaluate((match, conversation) =>
+    Boolean(conversation && (match.compareDocumentPosition(conversation) & Node.DOCUMENT_POSITION_FOLLOWING))
+  , await transportConversations.elementHandle());
+  assert(matchBeforeConversation, "Possible matches must appear before the integrated conversation.");
+  await transportConversations.locator("summary").click();
+  const transportConversationZone = transportConversations.locator('[data-gsn-demand-conversation-zone="primary"]');
+  const transportPrivateReplies = transportConversationZone.locator('[data-gsn-demand-private-replies="true"]');
+  await transportPrivateReplies.waitFor();
+  const quickReplies = transportPrivateReplies.locator('[data-gsn-demand-seller-quick-replies="editable"]');
+  assert(await quickReplies.isVisible(), "The optional seller-response helpers are missing for an authorised responder.");
+  await quickReplies.getByRole("button", { name: "I can help.", exact: true }).click();
+  const responderText = transportPrivateReplies.getByPlaceholder("Message...");
+  assert((await responderText.inputValue()) === "I can help.", "A seller helper did not populate ordinary editable text.");
   const matchRows = matchPanel.locator('[data-gsn-demand-reliable-match="true"]');
   assert((await matchRows.count()) === 3, "DemandBox did not surface exactly three reliable initial suggestions.");
   assert(await matchPanel.getByText("Check these listings. Availability and suitability are not confirmed.", { exact: true }).isVisible(), "The truthful match boundary is missing.");
@@ -577,22 +620,20 @@ async function verifyViewport(browser, baseURL, viewport) {
   const ownerMatchPanel = freezerCard.locator('[data-gsn-demand-supply-intelligence="true"]');
   await ownerMatchPanel.waitFor();
   assert((await ownerMatchPanel.locator('[data-gsn-demand-reliable-match="true"]').count()) === 1, "The requester match is missing.");
-  assert(await ownerMatchPanel.getByRole("link", { name: /View Shop:/ }).isVisible(), "Optional View Shop is missing.");
+  assert(await ownerMatchPanel.getByRole("button", { name: "Ask seller", exact: true }).isVisible(), "Ask Seller is missing.");
   await ownerMatchPanel.getByRole("button", { name: "Ask seller", exact: true }).click();
-  await page.waitForFunction(() => Boolean(window.__gsnOpenedSellerChatUrl));
-  const openedSellerChatUrl = await page.evaluate(() => window.__gsnOpenedSellerChatUrl);
-  const decodedSellerChatUrl = decodeURIComponent(openedSellerChatUrl);
   assert(apiCalls.sellerContactGets === 1, "Ask seller did not use the authenticated validated handoff endpoint exactly once.");
-  assert(decodedSellerChatUrl.includes("Need a freezer repair"), "The original request was lost from the prepared seller message.");
-  assert(decodedSellerChatUrl.includes("Freezer repair visit"), "The matched product was lost from the prepared seller message.");
-  assert(decodedSellerChatUrl.includes("Onitsha Cooling Repairs"), "The matched Shop was lost from the prepared seller message.");
   const contactResult = ownerMatchPanel.locator('[data-gsn-demand-seller-contact-result="prepared"]');
   await contactResult.waitFor();
-  assert(await contactResult.getByText("Contacting a seller does not mean an agreement has been reached.", { exact: false }).isVisible(), "The seller-contact boundary is missing.");
-  assert(await contactResult.getByRole("link", { name: "View Shop", exact: true }).isVisible(), "View Shop is not optional after direct contact.");
-  await contactResult.getByRole("button", { name: "Back to request", exact: true }).click();
-  assert(!(await contactResult.isVisible().catch(() => false)), "Back to request did not close the contact result.");
-  assert(await freezerCard.getByText("Need a freezer repair", { exact: true }).isVisible(), "Back to request lost the originating DemandBox request.");
+  assert(await contactResult.getByText("GSN conversation (recommended)", { exact: true }).isVisible(), "GSN chat is not the primary seller-contact route.");
+  assert(await contactResult.getByRole("link", { name: "View shop", exact: true }).isVisible(), "View shop is missing from Ask Seller.");
+  await contactResult.getByRole("button", { name: "Continue on WhatsApp", exact: true }).click();
+  await page.waitForFunction(() => Boolean(window.__gsnOpenedSellerChatUrl));
+  const decodedSellerChatUrl = decodeURIComponent(await page.evaluate(() => window.__gsnOpenedSellerChatUrl));
+  assert(decodedSellerChatUrl.includes("Need a freezer repair"), "The original request was lost from the prepared seller message.");
+  assert(decodedSellerChatUrl.includes("Freezer repair visit"), "The matched product was lost from the prepared seller message.");
+  await ownerMatchPanel.getByRole("button", { name: "Ask seller", exact: true }).click();
+  assert(!(await contactResult.isVisible().catch(() => false)), "Closing Ask Seller did not restore the single request conversation surface.");
   assert(await ownerHero.locator('[data-gsn-demand-sender-identity="true"] img').isVisible(), "The opted-in sender portrait is missing from the opened request.");
   const compactRequestIcon = ownerHero.locator('[data-gsn-demand-request-icon="compact"]');
   assert(await compactRequestIcon.isVisible(), "The compact generic request icon is missing.");
@@ -608,9 +649,10 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert((await compactTabs.getByRole("button").count()) === 1, "The compact privacy control is missing.");
   assert((await compactTabs.getByRole("button", { name: "Details", exact: true }).count()) === 0, "Unnecessary request details remain exposed.");
   assert(await freezerCard.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible(), "The complete request message is not visible immediately.");
-  const ownerConversationZone = freezerCard.locator('[data-gsn-demand-conversation-zone="primary"]');
+  const ownerConversations = freezerCard.locator('[data-gsn-demand-conversations="integrated"]');
+  const ownerConversationZone = ownerConversations.locator('[data-gsn-demand-conversation-zone="primary"]');
   assert(await ownerConversationZone.isVisible(), "The owner conversation zone is not in place.");
-  const ownerPrivateReplies = freezerCard.locator('[data-gsn-demand-private-replies="true"]');
+  const ownerPrivateReplies = ownerConversationZone.locator('[data-gsn-demand-private-replies="true"]');
   assert((await ownerPrivateReplies.getAttribute("data-gsn-demand-conversation-access")) === "available", "Existing private conversation access was not established.");
   assert(await ownerPrivateReplies.locator('[data-gsn-demand-conversation-heading="true"]').isVisible(), "The opened request lacks the conversation-first heading.");
   assert(await ownerPrivateReplies.isVisible(), "Existing private replies are not visible immediately.");
@@ -622,12 +664,12 @@ async function verifyViewport(browser, baseURL, viewport) {
     await compactTabs.getByRole("button", { name: "Privacy", exact: true }).click();
 
   assert((await freezerCard.getByRole("button", { name: "Listen & reply", exact: true }).count()) === 0, "The obsolete second listen-and-reply action returned.");
-  const threadList = freezerCard.locator('[data-gsn-demand-thread-list="true"]');
+  const threadList = ownerConversationZone.locator('[data-gsn-demand-thread-list="true"]');
   await threadList.waitFor();
   const threadRows = threadList.locator('[data-gsn-demand-thread-row="true"]');
   assert((await threadRows.count()) === 2, "Separate private responder threads are not grouped into compact rows.");
-  const conversation = freezerCard.locator('[data-gsn-demand-conversation="whatsapp-like"]');
-  assert(await freezerCard.locator('[data-gsn-demand-conversation-picker="true"]').isVisible(), "The owner must choose a private thread before its conversation opens.");
+  const conversation = ownerConversationZone.locator('[data-gsn-demand-conversation="whatsapp-like"]');
+  assert(await ownerConversationZone.locator('[data-gsn-demand-conversation-picker="true"]').isVisible(), "The owner must choose a private thread before its conversation opens.");
   assert(!(await conversation.isVisible().catch(() => false)), "A responder conversation opened before its row was selected.");
   assert(await threadRows.first().locator('[data-gsn-demand-thread-avatar]').isVisible(), "The responder portrait or privacy-safe initials avatar is missing from the thread row.");
   await threadList.getByRole("button", { name: /Conversation with Ngozi Member/ }).click();
@@ -664,10 +706,10 @@ async function verifyViewport(browser, baseURL, viewport) {
   });
   assert(conversationGeometry.alternating, "The reply trail does not alternate like a familiar chat conversation.");
   assert(conversationGeometry.noOverflow, "The reply trail overflows horizontally.");
-  const voiceNoteButton = freezerCard.getByRole("button", { name: "+ Voice note", exact: true });
+  const voiceNoteButton = ownerConversationZone.getByRole("button", { name: "Record voice note", exact: true });
   assert(await voiceNoteButton.isVisible(), "The private reply composer lacks the optional voice-note continuation action.");
   await threadList.getByRole("button", { name: /Conversation with Chidi Member/ }).click();
-  assert(await freezerCard.locator('[data-gsn-demand-conversation-picker="true"]').isVisible(), "The selected responder thread did not close when selected again.");
+  assert(await ownerConversationZone.locator('[data-gsn-demand-conversation-picker="true"]').isVisible(), "The selected responder thread did not close when selected again.");
   assert(!(await conversation.isVisible().catch(() => false)), "The responder conversation remained open after toggling its row closed.");
   await threadList.getByRole("button", { name: /Conversation with Chidi Member/ }).click();
   await conversation.getByText("I can inspect the freezer after 4pm.", { exact: true }).waitFor();
@@ -877,8 +919,8 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert((await directCard.count()) === 1, "A direct DemandBox link did not isolate one opened request.");
   assert(await directCard.getByText("Need a freezer repair", { exact: true }).isVisible(), "A direct DemandBox link opened the wrong request.");
   assert(
-    (await page.getByRole("button", { name: "Yours 1", exact: true }).getAttribute("aria-pressed")) === "true",
-    "A direct link to the member's request did not select Yours."
+    (await page.getByRole("button", { name: "My requests 1", exact: true }).getAttribute("aria-pressed")) === "true",
+    "A direct link to the member's request did not select My requests."
   );
   assert(await directCard.locator('[data-gsn-demand-respond-in-place="true"]').isVisible(), "The direct request did not open ready to respond.");
 
@@ -886,8 +928,8 @@ async function verifyViewport(browser, baseURL, viewport) {
   const defaultQueue = page.locator('[data-gsn-demand-queue="simple"]');
   await defaultQueue.waitFor();
   assert(
-    (await defaultQueue.getByRole("button", { name: "For you 1", exact: true }).getAttribute("aria-pressed")) === "true",
-    "Ordinary DemandBox entry did not prefer answerable For you work."
+    (await defaultQueue.getByRole("button", { name: "All requests 2", exact: true }).getAttribute("aria-pressed")) === "true",
+    "Ordinary DemandBox entry did not default to All requests."
   );
   assert(
     await page.locator('[data-gsn-demand-record]').getByText("Need school transport", { exact: true }).isVisible(),

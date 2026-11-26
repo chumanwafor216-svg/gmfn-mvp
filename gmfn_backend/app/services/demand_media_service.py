@@ -14,6 +14,7 @@ from fastapi import HTTPException, UploadFile
 
 MAX_DEMAND_IMAGE_BYTES = 10 * 1024 * 1024
 MAX_DEMAND_VIDEO_BYTES = 25 * 1024 * 1024
+MAX_DEMAND_DOCUMENT_BYTES = 10 * 1024 * 1024
 MAX_DEMAND_VIDEO_SECONDS = 30.0
 PRIVATE_DEMAND_MEDIA_DIRECTORY = ".private-demandbox-media"
 ALLOWED_IMAGE_TYPES = {
@@ -25,6 +26,12 @@ ALLOWED_VIDEO_TYPES = {
     "video/mp4": ".mp4",
     "video/webm": ".webm",
     "video/quicktime": ".mov",
+}
+ALLOWED_DOCUMENT_TYPES = {
+    "application/pdf": ".pdf",
+    "text/plain": ".txt",
+    "application/msword": ".doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
 }
 _DURATION_PATTERN = re.compile(
     r"Duration:\s*(?P<hours>\d{2}):(?P<minutes>\d{2}):(?P<seconds>\d{2}(?:\.\d+)?)"
@@ -78,12 +85,15 @@ async def store_demand_media(upload: UploadFile, *, kind: str) -> StoredDemandMe
     elif normalized_kind == "video":
         suffix = ALLOWED_VIDEO_TYPES.get(mime_type)
         maximum = MAX_DEMAND_VIDEO_BYTES
+    elif normalized_kind == "document":
+        suffix = ALLOWED_DOCUMENT_TYPES.get(mime_type)
+        maximum = MAX_DEMAND_DOCUMENT_BYTES
     else:
-        raise HTTPException(status_code=400, detail="Choose a photo or short video.")
+        raise HTTPException(status_code=400, detail="Choose a photo, short video, or document.")
     if not suffix:
         raise HTTPException(
             status_code=400,
-            detail="Use a JPG, PNG, WebP, MP4, WebM, or MOV file.",
+            detail="Use a JPG, PNG, WebP, MP4, WebM, MOV, PDF, TXT, DOC, or DOCX file.",
         )
 
     content = await upload.read(maximum + 1)
@@ -96,10 +106,14 @@ async def store_demand_media(upload: UploadFile, *, kind: str) -> StoredDemandMe
                 "Photos must be smaller than 10 MB."
                 if normalized_kind == "image"
                 else "Videos must be smaller than 25 MB."
+                if normalized_kind == "video"
+                else "Documents must be smaller than 10 MB."
             ),
         )
     if normalized_kind == "image" and not _image_signature_matches(mime_type, content):
         raise HTTPException(status_code=400, detail="The photo file is not valid.")
+    if normalized_kind == "document" and not _document_signature_matches(mime_type, content):
+        raise HTTPException(status_code=400, detail="The document file is not valid.")
 
     directory = demand_media_directory()
     directory.mkdir(parents=True, exist_ok=True)
@@ -130,6 +144,18 @@ def _image_signature_matches(mime_type: str, content: bytes) -> bool:
         return content.startswith(b"\x89PNG\r\n\x1a\n")
     if mime_type == "image/webp":
         return content.startswith(b"RIFF") and content[8:12] == b"WEBP"
+    return False
+
+
+def _document_signature_matches(mime_type: str, content: bytes) -> bool:
+    if mime_type == "application/pdf":
+        return content.startswith(b"%PDF-")
+    if mime_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        return content.startswith(b"PK\x03\x04")
+    if mime_type == "application/msword":
+        return content.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1")
+    if mime_type == "text/plain":
+        return b"\x00" not in content[:4096]
     return False
 
 

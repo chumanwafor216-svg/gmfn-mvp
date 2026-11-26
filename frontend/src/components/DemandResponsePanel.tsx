@@ -3,13 +3,20 @@ import {
   createDemandMediaAttachment,
   createMarketplaceRequestResponse,
   listMarketplaceRequestResponses,
+  markMarketplaceRequestResponsesRead,
   type MarketplaceRequestResponseItem,
 } from "../lib/api";
 import { resolveProfileImageUrl } from "../lib/profileImage";
 import { GsnLegacyIcon } from "./GsnLegacyIcon";
 import ProtectedVoiceNotePlayer from "./ProtectedVoiceNotePlayer";
 import ProtectedDemandMedia from "./ProtectedDemandMedia";
-import { PrimaryButton, SecondaryButton } from "./StableButton";
+import {
+  PrimaryButton,
+  SecondaryButton,
+  StableButton,
+  StableCtaLink,
+  SubtleButton,
+} from "./StableButton";
 import VoiceNoteRecorder from "./VoiceNoteRecorder";
 
 const SELLER_QUICK_REPLIES = [
@@ -27,6 +34,12 @@ type DemandResponsePanelProps = {
   requestTitle?: string;
   requestDetail?: string;
   requestHasVoice?: boolean;
+  preferredRecipientUserId?: number;
+  preferredRecipientName?: string;
+  supplyProductId?: number;
+  supplyShopId?: number;
+  protectedTradePath?: string;
+  onUnreadChanged?: () => void;
 };
 
 function clientKey(prefix: string): string {
@@ -80,6 +93,12 @@ export default function DemandResponsePanel({
   requestTitle = "",
   requestDetail = "",
   requestHasVoice = false,
+  preferredRecipientUserId = 0,
+  preferredRecipientName = "Seller",
+  supplyProductId = 0,
+  supplyShopId = 0,
+  protectedTradePath = "",
+  onUnreadChanged,
 }: DemandResponsePanelProps) {
   const [rows, setRows] = useState<MarketplaceRequestResponseItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,39 +107,73 @@ export default function DemandResponsePanel({
   const [voice, setVoice] = useState<File | null>(null);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaLink, setMediaLink] = useState("");
-  const [mediaKind, setMediaKind] = useState<"image" | "video">("image");
+  const [mediaKind, setMediaKind] = useState<"image" | "video" | "document">("image");
   const [voiceRecording, setVoiceRecording] = useState(false);
   const [showPhoto, setShowPhoto] = useState(false);
-  const [recipientUserId, setRecipientUserId] = useState(0);
+  const [recipientUserId, setRecipientUserId] = useState(
+    isOwner ? Number(preferredRecipientUserId || 0) : 0
+  );
   const [error, setError] = useState("");
+  const [newMessageCount, setNewMessageCount] = useState(0);
+  const [attachmentsOpen, setAttachmentsOpen] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
   const [conversationAccess, setConversationAccess] = useState<
     "loading" | "available" | "unavailable"
   >("loading");
   const threadRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const rowsRef = useRef<MarketplaceRequestResponseItem[]>([]);
+  const recipientRef = useRef(recipientUserId);
+  const stickToLatestRef = useRef(true);
+  const openedThreadRef = useRef("");
   const currentUserId = Number(currentUser?.id || currentUser?.user_id || 0);
   const canSharePhoto = Boolean(String(currentUser?.profile_image_url || "").trim());
 
-  async function load() {
-    setLoading(true);
-    setConversationAccess("loading");
-    setError("");
+  function normalizedRows(result: any): MarketplaceRequestResponseItem[] {
+    const items = Array.isArray(result)
+      ? result
+      : Array.isArray(result?.items)
+        ? result.items
+        : [];
+    const unique = new Map<number, MarketplaceRequestResponseItem>();
+    items.forEach((row: MarketplaceRequestResponseItem) => unique.set(Number(row.id), row));
+    return Array.from(unique.values()).sort((left, right) => {
+      const timeDifference = new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
+      return timeDifference || Number(left.id) - Number(right.id);
+    });
+  }
+
+  async function load(options: { silent?: boolean } = {}) {
+    const silent = options.silent === true;
+    if (!silent) {
+      setLoading(true);
+      setConversationAccess("loading");
+      setError("");
+    }
     try {
       const result: any = await listMarketplaceRequestResponses(requestId);
-      setRows(
-        Array.isArray(result)
-          ? result
-          : Array.isArray(result?.items)
-            ? result.items
-            : []
-      );
+      const nextRows = normalizedRows(result);
+      const previousIds = new Set(rowsRef.current.map((row) => Number(row.id)));
+      const selectedPeerId = isOwner ? Number(recipientRef.current || 0) : ownerUserId;
+      const incoming = nextRows.filter((row) => {
+        if (previousIds.has(Number(row.id)) || Number(row.author_user_id) !== selectedPeerId) return false;
+        return Number(row.recipient_user_id) === currentUserId;
+      });
+      rowsRef.current = nextRows;
+      setRows(nextRows);
+      if (silent && incoming.length > 0 && !stickToLatestRef.current) {
+        setNewMessageCount((current) => current + incoming.length);
+      }
       setConversationAccess("available");
     } catch (err: any) {
-      setRows([]);
-      setConversationAccess("unavailable");
-      setError(String(err?.message || "Private replies could not be loaded."));
+      if (!silent) {
+        setRows([]);
+        rowsRef.current = [];
+        setConversationAccess("unavailable");
+        setError(String(err?.message || "Private replies could not be loaded."));
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
@@ -128,8 +181,37 @@ export default function DemandResponsePanel({
     void load();
   }, [requestId]);
 
+  useEffect(() => {
+    recipientRef.current = recipientUserId;
+  }, [recipientUserId]);
+
+  useEffect(() => {
+    if (!isOwner || !preferredRecipientUserId) return;
+    setRecipientUserId(Number(preferredRecipientUserId));
+  }, [isOwner, preferredRecipientUserId]);
+
+  useEffect(() => {
+    let active = true;
+    const refresh = () => {
+      if (!active || (typeof document !== "undefined" && document.visibilityState !== "visible")) return;
+      void load({ silent: true });
+    };
+    const timer = window.setInterval(refresh, 4000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [requestId, ownerUserId, currentUserId, isOwner]);
+
   const participants = useMemo(() => {
     const names = new Map<number, string>();
+    if (isOwner && preferredRecipientUserId > 0) {
+      names.set(preferredRecipientUserId, preferredRecipientName || "Seller");
+    }
     rows.forEach((row) => {
       if (row.author_user_id !== ownerUserId) {
         names.set(row.author_user_id, row.author_display_name || "Member");
@@ -147,7 +229,7 @@ export default function DemandResponsePanel({
       }
     });
     return Array.from(names.entries()).map(([id, name]) => ({ id, name }));
-  }, [currentUserId, ownerUserId, rows]);
+  }, [currentUserId, isOwner, ownerUserId, preferredRecipientName, preferredRecipientUserId, rows]);
 
   useEffect(() => {
     if (!isOwner) return;
@@ -158,8 +240,14 @@ export default function DemandResponsePanel({
     if (participants.some((participant) => participant.id === recipientUserId)) {
       return;
     }
-    setRecipientUserId(participants.length === 1 ? participants[0].id : 0);
-  }, [isOwner, participants, recipientUserId]);
+    setRecipientUserId(
+      preferredRecipientUserId > 0
+        ? preferredRecipientUserId
+        : participants.length === 1
+          ? participants[0].id
+          : 0
+    );
+  }, [isOwner, participants, preferredRecipientUserId, recipientUserId]);
 
   const selectedParticipant = useMemo(
     () => participants.find((participant) => participant.id === recipientUserId) || null,
@@ -191,10 +279,13 @@ export default function DemandResponsePanel({
           lastRow,
           profileImageUrl: responderRow?.author_profile_image_url || null,
           preview: lastRow ? responsePreview(lastRow) : "No replies yet",
+          unreadCount: threadRows.filter(
+            (row) => row.is_unread && Number(row.author_user_id) === participant.id
+          ).length,
         };
       })
-      .filter((thread) => thread.count > 0);
-  }, [isOwner, ownerUserId, participants, rows]);
+      .filter((thread) => thread.count > 0 || thread.id === preferredRecipientUserId);
+  }, [isOwner, ownerUserId, participants, preferredRecipientUserId, rows]);
 
   const visibleRows = useMemo(() => {
     if (!isOwner) return rows;
@@ -209,23 +300,59 @@ export default function DemandResponsePanel({
     });
   }, [isOwner, ownerUserId, recipientUserId, rows]);
 
+  const activePeerUserId = isOwner ? recipientUserId : ownerUserId;
+
+  function scrollToLatest() {
+    const thread = threadRef.current;
+    if (!thread) return;
+    thread.scrollTop = thread.scrollHeight;
+    stickToLatestRef.current = true;
+    setNewMessageCount(0);
+  }
+
   useEffect(() => {
     if (loading || !threadRef.current) return;
+    const threadKey = `${requestId}:${activePeerUserId}`;
+    const openingThread = openedThreadRef.current !== threadKey;
+    openedThreadRef.current = threadKey;
+    if (!openingThread && !stickToLatestRef.current) return;
     const frame = window.requestAnimationFrame(() => {
-      if (threadRef.current) {
-        threadRef.current.scrollTop = threadRef.current.scrollHeight;
-      }
+      scrollToLatest();
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [loading, recipientUserId, visibleRows.length]);
+  }, [activePeerUserId, loading, requestId, visibleRows.length]);
+
+  useEffect(() => {
+    if (!activePeerUserId || !visibleRows.some((row) => row.is_unread)) return;
+    let cancelled = false;
+    void markMarketplaceRequestResponsesRead(requestId, activePeerUserId)
+      .then(() => {
+        if (cancelled) return;
+        setRows((current) => {
+          const next = current.map((row) =>
+            Number(row.author_user_id) === activePeerUserId &&
+            Number(row.recipient_user_id) === currentUserId
+              ? { ...row, is_unread: false, read_at: row.read_at || new Date().toISOString() }
+              : row
+          );
+          rowsRef.current = next;
+          return next;
+        });
+        onUnreadChanged?.();
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [activePeerUserId, currentUserId, onUnreadChanged, requestId, visibleRows]);
 
   async function send() {
     if (voiceRecording) {
       setError("Tap Stop and wait for Voice note ready before sending your reply.");
       return;
     }
-    if (!text.trim() && !voice) {
-      setError("Add a short message or voice note.");
+    if (!text.trim() && !voice && !mediaFile && !mediaLink.trim()) {
+      setError("Add a message, voice note, or attachment.");
       return;
     }
     if (isOwner && !recipientUserId) {
@@ -239,9 +366,11 @@ export default function DemandResponsePanel({
       const created = await createMarketplaceRequestResponse(
         requestId,
         {
-          text: text.trim() || undefined,
+          text: text.trim() || (mediaFile || mediaLink.trim() ? "Attachment" : undefined),
           client_response_id: clientKey("demand-response"),
           recipient_user_id: isOwner ? recipientUserId : undefined,
+          supply_product_id: isOwner && supplyProductId ? supplyProductId : undefined,
+          supply_shop_id: isOwner && supplyShopId ? supplyShopId : undefined,
           show_sender_photo: canSharePhoto && showPhoto,
         },
         voice
@@ -263,6 +392,9 @@ export default function DemandResponsePanel({
       setMediaFile(null);
       setMediaLink("");
       setShowPhoto(false);
+      setAttachmentsOpen(false);
+      setVoiceOpen(false);
+      stickToLatestRef.current = true;
       await load();
       if (attachmentError) {
         setError(`Reply sent, but the attachment was not added: ${attachmentError}`);
@@ -341,12 +473,17 @@ export default function DemandResponsePanel({
             {participantThreads.map((thread) => {
               const selected = thread.id === recipientUserId;
               return (
-                <button
+                <StableButton
                   key={thread.id}
                   type="button"
+                  debugId={`demand-box.response.${requestId}.thread.${thread.id}`}
                   data-gsn-demand-thread-row="true"
                   aria-pressed={selected}
-                  onClick={() => setRecipientUserId((current) => (current === thread.id ? 0 : thread.id))}
+                  onClick={() => {
+                    setNewMessageCount(0);
+                    stickToLatestRef.current = true;
+                    setRecipientUserId((current) => (current === thread.id ? 0 : thread.id));
+                  }}
                   aria-expanded={selected}
                   style={{
                     width: "100%",
@@ -420,10 +557,31 @@ export default function DemandResponsePanel({
                       {thread.count} {thread.count === 1 ? "reply" : "replies"} · {thread.preview}
                     </span>
                   </span>
-                  <span aria-hidden="true" style={{ color: "#0B4FA8", fontSize: 22, lineHeight: 1 }}>
-                    ›
-                  </span>
-                </button>
+                  {thread.unreadCount > 0 ? (
+                    <span
+                      data-gsn-demand-thread-unread={thread.unreadCount}
+                      aria-label={`${thread.unreadCount} unread messages`}
+                      style={{
+                        minWidth: 24,
+                        height: 24,
+                        padding: "0 7px",
+                        borderRadius: 999,
+                        display: "grid",
+                        placeItems: "center",
+                        background: "#0B6CE3",
+                        color: "#FFFFFF",
+                        fontSize: 11,
+                        fontWeight: 950,
+                      }}
+                    >
+                      {thread.unreadCount}
+                    </span>
+                  ) : (
+                    <span aria-hidden="true" style={{ color: "#0B4FA8", fontSize: 22, lineHeight: 1 }}>
+                      ›
+                    </span>
+                  )}
+                </StableButton>
               );
             })}
           </div>
@@ -475,6 +633,12 @@ export default function DemandResponsePanel({
         <div
           ref={threadRef}
           data-gsn-demand-conversation="whatsapp-like"
+          onScroll={(event) => {
+            const element = event.currentTarget;
+            stickToLatestRef.current =
+              element.scrollHeight - element.scrollTop - element.clientHeight < 48;
+            if (stickToLatestRef.current && newMessageCount) setNewMessageCount(0);
+          }}
           aria-label={
             selectedParticipant
               ? `Private conversation with ${selectedParticipant.name}`
@@ -690,6 +854,33 @@ export default function DemandResponsePanel({
               </React.Fragment>
             );
           })}
+          {newMessageCount > 0 ? (
+            <SubtleButton
+              type="button"
+              data-gsn-demand-new-message-indicator="true"
+              onClick={scrollToLatest}
+              debugId={`demand-box.response.${requestId}.new-messages`}
+              stableHeight={38}
+              style={{
+                position: "sticky",
+                bottom: 4,
+                justifySelf: "center",
+                minHeight: 38,
+                padding: "8px 13px",
+                borderRadius: 999,
+                border: "1px solid rgba(11,108,227,0.32)",
+                background: "#FFFFFF",
+                color: "#0B4FA8",
+                boxShadow: "0 7px 18px rgba(15,23,42,0.16)",
+                font: "inherit",
+                fontSize: 11,
+                fontWeight: 900,
+                cursor: "pointer",
+              }}
+            >
+              {newMessageCount} new {newMessageCount === 1 ? "message" : "messages"} ↓
+            </SubtleButton>
+          ) : null}
         </div>
       ) : (
         <div
@@ -716,19 +907,22 @@ export default function DemandResponsePanel({
         <div
           data-gsn-demand-reply-composer="true"
           style={{
-            padding: compact ? "12px 10px 2px" : 12,
+            padding: compact ? 9 : 12,
             borderRadius: 18,
             border: "1px solid rgba(13,95,168,0.12)",
             background: "#F8FBFF",
             display: "grid",
-            gap: 10,
+            gap: 8,
+            position: "sticky",
+            bottom: 0,
+            zIndex: 2,
           }}
         >
           {!isOwner ? (
             <div
               data-gsn-demand-seller-quick-replies="editable"
               aria-label="Optional quick replies"
-              style={{ display: "flex", gap: 6, flexWrap: "wrap" }}
+              style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}
             >
               {SELLER_QUICK_REPLIES.map((reply) => (
                 <SecondaryButton
@@ -742,8 +936,7 @@ export default function DemandResponsePanel({
                   debugId={`demand-box.response.${requestId}.quick.${reply.toLowerCase().replace(/[^a-z]+/g, "-")}`}
                   stableHeight={38}
                   style={{
-                    flex: "1 1 118px",
-                    minWidth: 0,
+                    flex: "0 0 auto",
                     borderRadius: 999,
                     padding: "7px 10px",
                     fontSize: 11.5,
@@ -755,45 +948,131 @@ export default function DemandResponsePanel({
               ))}
             </div>
           ) : null}
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            placeholder="Write a private reply"
-            maxLength={1500}
+          <div
+            data-gsn-demand-composer-row="compact"
             style={{
-              minHeight: 76,
-              resize: "vertical",
-              borderRadius: 14,
-              border: "1px solid rgba(13,95,168,0.18)",
-              padding: 12,
-              color: "#0B1F33",
-              font: "inherit",
+              display: "grid",
+              gridTemplateColumns: "42px minmax(0, 1fr) 46px",
+              gap: 7,
+              alignItems: "end",
+              minWidth: 0,
             }}
-          />
-          <VoiceNoteRecorder
-            value={voice}
-            onChange={setVoice}
-            onRecordingChange={setVoiceRecording}
-            maxSeconds={60}
-            disabled={sending || voiceRecording}
-            debugPrefix={`demand-box.response.${requestId}.voice`}
-            compact
-            startLabel="+ Voice note"
-          />
-          <details style={{ borderTop: "1px solid rgba(13,95,168,0.12)", paddingTop: 8 }}>
-            <summary style={{ cursor: "pointer", color: "#29445E", fontSize: 12, fontWeight: 850 }}>
-              Add photo, short video or link
-            </summary>
-            <div style={{ display: "grid", gap: 7, marginTop: 8 }}>
+          >
+            <SubtleButton
+              type="button"
+              aria-label="Add attachment"
+              aria-expanded={attachmentsOpen}
+              onClick={() => setAttachmentsOpen((current) => !current)}
+              debugId={`demand-box.response.${requestId}.attachments`}
+              stableHeight={42}
+              style={{ minWidth: 42, width: 42, padding: 0, borderRadius: 999, fontSize: 22 }}
+            >
+              +
+            </SubtleButton>
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  if (!sending && !voiceRecording && (text.trim() || voice || mediaFile || mediaLink.trim())) {
+                    void send();
+                  }
+                }
+              }}
+              placeholder="Message..."
+              aria-label="Private message"
+              maxLength={1500}
+              rows={1}
+              style={{
+                width: "100%",
+                minWidth: 0,
+                minHeight: 42,
+                maxHeight: 110,
+                resize: "vertical",
+                borderRadius: 18,
+                border: "1px solid rgba(13,95,168,0.18)",
+                padding: "10px 12px",
+                color: "#0B1F33",
+                background: "#FFFFFF",
+                font: "inherit",
+                lineHeight: 1.35,
+              }}
+            />
+            {text.trim() || voice || mediaFile || mediaLink.trim() ? (
+              <PrimaryButton
+                type="button"
+                aria-label="Send message"
+                onClick={() => void send()}
+                disabled={sending || voiceRecording}
+                busy={sending}
+                busyLabel="..."
+                debugId={`demand-box.response.${requestId}.send`}
+                stableHeight={46}
+                style={{ minWidth: 46, width: 46, padding: 0, borderRadius: 999, fontSize: 19 }}
+              >
+                Send
+              </PrimaryButton>
+            ) : (
+              <PrimaryButton
+                type="button"
+                aria-label="Record voice note"
+                aria-expanded={voiceOpen}
+                onClick={() => setVoiceOpen((current) => !current)}
+                debugId={`demand-box.response.${requestId}.voice-toggle`}
+                stableHeight={46}
+                style={{ minWidth: 46, width: 46, padding: 0, borderRadius: 999 }}
+              >
+                <GsnLegacyIcon name="audio" size={22} />
+              </PrimaryButton>
+            )}
+          </div>
+          {voiceOpen || voice ? (
+            <VoiceNoteRecorder
+              value={voice}
+              onChange={setVoice}
+              onRecordingChange={setVoiceRecording}
+              maxSeconds={60}
+              disabled={sending}
+              debugPrefix={`demand-box.response.${requestId}.voice`}
+              compact
+              startLabel="Record voice note"
+            />
+          ) : null}
+          {attachmentsOpen ? (
+            <div
+              data-gsn-demand-attachment-options="expanded"
+              style={{
+                display: "grid",
+                gap: 7,
+                padding: 9,
+                borderRadius: 14,
+                border: "1px solid rgba(13,95,168,0.12)",
+                background: "#FFFFFF",
+              }}
+            >
+              <div style={{ color: "#29445E", fontSize: 12, fontWeight: 900 }}>
+                Photo, video, document or link
+              </div>
+              <div style={{ display: "grid", gap: 7, marginTop: 8 }}>
               <input
                 type="file"
-                accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+                data-gmfn-action-root="true"
+                data-cta-id={`demand-box.response.${requestId}.attachment-file`}
+                aria-label="Choose attachment"
+                accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 onChange={(event) => {
                   const selected = event.target.files?.[0] || null;
                   setMediaFile(selected);
                   setMediaLink("");
-                  setMediaKind(selected?.type.startsWith("video/") ? "video" : "image");
+                  setMediaKind(
+                    selected?.type.startsWith("video/")
+                      ? "video"
+                      : selected?.type.startsWith("image/")
+                        ? "image"
+                        : "document"
+                  );
                 }}
               />
               <input
@@ -809,8 +1088,7 @@ export default function DemandResponsePanel({
               />
               {mediaFile ? <span style={{ color: "#587087", fontSize: 11 }}>{mediaFile.name}</span> : null}
             </div>
-          </details>
-          {canSharePhoto ? (
+            {canSharePhoto ? (
             <label style={{ display: "flex", alignItems: "flex-start", gap: 9, color: "#29445E", fontSize: 12 }}>
               <input
                 type="checkbox"
@@ -832,26 +1110,23 @@ export default function DemandResponsePanel({
                 Show my current profile photo with this reply. This is optional and does not prove reliability.
               </span>
             </label>
+            ) : null}
+            </div>
           ) : null}
-          <PrimaryButton
-            type="button"
-            onClick={() => void send()}
-            disabled={sending}
-            busy={sending}
-            busyLabel="Sending reply..."
-            fullWidth
-            stableHeight={52}
-            debugId={`demand-box.response.${requestId}.send`}
-          >
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <GsnLegacyIcon name="audio" size={21} />
-              {voiceRecording ? "Stop recording first" : "Send private reply"}
-            </span>
-          </PrimaryButton>
           {voiceRecording ? (
             <div style={{ color: "#587087", fontSize: 12, textAlign: "center" }}>
-              Tap Stop above. Sending unlocks when your voice note is ready.
+              Recording continues here. Tap Stop before sending.
             </div>
+          ) : null}
+          {protectedTradePath ? (
+            <StableCtaLink
+              to={protectedTradePath}
+              debugId={`demand-box.response.${requestId}.protected-trade`}
+              stableHeight={42}
+              style={{ borderRadius: 12, fontSize: 12 }}
+            >
+              Protected Trade (if agreed)
+            </StableCtaLink>
           ) : null}
         </div>
       ) : null}

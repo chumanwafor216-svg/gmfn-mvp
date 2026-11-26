@@ -1,5 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import { fetchDemandMediaBlob, type MarketplaceRequestAttachmentItem } from "../lib/api";
+import OriginLink from "./OriginLink";
+import { SubtleButton } from "./StableButton";
 
 export default function ProtectedDemandMedia({
   attachment,
@@ -34,14 +36,15 @@ export default function ProtectedDemandMedia({
 
   if (attachment.kind === "link") {
     return (
-      <a
-        href={attachment.url}
+      <OriginLink
+        to={attachment.url || ""}
         target="_blank"
         rel="noreferrer"
+        data-cta-id={`demand-media.${attachment.id}.external`}
         style={{ color: "#0B4FA8", fontSize: compact ? 11 : 12, overflowWrap: "anywhere" }}
       >
         Open attached link
-      </a>
+      </OriginLink>
     );
   }
   if (error) return <span style={{ color: "#7C3218", fontSize: 11 }}>{error}</span>;
@@ -54,6 +57,24 @@ export default function ProtectedDemandMedia({
         preload="metadata"
         style={{ width: "100%", maxHeight: compact ? 180 : 280, borderRadius: 12, background: "#0B1F33" }}
       />
+    );
+  }
+  if (attachment.kind === "document") {
+    return (
+      <SubtleButton
+        type="button"
+        debugId={`demand-media.${attachment.id}.document`}
+        onClick={() => {
+          const download = document.createElement("a");
+          download.href = source;
+          download.download = attachment.original_filename || "GSN attachment";
+          download.click();
+        }}
+        stableHeight={40}
+        style={{ color: "#0B4FA8", fontSize: compact ? 11 : 12, fontWeight: 850 }}
+      >
+        Open {attachment.original_filename || "attached document"}
+      </SubtleButton>
     );
   }
   return (

@@ -1321,6 +1321,8 @@ def get_marketplace_request_seller_contact(
         demand_area=demand_area or None,
         product_title=product_title,
         shop_name=shop_name,
+        seller_user_id=int(getattr(shop, "owner_user_id", 0) or 0),
+        seller_is_gsn_member=True,
         whatsapp_number=whatsapp_number,
         contact_available=bool(whatsapp_number),
         public_shop_path=_public_shop_path_for_match(db, handoff),

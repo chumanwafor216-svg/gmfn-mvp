@@ -26,6 +26,7 @@ from app.db.models import (
     MarketplaceRequest,
     MarketplaceRequestActivity,
     MarketplaceRequestResponse,
+    MarketplaceShop,
     User,
 )
 from app.schemas.marketplace_requests import (
@@ -39,6 +40,10 @@ from app.schemas.marketplace_requests import (
     MarketplaceRequestRepostCreate,
     MarketplaceRequestResponseCreate,
     MarketplaceRequestResponseOut,
+    MarketplaceRequestResponseReadCreate,
+    MarketplaceRequestResponseReadOut,
+    DemandResponseUnreadRequestOut,
+    DemandResponseUnreadSummaryOut,
 )
 from app.services.demand_audio_service import (
     PRIVATE_DEMAND_AUDIO_DIRECTORY,
@@ -54,6 +59,7 @@ from app.services.demand_media_service import (
     validate_demand_media_link,
 )
 from app.services.demand_box_access_service import request_visible_to_user
+from app.services.demand_supply_intelligence_service import resolve_demand_supply_trade_handoff
 from app.services.marketplace_media_cleanup_service import (
     queue_marketplace_media_deletions,
 )
@@ -184,8 +190,8 @@ def _validate_media_request(
         if file is not None or not normalized_link:
             raise HTTPException(status_code=400, detail="Add one web link.")
         return normalized_kind, validate_demand_media_link(normalized_link)
-    if normalized_kind not in {"image", "video"} or file is None or normalized_link:
-        raise HTTPException(status_code=400, detail="Add one photo, short video, or link.")
+    if normalized_kind not in {"image", "video", "document"} or file is None or normalized_link:
+        raise HTTPException(status_code=400, detail="Add one photo, short video, document, or link.")
     return normalized_kind, None
 
 
@@ -285,6 +291,11 @@ def _response_out(
         audio_deleted_at=audio.deleted_at if audio else None,
         media_attachments=[_media_out(item) for item in _response_media(db, response_id=int(row.id))],
         created_at=row.created_at,
+        read_at=row.read_at,
+        is_unread=(
+            int(row.recipient_user_id) == int(current_user_id)
+            and row.read_at is None
+        ),
         is_mine=int(row.author_user_id) == int(current_user_id),
     )
 
@@ -417,6 +428,78 @@ def list_request_responses(
     ]
 
 
+@router.get(
+    "/responses/unread-summary",
+    response_model=DemandResponseUnreadSummaryOut,
+)
+def get_response_unread_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    rows = (
+        db.query(MarketplaceRequestResponse)
+        .filter(
+            MarketplaceRequestResponse.recipient_user_id == int(current_user.id),
+            MarketplaceRequestResponse.read_at.is_(None),
+        )
+        .order_by(MarketplaceRequestResponse.marketplace_request_id.asc())
+        .all()
+    )
+    counts: dict[int, int] = {}
+    for row in rows:
+        request_id = int(row.marketplace_request_id)
+        counts[request_id] = counts.get(request_id, 0) + 1
+    return DemandResponseUnreadSummaryOut(
+        total_unread=sum(counts.values()),
+        requests=[
+            DemandResponseUnreadRequestOut(
+                marketplace_request_id=request_id,
+                unread_count=count,
+            )
+            for request_id, count in counts.items()
+        ],
+    )
+
+
+@router.post(
+    "/requests/{request_id}/responses/read",
+    response_model=MarketplaceRequestResponseReadOut,
+)
+def mark_request_responses_read(
+    payload: MarketplaceRequestResponseReadCreate,
+    request_id: int = ApiPath(..., ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    demand = _require_request_access(
+        db,
+        request_id=request_id,
+        current_user=current_user,
+    )
+    peer_user_id = int(payload.peer_user_id or 0)
+    if peer_user_id == int(current_user.id):
+        raise HTTPException(status_code=400, detail="Choose the other participant.")
+    query = db.query(MarketplaceRequestResponse).filter(
+        MarketplaceRequestResponse.marketplace_request_id == int(demand.id),
+        MarketplaceRequestResponse.recipient_user_id == int(current_user.id),
+        MarketplaceRequestResponse.read_at.is_(None),
+    )
+    if peer_user_id > 0:
+        query = query.filter(
+            MarketplaceRequestResponse.author_user_id == peer_user_id,
+        )
+    marked_read = query.update(
+        {MarketplaceRequestResponse.read_at: datetime.now(timezone.utc)},
+        synchronize_session=False,
+    )
+    db.commit()
+    return MarketplaceRequestResponseReadOut(
+        marketplace_request_id=int(demand.id),
+        peer_user_id=peer_user_id or None,
+        marked_read=int(marked_read or 0),
+    )
+
+
 @router.post(
     "/requests/{request_id}/responses",
     response_model=MarketplaceRequestResponseOut,
@@ -466,8 +549,31 @@ async def create_request_response(
             )
             .first()
         )
-        if not prior_exchange or recipient_user_id == int(current_user.id):
-            raise HTTPException(status_code=403, detail="That member has not replied here.")
+        if recipient_user_id == int(current_user.id):
+            raise HTTPException(status_code=403, detail="You cannot message yourself here.")
+        if not prior_exchange:
+            product_id = int(payload.supply_product_id or 0)
+            shop_id = int(payload.supply_shop_id or 0)
+            handoff = (
+                resolve_demand_supply_trade_handoff(
+                    db,
+                    demand_id=int(demand.id),
+                    product_id=product_id,
+                    shop_id=shop_id,
+                    current_user_id=int(current_user.id),
+                )
+                if product_id > 0 and shop_id > 0
+                else None
+            )
+            shop = db.get(MarketplaceShop, shop_id) if handoff else None
+            if (
+                not handoff
+                or int(handoff.get("requester_user_id") or 0) != int(current_user.id)
+                or not shop
+                or not bool(getattr(shop, "is_active", False))
+                or int(getattr(shop, "owner_user_id", 0) or 0) != recipient_user_id
+            ):
+                raise HTTPException(status_code=403, detail="That member has not replied here.")
     else:
         recipient_user_id = int(demand.user_id)
 

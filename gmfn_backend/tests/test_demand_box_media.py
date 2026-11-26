@@ -140,3 +140,46 @@ def test_response_media_is_private_to_the_two_participants(client, monkeypatch):
         assert unrelated_member.status_code == 404
     finally:
         app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_response_document_is_private_and_downloadable(client, monkeypatch, tmp_path):
+    selected = {"user": _user(1)}
+    app.dependency_overrides[get_current_user] = lambda: selected["user"]
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(tmp_path))
+    _seed()
+    try:
+        created = client.post(
+            "/marketplace/requests",
+            json={"clan_id": 1, "title": "Need a quotation", "category": "Services"},
+        )
+        request_id = created.json()["id"]
+
+        selected["user"] = _user(2)
+        response = client.post(
+            f"/demand-box/requests/{request_id}/responses",
+            data={
+                "payload_json": json.dumps(
+                    {"text": "Quotation attached", "client_response_id": "document-response-001"}
+                )
+            },
+        )
+        assert response.status_code == 200, response.text
+        attached = client.post(
+            f"/demand-box/responses/{response.json()['id']}/media",
+            data={"kind": "document"},
+            files={"file": ("quotation.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
+        )
+        assert attached.status_code == 200, attached.text
+        attachment_id = attached.json()["id"]
+        assert attached.json()["kind"] == "document"
+
+        selected["user"] = _user(1)
+        downloaded = client.get(f"/demand-box/media/{attachment_id}")
+        assert downloaded.status_code == 200
+        assert downloaded.headers["content-type"].startswith("application/pdf")
+        assert downloaded.content.startswith(b"%PDF-")
+
+        selected["user"] = _user(3)
+        assert client.get(f"/demand-box/media/{attachment_id}").status_code == 404
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)

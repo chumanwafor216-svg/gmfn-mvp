@@ -36,13 +36,13 @@ requirePattern(
 requirePattern(
   demand,
   demandPath,
-  /data-gsn-demand-expand-search="true"[\s\S]*?No matches here yet[\s\S]*?Expand search[\s\S]*?not public, radius-based, paid, or guaranteed search/,
+  /data-gsn-demand-expand-search="true"[\s\S]*?No matches yet[\s\S]*?Expand search[\s\S]*?not public, radius-based, paid, or guaranteed search/,
   "the no-match card must keep its plain action and truthful boundary"
 );
 requirePattern(
   demand,
   demandPath,
-  /isCompact[\s\S]*?Let GSN check one other permitted community for a possible match\.[\s\S]*?Search in one other community[\s\S]*?Stop expanded search[\s\S]*?One-hop community search only\. Not public, paid or guaranteed\./,
+  /isCompact[\s\S]*?Check one more permitted community\.[\s\S]*?Search one more community[\s\S]*?Stop expanded search[\s\S]*?One community only\. Not public or guaranteed\. You can stop anytime\./,
   "the phone no-match state must use the approved compact wording without weakening the one-hop boundary"
 );
 requirePattern(

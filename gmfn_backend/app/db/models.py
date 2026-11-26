@@ -5524,6 +5524,12 @@ class MarketplaceRequestResponse(Base):
             "author_user_id",
             "recipient_user_id",
         ),
+        Index(
+            "ix_marketplace_response_recipient_unread_v1",
+            "recipient_user_id",
+            "read_at",
+            "marketplace_request_id",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -5556,6 +5562,10 @@ class MarketplaceRequestResponse(Base):
         default=utcnow,
         server_default=func.now(),
         index=True,
+    )
+    read_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
 
 

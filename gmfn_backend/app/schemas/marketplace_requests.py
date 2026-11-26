@@ -183,6 +183,8 @@ class MarketplaceRequestResponseCreate(BaseModel):
     text: Optional[str] = Field(default=None, max_length=1500)
     client_response_id: str = Field(..., min_length=8, max_length=80)
     recipient_user_id: Optional[int] = Field(default=None, ge=1)
+    supply_product_id: Optional[int] = Field(default=None, ge=1)
+    supply_shop_id: Optional[int] = Field(default=None, ge=1)
     show_sender_photo: bool = False
 
     @field_validator("text", "client_response_id", mode="before")
@@ -190,7 +192,7 @@ class MarketplaceRequestResponseCreate(BaseModel):
     def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
 
-    @field_validator("recipient_user_id", mode="before")
+    @field_validator("recipient_user_id", "supply_product_id", "supply_shop_id", mode="before")
     @classmethod
     def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
         return _reject_bool_integer(value, info.field_name)
@@ -217,7 +219,34 @@ class MarketplaceRequestResponseOut(BaseModel):
     audio_deleted_at: Optional[datetime] = None
     media_attachments: list[MarketplaceRequestAttachmentOut] = Field(default_factory=list)
     created_at: datetime
+    read_at: Optional[datetime] = None
+    is_unread: bool = False
     is_mine: bool = False
+
+
+class MarketplaceRequestResponseReadCreate(BaseModel):
+    peer_user_id: Optional[int] = Field(default=None, ge=1)
+
+    @field_validator("peer_user_id", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_integer(value, info.field_name)
+
+
+class MarketplaceRequestResponseReadOut(BaseModel):
+    marketplace_request_id: int
+    peer_user_id: Optional[int] = None
+    marked_read: int = 0
+
+
+class DemandResponseUnreadRequestOut(BaseModel):
+    marketplace_request_id: int
+    unread_count: int
+
+
+class DemandResponseUnreadSummaryOut(BaseModel):
+    total_unread: int = 0
+    requests: list[DemandResponseUnreadRequestOut] = Field(default_factory=list)
 
 
 class DemandAudioDeleteCreate(BaseModel):
@@ -307,6 +336,8 @@ class DemandSupplySellerContactOut(BaseModel):
     demand_area: Optional[str] = None
     product_title: str
     shop_name: str
+    seller_user_id: int
+    seller_is_gsn_member: bool = True
     whatsapp_number: Optional[str] = None
     contact_available: bool = False
     public_shop_path: Optional[str] = None

@@ -381,6 +381,29 @@ def test_private_response_exchange_and_linked_repost(
         "/uploads/profile/users/responder.jpg"
     )
     assert response_body["author_gmfn_id"] == "GSN-U-RESPONDER"
+    assert response_body["is_unread"] is False
+
+    acting_user(1)
+    owner_unread = client.get("/demand-box/responses/unread-summary")
+    assert owner_unread.status_code == 200, owner_unread.text
+    assert owner_unread.json() == {
+        "total_unread": 1,
+        "requests": [
+            {
+                "marketplace_request_id": request_id,
+                "unread_count": 1,
+            }
+        ],
+    }
+    owner_marked_read = client.post(
+        f"/demand-box/requests/{request_id}/responses/read",
+        json={"peer_user_id": 2},
+    )
+    assert owner_marked_read.status_code == 200, owner_marked_read.text
+    assert owner_marked_read.json()["marked_read"] == 1
+    assert client.get("/demand-box/responses/unread-summary").json()["total_unread"] == 0
+
+    acting_user(2)
 
     duplicate_reply = client.post(
         f"/demand-box/requests/{request_id}/responses",
@@ -443,6 +466,19 @@ def test_private_response_exchange_and_linked_repost(
     assert owner_reply.json()["recipient_user_id"] == 2
     assert owner_reply.json()["author_gmfn_id"] == "GSN-U-OWNER"
     assert owner_reply.json()["author_profile_image_url"] is None
+
+    acting_user(2)
+    responder_unread = client.get("/demand-box/responses/unread-summary")
+    assert responder_unread.status_code == 200, responder_unread.text
+    assert responder_unread.json()["total_unread"] == 1
+    responder_marked_read = client.post(
+        f"/demand-box/requests/{request_id}/responses/read",
+        json={"peer_user_id": 1},
+    )
+    assert responder_marked_read.status_code == 200, responder_marked_read.text
+    assert responder_marked_read.json()["marked_read"] == 1
+
+    acting_user(1)
 
     with engine.begin() as conn:
         messages = conn.execute(

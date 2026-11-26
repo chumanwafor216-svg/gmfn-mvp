@@ -908,6 +908,8 @@ def test_demand_supply_seller_contact_is_requester_only_and_read_only(
     assert body["demand_id"] == 63
     assert body["product_id"] == 100
     assert body["shop_id"] == 10
+    assert body["seller_user_id"] == 2
+    assert body["seller_is_gsn_member"] is True
     assert body["contact_available"] is True
     assert body["whatsapp_number"] == "+2348012345678"
     assert body["back_to_request_path"] == "/app/demand-box?demand_id=63"
@@ -916,11 +918,54 @@ def test_demand_supply_seller_contact_is_requester_only_and_read_only(
     assert "Pipe leak near Ajah" in body["prepared_message"]
     assert "Emergency Plumbing Repair" in body["prepared_message"]
     assert "no agreement has been made yet" in body["prepared_message"]
-    assert "seller_user_id" not in body
     assert "requester_user_id" not in body
     assert _table_count("notifications") == before_notifications
     assert _table_count("protected_trade_records") == before_trade_records
     assert _table_count("trust_events") == before_trust_events
+
+
+def test_requester_can_start_validated_private_chat_with_matched_seller(
+    client,
+    override_current_user_user,
+):
+    _seed_base()
+    _seed_request(request_id=67)
+
+    blocked_without_match = client.post(
+        "/demand-box/requests/67/responses",
+        data={
+            "payload_json": '{"text":"Can you help?","client_response_id":"seller-chat-67-a","recipient_user_id":2}'
+        },
+    )
+    assert blocked_without_match.status_code == 403, blocked_without_match.text
+
+    started = client.post(
+        "/demand-box/requests/67/responses",
+        data={
+            "payload_json": '{"text":"Can you help?","client_response_id":"seller-chat-67-b","recipient_user_id":2,"supply_product_id":100,"supply_shop_id":10}'
+        },
+    )
+    assert started.status_code == 200, started.text
+    assert started.json()["author_user_id"] == 1
+    assert started.json()["recipient_user_id"] == 2
+    assert started.json()["is_unread"] is False
+
+    duplicate = client.post(
+        "/demand-box/requests/67/responses",
+        data={
+            "payload_json": '{"text":"Duplicate","client_response_id":"seller-chat-67-b","recipient_user_id":2,"supply_product_id":100,"supply_shop_id":10}'
+        },
+    )
+    assert duplicate.status_code == 200, duplicate.text
+    assert duplicate.json()["id"] == started.json()["id"]
+
+    wrong_seller = client.post(
+        "/demand-box/requests/67/responses",
+        data={
+            "payload_json": '{"text":"Wrong recipient","client_response_id":"seller-chat-67-c","recipient_user_id":3,"supply_product_id":100,"supply_shop_id":10}'
+        },
+    )
+    assert wrong_seller.status_code == 403, wrong_seller.text
 
 
 def test_demand_supply_seller_contact_fails_closed_when_contact_is_unavailable(
