@@ -302,10 +302,16 @@ assertNotContains(
 assertContains(
   marketplaceTradeEvidenceFile,
   marketplaceTradeEvidenceSource,
-  /id="marketplace-trade-evidence"[\s\S]*?Trade Records[\s\S]*?marketplace\.trade\.evidence-module[\s\S]*?Trade Record[\s\S]*?Record the item, other side, and basic terms[\s\S]*?Confirm outcome[\s\S]*?event evidence,\s+not a human score[\s\S]*?debugId="marketplace\.protected-trade\.outcome\.good"[\s\S]*?debugId="marketplace\.protected-trade\.create"/,
-  "Trade Records must render as a separate lane with a simple outcome surface before the detailed record form."
+  /id="marketplace-trade-evidence"[\s\S]*?Trade Records archive[\s\S]*?Read-only history[\s\S]*?data-gsn-trade-archive="read-only"[\s\S]*?Historical Trade Records[\s\S]*?archive cannot create or change a transaction[\s\S]*?marketplace\.protected-trade\.archive\.refresh[\s\S]*?Choose a saved record[\s\S]*?Trade Record paper[\s\S]*?Event history/,
+  "Historical Trade Records must remain a read-only archive reached from explicit Shop Control context."
 );
 
+assertNotContains(
+  marketplaceTradeEvidenceFile,
+  marketplaceTradeEvidenceSource,
+  /marketplace\.protected-trade\.(?:outcome\.|create|start-another|record-update)|Confirm outcome|Issue Trade Record|Record update|<textarea/,
+  "The historical Trade Records archive must not create, amend, or confirm a live transaction."
+);
 assertContains(
   marketplaceMembersFile,
   marketplaceMembersSource,

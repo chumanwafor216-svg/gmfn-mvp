@@ -187,7 +187,7 @@ assertContains(
 );
 
 assertContains(
-  /safeStr\(trade\.trade_code\) \|\| "No trade code yet"/,
+  /safeStr\(selectedProtectedTrade\?\.trade_code\) \|\| "No trade code yet"/,
   "Protected Trade record list must show honest missing-code language."
 );
 
@@ -215,40 +215,27 @@ if (!tradeEvidenceSection.text) {
   addFinding(-1, "Trade Evidence detail section must exist before Members & Shops.");
 } else {
   [
-    /Trade Evidence/,
-    /Trade Evidence Record/,
-    /Trade record lane/,
+    /Trade Records archive/,
+    /Read-only history\. New Trade Records start inside the private\s+DemandBox conversation\./,
+    /data-gsn-trade-archive="read-only"/,
+    /Historical Trade Records/,
+    /archive cannot create or change a transaction/,
     /marketplace\.trade\.evidence-module/,
     /marketplaceDepartmentShellStyle\("trade", isCompact\)/,
-    /creates evidence, not escrow/,
-    /Confirm outcome[\s\S]*?One tap records what happened\. It becomes event evidence,\s+not a human score\./,
-    /debugId="marketplace\.protected-trade\.outcome\.good"[\s\S]*?selectedProtectedTradeOutcomeActions\.good\.label/,
-    /debugId="marketplace\.protected-trade\.outcome\.blocked"[\s\S]*?selectedProtectedTradeOutcomeActions\.blocked\.label/,
-    /debugId="marketplace\.protected-trade\.outcome\.issue"[\s\S]*?selectedProtectedTradeOutcomeActions\.issue\.label/,
-    /debugId="marketplace\.protected-trade\.start-another"[\s\S]*?New record/,
-    /debugId="marketplace\.protected-trade\.refresh"[\s\S]*?Refresh/,
-    /marketplaceFieldTouchProps\("marketplace\.protected-trade\.role"\)/,
-    /marketplaceFieldTouchProps\("marketplace\.protected-trade\.counterpart"\)/,
-    /Minimum evidence packet[\s\S]*?marketplaceFieldTouchProps\("marketplace\.protected-trade\.packet"\)[\s\S]*?invoice reference[\s\S]*?courier handoff[\s\S]*?payment schedule/,
-    /debugId="marketplace\.protected-trade\.create"[\s\S]*?Start record/,
-    /debugId="marketplace\.protected-trade\.refresh-empty"[\s\S]*?Refresh records/,
-    /Record update/,
-    /marketplaceFieldTouchProps\("marketplace\.protected-trade\.update\.record"\)/,
-    /marketplaceFieldTouchProps\("marketplace\.protected-trade\.update\.type"\)/,
-    /marketplaceFieldTouchProps\("marketplace\.protected-trade\.update\.note"\)/,
-    /debugId="marketplace\.protected-trade\.record-update"[\s\S]*?Record update/,
-    /Evidence paper/,
-    /Signed-in evidence paper/,
-    /selectedProtectedTradeHasDetail/,
-    /recentProtectedTradeEvents/,
-    /Event trail/,
+    /Where live trade work happens/,
+    /marketplace\.protected-trade\.archive\.refresh[\s\S]*?Refresh archive/,
+    /marketplaceFieldTouchProps\("marketplace\.protected-trade\.archive\.record"\)/,
+    /Choose a saved record/,
+    /Saved agreement/,
+    /safeStr\(selectedProtectedTrade\?\.trade_code\) \|\| "No trade code yet"/,
+    /Payment:[\s\S]*?Release:[\s\S]*?Receipt:[\s\S]*?Issue:/,
+    /Trade Record paper/,
+    /Private evidence visible only to people already allowed to\s+view this record\./,
     /<GsnSnapshotPaperCard[\s\S]*?paperText=\{protectedTradeEvidencePaperText\}/,
     /debugId="marketplace\.protected-trade\.copy-paper"[\s\S]*?Copy paper text/,
-    /Trade records/,
-    /What to do next/,
-    /marketplace\.protected-trade\.next-step/,
-    /debugId="marketplace\.protected-trade\.more\.summary"[\s\S]*?Records, updates & evidence/,
-    /<details[\s\S]*?open=\{!isCompact\}/,
+    /Event history/,
+    /selectedProtectedTradeHasDetail/,
+    /recentProtectedTradeEvents/,
   ].forEach((pattern) => {
     if (!pattern.test(tradeEvidenceSection.text)) {
       addFinding(
@@ -259,6 +246,13 @@ if (!tradeEvidenceSection.text) {
     }
   });
 
+  if (/marketplace\.protected-trade\.(?:outcome\.|create|start-another|record-update)|Confirm outcome|Issue Trade Record|Record update|<textarea/.test(tradeEvidenceSection.text)) {
+    addFinding(
+      tradeEvidenceSection.start,
+      "Historical Trade Records must be read-only.",
+      "Creation, outcome confirmation, and event editing belong inside the private DemandBox conversation."
+    );
+  }
   if (/(choose-supporter|Choose supporter|toggleMemberAsSupporter|guarantor|Loan Readiness|Loan Suggestions|Loan Workbench|Money Pool|ROSCA|Trust Passport|TrustSlip|CCI|Owner Shop)/.test(tradeEvidenceSection.text)) {
     addFinding(
       tradeEvidenceSection.start,
@@ -267,7 +261,7 @@ if (!tradeEvidenceSection.text) {
     );
   }
 
-  if (/DemandBox|marketplace\.members\.demand-box|Post a local need or offer request for this marketplace/.test(tradeEvidenceSection.text)) {
+  if (/marketplace\.members\.demand-box|Post a local need or offer request for this marketplace/.test(tradeEvidenceSection.text)) {
     addFinding(
       tradeEvidenceSection.start,
       "Trade Evidence detail section must not embed DemandBox.",

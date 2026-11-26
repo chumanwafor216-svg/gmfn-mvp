@@ -7785,3 +7785,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Payment remains direct to the seller and non-custodial. This change uses the existing code generator only; it does not add or alter GSN bank reconciliation, Pipeline Credit, escrow or money custody.
 - Verification: protected-trade backend tests `8 passed`; DemandBox front-package audit passed; Marketplace front-package audit passed; Python compilation, audit-script Node syntax and `git diff --check` passed.
 - Local production build remains unavailable because neither the isolated worktree nor root frontend has `node_modules`/`tsc`. The broad Marketplace Trade Evidence and button-inventory audits remain red on known extracted-component/baseline expectations; the removed general trade launcher is intentionally absent. GitHub deployment CI must provide final TypeScript/Vite build evidence.
+
+# Marketplace Trade Records archive made read-only - 2026-11-26
+
+- The explicit Shop Control `Trade Records` destination remains available for historical retrieval, but it is now a read-only archive rather than a second transaction editor.
+- Removed archive-side Trade Record creation, outcome-confirmation buttons, amendment/event-note inputs and manual update recording. New agreements and live progression remain inside the matched private DemandBox conversation.
+- The archive now exposes only saved-record selection, record/payment/release/receipt/issue status, agreement terms and amount, the existing private evidence paper, event history, refresh and copy-paper actions.
+- Backend protected-trade APIs, stored records, generated payment codes, seller-direct payment rules, Merchant Verification tracking and DemandBox conversation behavior are unchanged.
+- Verification: Marketplace front-package audit and all changed audit-script syntax checks pass; `git diff --check` passes. The broad Marketplace button-inventory and trusted-trade audits retain unrelated pre-existing extraction/baseline failures and were not dishonestly rebased. Full TypeScript/Vite build still requires deployment CI because this worktree has no installed frontend dependencies.

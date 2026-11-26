@@ -42,7 +42,7 @@ const actionTargetRoutesSource = readFileSync(
 );
 const findings = [];
 const expectedStableActionCount = 94;
-const expectedNativeFieldCount = 38;
+const expectedNativeFieldCount = 29;
 const expectedSourceBreakdown = {
   front: 5,
   body: 89,
@@ -558,15 +558,7 @@ if (!tradeEvidenceSection) {
   ].map((item) => item[1]);
   const expectedTradeEvidenceActionIds = [
     "marketplace.trade.toggle",
-    "marketplace.protected-trade.outcome.good",
-    "marketplace.protected-trade.outcome.blocked",
-    "marketplace.protected-trade.outcome.issue",
-    "marketplace.protected-trade.create",
-    "marketplace.protected-trade.refresh-empty",
-    "marketplace.protected-trade.more.summary",
-    "marketplace.protected-trade.start-another",
-    "marketplace.protected-trade.refresh",
-    "marketplace.protected-trade.record-update",
+    "marketplace.protected-trade.archive.refresh",
     "marketplace.protected-trade.copy-paper",
   ];
 
@@ -580,19 +572,15 @@ if (!tradeEvidenceSection) {
   }
 
   [
-    /Trade Evidence/,
-    /Record the item, the other side, and agreed terms/,
-    /This is evidence, not escrow/,
-    /Trade Evidence Record/,
-    /Trade record lane/,
-    /Confirm outcome/,
-    /event evidence,\s+not a human score/,
-    /selectedProtectedTradeOutcomeActions\.good\.label/,
-    /selectedProtectedTradeOutcomeActions\.blocked\.label/,
-    /selectedProtectedTradeOutcomeActions\.issue\.label/,
-    /New record/,
-    /Start record/,
-    /Record update/,
+    /Trade Records archive/,
+    /Read-only history/,
+    /data-gsn-trade-archive="read-only"/,
+    /Historical Trade Records/,
+    /archive cannot create or change a transaction/,
+    /Choose a saved record/,
+    /Saved agreement/,
+    /Trade Record paper/,
+    /Event history/,
     /Copy paper text/,
   ].forEach((pattern) => {
     if (!pattern.test(tradeEvidenceSection)) {
@@ -605,6 +593,14 @@ if (!tradeEvidenceSection) {
     }
   });
 
+  if (/marketplace\.protected-trade\.(?:outcome\.|create|start-another|record-update)|Confirm outcome|Issue Trade Record|Record update|<textarea/.test(tradeEvidenceSection)) {
+    findings.push({
+      file: marketplaceFile,
+      line: lineAt(source.indexOf(tradeEvidenceSection)),
+      message: "Marketplace Trade Records archive must remain read-only.",
+      text: "Found a live transaction mutation control inside the historical archive.",
+    });
+  }
   if (/choose-supporter|Choose supporter|toggleMemberAsSupporter|guarantor|loan|Loan Readiness/.test(tradeEvidenceSection)) {
     findings.push({
       file: marketplaceFile,
@@ -922,15 +918,7 @@ const expectedOrder = [
   exactDebugId("marketplace.network-repost.subscription"),
   exactDebugId("marketplace.marketing.trade-evidence"),
   exactDebugId("marketplace.trade.toggle"),
-  exactDebugId("marketplace.protected-trade.outcome.good"),
-  exactDebugId("marketplace.protected-trade.outcome.blocked"),
-  exactDebugId("marketplace.protected-trade.outcome.issue"),
-  exactDebugId("marketplace.protected-trade.create"),
-  exactDebugId("marketplace.protected-trade.refresh-empty"),
-  exactDebugId("marketplace.protected-trade.more.summary"),
-  exactDebugId("marketplace.protected-trade.start-another"),
-  exactDebugId("marketplace.protected-trade.refresh"),
-  exactDebugId("marketplace.protected-trade.record-update"),
+  exactDebugId("marketplace.protected-trade.archive.refresh"),
   exactDebugId("marketplace.protected-trade.copy-paper"),
   exactDebugId("marketplace.members.toggle"),
   dynamicDebugId(
