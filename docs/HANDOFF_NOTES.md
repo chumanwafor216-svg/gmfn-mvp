@@ -7749,3 +7749,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Verification: Marketplace front-package audit and DemandBox front-package audit pass; Marketplace phone smoke syntax passes. Full TypeScript/Vite build and Playwright phone execution remain blocked because this isolated worktree has no installed frontend dependencies.
 - The broad Marketplace button-inventory audit remains red on this branch because its stored native/stable-action counts and inline Trade Evidence/Directory expectations predate the extracted components and seller-only Trade Records changes. This enhancement adds the explicitly audited queue and request actions but does not reset that broad baseline.
 - No commit, push, main promotion or deployment was performed for this enhancement.
+
+# DemandBox release deployment correction - 2026-11-26
+
+- Release commit `7e5b7c8a6aba8d87cd963d25907f16f7abc8356e` was pushed to the feature branch and `main`, then manual GitHub Actions run `45882510294` targeted that exact SHA.
+- Render accepted frontend deploy `dep-dc48biijnfac73brjbcg`, but its build failed before publication. The workflow stopped before starting the API deploy, so neither a successful frontend release nor an API release is claimed for that attempt.
+- Sanitized Render build-log run `45882804728` identified the exact TypeScript error: `DemandPaymentDetailsCard.tsx` imported `SecondaryButton` from nonexistent `StableAction` instead of the established `StableButton` module.
+- The import was corrected without changing Trade Record behavior, payment authority, generated-code scope, reconciliation exclusions, routes, schemas or migrations. A corrected commit must pass the deployment workflow before this release is called deployed.

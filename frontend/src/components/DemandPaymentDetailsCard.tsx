@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { SellerPaymentMessage } from "../lib/protectedTradePaymentMessage";
-import { SecondaryButton } from "./StableAction";
+import { SecondaryButton } from "./StableButton";
 
 type DemandPaymentDetailsCardProps = {
   details: SellerPaymentMessage;
