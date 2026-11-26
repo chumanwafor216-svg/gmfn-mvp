@@ -66,6 +66,13 @@ const requests = [
     mentioned_member_count: 1,
     mentioned_handles: ["@GSN-U-216"],
     visibility_scope: "community_visible",
+    product_context: {
+      product_title: "Weekday school transport",
+      shop_name: "Awka Family Transport",
+      listed_price: "15",
+      currency: "GBP",
+      shop_path: "/shop/GSN-U-810?product_id=810&clan_id=8",
+    },
     created_at: "2026-10-17T11:00:00Z",
   },
 ];
@@ -139,10 +146,10 @@ async function installApiMocks(page, apiCalls) {
             demand_id: 73,
             demand_category: "Transport",
             clan_id: 8,
-            shop_id: 82,
+            shop_id: 81,
             product_id: 820,
             product_title: "School-run transport",
-            shop_name: "Morning Route Services",
+            shop_name: "Awka Family Transport",
             public_shop_path: "/shop/GSN-U-820?product_id=820&clan_id=8",
             reason_codes: ["SAME_COMMUNITY", "LISTED_OFFERING", "AVAILABILITY_UNCONFIRMED", "PRODUCT_DESCRIPTION_MATCH", "RELEVANCE_RELIABLE"],
           },
@@ -432,6 +439,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   await transportCard.getByRole("button", { name: "View request →", exact: true }).click();
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "Opening a request did not expose exactly one card.");
   assert(await transportCard.locator('[data-gsn-demand-request-hero="request"]').isVisible(), "Opened request hero is missing.");
+  assert((await transportCard.locator('[data-gsn-demand-product-context]').count()) === 0, "The duplicate Product Enquiry card returned below the request hero.");
   assert(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible(), "The complete request message did not open with the request.");
   const matchPanel = transportCard.locator('[data-gsn-demand-supply-intelligence="true"]');
   await matchPanel.waitFor();
@@ -450,18 +458,18 @@ async function verifyViewport(browser, baseURL, viewport) {
   const responderText = transportPrivateReplies.getByPlaceholder("Message...");
   assert((await responderText.inputValue()) === "I can help.", "A seller helper did not populate ordinary editable text.");
   const matchRows = matchPanel.locator('[data-gsn-demand-reliable-match="true"]');
-  assert((await matchRows.count()) === 3, "DemandBox did not surface exactly three reliable initial suggestions.");
+  assert((await matchRows.count()) === 2, "DemandBox did not collapse repeated products from the same shop into one initial suggestion.");
   assert(await matchPanel.getByText("Check these listings. Availability and suitability are not confirmed.", { exact: true }).isVisible(), "The truthful match boundary is missing.");
+  assert((await matchPanel.getByText("School-run transport", { exact: true }).count()) === 0, "A second product from the same shop was rendered as a duplicate shop match.");
   assert(await matchPanel.getByText("Same community, area mentioned; availability not confirmed.", { exact: true }).isVisible(), "The same-community evidence sentence is missing.");
   assert(await matchPanel.getByText("Permitted wider search; availability not confirmed.", { exact: true }).isVisible(), "The governed wider-search evidence sentence is missing.");
   const matchLinks = matchPanel.getByRole("link", { name: /View Shop:/ });
-  assert((await matchLinks.count()) === 3, "The compact listing destinations are incomplete.");
+  assert((await matchLinks.count()) === 2, "The compact listing destinations do not represent one action per unique shop.");
   assert((await matchPanel.getByRole("button", { name: /matches/i }).count()) === 0, "A redundant match-expansion step returned.");
   const listingHrefs = await matchLinks.evaluateAll((links) => links.map((link) => link.getAttribute("href") || ""));
   assert(
     JSON.stringify(listingHrefs) === JSON.stringify([
       "/shop/GSN-U-810?product_id=810&clan_id=8",
-      "/shop/GSN-U-820?product_id=820&clan_id=8",
       "/shop/GSN-U-830?product_id=830&clan_id=9",
     ]),
     "An optional Shop action changed its existing listing destination or non-owner source-context boundary."

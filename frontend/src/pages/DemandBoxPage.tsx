@@ -990,6 +990,22 @@ function reliableDemandMatches(matchState: DemandMatchState | null): DemandSuppl
   );
 }
 
+function uniqueDemandShopMatches(matches: DemandSupplyMatchItem[]): DemandSupplyMatchItem[] {
+  const seenShopKeys = new Set<string>();
+  return matches.filter((match) => {
+    const shopId = positiveNumber(match.shop_id);
+    const shopName = safeStr(match.shop_name).toLowerCase();
+    const shopKey = shopId
+      ? `shop:${shopId}`
+      : shopName
+        ? `name:${shopName}`
+        : `product:${positiveNumber(match.product_id)}`;
+    if (seenShopKeys.has(shopKey)) return false;
+    seenShopKeys.add(shopKey);
+    return true;
+  });
+}
+
 function demandMatchStateForRow(
   state: Record<string, DemandMatchState>,
   row: DemandRow
@@ -2234,7 +2250,7 @@ export default function DemandBoxPage() {
       return null;
     }
 
-    const shownMatches = reliableMatches.slice(0, 3);
+    const shownMatches = uniqueDemandShopMatches(reliableMatches).slice(0, 3);
 
     return (
       <div
@@ -3033,45 +3049,6 @@ export default function DemandBoxPage() {
             ) : null}
           </div>
 
-          {row?.product_context ? (
-            <div
-              data-gsn-demand-product-context="true"
-              style={{
-                margin: isCompact ? "10px 12px 0" : "10px 0 0",
-                padding: isCompact ? "10px 12px" : 12,
-                display: "flex",
-                alignItems: "center",
-                gap: 9,
-                flexWrap: "wrap",
-                borderRadius: 14,
-                background: "#FFF9E8",
-                border: "1px solid rgba(192,145,25,0.25)",
-                color: "#17324A",
-                fontSize: 12,
-                lineHeight: 1.3,
-              }}
-            >
-              <strong>Product enquiry</strong>
-              <span>{row.product_context.product_title}</span>
-              <span>Shop: {row.product_context.shop_name}</span>
-              {row.product_context.listed_price ? (
-                <span>
-                  Price: {row.product_context.currency ? `${row.product_context.currency} ` : ""}
-                  {row.product_context.listed_price}
-                </span>
-              ) : null}
-              {row.product_context.shop_path ? (
-                <StableCtaLink
-                  to={row.product_context.shop_path}
-                  debugId={`${debugBase}.product-context.shop`}
-                  stableHeight={34}
-                  style={{ borderRadius: 10, padding: "5px 9px", fontSize: 11 }}
-                >
-                  View Shop
-                </StableCtaLink>
-              ) : null}
-            </div>
-          ) : null}
           {isCompact ? (
             <div style={{ padding: "12px 12px 0" }}>
               <div
@@ -5204,9 +5181,9 @@ export default function DemandBoxPage() {
                     setOpenDemandRecordKey("");
                   }}
                   fullWidth
-                  stableHeight={48}
+                  stableHeight={44}
                   debugId="demand-box.queue.view-more"
-                  style={{ ...demandActionStyle(48), marginTop: 2 }}
+                  style={{ ...demandActionStyle(44), marginTop: 0, borderRadius: 14, fontSize: 13 }}
                 >
                   {showMoreQueueRows ? "Show fewer needs" : "View more needs"}
                 </SecondaryButton>
@@ -5253,7 +5230,7 @@ export default function DemandBoxPage() {
                   padding: 0,
                   color: "#F8FBFF",
                   background: "rgba(3,31,54,0.94)",
-                  borderRadius: 18,
+                  borderRadius: 14,
                   border: "1px solid rgba(98,211,255,0.34)",
                 }
               : { ...pageCard("#FFFFFF"), padding: 18 }
@@ -5279,10 +5256,12 @@ export default function DemandBoxPage() {
                   ? {
                       color: "#F8FBFF",
                       background: "transparent",
+                      padding: "10px 12px",
+                      fontSize: 14,
                     }
                   : {}),
               }}
-              stableHeight={56}
+              stableHeight={44}
               debugId="demand-box.history.open"
             >
               <span>Past requests</span>

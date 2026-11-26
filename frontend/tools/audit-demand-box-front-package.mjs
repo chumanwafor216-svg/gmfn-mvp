@@ -75,14 +75,14 @@ function forbidPattern(input, file, pattern, message) {
   [/requester_profile_image_url[\s\S]*?data-gsn-demand-sender-identity="true"/, "request cards must keep the optional portrait-or-initials identity row"],
   [/data-gsn-demand-primary-message="true"[\s\S]*?safeStr\(row\?\.description\)[\s\S]*?No details yet\./, "opened requests must show the complete request message without another disclosure"],
   [/data-gsn-demand-primary-message="true"[\s\S]*?<ProtectedVoiceNotePlayer[\s\S]*?renderDemandMatchPanel\(row, matchState, debugBase\)[\s\S]*?data-gsn-demand-conversations="integrated"[\s\S]*?<DemandResponsePanel[\s\S]*?requestId=\{rowId\}/, "opened requests must order details, matches, and the integrated private conversation"],
-  [/data-gsn-demand-past-requests="true"[\s\S]*?Past requests[\s\S]*?<DemandHistoryCard/, "closed requests must remain reachable in collapsed history"],
+  [/data-gsn-demand-past-requests="true"[\s\S]*?stableHeight=\{44\}[\s\S]*?Past requests[\s\S]*?<DemandHistoryCard/, "closed requests must remain reachable in a compact collapsed history row"],
   [/const \[showSenderPhoto, setShowSenderPhoto\] = useState\(true\)/, "request portraits must begin included when a saved profile photo exists"],
   [/data-gsn-demand-photo-consent="true"[\s\S]*?Include my current profile photo[\s\S]*?Turn this off before posting/, "request portraits must remain visibly disableable before posting"],
   [/data-gsn-demand-detail-tabs="compact"[\s\S]*?\.privacy-terms[\s\S]*?data-gsn-demand-detail-panel="privacy"/, "phone privacy metadata must stay behind the compact Privacy control"],
   [/data-gsn-demand-expand-search="true"[\s\S]*?Search one more community[\s\S]*?Stop expanded search[\s\S]*?One community only/, "the phone one-hop card must keep the approved compact search actions and boundary"],
   [/data-gsn-demand-action-dock=\{isCompact \? "compact" : "standard"\}[\s\S]*?demandDockStyle\(canClose \? 3 : 1\)[\s\S]*?fulfilled[\s\S]*?cancelled[\s\S]*?demandPaperAction\(row, scope, copyDebugId\)/, "opened owner requests must keep the calm three-action lifecycle dock"],
   [/debugId=\{`\$\{debugBase\}\.whatsapp`\}/, "DemandBox contact actions must use one WhatsApp entry point rather than separate chat and call buttons"],
-  [/showMoreQueueRows \? 12 : 1[\s\S]*?debugId="demand-box\.queue\.view-more"[\s\S]*?View more needs/, "phone queues must start with one request and provide a deliberate view-more action"],
+  [/showMoreQueueRows \? 12 : 1[\s\S]*?stableHeight=\{44\}[\s\S]*?debugId="demand-box\.queue\.view-more"[\s\S]*?demandActionStyle\(44\)[\s\S]*?View more needs/, "phone queues must start with one request and provide a compact deliberate view-more action"],
   [/directDemandId[\s\S]*?setActiveQueueLane\([\s\S]*?myOpenRows[\s\S]*?"mine"[\s\S]*?"open"[\s\S]*?setOpenDemandRecordKey\(String\(directDemandId\)\)/, "direct demand links must select My requests or All requests and open the requested card"],
   [/demandQueueIntentAppliedRef[\s\S]*?setActiveQueueLane\("open"\)/, "ordinary entry must default to All requests"],
   [/debugId=\{[^\n]*fulfilled[^\n]*\}[\s\S]*?debugId=\{[^\n]*cancelled[^\n]*\}/, "owner fulfil and cancel controls must remain available inside open cards"],
@@ -92,7 +92,7 @@ function forbidPattern(input, file, pattern, message) {
   [/isMineRow\(row, me\)[\s\S]*?data-gsn-demand-ask-seller="validated"/, "direct seller contact must remain requester-only in the interface"],
   [/data-gsn-demand-ask-seller-card="expanded"[\s\S]*?data-gsn-demand-contact-channel="gsn-primary"[\s\S]*?<DemandResponsePanel[\s\S]*?data-gsn-demand-contact-channel="whatsapp-alternative"[\s\S]*?Continue on WhatsApp[\s\S]*?View shop/, "Ask Seller must expand in place with GSN chat primary and WhatsApp as an explicit alternative"],
   [/sellerConversationExpanded[\s\S]*?rowId && !sellerConversationExpanded[\s\S]*?data-gsn-demand-conversations="integrated"/, "Ask Seller must not mount a duplicate general conversation and polling controller"],
-  [/reliableDemandMatches[\s\S]*?RELEVANCE_RELIABLE[\s\S]*?\.slice\(0, 3\)/, "only the first three reliable matches may surface immediately"],
+  [/uniqueDemandShopMatches[\s\S]*?seenShopKeys[\s\S]*?const shownMatches = uniqueDemandShopMatches\(reliableMatches\)\.slice\(0, 3\)/, "only one reliable product per shop and at most three shops may surface immediately"],
   [/data-gsn-demand-supply-intelligence="true"[\s\S]*?Check these listings\. Availability and suitability are not confirmed\.[\s\S]*?data-gsn-demand-match-list="compact"[\s\S]*?data-gsn-demand-match-row="compact"[\s\S]*?data-gsn-demand-ask-seller="validated"[\s\S]*?Ask seller[\s\S]*?View shop/, "truthful compact supply rows must keep direct validated seller contact and optional Shop access"],
   [/demandMatchEvidenceSentence[\s\S]*?availability not confirmed\./, "each compact match must keep one concise availability boundary"],
   [/gridTemplateColumns: isCompact \? "minmax\(0, 1fr\)" : "minmax\(0, 1fr\) auto"[\s\S]*?data-gsn-demand-match-actions="compact"[\s\S]*?minWidth: 0/, "phone match rows must keep full-width text above bounded actions"],
@@ -114,6 +114,7 @@ if (!privacyPanelSource) {
   forbidPattern(privacyPanelSource, pageFile, /WhatsApp|demandContactActions/, "Privacy must not contain WhatsApp state or communication actions");
 }
 forbidPattern(source, pageFile, /WhatsApp available|WhatsApp not ready/, "WhatsApp state must not be presented as Privacy or Request Details metadata");
+forbidPattern(source, pageFile, /data-gsn-demand-product-context=/, "the opened request must not repeat its product and shop details in a second Product Enquiry card");
 
 [
   [/queue_keys\?: string\[\] \| null/, "request types must keep saved queue keys"],
