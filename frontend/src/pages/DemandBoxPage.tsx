@@ -980,18 +980,6 @@ function demandHasReadyWhatsApp(row: DemandRow): boolean {
   return Boolean(demandReadyWhatsAppRecipient(row));
 }
 
-function demandMatchEvidenceSentence(match: DemandSupplyMatchItem): string {
-  const codes = Array.isArray(match?.reason_codes) ? match.reason_codes : [];
-  const source = codes.includes("SAME_COMMUNITY")
-    ? codes.includes("AREA_COMPATIBLE")
-      ? "Same community, area mentioned"
-      : "Same community"
-    : codes.includes("RELAY_BOUNDARY_CROSSED")
-      ? "Permitted wider search"
-      : "Related listing";
-
-  return `${source}; availability not confirmed.`;
-}
 function reliableDemandMatches(matchState: DemandMatchState | null): DemandSupplyMatchItem[] {
   if (!matchState?.matches?.length) return [];
   return matchState.matches.filter((match) =>
@@ -1200,12 +1188,14 @@ export default function DemandBoxPage() {
   const [sellerContactHandoff, setSellerContactHandoff] = useState<DemandSellerHandoffState | null>(null);
   const [openDemandRecordKey, setOpenDemandRecordKey] = useState("");
   const [focusedConversationRequestId, setFocusedConversationRequestId] = useState(0);
+  const [focusedMatchRequestId, setFocusedMatchRequestId] = useState(0);
   const [showMoreQueueRows, setShowMoreQueueRows] = useState(false);
   const [requestSearch, setRequestSearch] = useState("");
   const [unreadByRequest, setUnreadByRequest] = useState<Record<string, number>>({});
 
   useEffect(() => {
     setFocusedConversationRequestId(0);
+    setFocusedMatchRequestId(0);
     setSellerContactHandoff(null);
   }, [openDemandRecordKey]);
 
@@ -2295,7 +2285,15 @@ export default function DemandBoxPage() {
     return (
       <details
         data-gsn-demand-supply-intelligence="true"
-        open={!isCompact || Boolean(selectedMatchKey) ? true : undefined}
+        data-gsn-demand-supply-request-id={rowId}
+        open={!isCompact || Boolean(selectedMatchKey) || focusedMatchRequestId === rowId ? true : undefined}
+        onToggle={(event) => {
+          if (!isCompact) return;
+          const nextOpen = event.currentTarget.open;
+          setFocusedMatchRequestId((current) =>
+            nextOpen ? rowId : current === rowId ? 0 : current
+          );
+        }}
         style={{ ...detailsShell(), marginTop: 10 }}
       >
         <StableDisclosureSummary
@@ -2307,12 +2305,8 @@ export default function DemandBoxPage() {
           <span style={{ color: "#64748B", fontSize: 11.5 }}>Availability not confirmed</span>
         </StableDisclosureSummary>
         <div style={{ padding: "0 10px 10px", display: "grid", gap: 7 }}>
-          <div style={{ ...helperText(), fontSize: 11.5, lineHeight: 1.35 }}>
-            Check each listing before agreeing.
-          </div>
         <div data-gsn-demand-match-list="compact" style={{ display: "grid", gap: 6 }}>
           {visibleMatches.map((match) => {
-            const evidence = demandMatchEvidenceSentence(match);
             const to = demandMatchSupplyPath(row, match);
             const tradeTo = demandMatchTradePath(row, match);
             const title = firstTruthy(match.product_title, "Possible listing");
@@ -2367,17 +2361,6 @@ export default function DemandBoxPage() {
                     }}
                   >
                     Shop: {shopName}
-                  </div>
-                  <div
-                    data-gsn-demand-match-evidence="true"
-                    style={{
-                      color: "#5B7188",
-                      fontSize: 11.5,
-                      lineHeight: 1.25,
-                      overflowWrap: "anywhere",
-                    }}
-                  >
-                    {evidence}
                   </div>
                   <StableCtaLink
                     to={to}
@@ -2504,9 +2487,6 @@ export default function DemandBoxPage() {
               </div>
             );
           })}
-        </div>
-        <div style={{ ...helperText(), fontSize: 11.5, lineHeight: 1.3 }}>
-          Community connection is context, not professional verification or guaranteed trust.
         </div>
         </div>
       </details>
@@ -2906,10 +2886,18 @@ export default function DemandBoxPage() {
                       type="button"
                       onClick={() => {
                         setSellerContactHandoff(null);
-                        setFocusedConversationRequestId(rowId);
+                        setFocusedConversationRequestId(0);
+                        setFocusedMatchRequestId(rowId);
+                        if (typeof window !== "undefined") {
+                          window.requestAnimationFrame(() => {
+                            document
+                              .querySelector(`[data-gsn-demand-supply-request-id="${rowId}"]`)
+                              ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                          });
+                        }
                       }}
-                      debugId={`${debugBase}.product-enquiry.send-message`}
-                      data-gsn-demand-product-message-action="true"
+                      debugId={`${debugBase}.product-enquiry.possible-match`}
+                      data-gsn-demand-product-match-action="true"
                       stableHeight={42}
                       style={{
                         minWidth: 108,
@@ -2920,7 +2908,7 @@ export default function DemandBoxPage() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      Send message
+                      Possible match
                     </PrimaryButton>
                   ) : null}
                 </div>

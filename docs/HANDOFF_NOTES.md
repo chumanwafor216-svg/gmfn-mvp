@@ -7768,3 +7768,9 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Removed the marked compact Request options explanation block containing private/community forwarding guidance, Source, Need type, area/terms badges and the GSN guarantee disclaimer.
 - Compact Request options still contains the existing Fulfilled, Cancel and Copy request actions where authorised. Conversation access and product-enquiry direct messaging are unchanged.
 - Desktop request details and backend privacy/permission enforcement are unchanged; this is presentation cleanup only.
+# DemandBox Possible match progression cleanup - 2026-11-26
+
+- Replaced the compact matched-product `Send message` card action with `Possible match`. The action now opens and scrolls to the existing Possible matches panel instead of bypassing the agreed match -> Ask seller -> conversation journey.
+- Removed the three owner-marked match helper texts: `Check each listing before agreeing.`, each per-match community/availability evidence sentence, and the final community-connection disclaimer.
+- The Possible matches summary still retains `Availability not confirmed`; listing identity, View shop, Ask seller, validated seller handoff, private conversation and Trade Records remain unchanged.
+- Ordinary-request conversation access, desktop behavior and backend matching/permission rules are unchanged.

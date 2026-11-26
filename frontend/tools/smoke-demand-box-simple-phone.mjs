@@ -490,37 +490,22 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert((await transportCard.locator('[data-gsn-demand-primary-message="true"]').count()) === 0, "The verbose product-enquiry message returned as a second block.");
   assert(!(await page.getByText("Please confirm availability, final price and collection or delivery arrangements.", { exact: true }).isVisible().catch(() => false)), "Verbose generated product guidance remained exposed.");
   const transportConversations = transportCard.locator('[data-gsn-demand-conversations="integrated"]');
-  const transportConversationZone = transportConversations.locator('[data-gsn-demand-conversation-zone="primary"]');
-  const transportPrivateReplies = transportConversationZone.locator('[data-gsn-demand-private-replies="true"]');
   assert((await transportConversations.count()) === 0, "The redundant Conversations row remained on the product-enquiry card.");
   assert((await transportCard.locator('[data-gsn-demand-request-options="compact"]').count()) === 0, "The redundant Request options row remained on the product-enquiry card.");
-  await mergedProductEnquiry.getByRole("button", { name: "Send message", exact: true }).click();
-  await transportPrivateReplies.waitFor();
-  assert(await transportPrivateReplies.getByText("Is this product still available?", { exact: true }).isVisible(), "Send message did not open the protected buyer-seller thread.");
-  assert((await transportConversations.locator("summary").count()) === 0, "The Conversations summary returned after direct product-message entry.");
-  await transportPrivateReplies.waitFor();
-  const quickReplies = transportPrivateReplies.locator('[data-gsn-demand-preset-messages="collapsed"]');
-  assert(await quickReplies.isVisible(), "The collapsed Preset messages control is missing for an authorised responder.");
-  await quickReplies.locator("summary").click();
-  await quickReplies.getByRole("button", { name: "I can help.", exact: true }).click();
-  const responderText = transportPrivateReplies.getByPlaceholder("Message...");
-  assert((await responderText.inputValue()) === "I can help.", "A preset message did not populate ordinary editable text.");
-  const responderTradeSteps = transportPrivateReplies.locator('[data-gsn-demand-trade-steps="collapsed"]');
-  assert(await responderTradeSteps.isVisible(), "The compact Trade steps control is missing beside the conversation.");
-  await responderTradeSteps.locator("summary").click();
-  await responderTradeSteps.getByRole("button", { name: "Add account details", exact: true }).click();
-  assert((await responderText.inputValue()).includes("Account number / wallet: 0123456789"), "Saved account details were not prepared in the editable private-message draft.");
-  assert(apiCalls.responsePosts === 0, "Preparing account details sent a message without review.");
-  assert(await transportPrivateReplies.locator('[data-gsn-microphone-icon="true"]').isVisible(), "The voice-note action is not using a microphone icon.");
-  await transportConversations.locator("summary").click();
+  const matchPanel = transportCard.locator('[data-gsn-demand-supply-intelligence="true"]');
   await matchPanel.waitFor();
-  await matchPanel.locator("summary").click();
+  assert(!(await matchPanel.evaluate((node) => node.open)), "Possible matches opened before the user selected the card action.");
+  await mergedProductEnquiry.getByRole("button", { name: "Possible match", exact: true }).click();
+  await page.waitForFunction(() => {
+    const panel = document.querySelector('[data-gsn-demand-supply-intelligence="true"]');
+    return panel instanceof HTMLDetailsElement && panel.open;
+  });
+  assert((await matchPanel.getByText("Check each listing before agreeing.", { exact: true }).count()) === 0, "The marked match helper returned.");
+  assert((await matchPanel.locator('[data-gsn-demand-match-evidence="true"]').count()) === 0, "The marked per-match evidence sentence returned.");
+  assert((await matchPanel.getByText("Community connection is context", { exact: false }).count()) === 0, "The marked community disclaimer returned.");
   const matchRows = matchPanel.locator('[data-gsn-demand-reliable-match="true"]');
   assert((await matchRows.count()) === 2, "DemandBox did not collapse repeated products from the same shop into one initial suggestion.");
-  assert(await matchPanel.getByText("Check each listing before agreeing.", { exact: true }).isVisible(), "The truthful match boundary is missing.");
   assert((await matchPanel.getByText("School-run transport", { exact: true }).count()) === 0, "A second product from the same shop was rendered as a duplicate shop match.");
-  assert(await matchPanel.getByText("Same community, area mentioned; availability not confirmed.", { exact: true }).isVisible(), "The same-community evidence sentence is missing.");
-  assert(await matchPanel.getByText("Permitted wider search; availability not confirmed.", { exact: true }).isVisible(), "The governed wider-search evidence sentence is missing.");
   const matchLinks = matchPanel.getByRole("link", { name: /View Shop:/ });
   assert((await matchLinks.count()) === 2, "The compact listing destinations do not represent one action per unique shop.");
   assert((await matchPanel.getByRole("button", { name: /matches/i }).count()) === 0, "A redundant match-expansion step returned.");
@@ -536,7 +521,7 @@ async function verifyViewport(browser, baseURL, viewport) {
     const rows = Array.from(node.querySelectorAll('[data-gsn-demand-match-row="compact"]'));
     const actions = Array.from(node.querySelectorAll('[data-gsn-demand-match-action="compact"]'));
     const textNodes = Array.from(node.querySelectorAll(
-      '[data-gsn-demand-match-title], [data-gsn-demand-match-shop], [data-gsn-demand-match-evidence]'
+      '[data-gsn-demand-match-title], [data-gsn-demand-match-shop]'
     ));
     return {
       noOverflow: node.scrollWidth <= node.clientWidth + 1,
@@ -554,7 +539,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(matchGeometry.noOverflow && matchGeometry.width <= viewport.width - 24, "The compact match panel overflows the phone viewport.");
   assert(matchGeometry.height <= 560, "The compact match panel exceeds the approved mobile density.");
   assert(
-    matchGeometry.rowHeights.every((height) => height >= 96 && height <= 145),
+    matchGeometry.rowHeights.every((height) => height >= 84 && height <= 135),
     "A match row exceeded the compact target plus bounded natural text growth: " + matchGeometry.rowHeights.join("/")
   );
   assert(
