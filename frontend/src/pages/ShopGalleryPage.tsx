@@ -5885,7 +5885,8 @@ export default function ShopGalleryPage() {
     );
     const shopTitle = firstMeaningful(
       miniSpotlight?.sourceShopName,
-      miniSpotlightView.owner,
+      miniSpotlight?.spotlightOwner,
+      miniSpotlight?.authorName,
       isProductShare ? "this GSN shop" : "GSN Spotlight"
     );
     const ownerGmfnId = firstMeaningful(miniSpotlight?.authorGmfnId);
