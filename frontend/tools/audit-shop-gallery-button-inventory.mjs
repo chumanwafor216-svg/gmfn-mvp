@@ -677,8 +677,13 @@ assertNotContains(
 );
 
 assertContains(
-  /className="public-shop-spotlight-action-row"[\s\S]*?data-spotlight-action-row="true"[\s\S]*?Spotlight[\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?spotlightWhatsAppAvailable \? "WhatsApp" : "Call advertiser"/,
-  "Public Shop Spotlight must keep one bottom action row with the Spotlight identity, owner shortcut when authorised, and one source-aware contact handle."
+  /className="public-shop-spotlight-action-row"[\s\S]*?data-spotlight-action-row="true"[\s\S]*?Number\(signedInOwnsShop\) \+ Number\(spotlightContactActionAvailable\)[\s\S]*?gridTemplateColumns: signedInOwnsShop && spotlightContactActionAvailable[\s\S]*?"48px minmax\(0, 1fr\)"[\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?spotlightWhatsAppAvailable \? "WhatsApp" : "Call advertiser"/,
+  "Public Shop Spotlight must keep one compact bottom action row containing only the authorised owner shortcut and source-aware contact handle."
+);
+
+assertNotContains(
+  /className="public-shop-spotlight-badge"/,
+  "Public Shop Spotlight must not reserve action-row space for a redundant decorative Spotlight badge."
 );
 
 assertNotContains(

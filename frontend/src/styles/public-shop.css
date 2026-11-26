@@ -756,11 +756,6 @@
   }
 }
 
-.public-shop-spotlight-action-row[data-spotlight-action-count="1"] .public-shop-spotlight-badge {
-  width: min(220px, 100%);
-  justify-self: center;
-}
-
 .public-shop-vault-ad {
   background:
     radial-gradient(circle at right, rgba(242, 207, 119, 0.30), transparent 38%),

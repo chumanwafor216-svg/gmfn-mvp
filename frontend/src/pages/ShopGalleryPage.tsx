@@ -8649,19 +8649,22 @@ export default function ShopGalleryPage() {
                   className="public-shop-spotlight-action-row"
                   data-spotlight-action-row="true"
                   data-spotlight-action-count={
-                    1 +
-                    Number(signedInOwnsShop) +
-                    Number(spotlightContactActionAvailable)
+                    Number(signedInOwnsShop) + Number(spotlightContactActionAvailable)
                   }
                   style={{
                     width: "100%",
                     maxWidth: "100%",
-                    display: "grid",
+                    display:
+                      signedInOwnsShop || spotlightContactActionAvailable ? "grid" : "none",
                     gridTemplateColumns: signedInOwnsShop && spotlightContactActionAvailable
-                      ? "minmax(0, 1fr) 48px minmax(0, 1.3fr)"
-                      : signedInOwnsShop || spotlightContactActionAvailable
-                      ? "repeat(2, minmax(0, 1fr))"
+                      ? "48px minmax(0, 1fr)"
+                      : signedInOwnsShop
+                      ? "48px"
                       : "minmax(0, 1fr)",
+                    justifyContent:
+                      signedInOwnsShop && !spotlightContactActionAvailable
+                        ? "center"
+                        : "stretch",
                     alignItems: "center",
                     gap: isCompact ? 7 : 10,
                     minHeight: isCompact ? 58 : 68,
@@ -8675,28 +8678,6 @@ export default function ShopGalleryPage() {
                     gridRow: "2",
                   }}
                 >
-                  <span
-                    className="public-shop-spotlight-badge"
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 6,
-                      minHeight: isCompact ? 44 : 48,
-                      maxWidth: "100%",
-                      minWidth: 0,
-                      padding: isCompact ? "7px 10px" : "9px 14px",
-                      borderRadius: 999,
-                      background: "linear-gradient(180deg, #F2FFE9 0%, #CBEFB9 100%)",
-                      color: "#166534",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {inlineShopIcon("spark", "#166534", isCompact ? 14 : 16)}
-                    Spotlight
-                  </span>
                   {signedInOwnsShop ? (
                     <ExistingWorkflowPlusLink
                       to={ownerSpotlightShortcutPath}
@@ -8708,7 +8689,7 @@ export default function ShopGalleryPage() {
                       style={
                         isCompact
                           ? {
-                              gridColumn: '2',
+                              gridColumn: '1',
                               justifySelf: 'center',
                             }
                           : undefined
@@ -8725,7 +8706,7 @@ export default function ShopGalleryPage() {
                       data-public-shop-neon-action="true"
                       style={{
                         ...primaryBtn(false),
-                        gridColumn: signedInOwnsShop ? "3" : "2",
+                        gridColumn: signedInOwnsShop ? "2" : "1",
                         justifySelf: "stretch",
                         borderRadius: 999,
                         minHeight: isCompact ? 44 : 48,
