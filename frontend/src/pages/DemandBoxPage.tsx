@@ -2440,6 +2440,18 @@ export default function DemandBoxPage() {
                     >
                       GSN conversation (recommended)
                     </div>
+                    {selectedContact.contact_available ? (
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => openMatchedSellerWhatsApp(selectedContact)}
+                        debugId={`${debugBase}.seller-contact.whatsapp`}
+                        data-gsn-demand-contact-channel="whatsapp-alternative"
+                        stableHeight={44}
+                        style={{ borderRadius: 12, fontSize: 12 }}
+                      >
+                        Continue on WhatsApp (Alternative)
+                      </SecondaryButton>
+                    ) : null}
                     <DemandResponsePanel
                       requestId={rowId}
                       ownerUserId={positiveNumber(row?.user_id)}
@@ -2452,40 +2464,28 @@ export default function DemandBoxPage() {
                       preferredRecipientName={selectedContact.shop_name}
                       supplyProductId={positiveNumber(match.product_id)}
                       supplyShopId={positiveNumber(match.shop_id)}
-                      protectedTradePath={canOpenProtectedTrade ? tradeTo : ""}
                       onUnreadChanged={refreshUnreadSummary}
                     />
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: selectedContact.contact_available
-                          ? "repeat(2, minmax(0, 1fr))"
-                          : "minmax(0, 1fr)",
-                        gap: 7,
-                      }}
-                    >
-                      {selectedContact.contact_available ? (
-                        <SecondaryButton
-                          type="button"
-                          onClick={() => openMatchedSellerWhatsApp(selectedContact)}
-                          debugId={`${debugBase}.seller-contact.whatsapp`}
-                          data-gsn-demand-contact-channel="whatsapp-alternative"
-                          stableHeight={42}
-                          style={{ borderRadius: 12, fontSize: 12 }}
-                        >
-                          Continue on WhatsApp
-                        </SecondaryButton>
-                      ) : null}
+                    {canOpenProtectedTrade ? (
                       <StableCtaLink
-                        to={to}
-                        onClick={() => trackDemandMatchAttention("supply_opened", match, rowId)}
-                        debugId={`${debugBase}.seller-contact.view-shop`}
-                        stableHeight={42}
+                        to={tradeTo}
+                        debugId={`${debugBase}.seller-contact.protected-trade`}
+                        data-gsn-demand-protected-trade-position="after-conversation"
+                        stableHeight={44}
                         style={{ borderRadius: 12, fontSize: 12 }}
                       >
-                        View shop
+                        Protected Trade (if agreed)
                       </StableCtaLink>
-                    </div>
+                    ) : null}
+                    <StableCtaLink
+                      to={to}
+                      onClick={() => trackDemandMatchAttention("supply_opened", match, rowId)}
+                      debugId={`${debugBase}.seller-contact.view-shop`}
+                      stableHeight={42}
+                      style={{ borderRadius: 12, fontSize: 12 }}
+                    >
+                      View shop
+                    </StableCtaLink>
                     {selectedContact.seller_is_gsn_member === false ? (
                       <StableCtaLink
                         to={routeTarget("buildFirstCircle", selectedClanId, `${debugBase}.seller-contact.invite`)}

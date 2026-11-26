@@ -635,9 +635,32 @@ async function verifyViewport(browser, baseURL, viewport) {
   await contactResult.waitFor();
   assert(await contactResult.locator('[data-gsn-demand-contact-channel="gsn-primary"]').isVisible(), "GSN chat is not presented as the primary seller-contact route.");
   assert(await contactResult.getByText("GSN conversation (recommended)", { exact: true }).isVisible(), "GSN chat is not the primary seller-contact route.");
-  assert(await contactResult.locator('[data-gsn-demand-contact-channel="whatsapp-alternative"]').isVisible(), "WhatsApp is not contained in Ask Seller as the alternative route.");
-  assert(await contactResult.getByRole("link", { name: "View shop", exact: true }).isVisible(), "View shop is missing from Ask Seller.");
-  await contactResult.getByRole("button", { name: "Continue on WhatsApp", exact: true }).click();
+  const whatsappAlternative = contactResult.locator('[data-gsn-demand-contact-channel="whatsapp-alternative"]');
+  const privateConversation = contactResult.locator('[data-gsn-demand-private-replies="true"]');
+  const protectedTrade = contactResult.locator('[data-gsn-demand-protected-trade-position="after-conversation"]');
+  const viewShop = contactResult.getByRole("link", { name: "View shop", exact: true });
+  assert(await whatsappAlternative.isVisible(), "WhatsApp is not contained in Ask Seller as the alternative route.");
+  assert(await privateConversation.isVisible(), "The GSN conversation is missing from Ask Seller.");
+  assert(await protectedTrade.isVisible(), "Protected Trade is missing immediately after the conversation.");
+  assert(await contactResult.getByRole("link", { name: "Protected Trade (if agreed)", exact: true }).isVisible(), "The protected-trade action is not clearly labelled.");
+  assert(await viewShop.isVisible(), "View shop is missing from Ask Seller.");
+  const sellerJourneyOrder = await contactResult.evaluate((container) => {
+    const whatsapp = container.querySelector('[data-gsn-demand-contact-channel="whatsapp-alternative"]');
+    const conversation = container.querySelector('[data-gsn-demand-private-replies="true"]');
+    const trade = container.querySelector('[data-gsn-demand-protected-trade-position="after-conversation"]');
+    const shop = container.querySelector('[data-debug-id$="seller-contact.view-shop"]');
+    if (!whatsapp || !conversation || !trade || !shop) return null;
+    const follows = (first, second) => Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
+    return {
+      whatsappBeforeConversation: follows(whatsapp, conversation),
+      conversationBeforeTrade: follows(conversation, trade),
+      tradeBeforeShop: follows(trade, shop),
+    };
+  });
+  assert(sellerJourneyOrder?.whatsappBeforeConversation, "WhatsApp must remain the alternative channel choice before opening the GSN conversation.");
+  assert(sellerJourneyOrder?.conversationBeforeTrade, "Protected Trade must appear immediately after the GSN conversation.");
+  assert(sellerJourneyOrder?.tradeBeforeShop, "View shop must not appear before Protected Trade.");
+  await contactResult.getByRole("button", { name: "Continue on WhatsApp (Alternative)", exact: true }).click();
   await page.waitForFunction(() => Boolean(window.__gsnOpenedSellerChatUrl));
   const decodedSellerChatUrl = decodeURIComponent(await page.evaluate(() => window.__gsnOpenedSellerChatUrl));
   assert(decodedSellerChatUrl.includes("Need a freezer repair"), "The original request was lost from the prepared seller message.");
