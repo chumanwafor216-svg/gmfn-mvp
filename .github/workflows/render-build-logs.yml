@@ -1,0 +1,62 @@
+﻿name: Render Build Logs
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_id:
+        description: "Failed Render frontend deploy id"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-logs:
+    name: Read sanitized frontend build errors
+    runs-on: ubuntu-latest
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      RENDER_FRONTEND_SERVICE_ID: srv-d7h4oe9f9bms739lhh9g
+      RENDER_DEPLOY_ID: ${{ github.event.inputs.deploy_id }}
+    steps:
+      - name: Require read-only Render access
+        run: |
+          test -n "$RENDER_API_KEY" || { echo "::error::RENDER_API_KEY is not configured."; exit 1; }
+          test -n "$RENDER_DEPLOY_ID" || { echo "::error::deploy_id is required."; exit 1; }
+
+      - name: Print sanitized build error lines
+        run: |
+          set -euo pipefail
+          api_base="https://api.render.com/v1"
+          auth_header="authorization: Bearer $RENDER_API_KEY"
+          service_json="$(curl -fsS "$api_base/services/$RENDER_FRONTEND_SERVICE_ID" \
+            -H "accept: application/json" -H "$auth_header")"
+          owner_id="$(printf '%s' "$service_json" | jq -r '.ownerId // .owner.id // .service.ownerId // .service.owner.id // empty')"
+          if [ -z "$owner_id" ]; then
+            echo "::error::Could not resolve the Render workspace owner id."
+            exit 1
+          fi
+
+          logs_json="$(curl -fsS -G "$api_base/logs" \
+            -H "accept: application/json" -H "$auth_header" \
+            --data-urlencode "ownerId=$owner_id" \
+            --data-urlencode "resource=$RENDER_FRONTEND_SERVICE_ID" \
+            --data-urlencode "type=build" \
+            --data-urlencode "build=$RENDER_DEPLOY_ID" \
+            --data-urlencode "direction=forward" \
+            --data-urlencode "limit=100")"
+
+          printf '%s' "$logs_json" | jq -r '.logs[].message' \
+            | sed -E \
+                -e 's#(https?://)[^/@: ]+:[^/@ ]+@#\1***:***@#g' \
+                -e 's#((TOKEN|SECRET|PASSWORD|API_KEY|DATABASE_URL)[=:])[[:space:]]*[^[:space:]]+#\1***#Ig' \
+            > /tmp/render-build.log
+
+          if [ ! -s /tmp/render-build.log ]; then
+            echo "::error::No build logs were returned for $RENDER_DEPLOY_ID."
+            exit 1
+          fi
+
+          grep -Ei 'error TS[0-9]+|npm (ERR!|error)|build failed|command.*(failed|exited)|cannot find|could not resolve|not found|ELIFECYCLE|Type error' \
+            /tmp/render-build.log || tail -n 80 /tmp/render-build.log
