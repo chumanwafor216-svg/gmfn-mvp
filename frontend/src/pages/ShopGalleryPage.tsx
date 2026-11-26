@@ -8243,14 +8243,14 @@ export default function ShopGalleryPage() {
                     maxWidth: "100%",
                     display: "grid",
                     gridTemplateColumns: signedInOwnsShop && spotlightContactActionAvailable
-                      ? "minmax(0, 1fr) 52px minmax(0, 1.3fr)"
+                      ? "minmax(0, 1fr) 48px minmax(0, 1.3fr)"
                       : signedInOwnsShop || spotlightContactActionAvailable
                       ? "repeat(2, minmax(0, 1fr))"
                       : "minmax(0, 1fr)",
                     alignItems: "center",
                     gap: isCompact ? 7 : 10,
-                    minHeight: isCompact ? 64 : 72,
-                    padding: isCompact ? "8px 10px 10px" : "10px 14px 12px",
+                    minHeight: isCompact ? 58 : 68,
+                    padding: isCompact ? "6px 8px 7px" : "8px 12px 10px",
                     color: "#FFFFFF",
                     fontSize: isCompact ? 11 : 13,
                     fontWeight: 950,
@@ -8267,7 +8267,7 @@ export default function ShopGalleryPage() {
                       alignItems: "center",
                       justifyContent: "center",
                       gap: 6,
-                      minHeight: isCompact ? 46 : 50,
+                      minHeight: isCompact ? 44 : 48,
                       maxWidth: "100%",
                       minWidth: 0,
                       padding: isCompact ? "7px 10px" : "9px 14px",
@@ -8305,7 +8305,7 @@ export default function ShopGalleryPage() {
                       onClick={contactSpotlightAdvertiser}
                       minWidth={0}
                       fullWidth={false}
-                      stableHeight={isCompact ? 46 : 50}
+                      stableHeight={isCompact ? 44 : 48}
                       debugId="shop-gallery.spotlight.contact-advertiser"
                       data-public-shop-neon-action="true"
                       style={{
@@ -8313,7 +8313,7 @@ export default function ShopGalleryPage() {
                         gridColumn: signedInOwnsShop ? "3" : "2",
                         justifySelf: "stretch",
                         borderRadius: 999,
-                        minHeight: isCompact ? 46 : 50,
+                        minHeight: isCompact ? 44 : 48,
                         width: "100%",
                         maxWidth: "100%",
                         padding: isCompact ? "7px 8px" : "9px 14px",
@@ -8576,19 +8576,15 @@ export default function ShopGalleryPage() {
                 style={{
                   minHeight: spotlightScreenHeight,
                   height: spotlightScreenHeight,
-                  borderRadius: isCompact ? 0 : "20px 20px 0 0",
+                  borderRadius: 0,
                   overflow: "hidden",
                   position: "relative",
                   gridColumn: "1",
                   gridRow: "1",
                   zIndex: 1,
                   background: "#020C1B",
-                  border: "1px solid rgba(83,189,255,0.66)",
-                  borderBottom: 0,
-                  boxShadow:
-                    isCompact
-                      ? "inset 0 1px 0 rgba(255,255,255,0.10)"
-                      : "0 16px 30px rgba(8,38,67,0.13), inset 0 1px 0 rgba(255,255,255,0.82)",
+                  border: 0,
+                  boxShadow: "none",
                 }}
               >
                 {isCompact ? (
@@ -8721,7 +8717,7 @@ export default function ShopGalleryPage() {
                     audioUnlockOffLabel="Muted"
                     audioUnlockErrorLabel="Play"
                     audioUnlockStyle={{
-                      top: isCompact ? 58 : "auto",
+                      top: isCompact ? 62 : "auto",
                       right: isCompact ? 10 : 10,
                       bottom: isCompact ? "auto" : 10,
                       minWidth: isCompact ? 40 : 38,
@@ -8732,7 +8728,7 @@ export default function ShopGalleryPage() {
                       boxShadow: "0 10px 18px rgba(2, 12, 27, 0.22)",
                     }}
                     playbackControlStyle={{
-                      top: isCompact ? 104 : 'auto',
+                      top: isCompact ? 108 : 'auto',
                       right: isCompact ? 10 : 56,
                       bottom: isCompact ? 'auto' : 10,
                       width: isCompact ? 40 : 38,
@@ -8744,7 +8740,7 @@ export default function ShopGalleryPage() {
                       width: "100%",
                       height: spotlightScreenHeight,
                       minHeight: spotlightScreenHeight,
-                      borderRadius: isCompact ? 0 : "20px 20px 0 0",
+                      borderRadius: 0,
                       position: 'relative',
                       zIndex: 1,
                     }}
@@ -8801,7 +8797,7 @@ export default function ShopGalleryPage() {
                         width: '100%',
                         height: spotlightScreenHeight,
                         minHeight: spotlightScreenHeight,
-                        borderRadius: isCompact ? 0 : "20px 20px 0 0",
+                        borderRadius: 0,
                         opacity: 0,
                         pointerEvents: 'none',
                         zIndex: 0,
@@ -8948,8 +8944,8 @@ export default function ShopGalleryPage() {
                         position: "absolute",
                         top: isCompact
                           ? miniSpotlightView.videoUrl
-                            ? 150
-                            : 58
+                            ? 154
+                            : 62
                           : 68,
                         right: isCompact ? 9 : 12,
                         zIndex: 6,

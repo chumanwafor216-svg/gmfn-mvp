@@ -370,8 +370,8 @@ assertContains(
 assertFileContains(
   publicShopStylesFile,
   publicShopStylesSource,
-  /\.public-shop-product-update-ticker \{[\s\S]*?grid-template-columns: minmax\(116px, 42%\) minmax\(0, 1fr\) auto;[\s\S]*?height: 48px;[\s\S]*?data-existing-workflow-plus="shop-diary"\][\s\S]*?width: 30px;[\s\S]*?\.public-shop-inline-voice \{[\s\S]*?width: min\(100px, 27vw\);[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: public-shop-product-update-scroll 20s linear infinite;[\s\S]*?@keyframes public-shop-product-update-scroll[\s\S]*?@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: none !important;/,
-  "The combined Shop Update strip must keep a readable label, 30px visual owner plus, 100px maximum voice pill, phone-safe continuous rotation, and reduced-motion support inside its compact 48px height."
+  /\.public-shop-product-update-ticker \{[\s\S]*?grid-template-columns: minmax\(116px, 42%\) minmax\(0, 1fr\) auto;[\s\S]*?height: 44px;[\s\S]*?data-existing-workflow-plus="shop-diary"\][\s\S]*?width: 30px;[\s\S]*?\.public-shop-inline-voice \{[\s\S]*?width: min\(100px, 27vw\);[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: public-shop-product-update-scroll 20s linear infinite;[\s\S]*?@keyframes public-shop-product-update-scroll[\s\S]*?@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: none !important;/,
+  "The combined Shop Update sticker must keep a readable label, 30px visual owner plus, 100px maximum voice pill, phone-safe continuous rotation, and reduced-motion support inside its compact 44px height."
 );
 
 assertFileContains(
@@ -731,7 +731,7 @@ assertNotContains(
 assertFileContains(
   publicShopStylesFile,
   publicShopStylesSource,
-  /\.public-shop-product-update-ticker \{[\s\S]*?position: absolute;[\s\S]*?inset: 0 0 auto;[\s\S]*?z-index: 8;[\s\S]*?\.public-shop-spotlight-stage[\s\S]*?border-radius: 18px;[\s\S]*?background: #020c1b;[\s\S]*?\.public-shop-spotlight-action-row[\s\S]*?border-top: 0;/,
+  /\.public-shop-product-update-ticker \{[\s\S]*?position: absolute;[\s\S]*?inset: 10px 10px auto;[\s\S]*?z-index: 8;[\s\S]*?background: transparent;[\s\S]*?\.public-shop-spotlight-stage[\s\S]*?border: 1px solid rgba\(83, 189, 255, 0\.72\);[\s\S]*?border-radius: 20px;[\s\S]*?background: #020c1b;[\s\S]*?\.public-shop-spotlight-action-row[\s\S]*?border: 0;[\s\S]*?border-radius: 0;/,
   "The P&S ticker must float over the edge-to-edge dark Spotlight stage without reserving a separate row, while the bottom action row remains joined."
 );
 

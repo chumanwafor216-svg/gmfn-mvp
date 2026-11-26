@@ -1292,7 +1292,7 @@ async function run() {
           metrics.productUpdateTickerTop === null ||
           metrics.productUpdateTickerBottom === null ||
           !metrics.spotlightScreenContainsTicker ||
-          Math.abs(metrics.spotlightScreenTop - metrics.productUpdateTickerTop) > 1 ||
+          metrics.productUpdateTickerTop < metrics.spotlightScreenTop - 1 ||
           metrics.spotlightScreenBottom === null ||
           metrics.productUpdateTickerBottom > metrics.spotlightScreenBottom + 1 ||
           metrics.spotlightOverlayTop === null ||
