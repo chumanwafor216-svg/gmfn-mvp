@@ -120,6 +120,15 @@ type DemandRow = {
     currency?: string | null;
     shop_path?: string | null;
   } | null;
+  commercial_intent?: {
+    intent_type: "buy_now" | "book_now" | "request_quote" | "notify_me";
+    quantity: number;
+    fulfilment_method: "collection" | "delivery" | "on_request";
+    origin_source: "shop" | "spotlight" | "vault" | "demand_box" | "business_demand";
+    status: string;
+    unit_price?: string | null;
+    currency?: string | null;
+  } | null;
   media_attachments?: Array<{
     id: number;
     kind: string;
@@ -3042,7 +3051,58 @@ export default function DemandBoxPage() {
               overflow: isCompact && activeDetailTab !== "details" ? "hidden" : undefined,
             }}
           >
-            {safeStr(row?.description) ? (
+            {row?.commercial_intent && row?.product_context ? (
+              <div
+                data-gsn-demand-commercial-intent="true"
+                style={{
+                  display: "grid",
+                  gap: 8,
+                  padding: isCompact ? 12 : 14,
+                  borderRadius: 16,
+                  border: "1px solid rgba(13,95,168,0.20)",
+                  background: "#FFFFFF",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                  <strong>
+                    {row.commercial_intent.intent_type === "book_now"
+                      ? "Booking request"
+                      : row.commercial_intent.intent_type === "request_quote"
+                      ? "Quote request"
+                      : row.commercial_intent.intent_type === "notify_me"
+                      ? "Availability request"
+                      : "Purchase request"}
+                  </strong>
+                  <span style={badge(true)}>Private</span>
+                </div>
+                <div>
+                  <strong>{row.product_context.product_title}</strong>
+                  <div style={{ marginTop: 3, color: "#52677C", fontSize: 13 }}>
+                    {row.product_context.shop_name}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <span style={badge(false)}>
+                    Quantity {row.commercial_intent.quantity}
+                  </span>
+                  <span style={badge(false)}>
+                    {row.commercial_intent.fulfilment_method === "collection"
+                      ? "Collection"
+                      : row.commercial_intent.fulfilment_method === "delivery"
+                      ? "Delivery"
+                      : "Terms to be agreed"}
+                  </span>
+                  {row.commercial_intent.unit_price ? (
+                    <span style={badge(false)}>
+                      Listed price {row.commercial_intent.currency || ""} {row.commercial_intent.unit_price}
+                    </span>
+                  ) : null}
+                </div>
+                <div style={{ color: "#52677C", fontSize: 12, lineHeight: 1.45 }}>
+                  Purchase intention recorded. This is not payment, confirmed availability, or a completed order.
+                </div>
+              </div>
+            ) : safeStr(row?.description) ? (
               <div>{safeStr(row?.description)}</div>
             ) : null}
             {(!isCompact || activeDetailTab === "details") && (positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at) ? (
@@ -3069,7 +3129,8 @@ export default function DemandBoxPage() {
                 ))}
               </div>
             ) : null}
-            {!safeStr(row?.description) &&
+            {!row?.commercial_intent &&
+            !safeStr(row?.description) &&
             !positiveNumber(row?.audio_attachment_id) &&
             !row?.audio_deleted_at &&
             !row?.media_attachments?.length ? (

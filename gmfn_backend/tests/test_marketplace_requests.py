@@ -15,6 +15,7 @@ from app.api.routes import (
 from app.db.database import SessionLocal, engine
 from app.schemas.marketplace_requests import (
     MarketplaceProductEnquiryCreate,
+    MarketplacePurchaseIntentionCreate,
     MarketplaceRequestCreate,
 )
 from app.services.notification_service import (
@@ -1350,3 +1351,159 @@ def test_product_enquiry_reuses_protected_demand_box_and_is_idempotent():
     )
     assert unrelated_detail_error.value.status_code == 404
     assert unrelated_response_error.value.status_code == 404
+
+
+def test_purchase_intention_is_private_structured_idempotent_and_allows_repeat_purchase():
+    _seed_primary_clan()
+    _add_second_member_to_primary_clan()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, is_active, created_at
+                )
+                VALUES (31, 1, 2, 'Responder Shop', 1, CURRENT_TIMESTAMP)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_products (
+                    id, clan_id, shop_id, seller_user_id, title, description,
+                    price, currency, visibility_mode, is_active, created_at
+                )
+                VALUES (
+                    41, 1, 31, 2, 'Leather shoes', 'Formal shoes',
+                    '15', 'GBP', 'community_visible', 1, CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+
+    with SessionLocal() as db:
+        first = marketplace_requests.create_marketplace_purchase_intention(
+            MarketplacePurchaseIntentionCreate(
+                product_id=41,
+                shop_id=31,
+                clan_id=1,
+                client_request_id="spotlight-buy-41-1001",
+                intent_type="buy_now",
+                quantity=2,
+                fulfilment_method="delivery",
+                origin_source="spotlight",
+            ),
+            db=db,
+            current_user=_fake_current_user(),
+        )
+        duplicate = marketplace_requests.create_marketplace_purchase_intention(
+            MarketplacePurchaseIntentionCreate(
+                product_id=41,
+                shop_id=31,
+                clan_id=1,
+                client_request_id="spotlight-buy-41-1001",
+                intent_type="buy_now",
+                quantity=2,
+                fulfilment_method="delivery",
+                origin_source="spotlight",
+            ),
+            db=db,
+            current_user=_fake_current_user(),
+        )
+        reopened_active = marketplace_requests.create_marketplace_purchase_intention(
+            MarketplacePurchaseIntentionCreate(
+                product_id=41,
+                shop_id=31,
+                clan_id=1,
+                client_request_id="spotlight-buy-41-1002",
+                intent_type="buy_now",
+                quantity=1,
+                fulfilment_method="collection",
+                origin_source="spotlight",
+            ),
+            db=db,
+            current_user=_fake_current_user(),
+        )
+        repeat_purchase = marketplace_requests.create_marketplace_purchase_intention(
+            MarketplacePurchaseIntentionCreate(
+                product_id=41,
+                shop_id=31,
+                clan_id=1,
+                client_request_id="spotlight-buy-41-1003",
+                intent_type="buy_now",
+                quantity=1,
+                fulfilment_method="collection",
+                origin_source="spotlight",
+                start_new_transaction=True,
+            ),
+            db=db,
+            current_user=_fake_current_user(),
+        )
+        seller_rows = marketplace_requests.list_marketplace_requests(
+            db=db,
+            current_user=_fake_second_user(),
+            status="open",
+            category=None,
+            urgency=None,
+            area=None,
+            mine_only=False,
+            clan_id=1,
+            limit=50,
+        )
+        responses = demand_box_interactions.list_request_responses(
+            request_id=first.id,
+            db=db,
+            current_user=_fake_current_user(),
+        )
+        seller_notifications = list_my_notifications(db, user_id=2, limit=20)
+        with pytest.raises(HTTPException) as self_purchase_error:
+            marketplace_requests.create_marketplace_purchase_intention(
+                MarketplacePurchaseIntentionCreate(
+                    product_id=41,
+                    shop_id=31,
+                    clan_id=1,
+                    client_request_id="spotlight-buy-self-1001",
+                    intent_type="buy_now",
+                    quantity=1,
+                    fulfilment_method="collection",
+                    origin_source="spotlight",
+                ),
+                db=db,
+                current_user=_fake_second_user(),
+            )
+
+    first_data = first.model_dump()
+    assert first.id == duplicate.id
+    assert reopened_active.id == first.id
+    assert repeat_purchase.id != first.id
+    assert first_data["visibility_scope"] == "protected_target"
+    assert first_data["routing_status"] == "protected_member_targeted"
+    assert first_data["product_context"] == {
+        "product_id": 41,
+        "shop_id": 31,
+        "product_title": "Leather shoes",
+        "shop_name": "Responder Shop",
+        "listed_price": "15",
+        "currency": "GBP",
+        "shop_path": "/shop/GSN-U-RESPONDER?product_id=41&clan_id=1&gsn_source=spotlight_purchase_intention",
+    }
+    assert first_data["commercial_intent"] == {
+        "intent_type": "buy_now",
+        "quantity": 2,
+        "fulfilment_method": "delivery",
+        "origin_source": "spotlight",
+        "status": "purchase_requested",
+        "unit_price": "15",
+        "currency": "GBP",
+    }
+    assert len(seller_rows) == 2
+    assert responses == []
+    purchase_notifications = [
+        item
+        for item in seller_notifications["items"]
+        if item["title"] == "New purchase request"
+    ]
+    assert len(purchase_notifications) == 2
+    assert self_purchase_error.value.status_code == 400

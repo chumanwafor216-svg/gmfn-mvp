@@ -10382,6 +10382,15 @@ export type MarketplaceRequestItem = {
     currency?: string | null;
     shop_path?: string | null;
   } | null;
+  commercial_intent?: {
+    intent_type: "buy_now" | "book_now" | "request_quote" | "notify_me";
+    quantity: number;
+    fulfilment_method: "collection" | "delivery" | "on_request";
+    origin_source: "shop" | "spotlight" | "vault" | "demand_box" | "business_demand";
+    status: string;
+    unit_price?: string | null;
+    currency?: string | null;
+  } | null;
 };
 
 export async function listMarketplaceRequests(params?: {
@@ -10476,6 +10485,32 @@ export async function createMarketplaceProductEnquiry(payload: {
     ...payload,
     clan_id: effectiveClanId ?? undefined,
   });
+  clearStartupSectionCacheByLabel("listMarketplaceRequests");
+  return created;
+}
+
+export async function createMarketplacePurchaseIntention(payload: {
+  product_id: number;
+  shop_id: number;
+  clan_id?: number | null;
+  client_request_id: string;
+  intent_type: "buy_now" | "book_now" | "request_quote" | "notify_me";
+  quantity: number;
+  fulfilment_method: "collection" | "delivery" | "on_request";
+  origin_source: "shop" | "spotlight" | "vault" | "demand_box" | "business_demand";
+  start_new_transaction?: boolean;
+  note?: string;
+}): Promise<MarketplaceRequestItem> {
+  const effectiveClanId =
+    payload?.clan_id === undefined ? getSelectedClanId() : payload?.clan_id;
+  const created = await httpJson(
+    "/marketplace/requests/product-purchase-intentions",
+    "POST",
+    {
+      ...payload,
+      clan_id: effectiveClanId ?? undefined,
+    }
+  );
   clearStartupSectionCacheByLabel("listMarketplaceRequests");
   return created;
 }

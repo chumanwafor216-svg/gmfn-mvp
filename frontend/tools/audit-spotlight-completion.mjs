@@ -57,8 +57,13 @@ requirePattern(
 );
 requirePattern(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /createMarketplaceProductEnquiry[\s\S]*?\/app\/demand-box\?demand_id=[\s\S]*?data-spotlight-protected-sales-path/,
-  "Contact Seller must continue through the existing GSN enquiry and Protected Sales path."
+  /createMarketplacePurchaseIntention[\s\S]*?origin_source: "spotlight"[\s\S]*?\/app\/demand-box\?demand_id=[\s\S]*?data-spotlight-protected-sales-path/,
+  "Buy Now must create a source-attributed private purchase intention and retain the Protected Sales path."
+);
+requirePattern(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /contactSpotlightProductSeller[\s\S]*?createMarketplaceProductEnquiry[\s\S]*?Need more information\? Ask seller/,
+  "Ask Seller must remain an optional enquiry path rather than the purchase prerequisite."
 );
 forbidPattern(
   "frontend/src/pages/ShopGalleryPage.tsx",
@@ -71,4 +76,4 @@ if (findings.length) {
   process.exit(1);
 }
 
-console.log(JSON.stringify({ ok: true, checks: 9 }, null, 2));
+console.log(JSON.stringify({ ok: true, checks: 10 }, null, 2));

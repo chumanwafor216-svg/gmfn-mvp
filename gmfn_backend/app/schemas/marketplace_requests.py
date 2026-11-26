@@ -108,6 +108,16 @@ class MarketplaceProductContextOut(BaseModel):
     shop_path: Optional[str] = None
 
 
+class MarketplaceCommercialIntentOut(BaseModel):
+    intent_type: str
+    quantity: int = Field(..., ge=1, le=99)
+    fulfilment_method: str
+    origin_source: str
+    status: str
+    unit_price: Optional[str] = None
+    currency: Optional[str] = None
+
+
 class MarketplaceRequestOut(BaseModel):
     id: int
     clan_id: Optional[int] = None
@@ -159,6 +169,7 @@ class MarketplaceRequestOut(BaseModel):
     audio_deleted_at: Optional[datetime] = None
     media_attachments: list[MarketplaceRequestAttachmentOut] = Field(default_factory=list)
     product_context: Optional[MarketplaceProductContextOut] = None
+    commercial_intent: Optional[MarketplaceCommercialIntentOut] = None
 
 
 class MarketplaceProductEnquiryCreate(BaseModel):
@@ -177,6 +188,50 @@ class MarketplaceProductEnquiryCreate(BaseModel):
     @classmethod
     def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
+
+
+class MarketplacePurchaseIntentionCreate(BaseModel):
+    product_id: int = Field(..., ge=1)
+    shop_id: int = Field(..., ge=1)
+    clan_id: Optional[int] = Field(default=None, ge=1)
+    client_request_id: str = Field(..., min_length=8, max_length=80)
+    intent_type: str = Field(
+        default="buy_now",
+        pattern="^(buy_now|book_now|request_quote|notify_me)$",
+    )
+    quantity: int = Field(default=1, ge=1, le=99)
+    fulfilment_method: str = Field(
+        default="collection",
+        pattern="^(collection|delivery|on_request)$",
+    )
+    origin_source: str = Field(
+        default="shop",
+        pattern="^(shop|spotlight|vault|demand_box|business_demand)$",
+    )
+    start_new_transaction: bool = False
+    note: Optional[str] = Field(default=None, max_length=1000)
+
+    @field_validator("product_id", "shop_id", "clan_id", "quantity", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_integer(value, info.field_name)
+
+    @field_validator(
+        "client_request_id",
+        "intent_type",
+        "fulfilment_method",
+        "origin_source",
+        "note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("start_new_transaction", mode="before")
+    @classmethod
+    def _reject_non_bool_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_bool_value(value, info.field_name)
 
 
 class MarketplaceRequestResponseCreate(BaseModel):

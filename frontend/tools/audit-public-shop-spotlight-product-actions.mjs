@@ -36,7 +36,19 @@ requirePattern(
 );
 requirePattern(
   /async function contactSpotlightProductSeller\(\)[\s\S]*?createMarketplaceProductEnquiry\([\s\S]*?product_id: productId[\s\S]*?shop_id: shopId/,
-  "Ask seller must create a product-linked DemandBox enquiry with exact source identifiers."
+  "Optional Ask seller must retain the product-linked DemandBox enquiry path."
+);
+requirePattern(
+  /createMarketplacePurchaseIntention[\s\S]*?function openSpotlightCommercialAction\(\)[\s\S]*?async function submitSpotlightPurchaseIntention\(\)[\s\S]*?origin_source: "spotlight"/,
+  "The principal commercial action must create a source-attributed structured purchase intention."
+);
+requirePattern(
+  /data-spotlight-primary-action="follow-shop"[\s\S]*?data-spotlight-primary-action=\{[\s\S]*?spotlightCommercialAction\.intentType/,
+  "Visitor Follow and adaptive commercial actions must be principal Spotlight controls."
+);
+requirePattern(
+  /data-spotlight-purchase-card="true"[\s\S]*?Quantity[\s\S]*?Collection[\s\S]*?Delivery[\s\S]*?Confirm purchase request/,
+  "Spotlight must provide a compact structured purchase card without claiming payment."
 );
 requirePattern(
   /async function toggleSpotlightShopFollow\(\)[\s\S]*?followMarketplaceShop\([\s\S]*?unfollowMarketplaceShop\(/,
@@ -62,6 +74,13 @@ requirePattern(
   /ariaLabel=\{`Share this \$\{spotlightPreferenceKind\}`\}[\s\S]*?debugId="shop-gallery\.spotlight-product\.share"[\s\S]*?public_shop_spotlight_\$\{spotlightPreferenceKind\}_share_/,
   "Visitor sharing must distinguish product and advert terminology while owner Paid Repost remains separate."
 );
+requirePattern(
+  /debugId="shop-gallery\.spotlight\.owner-share"[\s\S]*?public_shop_spotlight_owner_share_[\s\S]*?debugId="shop-gallery\.spotlight\.owner-shortcut"/,
+  "Advert owners must receive tracked ordinary Share and the existing management shortcut instead of self-purchase controls."
+);
+if (/shop-gallery\.spotlight\.contact-advertiser|Call advertiser/.test(source)) {
+  findings.push("The redundant Spotlight Call advertiser primary action must remain removed.");
+}
 requirePattern(
   /sourceClanName/,
   "Spotlight product context may show only the supplied broad community location."

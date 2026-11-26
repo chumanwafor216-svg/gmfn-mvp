@@ -13,11 +13,12 @@ import SpotlightMediaFrame, {
   type SpotlightMediaReadyDetails,
   type SpotlightPlaybackStateDetails,
 } from "../components/SpotlightMediaFrame";
-import { PrimaryButton, SecondaryButton, StableCtaLink, StableDisclosureSummary } from "../components/StableButton";
+import { PrimaryButton, SecondaryButton, StableCtaLink, StableDisclosureSummary, SubtleButton } from "../components/StableButton";
 import ExistingWorkflowPlusLink from '../components/ExistingWorkflowPlusLink';
 import {
   acknowledgeSpotlightPresentationSupply,
   createMarketplaceShop,
+  createMarketplacePurchaseIntention,
   createMarketplaceProductEnquiry,
   followMarketplaceShop,
   getAccessToken,
@@ -231,6 +232,14 @@ type ShopBroadcast = {
   createdAt?: string;
   expiresAt?: string;
 };
+
+type SpotlightCommercialIntentType =
+  | "buy_now"
+  | "book_now"
+  | "request_quote"
+  | "notify_me";
+
+type SpotlightFulfilmentMethod = "collection" | "delivery" | "on_request";
 
 type SpotlightTransitionState = {
   phase: 'holding' | 'neutral' | 'handoff';
@@ -2188,6 +2197,11 @@ export default function ShopGalleryPage() {
       loading: false,
       busy: false,
     });
+  const [spotlightPurchaseOpen, setSpotlightPurchaseOpen] = useState(false);
+  const [spotlightPurchaseQuantity, setSpotlightPurchaseQuantity] = useState(1);
+  const [spotlightPurchaseFulfilment, setSpotlightPurchaseFulfilment] =
+    useState<SpotlightFulfilmentMethod>("collection");
+  const [spotlightPurchaseBusy, setSpotlightPurchaseBusy] = useState(false);
   const [spotlightProductActionsOpen, setSpotlightProductActionsOpen] =
     useState(true);
   const [error, setError] = useState<string>("");
@@ -4177,7 +4191,7 @@ export default function ShopGalleryPage() {
   useEffect(() => {
     const token = getAccessToken();
     const shopId = spotlightSourceShopId;
-    if (!spotlightProductLinked || !shopId || !token) {
+    if (!shopId || !token) {
       setSpotlightShopFollowState({
         shopId,
         isFollowing: false,
@@ -4236,10 +4250,10 @@ export default function ShopGalleryPage() {
     return () => {
       alive = false;
     };
-  }, [spotlightProductLinked, spotlightSourceShopId]);
+  }, [spotlightSourceShopId]);
 
   const spotlightOwnershipCheckRequired = Boolean(
-    getAccessToken() && spotlightProductLinked && spotlightSourceShopId
+    getAccessToken() && spotlightSourceShopId
   );
   const spotlightOwnershipStateMatchesSource =
     spotlightShopFollowState.shopId === spotlightSourceShopId;
@@ -4266,6 +4280,56 @@ export default function ShopGalleryPage() {
       (spotlightOwnershipCheckRequired &&
         (!spotlightOwnershipResolved || signedInOwnsSpotlightSourceShop))
   );
+  const spotlightCommercialAction = useMemo(() => {
+    if (!spotlightProductLinked) {
+      return { kind: "visit_shop" as const, label: "Visit shop" };
+    }
+    const availability = safeStr(
+      miniSpotlight?.sourceProductAvailability
+    ).toLowerCase();
+    if (/unavailable|out of stock|sold out/.test(availability)) {
+      return {
+        kind: "intent" as const,
+        intentType: "notify_me" as SpotlightCommercialIntentType,
+        label: "Notify me",
+      };
+    }
+    const category = safeStr(miniSpotlight?.sourceProductCategory).toLowerCase();
+    const hasPrice = Boolean(safeStr(miniSpotlight?.sourceProductPrice));
+    if (category.includes("service")) {
+      return {
+        kind: "intent" as const,
+        intentType: (hasPrice ? "book_now" : "request_quote") as SpotlightCommercialIntentType,
+        label: hasPrice ? "Book now" : "Request quote",
+      };
+    }
+    return {
+      kind: "intent" as const,
+      intentType: (hasPrice ? "buy_now" : "request_quote") as SpotlightCommercialIntentType,
+      label: hasPrice ? "Buy now" : "Request quote",
+    };
+  }, [miniSpotlight, spotlightProductLinked]);
+  const spotlightPurchaseUnitAmount = useMemo(() => {
+    const normalized = safeStr(miniSpotlight?.sourceProductPrice)
+      .replace(/,/g, "")
+      .match(/-?\d+(?:\.\d+)?/);
+    if (!normalized) return null;
+    const amount = Number(normalized[0]);
+    return Number.isFinite(amount) && amount >= 0 ? amount : null;
+  }, [miniSpotlight?.sourceProductPrice]);
+  const spotlightPurchaseSubtotal =
+    spotlightPurchaseUnitAmount === null
+      ? ""
+      : `${firstMeaningful(miniSpotlight?.sourceProductCurrency)} ${(
+          spotlightPurchaseUnitAmount * spotlightPurchaseQuantity
+        ).toFixed(2)}`.trim();
+
+  useEffect(() => {
+    setSpotlightPurchaseOpen(false);
+    setSpotlightPurchaseQuantity(1);
+    setSpotlightPurchaseFulfilment("collection");
+    setSpotlightPurchaseBusy(false);
+  }, [spotlightSourceProductId, spotlightSourceShopId]);
 
   const nextMiniSpotlight = useMemo(() => {
     if (communitySpotlights.length <= 1) return null;
@@ -5297,20 +5361,6 @@ export default function ShopGalleryPage() {
   const spotlightInformationAvailable = Boolean(
     publicShopSpotlightActive || ownerSpotlightStatusView
   );
-  const spotlightWhatsAppAvailable = Boolean(
-    publicShopSpotlightActive &&
-      normalizeWhatsAppRecipient(miniSpotlightView.sourceShopWhatsApp)
-  );
-  const spotlightAdvertiserCallUrl = publicShopSpotlightActive
-    ? buildPhoneCallUrl(miniSpotlightView.advertiserContactPhone)
-    : "";
-  const spotlightContactAvailable = Boolean(
-    spotlightWhatsAppAvailable || spotlightAdvertiserCallUrl
-  );
-  const spotlightContactActionAvailable = Boolean(
-    spotlightContactAvailable && !spotlightSelfActionsBlocked
-  );
-
   const publicShopMoreHashOpen = [
     `#${PUBLIC_SHOP_SPOTLIGHT_ANCHOR}`,
     `#${PUBLIC_SHOP_VAULT_ANCHOR}`,
@@ -6459,6 +6509,96 @@ export default function ShopGalleryPage() {
     contactSpotlightOwnerByWhatsApp();
   }
 
+  function openSpotlightSourceShop() {
+    const sourceOwnerId = firstMeaningful(miniSpotlight?.authorGmfnId);
+    if (!sourceOwnerId) {
+      setNotice({
+        tone: "error",
+        text: "This advert does not expose a public shop destination.",
+      });
+      return;
+    }
+    const params = new URLSearchParams();
+    if (spotlightSourceProductId) {
+      params.set("product_id", String(spotlightSourceProductId));
+    }
+    if (spotlightSourceClanId) {
+      params.set("clan_id", String(spotlightSourceClanId));
+    }
+    params.set("gsn_source", "spotlight_commercial_action");
+    navigate(`/shop/${encodeURIComponent(sourceOwnerId)}?${params.toString()}`);
+  }
+
+  function openSpotlightCommercialAction() {
+    pauseSpotlightPresentationRotation();
+    if (spotlightCommercialAction.kind === "visit_shop") {
+      openSpotlightSourceShop();
+      return;
+    }
+    if (spotlightSelfActionsBlocked) {
+      setNotice({
+        tone: "error",
+        text: signedInOwnsSpotlightSourceShop
+          ? "Shop owners cannot submit a commercial request to their own shop."
+          : "GSN is still checking who owns this advertised product.",
+      });
+      return;
+    }
+    if (!getAccessToken()) {
+      setNotice({
+        tone: "error",
+        text: `Sign in to ${spotlightCommercialAction.label.toLowerCase()}.`,
+      });
+      return;
+    }
+    setSpotlightPurchaseOpen(true);
+  }
+
+  async function submitSpotlightPurchaseIntention() {
+    if (
+      spotlightCommercialAction.kind !== "intent" ||
+      !spotlightSourceProductId ||
+      !spotlightSourceShopId ||
+      spotlightPurchaseBusy
+    ) {
+      return;
+    }
+    setSpotlightPurchaseBusy(true);
+    try {
+      const requiresFulfilment = ["buy_now", "book_now"].includes(
+        spotlightCommercialAction.intentType
+      );
+      const created = await createMarketplacePurchaseIntention({
+        product_id: spotlightSourceProductId,
+        shop_id: spotlightSourceShopId,
+        clan_id: spotlightSourceClanId || undefined,
+        client_request_id:
+          `spotlight-${spotlightCommercialAction.intentType}-` +
+          `${spotlightSourceProductId}-${Date.now()}`,
+        intent_type: spotlightCommercialAction.intentType,
+        quantity:
+          spotlightCommercialAction.intentType === "notify_me"
+            ? 1
+            : spotlightPurchaseQuantity,
+        fulfilment_method: requiresFulfilment
+          ? spotlightPurchaseFulfilment
+          : "on_request",
+        origin_source: "spotlight",
+      });
+      setSpotlightPurchaseOpen(false);
+      navigate(`/app/demand-box?demand_id=${created.id}&queue=mine`);
+    } catch (error: any) {
+      setNotice({
+        tone: "error",
+        text:
+          safeStr(error?.message) ||
+          "GSN could not record this purchase intention right now.",
+      });
+    } finally {
+      setSpotlightPurchaseBusy(false);
+    }
+  }
+
   async function toggleSpotlightShopFollow() {
     const shopId = spotlightSourceShopId;
     if (!shopId || spotlightShopFollowState.busy) return;
@@ -6617,37 +6757,6 @@ export default function ShopGalleryPage() {
     setNotice({
       tone: "error",
       text: "This Spotlight does not expose an owner contact path yet.",
-    });
-  }
-
-  function contactSpotlightAdvertiser() {
-    if (spotlightSelfActionsBlocked) {
-      setNotice({
-        tone: "error",
-        text: signedInOwnsSpotlightSourceShop
-          ? "Shop owners cannot contact themselves about their advertised products."
-          : "GSN is still checking who owns this advertised product.",
-      });
-      return;
-    }
-    if (spotlightWhatsAppAvailable) {
-      contactSpotlightOwnerByWhatsApp();
-      return;
-    }
-
-    pauseSpotlightPresentationRotation();
-    if (!spotlightAdvertiserCallUrl || typeof window === "undefined") {
-      setNotice({
-        tone: "error",
-        text: "This Spotlight does not expose an advertiser contact path yet.",
-      });
-      return;
-    }
-
-    window.location.href = spotlightAdvertiserCallUrl;
-    setNotice({
-      tone: "success",
-      text: "Your phone dialler is opening with the advertiser's number.",
     });
   }
 
@@ -8507,9 +8616,9 @@ export default function ShopGalleryPage() {
                 ) : null}
                 {spotlightProductLinked ? (
                   <div data-spotlight-protected-sales-path="true">
-                    Contact Seller opens a GSN enquiry first. Any transaction
-                    continues through the existing Protected Sales workflow;
-                    Spotlight is not verification or a completed sale.
+                    Buy Now records a private purchase intention. Payment and
+                    availability are not confirmed until the parties agree;
+                    eligible transactions continue through the existing Protected Sales workflow.
                   </div>
                 ) : null}
               </div>
@@ -8649,22 +8758,22 @@ export default function ShopGalleryPage() {
                   className="public-shop-spotlight-action-row"
                   data-spotlight-action-row="true"
                   data-spotlight-action-count={
-                    Number(signedInOwnsShop) + Number(spotlightContactActionAvailable)
+                    spotlightSelfActionsBlocked
+                      ? 1 + Number(signedInOwnsShop)
+                      : 1 + Number(Boolean(spotlightSourceShopId))
                   }
                   style={{
                     width: "100%",
                     maxWidth: "100%",
-                    display:
-                      signedInOwnsShop || spotlightContactActionAvailable ? "grid" : "none",
-                    gridTemplateColumns: signedInOwnsShop && spotlightContactActionAvailable
-                      ? "48px minmax(0, 1fr)"
-                      : signedInOwnsShop
-                      ? "48px"
+                    display: miniSpotlight ? "grid" : "none",
+                    gridTemplateColumns: spotlightSelfActionsBlocked
+                      ? signedInOwnsShop
+                        ? "minmax(0, 1fr) 48px"
+                        : "minmax(0, 1fr)"
+                      : spotlightSourceShopId
+                      ? "repeat(2, minmax(0, 1fr))"
                       : "minmax(0, 1fr)",
-                    justifyContent:
-                      signedInOwnsShop && !spotlightContactActionAvailable
-                        ? "center"
-                        : "stretch",
+                    justifyContent: "stretch",
                     alignItems: "center",
                     gap: isCompact ? 7 : 10,
                     minHeight: isCompact ? 58 : 68,
@@ -8672,41 +8781,107 @@ export default function ShopGalleryPage() {
                     color: "#FFFFFF",
                     fontSize: isCompact ? 11 : 13,
                     fontWeight: 950,
-                    textTransform: "uppercase",
+                    textTransform: "none",
                     letterSpacing: 0,
                     gridColumn: "1",
                     gridRow: "2",
                   }}
                 >
-                  {signedInOwnsShop ? (
-                    <ExistingWorkflowPlusLink
-                      to={ownerSpotlightShortcutPath}
-                      label='Add Spotlight'
-                      debugId='shop-gallery.spotlight.owner-shortcut'
-                      shortcut='spotlight'
-                      data-public-shop-neon-action='true'
-                      data-spotlight-shortcut-mode={ownerSpotlightShortcutMode}
-                      style={
-                        isCompact
-                          ? {
-                              gridColumn: '1',
-                              justifySelf: 'center',
-                            }
-                          : undefined
-                      }
-                    />
-                  ) : null}
-                  {spotlightContactActionAvailable ? (
+                  {spotlightSelfActionsBlocked ? (
+                    <>
+                      <SocialTagShareButton
+                        target={buildSpotlightProductShareTarget()}
+                        buttonLabel="Share"
+                        ariaLabel={`Share this ${spotlightPreferenceKind}`}
+                        triggerIcon={<span aria-hidden="true">{"\u2197"}</span>}
+                        minWidth={0}
+                        stableHeight={isCompact ? 44 : 48}
+                        debugId="shop-gallery.spotlight.owner-share"
+                        onBeforeOpen={() => {
+                          pauseSpotlightPresentationRotation();
+                          return true;
+                        }}
+                        onResult={(tone, text, channel) => {
+                          if (tone === "success") {
+                            void trackMarketplaceAttention(
+                              "share_action",
+                              {
+                                shop_id: spotlightSourceShopId,
+                                product_id:
+                                  spotlightSourceProductId || undefined,
+                                clan_id: spotlightSourceClanId || undefined,
+                                broadcast_id:
+                                  positiveNumber(miniSpotlight?.id) || undefined,
+                                source:
+                                  `public_shop_spotlight_owner_share_` +
+                                  firstMeaningful(channel, "share"),
+                              },
+                              { allowShopFallback: false }
+                            );
+                          }
+                          setNotice({ tone, text });
+                        }}
+                        style={{
+                          ...secondaryBtn(false),
+                          width: "100%",
+                          minHeight: isCompact ? 44 : 48,
+                          borderRadius: 999,
+                          fontSize: isCompact ? 12 : 14,
+                        }}
+                      />
+                      {signedInOwnsShop ? (
+                        <ExistingWorkflowPlusLink
+                          to={ownerSpotlightShortcutPath}
+                          label="Add Spotlight"
+                          debugId="shop-gallery.spotlight.owner-shortcut"
+                          shortcut="spotlight"
+                          data-public-shop-neon-action="true"
+                          data-spotlight-shortcut-mode={ownerSpotlightShortcutMode}
+                          style={{ gridColumn: "2", justifySelf: "center" }}
+                        />
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      {spotlightSourceShopId ? (
+                        <SecondaryButton
+                          onClick={() => void toggleSpotlightShopFollow()}
+                          disabled={
+                            spotlightShopFollowState.loading ||
+                            spotlightShopFollowState.busy
+                          }
+                          minWidth={0}
+                          stableHeight={isCompact ? 44 : 48}
+                          debugId="shop-gallery.spotlight.primary-follow"
+                          data-spotlight-primary-action="follow-shop"
+                          style={{
+                            ...secondaryBtn(false),
+                            width: "100%",
+                            minHeight: isCompact ? 44 : 48,
+                            borderRadius: 999,
+                            padding: isCompact ? "7px 8px" : "9px 14px",
+                            fontSize: isCompact ? 11.5 : 14,
+                          }}
+                        >
+                          {spotlightShopFollowState.isFollowing
+                            ? "Following"
+                            : "Follow shop"}
+                        </SecondaryButton>
+                      ) : null}
                     <PrimaryButton
-                      onClick={contactSpotlightAdvertiser}
+                      onClick={openSpotlightCommercialAction}
                       minWidth={0}
                       fullWidth={false}
                       stableHeight={isCompact ? 44 : 48}
-                      debugId="shop-gallery.spotlight.contact-advertiser"
+                      debugId="shop-gallery.spotlight.primary-commercial-action"
                       data-public-shop-neon-action="true"
+                      data-spotlight-primary-action={
+                        spotlightCommercialAction.kind === "intent"
+                          ? spotlightCommercialAction.intentType
+                          : "visit_shop"
+                      }
                       style={{
                         ...primaryBtn(false),
-                        gridColumn: signedInOwnsShop ? "2" : "1",
                         justifySelf: "stretch",
                         borderRadius: 999,
                         minHeight: isCompact ? 44 : 48,
@@ -8715,12 +8890,8 @@ export default function ShopGalleryPage() {
                         padding: isCompact ? "7px 8px" : "9px 14px",
                         fontSize: isCompact ? 11.5 : 14,
                         whiteSpace: "nowrap",
-                        background: spotlightWhatsAppAvailable
-                          ? "linear-gradient(180deg, #25D366 0%, #128C4A 100%)"
-                          : "linear-gradient(180deg, #0B63D1 0%, #084A9C 100%)",
-                        border: spotlightWhatsAppAvailable
-                          ? "1px solid rgba(37,211,102,0.38)"
-                          : "1px solid rgba(11,99,209,0.38)",
+                        background: "linear-gradient(180deg, #1676E8 0%, #0757BC 100%)",
+                        border: "1px solid rgba(85,232,255,0.48)",
                         boxShadow: isCompact
                           ? "0 8px 14px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.18)"
                           : undefined,
@@ -8733,11 +8904,12 @@ export default function ShopGalleryPage() {
                           gap: isCompact ? 3 : 8,
                         }}
                       >
-                        {inlineShopIcon("phone", "#FFFFFF", isCompact ? 11 : 15)}
-                        {spotlightWhatsAppAvailable ? "WhatsApp" : "Call advertiser"}
+                        {inlineShopIcon("cart", "#FFFFFF", isCompact ? 11 : 15)}
+                        {spotlightCommercialAction.label}
                       </span>
                     </PrimaryButton>
-                  ) : null}
+                    </>
+                  )}
                 </div>
               </div>
               <div
@@ -9319,6 +9491,7 @@ export default function ShopGalleryPage() {
                               ) : null}
                             </>
                           ) : null}
+                          {!spotlightSelfActionsBlocked ? (
                           <SocialTagShareButton
                             target={buildSpotlightProductShareTarget()}
                             buttonLabel=""
@@ -9358,38 +9531,6 @@ export default function ShopGalleryPage() {
                               "linear-gradient(180deg, #FFFFFF 0%, #EAF6FF 100%)"
                             )}
                           />
-                          {!spotlightSelfActionsBlocked && spotlightSourceShopId ? (
-                            <SecondaryButton
-                              onClick={() =>
-                                void toggleSpotlightShopFollow()
-                              }
-                              disabled={
-                                spotlightShopFollowState.loading ||
-                                spotlightShopFollowState.busy
-                              }
-                              minWidth={0}
-                              stableHeight={isCompact ? 44 : 46}
-                              debugId="shop-gallery.spotlight-product.follow-shop"
-                              aria-label={
-                                spotlightShopFollowState.isFollowing
-                                  ? "Unfollow this shop"
-                                  : "Follow this shop"
-                              }
-                              title={
-                                spotlightShopFollowState.isFollowing
-                                  ? "Following shop"
-                                  : "Follow shop"
-                              }
-                              data-spotlight-product-action="follow-shop"
-                              style={spotlightProductRailButtonStyle(
-                                isCompact,
-                                "linear-gradient(180deg, #FFFBE8 0%, #F6D879 100%)"
-                              )}
-                            >
-                              <span aria-hidden="true">
-                                {spotlightShopFollowState.isFollowing ? "\u2713" : "+"}
-                              </span>
-                            </SecondaryButton>
                           ) : null}
                           {spotlightCommunityLabel ? (
                             <SecondaryButton
@@ -9430,6 +9571,185 @@ export default function ShopGalleryPage() {
                       ) : null}
                     </div>
                   </>
+                ) : null}
+                {spotlightPurchaseOpen &&
+                spotlightCommercialAction.kind === "intent" ? (
+                  <div
+                    data-spotlight-purchase-card-shell="true"
+                    role="presentation"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      zIndex: 20,
+                      display: "grid",
+                      alignItems: "end",
+                      padding: isCompact ? 10 : 18,
+                      background: "rgba(2,12,27,0.62)",
+                    }}
+                  >
+                    <div
+                      data-spotlight-purchase-card="true"
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label={spotlightCommercialAction.label}
+                      style={{
+                        width: "100%",
+                        maxWidth: 520,
+                        maxHeight: "calc(100% - 20px)",
+                        margin: "0 auto",
+                        overflowY: "auto",
+                        boxSizing: "border-box",
+                        padding: isCompact ? 14 : 18,
+                        border: "1px solid rgba(85,232,255,0.58)",
+                        borderRadius: isCompact ? 18 : 22,
+                        color: "#0B1F33",
+                        background: "rgba(255,255,255,0.98)",
+                        boxShadow: "0 18px 44px rgba(2,12,27,0.48)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 10,
+                        }}
+                      >
+                        <strong style={{ fontSize: isCompact ? 18 : 22 }}>
+                          {spotlightCommercialAction.label}
+                        </strong>
+                        <SecondaryButton
+                          onClick={() => setSpotlightPurchaseOpen(false)}
+                          minWidth={0}
+                          stableHeight={40}
+                          debugId="shop-gallery.spotlight.purchase.close"
+                          aria-label="Close commercial action"
+                          style={{ width: 40, minHeight: 40, borderRadius: 999, padding: 0 }}
+                        >
+                          {"\u00D7"}
+                        </SecondaryButton>
+                      </div>
+                      <div style={{ marginTop: 10, display: "grid", gap: 3 }}>
+                        <strong style={{ fontSize: isCompact ? 15 : 17 }}>
+                          {miniSpotlightView.title}
+                        </strong>
+                        <span style={{ color: "#52677C", fontSize: 13, fontWeight: 760 }}>
+                          {firstMeaningful(miniSpotlight?.sourceShopName, "GSN shop")}
+                        </span>
+                        {miniSpotlightView.priceLabel ? (
+                          <strong style={{ color: "#0757BC", fontSize: 16 }}>
+                            {miniSpotlightView.priceLabel}
+                          </strong>
+                        ) : null}
+                      </div>
+                      {spotlightCommercialAction.intentType !== "notify_me" ? (
+                        <div style={{ marginTop: 13, display: "grid", gap: 11 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: 12,
+                            }}
+                          >
+                            <strong>Quantity</strong>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                              <SecondaryButton
+                                onClick={() =>
+                                  setSpotlightPurchaseQuantity((value) => Math.max(1, value - 1))
+                                }
+                                disabled={spotlightPurchaseQuantity <= 1}
+                                minWidth={0}
+                                stableHeight={40}
+                                debugId="shop-gallery.spotlight.purchase.quantity-minus"
+                                style={{ width: 40, minHeight: 40, borderRadius: 999, padding: 0 }}
+                              >
+                                {"\u2212"}
+                              </SecondaryButton>
+                              <strong aria-live="polite">{spotlightPurchaseQuantity}</strong>
+                              <SecondaryButton
+                                onClick={() =>
+                                  setSpotlightPurchaseQuantity((value) => Math.min(99, value + 1))
+                                }
+                                minWidth={0}
+                                stableHeight={40}
+                                debugId="shop-gallery.spotlight.purchase.quantity-plus"
+                                style={{ width: 40, minHeight: 40, borderRadius: 999, padding: 0 }}
+                              >
+                                +
+                              </SecondaryButton>
+                            </span>
+                          </div>
+                          {["buy_now", "book_now"].includes(
+                            spotlightCommercialAction.intentType
+                          ) ? (
+                            <fieldset style={{ margin: 0, padding: 0, border: 0 }}>
+                              <legend style={{ fontWeight: 850, marginBottom: 7 }}>
+                                How would you like to receive it?
+                              </legend>
+                              <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                                {(["collection", "delivery"] as const).map((method) => (
+                                  <label key={method} style={{ display: "inline-flex", gap: 6 }}>
+                                    <input
+                                      type="radio"
+                                      name="spotlight-fulfilment"
+                                      value={method}
+                                      checked={spotlightPurchaseFulfilment === method}
+                                      onChange={() => setSpotlightPurchaseFulfilment(method)}
+                                    />
+                                    {method === "collection" ? "Collection" : "Delivery"}
+                                  </label>
+                                ))}
+                              </div>
+                            </fieldset>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {spotlightPurchaseSubtotal ? (
+                        <div
+                          style={{
+                            marginTop: 13,
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: 12,
+                            fontWeight: 900,
+                          }}
+                        >
+                          <span>Product subtotal</span>
+                          <span>{spotlightPurchaseSubtotal}</span>
+                        </div>
+                      ) : null}
+                      <div style={{ marginTop: 10, color: "#52677C", fontSize: 11.5, lineHeight: 1.4 }}>
+                        This records your intention only. It is not payment, a binding order, or confirmed availability.
+                      </div>
+                      <PrimaryButton
+                        onClick={() => void submitSpotlightPurchaseIntention()}
+                        disabled={spotlightPurchaseBusy}
+                        minWidth={0}
+                        fullWidth
+                        stableHeight={48}
+                        debugId="shop-gallery.spotlight.purchase.confirm"
+                        style={{ ...primaryBtn(false), marginTop: 12, width: "100%", borderRadius: 14 }}
+                      >
+                        {spotlightPurchaseBusy
+                          ? "Recording..."
+                          : spotlightCommercialAction.intentType === "notify_me"
+                          ? "Request availability notice"
+                          : "Confirm purchase request"}
+                      </PrimaryButton>
+                      {spotlightProductLinked ? (
+                        <SubtleButton
+                          onClick={() => void contactSpotlightProductSeller()}
+                          minWidth={0}
+                          stableHeight={42}
+                          debugId="shop-gallery.spotlight.purchase.ask-seller"
+                          style={{ width: "100%", marginTop: 6, borderRadius: 12 }}
+                        >
+                          Need more information? Ask seller
+                        </SubtleButton>
+                      ) : null}
+                    </div>
+                  </div>
                 ) : null}
               </div>
             </div>
