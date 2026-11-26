@@ -752,6 +752,20 @@ assertFileContains(
   "The P&S ticker must float over the edge-to-edge dark Spotlight stage without reserving a separate row, while the bottom action row remains joined."
 );
 
+assertFileContains(
+  publicShopStylesFile,
+  publicShopStylesSource,
+  /\.public-shop-stack \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\);[\s\S]*?min-width: 0;[\s\S]*?max-width: 100%;[\s\S]*?\.public-shop-stack > \*,[\s\S]*?\.public-shop-compact-reveal-row,[\s\S]*?\.shop-diaries-grid,[\s\S]*?\.shop-diary-card \{[\s\S]*?min-width: 0;[\s\S]*?max-width: 100%;/,
+  "Public Shop's shared stack, reveal controls, product grid, and cards must remain width-contained on phone viewports."
+);
+
+assertFileContains(
+  publicShopStylesFile,
+  publicShopStylesSource,
+  /\.public-shop-product-update-viewport \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;[\s\S]*?box-shadow: none;[\s\S]*?\.public-shop-product-update-message \{[\s\S]*?text-shadow:/,
+  "The scrolling P&S message must sit directly over Spotlight media without a separate blue banner, border, or shadow while retaining readable text contrast."
+);
+
 assertContains(
   /data-spotlight-screen="true"[\s\S]*?position: "relative"[\s\S]*?className="public-shop-product-update-ticker"[\s\S]*?data-public-shop-product-update-ticker="true"[\s\S]*?<SpotlightMediaFrame/,
   "The compact P&S Update must be rendered inside the positioned Spotlight media screen so media extends behind the overlay."

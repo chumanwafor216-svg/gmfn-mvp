@@ -1,4 +1,8 @@
 .public-shop-shell {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 100vh;
   background: var(--page-bg);
   color: var(--page-text, var(--gsn-text-main));
@@ -19,6 +23,8 @@
 
 .public-shop-inner {
   width: min(100%, 980px);
+  min-width: 0;
+  max-width: 980px;
   margin: 0 auto;
   padding: 20px 18px 46px;
 }
@@ -69,7 +75,26 @@
 
 .public-shop-stack {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   gap: 18px;
+}
+
+.public-shop-stack > *,
+.public-shop-compact-reveal-row,
+.shop-diaries-grid,
+.shop-diaries-grid > *,
+.shop-diary-card {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.public-shop-compact-reveal-row,
+.shop-diaries-grid {
+  width: 100%;
 }
 
 .public-shop-neon-environment .public-shop-section,
@@ -331,11 +356,10 @@
   margin-left: -10px;
   padding: 0 8px 0 16px;
   overflow: hidden;
-  border: 1px solid rgba(83, 189, 255, 0.62);
-  border-left: 0;
-  border-radius: 0 999px 999px 0;
-  background: rgba(3, 24, 43, 0.88);
-  box-shadow: 0 6px 16px rgba(2, 12, 27, 0.26);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   white-space: nowrap;
 }
 
@@ -356,6 +380,9 @@
   font-size: 11.5px;
   font-weight: 820;
   line-height: 1;
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.96),
+    0 0 9px rgba(0, 0, 0, 0.88);
   white-space: nowrap;
 }
 
@@ -773,6 +800,10 @@
 }
 
 .shop-diaries-grid {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   margin-top: 12px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -780,6 +811,10 @@
 }
 
 .shop-diary-card {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   background: rgba(255, 255, 255, 0.97);
   border: 1px solid var(--gsn-border);
   border-radius: 16px;
