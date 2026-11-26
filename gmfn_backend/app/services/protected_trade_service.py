@@ -9,7 +9,15 @@ from typing import Any, Dict, Iterable, Optional
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.db.models import ProtectedTradeEvent, ProtectedTradeRecord, TrustEvent, User
+from app.db.bank_models import ExpectedPayment
+from app.db.models import (
+    ProtectedTradeEvent,
+    ProtectedTradeRecord,
+    TrustEvent,
+    User,
+    UserPayoutDestination,
+)
+from app.services.expected_payments_service import create_expected_payment
 from app.schemas.protected_trades import ProtectedTradeCreateIn, ProtectedTradeEventIn
 from app.services.demand_supply_intelligence_service import resolve_demand_supply_trade_handoff
 from app.services.trust_events_services import log_trust_event
@@ -20,6 +28,12 @@ BOUNDARY_NOTE = (
     "It records trade terms, payment claims, release decisions, receipt claims, "
     "disputes, and evidence references. It is not escrow, not automatic payout, "
     "not a bank guarantee, and not a delivery guarantee."
+)
+
+PROTECTED_TRADE_PAYMENT_EXPECTED_TYPE = "protected_trade_payment"
+PROTECTED_TRADE_PAYMENT_BOUNDARY_NOTE = (
+    "Direct seller transfer reference only. GSN does not hold the money, inspect "
+    "the seller's bank account, or automatically confirm receipt."
 )
 
 TERMINAL_STATUSES = {"closed", "cancelled"}
@@ -635,6 +649,182 @@ def add_trade_event(
         db.refresh(event)
 
     return event
+
+
+def _payment_reference_for_trade() -> str:
+    return f"GSNTP{secrets.token_hex(6).upper()}"
+
+
+def _payment_meta(raw: Optional[str]) -> Dict[str, Any]:
+    if not raw:
+        return {}
+    try:
+        value = json.loads(raw)
+        return value if isinstance(value, dict) else {}
+    except Exception:
+        return {}
+
+
+def _payout_sort_code(note: Any) -> str:
+    for part in _safe_str(note).split("|"):
+        text = _safe_str(part)
+        lower = text.lower()
+        if lower.startswith("sort code:") or lower.startswith("uk sort code:"):
+            return _safe_str(text.split(":", 1)[1])
+    return ""
+
+
+def _seller_payout_snapshot(row: UserPayoutDestination) -> Dict[str, Any]:
+    account_name = _safe_str(row.destination_name)
+    account_number = _safe_str(row.account_number)
+    bank_name = _safe_str(row.bank_name)
+    if (
+        not account_name
+        or not account_number
+        or not bank_name
+        or account_number == "000000"
+        or bank_name.lower().startswith("pending")
+    ):
+        raise ValueError(
+            "Saved seller account details are incomplete. Open Account details and save the account name, number, and bank first."
+        )
+    return {
+        "payout_destination_id": int(row.id),
+        "account_name": account_name,
+        "account_number": account_number,
+        "bank_name": bank_name,
+        "sort_code": _payout_sort_code(row.note) or None,
+        "destination_currency": _safe_str(row.currency).upper() or None,
+        "verification_status": _safe_str(row.verification_status) or "recorded",
+    }
+
+
+def _protected_trade_payment_payload(
+    *,
+    trade: ProtectedTradeRecord,
+    expected: ExpectedPayment,
+) -> Dict[str, Any]:
+    meta = _payment_meta(expected.meta_json)
+    snapshot = meta.get("seller_payout_snapshot")
+    if not isinstance(snapshot, dict):
+        raise ValueError("Protected Trade payment account snapshot is unavailable")
+    return {
+        "expected_payment_id": int(expected.id),
+        "protected_trade_id": int(trade.id),
+        "trade_code": _safe_str(trade.trade_code),
+        "payment_reference": _safe_str(expected.reference_display),
+        "item_title": _safe_str(trade.item_title, "Protected Trade item"),
+        "amount": expected.amount,
+        "currency": _safe_str(expected.currency, "NGN").upper(),
+        "account_name": _safe_str(snapshot.get("account_name")),
+        "account_number": _safe_str(snapshot.get("account_number")),
+        "bank_name": _safe_str(snapshot.get("bank_name")),
+        "sort_code": _safe_str(snapshot.get("sort_code")) or None,
+        "direct_to_seller": True,
+        "automatic_bank_reconciliation": False,
+        "boundary_note": PROTECTED_TRADE_PAYMENT_BOUNDARY_NOTE,
+        "due_at": expected.due_at,
+    }
+
+
+def create_or_get_seller_payment_reference(
+    db: Session,
+    *,
+    trade: ProtectedTradeRecord,
+    current_user: User,
+) -> Dict[str, Any]:
+    seller_user_id = _positive_int(trade.seller_user_id)
+    buyer_user_id = _positive_int(trade.buyer_user_id)
+    actor_user_id = _positive_int(getattr(current_user, "id", None))
+    clan_id = _positive_int(trade.clan_id)
+    if not seller_user_id or actor_user_id != seller_user_id:
+        raise PermissionError("Only the seller can send payment details for this trade")
+    if not buyer_user_id:
+        raise ValueError("Add the buyer before sending payment details")
+    if not clan_id:
+        raise ValueError("Protected Trade must belong to a community")
+    if trade.status in TERMINAL_STATUSES:
+        raise ValueError("This Protected Trade is already closed or cancelled")
+    if trade.amount is None or Decimal(str(trade.amount)) <= Decimal("0"):
+        raise ValueError("Agree and record the exact trade amount before sending payment details")
+
+    if trade.expected_payment_id:
+        expected = db.get(ExpectedPayment, int(trade.expected_payment_id))
+        if expected is None:
+            raise ValueError("The linked payment reference no longer exists")
+        meta = _payment_meta(expected.meta_json)
+        if (
+            _safe_str(expected.expected_type).lower() != PROTECTED_TRADE_PAYMENT_EXPECTED_TYPE
+            or int(meta.get("protected_trade_id") or 0) != int(trade.id)
+            or int(meta.get("seller_user_id") or 0) != seller_user_id
+            or int(meta.get("buyer_user_id") or 0) != buyer_user_id
+        ):
+            raise ValueError("This trade is linked to a different payment record")
+        return _protected_trade_payment_payload(trade=trade, expected=expected)
+
+    destination = (
+        db.query(UserPayoutDestination)
+        .filter(UserPayoutDestination.user_id == seller_user_id)
+        .first()
+    )
+    if destination is None:
+        raise ValueError(
+            "Seller account details are missing. Open Account details and save them first."
+        )
+    payout_snapshot = _seller_payout_snapshot(destination)
+    payment_reference = _payment_reference_for_trade()
+    trade_meta = trade.meta if isinstance(trade.meta, dict) else {}
+    expected = create_expected_payment(
+        db,
+        clan_id=clan_id,
+        user_id=buyer_user_id,
+        expected_type=PROTECTED_TRADE_PAYMENT_EXPECTED_TYPE,
+        amount=trade.amount,
+        currency=_safe_str(trade.currency, "NGN").upper(),
+        reference_display=payment_reference,
+        meta={
+            "source": "protected_trade.seller_payment_reference",
+            "payment_context": "protected_trade_direct_seller",
+            "payment_beneficiary_scope": "seller_direct",
+            "protected_trade_id": int(trade.id),
+            "trade_code": _safe_str(trade.trade_code),
+            "seller_user_id": seller_user_id,
+            "buyer_user_id": buyer_user_id,
+            "shop_id": _positive_int(trade.shop_id),
+            "product_id": _positive_int(trade.product_id),
+            "source_demand_id": _positive_int(trade_meta.get("source_demand_id")),
+            "seller_payout_snapshot": payout_snapshot,
+            "direct_to_seller": True,
+            "automatic_bank_reconciliation": False,
+            "not_escrow": True,
+            "not_money_custody": True,
+            "not_bank_confirmation": True,
+            "boundary": PROTECTED_TRADE_PAYMENT_BOUNDARY_NOTE,
+        },
+        commit=False,
+        refresh=False,
+    )
+    add_trade_event(
+        db,
+        trade=trade,
+        payload=ProtectedTradeEventIn(
+            event_type="payment.instruction_added",
+            expected_payment_id=int(expected.id),
+            note="Seller sent direct payment details with a Protected Trade reference.",
+            meta={
+                "payment_reference": payment_reference,
+                "payment_beneficiary_scope": "seller_direct",
+                "automatic_bank_reconciliation": False,
+                "boundary": PROTECTED_TRADE_PAYMENT_BOUNDARY_NOTE,
+            },
+        ),
+        current_user=current_user,
+        commit=False,
+    )
+    db.commit()
+    db.refresh(expected)
+    db.refresh(trade)
+    return _protected_trade_payment_payload(trade=trade, expected=expected)
 
 
 def get_trade_for_user(

@@ -162,6 +162,24 @@ class ProtectedTradeEventOut(BaseModel):
     created_at: Optional[datetime] = None
 
 
+class ProtectedTradePaymentReferenceOut(BaseModel):
+    expected_payment_id: int
+    protected_trade_id: int
+    trade_code: str
+    payment_reference: str
+    item_title: str
+    amount: Decimal
+    currency: str
+    account_name: str
+    account_number: str
+    bank_name: str
+    sort_code: Optional[str] = None
+    direct_to_seller: bool = True
+    automatic_bank_reconciliation: bool = False
+    boundary_note: str
+    due_at: Optional[datetime] = None
+
+
 class ProtectedTradeOut(BaseModel):
     id: int
     trade_code: str

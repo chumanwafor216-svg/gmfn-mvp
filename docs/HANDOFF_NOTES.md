@@ -7720,3 +7720,13 @@ under `docs/` or `docs/archive/`, then link that file here.
 - No escrow, payment verification, automatic payout, delivery guarantee, participant-authority expansion, schema or backend contract was added.
 - Verification: `frontend/tools/audit-demand-box-front-package.mjs` passed; Node syntax checks for the DemandBox audit and phone smoke passed; `git diff --check` passed. The isolated worktree has no `node_modules`, so the TypeScript/Vite build and Playwright phone smoke were not executable locally.
 - Local only: no commit, push, main promotion or deployment was performed.
+
+# DemandBox seller-direct payment reference - 2026-11-26
+
+- The seller—not the community—receives the buyer's transfer directly into the seller's saved account. The buyer cannot generate or retrieve the seller's payment instruction through the new endpoint.
+- A seller-only Protected Trade endpoint creates one idempotent bank-safe `GSNTP` reference tied to the trade, demand, item, buyer and seller. It snapshots only the seller account fields needed for the transfer; no full Finance/Payout page or unrelated private content is attached to chat.
+- The conversation sends one compact payment-details message and renders it as a compact card containing item, exact amount/currency, account name/number, bank, optional sort code and payment code.
+- This is non-custodial: GSN does not hold the money and cannot automatically confirm a transfer into an external seller account. The new `protected_trade_payment` association record is explicitly excluded from GSN's own-bank reconciliation until an authorised seller-bank feed exists.
+- No Pipeline Credit top-up/acquisition route is reused, so the payment cannot award credits or be mistaken for a community payment.
+- Verification: Protected Trade module `6 passed`; affected Python files compile; Demand Box front-package audit and Node syntax check pass; `git diff --check` passes. The TypeScript/Vite build is blocked because this isolated worktree has no installed `tsc`/`node_modules`.
+- Local only: no commit, push, main promotion or deployment was performed for this seller-direct payment change.

@@ -2,12 +2,26 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+from decimal import Decimal
+
+import pytest
 
 from fastapi.testclient import TestClient
 
+from app.db.bank_models import ExpectedPayment
 from app.db.database import SessionLocal
-from app.db.models import ProtectedTradeEvent, ProtectedTradeRecord, TrustEvent
-from app.services.protected_trade_service import trade_to_dict
+from app.db.models import (
+    ProtectedTradeEvent,
+    ProtectedTradeRecord,
+    TrustEvent,
+    User,
+    UserPayoutDestination,
+)
+from app.services.protected_trade_service import (
+    create_or_get_seller_payment_reference,
+    trade_to_dict,
+)
+from app.services.reconciliation_service import _find_expected_candidates
 
 
 def _protected_trade_count() -> int:
@@ -431,3 +445,115 @@ def test_protected_trade_derived_outcomes_use_existing_fields_and_actor_provenan
         assert "Requester confirmed receipt" != wrong_receipt_actor["derived_outcome_label"]
 
         assert int(db.query(TrustEvent).count()) == trust_event_count
+
+
+def test_seller_payment_reference_uses_direct_account_and_is_idempotent(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+    seed_user2_non_member,
+):
+    with SessionLocal() as db:
+        destination = (
+            db.query(UserPayoutDestination)
+            .filter(UserPayoutDestination.user_id == 1)
+            .first()
+        )
+        if destination is None:
+            destination = UserPayoutDestination(
+                user_id=1,
+                destination_name="Chukwuma Nwafor",
+                bank_name="Monzo",
+                account_number="30396898",
+                country="GB",
+                currency="GBP",
+                note="UK Sort code: 04-00-03",
+                verification_status="recorded",
+            )
+            db.add(destination)
+        else:
+            destination.destination_name = "Chukwuma Nwafor"
+            destination.bank_name = "Monzo"
+            destination.account_number = "30396898"
+            destination.country = "GB"
+            destination.currency = "GBP"
+            destination.note = "UK Sort code: 04-00-03"
+        db.commit()
+
+    create_res = client.post(
+        "/protected-trades",
+        json={
+            "clan_id": 1,
+            "participant_role": "seller",
+            "buyer_user_id": 2,
+            "item_title": "Newark jewellery",
+            "terms_summary": "Buyer pays the agreed amount directly to the seller.",
+            "amount": "10.00",
+            "currency": "GBP",
+            "meta": {"source_demand_id": 77},
+        },
+    )
+    assert create_res.status_code == 201, create_res.text
+    trade_id = int(create_res.json()["id"])
+
+    first = client.post(f"/protected-trades/{trade_id}/payment-reference")
+    assert first.status_code == 201, first.text
+    payload = first.json()
+    assert payload["protected_trade_id"] == trade_id
+    assert payload["payment_reference"].startswith("GSNTP")
+    assert len(payload["payment_reference"]) <= 18
+    assert payload["item_title"] == "Newark jewellery"
+    assert Decimal(payload["amount"]) == Decimal("10.00")
+    assert payload["currency"] == "GBP"
+    assert payload["account_name"] == "Chukwuma Nwafor"
+    assert payload["account_number"] == "30396898"
+    assert payload["bank_name"] == "Monzo"
+    assert payload["sort_code"] == "04-00-03"
+    assert payload["direct_to_seller"] is True
+    assert payload["automatic_bank_reconciliation"] is False
+    assert "does not hold the money" in payload["boundary_note"]
+
+    repeated = client.post(f"/protected-trades/{trade_id}/payment-reference")
+    assert repeated.status_code == 201, repeated.text
+    assert repeated.json()["expected_payment_id"] == payload["expected_payment_id"]
+    assert repeated.json()["payment_reference"] == payload["payment_reference"]
+
+    with SessionLocal() as db:
+        trade = db.get(ProtectedTradeRecord, trade_id)
+        buyer = db.get(User, 2)
+        assert trade is not None
+        assert buyer is not None
+        with pytest.raises(PermissionError, match="Only the seller"):
+            create_or_get_seller_payment_reference(
+                db,
+                trade=trade,
+                current_user=buyer,
+            )
+
+        expected = db.get(ExpectedPayment, int(payload["expected_payment_id"]))
+        assert expected is not None
+        assert expected.expected_type == "protected_trade_payment"
+        assert int(expected.user_id) == 2
+        assert Decimal(expected.amount) == Decimal("10.00")
+        meta = json.loads(expected.meta_json or "{}")
+        assert meta["payment_beneficiary_scope"] == "seller_direct"
+        assert meta["automatic_bank_reconciliation"] is False
+        assert meta["source_demand_id"] == 77
+        assert (
+            _find_expected_candidates(
+                db,
+                clan_id=1,
+                reference_normalized=expected.reference_normalized,
+                currency="GBP",
+            )
+            == []
+        )
+        events = (
+            db.query(ProtectedTradeEvent)
+            .filter(
+                ProtectedTradeEvent.trade_id == trade_id,
+                ProtectedTradeEvent.event_type == "protected_trade.payment.instruction_added",
+            )
+            .all()
+        )
+        assert len(events) == 1

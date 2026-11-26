@@ -179,6 +179,7 @@ def _find_expected_candidates(
         .filter(ExpectedPayment.clan_id == int(clan_id))
         .filter(ExpectedPayment.reference_normalized == reference_normalized)
         .filter(ExpectedPayment.currency == (currency or "").upper())
+        .filter(ExpectedPayment.expected_type != "protected_trade_payment")
         .order_by(ExpectedPayment.id.asc())
         .all()
     )

@@ -1,8 +1,8 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   createDemandMediaAttachment,
   createMarketplaceRequestResponse,
-  getMyWithdrawalDestination,
+  createProtectedTradePaymentReference,
   listMarketplaceRequestResponses,
   listProtectedTrades,
   markMarketplaceRequestResponsesRead,
@@ -12,6 +12,11 @@ import {
 import { APP_ROUTES } from "../lib/appRoutes";
 import { withCommunityQuery } from "../lib/communityRouteContext";
 import { resolveProfileImageUrl } from "../lib/profileImage";
+import {
+  parseSellerPaymentMessage,
+  serializeSellerPaymentMessage,
+} from "../lib/protectedTradePaymentMessage";
+import DemandPaymentDetailsCard from "./DemandPaymentDetailsCard";
 import GsnMicrophoneIcon from "./GsnMicrophoneIcon";
 import { GsnLegacyIcon } from "./GsnLegacyIcon";
 import ProtectedVoiceNotePlayer from "./ProtectedVoiceNotePlayer";
@@ -104,34 +109,6 @@ function focusedTradePath(
   return `${pathname}?${query.toString()}#marketplace-trade-evidence`;
 }
 
-function accountDetailsMessage(destination: any): string {
-  const accountName = String(
-    destination?.account_name || destination?.destination_name || ""
-  ).trim();
-  const accountNumber = String(
-    destination?.account_number || destination?.bank_account_number || ""
-  ).trim();
-  if (!accountName || !accountNumber) return "";
-
-  const bankName = String(destination?.bank_name || destination?.bank || "").trim();
-  const sortCode = String(
-    destination?.sort_code || destination?.bank_sort_code || ""
-  ).trim();
-  const currency = String(destination?.currency || "").trim().toUpperCase();
-
-  return [
-    "Payment account details (please verify before paying):",
-    `Account name: ${accountName}`,
-    `Account number / wallet: ${accountNumber}`,
-    bankName ? `Bank / wallet provider: ${bankName}` : "",
-    sortCode ? `Sort code: ${sortCode}` : "",
-    currency ? `Currency: ${currency}` : "",
-    "GSN has not verified these details and does not move the money.",
-  ]
-    .filter(Boolean)
-    .join("\n");
-}
-
 export default function DemandResponsePanel({
   requestId,
   ownerUserId,
@@ -164,7 +141,7 @@ export default function DemandResponsePanel({
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [attachmentsOpen, setAttachmentsOpen] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
-  const [addingAccountDetails, setAddingAccountDetails] = useState(false);
+  const [sendingPaymentDetails, setSendingPaymentDetails] = useState(false);
   const [tradeStepsOpen, setTradeStepsOpen] = useState(false);
   const [protectedTrades, setProtectedTrades] = useState<ProtectedTradeRecord[]>([]);
   const [conversationAccess, setConversationAccess] = useState<
@@ -415,35 +392,45 @@ export default function DemandResponsePanel({
     tradeStepsOpen,
   ]);
 
-  async function addSavedAccountDetails() {
-    if (addingAccountDetails) return;
-    setAddingAccountDetails(true);
+  async function sendSellerPaymentDetails() {
+    if (sendingPaymentDetails) return;
+    const tradeId = Number(matchedProtectedTrade?.id || 0);
+    if (isOwner || !tradeId) {
+      setError("A matched Protected Trade is required before the seller can send payment details.");
+      return;
+    }
+
+    setSendingPaymentDetails(true);
     setError("");
     try {
-      const destination = await getMyWithdrawalDestination({
-        clan_id: communityId || undefined,
-        gmfn_id: String(currentUser?.gmfn_id || "").trim() || undefined,
+      const details = await createProtectedTradePaymentReference(tradeId);
+      const paymentMessage = serializeSellerPaymentMessage({
+        itemTitle: details.item_title,
+        amount: String(details.amount),
+        currency: details.currency,
+        accountName: details.account_name,
+        accountNumber: details.account_number,
+        bankName: details.bank_name,
+        sortCode: details.sort_code || undefined,
+        paymentReference: details.payment_reference,
+        tradeCode: details.trade_code,
       });
-      const preparedMessage = accountDetailsMessage(destination);
-      if (!preparedMessage) {
-        setError(
-          "Saved account details are incomplete. Open Account details, save the account name and number, then return here."
-        );
-        return;
-      }
-      setText((current) =>
-        [current.trim(), preparedMessage].filter(Boolean).join("\n\n")
-      );
-      window.requestAnimationFrame(() => textareaRef.current?.focus());
+      await createMarketplaceRequestResponse(requestId, {
+        text: paymentMessage,
+        client_response_id: clientKey("demand-seller-payment"),
+        show_sender_photo: false,
+      });
+      stickToLatestRef.current = true;
+      await load();
     } catch (err: any) {
       setError(
         String(
           err?.message ||
-            "Saved account details could not be loaded. Open Account details and check them first."
+            "Seller payment details could not be sent. Check the Protected Trade amount and saved account details."
         )
       );
     } finally {
-      setAddingAccountDetails(false);
+      setSendingPaymentDetails(false);
     }
   }
 
@@ -702,7 +689,7 @@ export default function DemandResponsePanel({
                         textOverflow: "ellipsis",
                       }}
                     >
-                      {thread.count} {thread.count === 1 ? "reply" : "replies"} Â· {thread.preview}
+                      {thread.count} {thread.count === 1 ? "reply" : "replies"} · {thread.preview}
                     </span>
                   </span>
                   {thread.unreadCount > 0 ? (
@@ -726,7 +713,7 @@ export default function DemandResponsePanel({
                     </span>
                   ) : (
                     <span aria-hidden="true" style={{ color: "#0B4FA8", fontSize: 22, lineHeight: 1 }}>
-                      â€º
+                      ›
                     </span>
                   )}
                 </StableButton>
@@ -819,6 +806,7 @@ export default function DemandResponsePanel({
               Number(previousRow.author_user_id) === Number(row.author_user_id) &&
               day === priorDay
             );
+            const sellerPaymentMessage = parseSellerPaymentMessage(row.text);
             return (
               <React.Fragment key={row.id}>
                 {day !== priorDay ? (
@@ -916,7 +904,9 @@ export default function DemandResponsePanel({
                       {row.author_display_name}
                     </div>
                     ) : null}
-                    {row.text ? (
+                    {sellerPaymentMessage ? (
+                      <DemandPaymentDetailsCard details={sellerPaymentMessage} />
+                    ) : row.text ? (
                       <div
                         style={{
                           color: "#17324A",
@@ -990,7 +980,7 @@ export default function DemandResponsePanel({
                 cursor: "pointer",
               }}
             >
-              {newMessageCount} new {newMessageCount === 1 ? "message" : "messages"} â†“
+              {newMessageCount} new {newMessageCount === 1 ? "message" : "messages"} ↓
             </SubtleButton>
           ) : null}
         </div>
@@ -1299,30 +1289,32 @@ export default function DemandResponsePanel({
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "minmax(0, 1fr) auto",
+                      gridTemplateColumns: matchedProtectedTrade?.id ? "minmax(0, 1fr) auto" : "1fr",
                       gap: 7,
                       alignItems: "center",
                     }}
                   >
-                    <SecondaryButton
-                      type="button"
-                      onClick={() => void addSavedAccountDetails()}
-                      busy={addingAccountDetails}
-                      busyLabel="Loading"
-                      debugId={`demand-box.response.${requestId}.account-details`}
-                      data-gsn-demand-account-details="review-before-send"
-                      stableHeight={42}
-                      style={{ borderRadius: 12, fontSize: 12 }}
-                    >
-                      Add account details
-                    </SecondaryButton>
+                    {matchedProtectedTrade?.id ? (
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => void sendSellerPaymentDetails()}
+                        busy={sendingPaymentDetails}
+                        busyLabel="Sending"
+                        debugId={`demand-box.response.${requestId}.account-details`}
+                        data-gsn-demand-account-details="seller-direct-reference"
+                        stableHeight={42}
+                        style={{ borderRadius: 12, fontSize: 12 }}
+                      >
+                        Send payment details
+                      </SecondaryButton>
+                    ) : null}
                     <StableCtaLink
                       to={payoutDetailsPath}
                       debugId={`demand-box.response.${requestId}.manage-account-details`}
                       stableHeight={42}
                       style={{ borderRadius: 12, padding: "8px 10px", fontSize: 11.5 }}
                     >
-                      Manage
+                      Manage account
                     </StableCtaLink>
                   </div>
                 ) : null}
@@ -1398,7 +1390,7 @@ export default function DemandResponsePanel({
                 ) : null}
 
                 <div style={{ color: "#64748B", fontSize: 10.5, lineHeight: 1.35 }}>
-                  Account details stay in the draft until you press Send. GSN records evidence; it does not verify payment or guarantee delivery.
+                  Payment goes directly to the seller's saved account. GSN adds a trade code to link the record, but does not hold or automatically verify the money.
                 </div>
               </div>
             </details>

@@ -7775,6 +7775,33 @@ export type ProtectedTradeRecord = {
   boundary_note?: string | null;
 };
 
+export type ProtectedTradePaymentReference = {
+  expected_payment_id: number;
+  protected_trade_id: number;
+  trade_code: string;
+  payment_reference: string;
+  item_title: string;
+  amount: string | number;
+  currency: string;
+  account_name: string;
+  account_number: string;
+  bank_name: string;
+  sort_code?: string | null;
+  direct_to_seller: true;
+  automatic_bank_reconciliation: false;
+  boundary_note: string;
+  due_at?: string | null;
+};
+
+export async function createProtectedTradePaymentReference(
+  tradeId: number
+): Promise<ProtectedTradePaymentReference> {
+  return httpJson(
+    `/protected-trades/${encodeURIComponent(String(tradeId))}/payment-reference`,
+    "POST"
+  );
+}
+
 export async function createProtectedTrade(
   payload: ProtectedTradeCreatePayload
 ): Promise<ProtectedTradeRecord> {

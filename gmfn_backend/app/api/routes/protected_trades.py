@@ -13,9 +13,11 @@ from app.schemas.protected_trades import (
     ProtectedTradeEventIn,
     ProtectedTradeEventOut,
     ProtectedTradeOut,
+    ProtectedTradePaymentReferenceOut,
 )
 from app.services.protected_trade_service import (
     add_trade_event,
+    create_or_get_seller_payment_reference,
     create_trade,
     get_trade_for_user,
     list_trade_events,
@@ -81,6 +83,27 @@ def get_protected_trade(
         trade = get_trade_for_user(db, trade_id=trade_id, current_user=current_user)
         events = list_trade_events(db, trade_id=int(trade.id), limit=200)
         return trade_to_dict(trade, events=events)
+    except Exception as exc:
+        raise _http_error(exc) from exc
+
+
+@router.post(
+    "/{trade_id}/payment-reference",
+    response_model=ProtectedTradePaymentReferenceOut,
+    status_code=201,
+)
+def create_protected_trade_payment_reference(
+    trade_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        trade = get_trade_for_user(db, trade_id=trade_id, current_user=current_user)
+        return create_or_get_seller_payment_reference(
+            db,
+            trade=trade,
+            current_user=current_user,
+        )
     except Exception as exc:
         raise _http_error(exc) from exc
 

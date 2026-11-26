@@ -10,6 +10,8 @@ const apiFile = "src/lib/api.ts";
 const protectedVoiceFile = "src/components/ProtectedVoiceNotePlayer.tsx";
 const recorderFile = "src/components/VoiceNoteRecorder.tsx";
 const responsePanelFile = "src/components/DemandResponsePanel.tsx";
+const paymentMessageFile = "src/lib/protectedTradePaymentMessage.ts";
+const paymentCardFile = "src/components/DemandPaymentDetailsCard.tsx";
 const appLayoutFile = "src/layout/AppLayout.tsx";
 const companionBridgeFile = "src/components/WorkspaceCompanionBridge.tsx";
 const source = readFileSync(join(frontendRoot, pageFile), "utf8");
@@ -20,6 +22,8 @@ const protectedVoiceSource = readFileSync(
 );
 const recorderSource = readFileSync(join(frontendRoot, recorderFile), "utf8");
 const responsePanelSource = readFileSync(join(frontendRoot, responsePanelFile), "utf8");
+const paymentMessageSource = readFileSync(join(frontendRoot, paymentMessageFile), "utf8");
+const paymentCardSource = readFileSync(join(frontendRoot, paymentCardFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const companionBridgeSource = readFileSync(join(frontendRoot, companionBridgeFile), "utf8");
 const failures = [];
@@ -179,12 +183,32 @@ forbidPattern(source, pageFile, /seller-contact\.view-shop/, "View shop must not
   [/data-gsn-demand-composer-row="compact"[\s\S]*?aria-label="Add attachment"[\s\S]*?aria-label="Private message"[\s\S]*?aria-label="Record voice note"[\s\S]*?<GsnMicrophoneIcon size=\{22\} \/>/, "the private composer must keep compact attachment, text, and a true microphone control"],
   [/data-gsn-demand-composer-row="compact"[\s\S]*?<VoiceNoteRecorder[\s\S]*?data-gsn-demand-attachment-options="expanded"[\s\S]*?Recording continues here[\s\S]*?data-gsn-demand-preset-messages="collapsed"[\s\S]*?data-gsn-demand-trade-steps="collapsed"/, "the composer, voice recorder, and attachment controls must appear before Preset messages and Trade steps"],
   [/data-gsn-demand-preset-messages="collapsed"[\s\S]*?Preset messages/, "repeated response helpers must stay behind one compact disclosure"],
-  [/data-gsn-demand-trade-steps="collapsed"[\s\S]*?data-gsn-demand-account-details="review-before-send"[\s\S]*?data-gsn-demand-protected-trade="associated-record"[\s\S]*?data-gsn-demand-trade-stage="tracking-evidence"[\s\S]*?data-gsn-demand-trade-stage="confirmation-remarks"/, "the conversation must keep account, protected-trade, tracking, and confirmation handoffs inside one staged control"],
-  [/accountDetailsMessage[\s\S]*?setText\(\(current\)[\s\S]*?Account details stay in the draft until you press Send/, "saved account details must be inserted for review rather than sent automatically"],
+  [/data-gsn-demand-trade-steps="collapsed"[\s\S]*?data-gsn-demand-account-details="seller-direct-reference"[\s\S]*?data-gsn-demand-protected-trade="associated-record"[\s\S]*?data-gsn-demand-trade-stage="tracking-evidence"[\s\S]*?data-gsn-demand-trade-stage="confirmation-remarks"/, "the conversation must keep seller-direct account, protected-trade, tracking, and confirmation handoffs inside one staged control"],
+  [/createProtectedTradePaymentReference[\s\S]*?serializeSellerPaymentMessage[\s\S]*?createMarketplaceRequestResponse/, "seller payment details must receive a Protected Trade code and send only the compact message"],
+  [/parseSellerPaymentMessage\(row\.text\)[\s\S]*?<DemandPaymentDetailsCard details=\{sellerPaymentMessage\}/, "compact seller payment messages must render as a dedicated in-chat card"],
+  [/Payment goes directly to the seller's saved account[\s\S]*?does not hold or automatically verify the money/, "the payment handoff must state the direct-seller and non-custodial boundary"],
   [/source_demand_id[\s\S]*?source_match_product_id[\s\S]*?source_match_shop_id[\s\S]*?participantIds\.includes\(currentUserId\)/, "reopened trade controls must match the original demand, product, shop, and participant association"],
   [/The requester starts the linked Protected Trade/, "responders must not be offered a false requester-only trade creation action"],
   [/Photo, video, document or link[\s\S]*?application\/pdf[\s\S]*?"document"/, "the private composer must keep photo, video, document, and link support"],
 ].forEach(([pattern, message]) => requirePattern(responsePanelSource, responsePanelFile, pattern, message));
+
+[
+  [/GSN seller payment details[\s\S]*?Item:[\s\S]*?Amount:[\s\S]*?Account name:[\s\S]*?Account number:[\s\S]*?Bank \/ wallet:[\s\S]*?Payment code:/, "the seller payment message must contain only the compact trade and bank fields"],
+  [/Payment goes directly to the seller\. GSN does not hold or automatically verify the money\./, "the serialized payment message must preserve the direct-seller boundary"],
+  [/parseSellerPaymentMessage[\s\S]*?SELLER_PAYMENT_MESSAGE_TITLE/, "the compact payment format must remain readable after message storage"],
+].forEach(([pattern, message]) => requirePattern(paymentMessageSource, paymentMessageFile, pattern, message));
+
+[
+  [/data-gsn-demand-payment-details="seller-direct"[\s\S]*?data-gsn-demand-payment-beneficiary="seller-direct"/, "the in-chat payment card must identify the seller as beneficiary"],
+  [/Payment code:[\s\S]*?does not hold or automatically verify the money/, "the in-chat payment card must show the reference and non-custodial boundary"],
+].forEach(([pattern, message]) => requirePattern(paymentCardSource, paymentCardFile, pattern, message));
+
+requirePattern(
+  apiSource,
+  apiFile,
+  /protected-trades\/\$\{encodeURIComponent\(String\(tradeId\)\)\}\/payment-reference[\s\S]*?"POST"/,
+  "the frontend must create the payment reference through the seller-only Protected Trade endpoint"
+);
 
 [
   [/data-gsn-demand-box-shell=\{isDemandBoxRoute \? "neon" : undefined\}/, "the Demand Box neon shell must stay route-scoped"],
