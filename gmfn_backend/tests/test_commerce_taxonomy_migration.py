@@ -11,7 +11,7 @@ from app.db.database import engine
 
 
 PREVIOUS_REVISION = "20261030_market_dir_scale"
-HEAD_REVISION = "20261126_spotlight_campaign_preferences"
+HEAD_REVISION = "20261126_add_demand_response_read_state"
 
 
 EXPECTED_TABLES = {
