@@ -3258,7 +3258,7 @@ export default function DemandBoxPage() {
           {!conversationFocused ? renderDemandMatchPanel(row, matchState, debugBase) : null}
           {!conversationFocused && !sellerConversationExpanded ? renderExpandedSearchPanel(row, matchState, debugBase) : null}
 
-          {rowId && !sellerConversationExpanded ? (
+          {rowId && !sellerConversationExpanded && (!isCompact || !compactProductEnquiry || conversationFocused) ? (
             <details
               data-gsn-demand-conversations="integrated"
               open={!isCompact || conversationFocused ? true : undefined}
@@ -3272,18 +3272,20 @@ export default function DemandBoxPage() {
                   setSellerContactHandoff(null);
                 }
               }}
-              style={{ ...detailsShell(), marginTop: 12 }}
+              style={{ ...detailsShell(), marginTop: isCompact && compactProductEnquiry ? 0 : 12 }}
             >
-              <StableDisclosureSummary
-                style={{ ...detailsSummary(), padding: "12px 14px", fontSize: 14 }}
-                stableHeight={48}
-                debugId={`${debugBase}.conversations`}
-              >
-                <span>Conversations</span>
-                <span style={{ color: unreadCount > 0 ? "#0B6CE3" : "#64748B", fontSize: 12, fontWeight: 900 }}>
-                  {unreadCount > 0 ? `${unreadCount} unread` : "Private messages"}
-                </span>
-              </StableDisclosureSummary>
+              {!isCompact || !compactProductEnquiry ? (
+                <StableDisclosureSummary
+                  style={{ ...detailsSummary(), padding: "12px 14px", fontSize: 14 }}
+                  stableHeight={48}
+                  debugId={`${debugBase}.conversations`}
+                >
+                  <span>Conversations</span>
+                  <span style={{ color: unreadCount > 0 ? "#0B6CE3" : "#64748B", fontSize: 12, fontWeight: 900 }}>
+                    {unreadCount > 0 ? `${unreadCount} unread` : "Private messages"}
+                  </span>
+                </StableDisclosureSummary>
+              ) : null}
               <div
                 data-gsn-demand-respond-in-place="true"
                 data-gsn-demand-conversation-zone="primary"
@@ -3323,7 +3325,7 @@ export default function DemandBoxPage() {
             </details>
           ) : null}
 
-          {!conversationFocused && !sellerConversationExpanded ? (
+          {!conversationFocused && !sellerConversationExpanded && (!isCompact || !compactProductEnquiry) ? (
             isCompact ? (
               <details
                 data-gsn-demand-request-options="compact"

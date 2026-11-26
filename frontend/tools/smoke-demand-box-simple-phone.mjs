@@ -492,17 +492,12 @@ async function verifyViewport(browser, baseURL, viewport) {
   const transportConversations = transportCard.locator('[data-gsn-demand-conversations="integrated"]');
   const transportConversationZone = transportConversations.locator('[data-gsn-demand-conversation-zone="primary"]');
   const transportPrivateReplies = transportConversationZone.locator('[data-gsn-demand-private-replies="true"]');
+  assert((await transportConversations.count()) === 0, "The redundant Conversations row remained on the product-enquiry card.");
+  assert((await transportCard.locator('[data-gsn-demand-request-options="compact"]').count()) === 0, "The redundant Request options row remained on the product-enquiry card.");
   await mergedProductEnquiry.getByRole("button", { name: "Send message", exact: true }).click();
   await transportPrivateReplies.waitFor();
   assert(await transportPrivateReplies.getByText("Is this product still available?", { exact: true }).isVisible(), "Send message did not open the protected buyer-seller thread.");
-  await transportConversations.locator("summary").click();
-  const matchPanel = transportCard.locator('[data-gsn-demand-supply-intelligence="true"]');
-  await matchPanel.waitFor();
-  const matchBeforeConversation = await matchPanel.evaluate((match, conversation) =>
-    Boolean(conversation && (match.compareDocumentPosition(conversation) & Node.DOCUMENT_POSITION_FOLLOWING))
-  , await transportConversations.elementHandle());
-  assert(matchBeforeConversation, "Possible matches must appear before the integrated conversation.");
-  await transportConversations.locator("summary").click();
+  assert((await transportConversations.locator("summary").count()) === 0, "The Conversations summary returned after direct product-message entry.");
   await transportPrivateReplies.waitFor();
   const quickReplies = transportPrivateReplies.locator('[data-gsn-demand-preset-messages="collapsed"]');
   assert(await quickReplies.isVisible(), "The collapsed Preset messages control is missing for an authorised responder.");

@@ -7756,3 +7756,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Render accepted frontend deploy `dep-dc48biijnfac73brjbcg`, but its build failed before publication. The workflow stopped before starting the API deploy, so neither a successful frontend release nor an API release is claimed for that attempt.
 - Sanitized Render build-log run `45882804728` identified the exact TypeScript error: `DemandPaymentDetailsCard.tsx` imported `SecondaryButton` from nonexistent `StableAction` instead of the established `StableButton` module.
 - The import was corrected without changing Trade Record behavior, payment authority, generated-code scope, reconciliation exclusions, routes, schemas or migrations. A corrected commit must pass the deployment workflow before this release is called deployed.
+
+# DemandBox product-enquiry row cleanup - 2026-11-26
+
+- Removed the redundant `Conversations / Private messages` and `Request options / Fulfil, cancel or copy` summary rows from compact matched-product enquiry cards.
+- The existing `Send message` button remains the single direct phone entry into the private buyer-seller conversation. Once selected, the conversation opens in place without reintroducing a second Conversations summary.
+- The cleanup is intentionally scoped to matched-product enquiries. Ordinary requests retain their Conversations and Request options disclosures because those rows remain their only compact chat and lifecycle-action entry points.
+- Desktop DemandBox presentation, backend routes, unread state, request lifecycle actions, Trade Records and seller-direct payment behavior are unchanged.
