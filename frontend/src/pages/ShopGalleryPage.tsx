@@ -6524,57 +6524,6 @@ export default function ShopGalleryPage() {
           </StableCtaLink>
         ) : null}
 
-        {isCompact ? (
-          <div
-            className="public-shop-product-update-ticker"
-            data-public-shop-product-update-ticker="true"
-            role="note"
-            aria-label={`Shop Update: ${productsServicesUpdateText}${publicShopTickerVoice ? ". Voice note available." : ""}`}
-            style={{ order: 3 }}
-          >
-            <span
-              className="public-shop-product-update-label"
-            >
-              {signedInOwnsShop
-                ? renderShopDiaryShortcut(true)
-                : <span aria-hidden="true">{inlineShopIcon("cart", "#8C6829", 12)}</span>}
-              <span className="public-shop-product-update-label-copy">
-                <strong>P&amp;S Update</strong>
-                {shopUpdateContextText ? <small>{shopUpdateContextText}</small> : null}
-              </span>
-            </span>
-            <span
-              className="public-shop-product-update-viewport"
-              aria-hidden="true"
-            >
-              <span className="public-shop-product-update-track">
-                <span className="public-shop-product-update-message">
-                  {productsServicesUpdateText}
-                  <span className="public-shop-product-update-separator">•</span>
-                </span>
-                <span className="public-shop-product-update-message">
-                  {productsServicesUpdateText}
-                  <span className="public-shop-product-update-separator">•</span>
-                </span>
-              </span>
-            </span>
-            {publicShopTickerVoice ? (
-              <ShopVoiceNotePlayer
-                attachmentId={publicShopTickerVoice.attachmentId}
-                durationSeconds={publicShopTickerVoice.durationSeconds}
-                deletedAt={publicShopTickerVoice.deletedAt}
-                speakerName={publicShopTickerVoice.speakerName}
-                speakerGmfnId={publicShopTickerVoice.speakerGmfnId}
-                shopName={shopNameText}
-                publicAccess
-                compactInline
-                debugId="shop-gallery.welcome-voice.listen"
-                label={publicShopTickerVoice.label}
-              />
-            ) : null}
-          </div>
-        ) : null}
-
         <section
           className="public-shop-signboard"
           style={{
@@ -8642,6 +8591,53 @@ export default function ShopGalleryPage() {
                       : "0 16px 30px rgba(8,38,67,0.13), inset 0 1px 0 rgba(255,255,255,0.82)",
                 }}
               >
+                {isCompact ? (
+                  <div
+                    className="public-shop-product-update-ticker"
+                    data-public-shop-product-update-ticker="true"
+                    role="note"
+                    aria-label={`Shop Update: ${productsServicesUpdateText}${publicShopTickerVoice ? ". Voice note available." : ""}`}
+                  >
+                    <span className="public-shop-product-update-label">
+                      {signedInOwnsShop
+                        ? renderShopDiaryShortcut(true)
+                        : <span aria-hidden="true">{inlineShopIcon("cart", "#8C6829", 12)}</span>}
+                      <span className="public-shop-product-update-label-copy">
+                        <strong>P&amp;S Update</strong>
+                        {shopUpdateContextText ? <small>{shopUpdateContextText}</small> : null}
+                      </span>
+                    </span>
+                    <span
+                      className="public-shop-product-update-viewport"
+                      aria-hidden="true"
+                    >
+                      <span className="public-shop-product-update-track">
+                        <span className="public-shop-product-update-message">
+                          {productsServicesUpdateText}
+                          <span className="public-shop-product-update-separator">•</span>
+                        </span>
+                        <span className="public-shop-product-update-message">
+                          {productsServicesUpdateText}
+                          <span className="public-shop-product-update-separator">•</span>
+                        </span>
+                      </span>
+                    </span>
+                    {publicShopTickerVoice ? (
+                      <ShopVoiceNotePlayer
+                        attachmentId={publicShopTickerVoice.attachmentId}
+                        durationSeconds={publicShopTickerVoice.durationSeconds}
+                        deletedAt={publicShopTickerVoice.deletedAt}
+                        speakerName={publicShopTickerVoice.speakerName}
+                        speakerGmfnId={publicShopTickerVoice.speakerGmfnId}
+                        shopName={shopNameText}
+                        publicAccess
+                        compactInline
+                        debugId="shop-gallery.welcome-voice.listen"
+                        label={publicShopTickerVoice.label}
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
                 {miniSpotlightView.imageUrl || miniSpotlightView.videoUrl ? (
                   <>
                   <SpotlightMediaFrame
@@ -8725,7 +8721,7 @@ export default function ShopGalleryPage() {
                     audioUnlockOffLabel="Muted"
                     audioUnlockErrorLabel="Play"
                     audioUnlockStyle={{
-                      top: isCompact ? 12 : "auto",
+                      top: isCompact ? 58 : "auto",
                       right: isCompact ? 10 : 10,
                       bottom: isCompact ? "auto" : 10,
                       minWidth: isCompact ? 40 : 38,
@@ -8736,7 +8732,7 @@ export default function ShopGalleryPage() {
                       boxShadow: "0 10px 18px rgba(2, 12, 27, 0.22)",
                     }}
                     playbackControlStyle={{
-                      top: isCompact ? 58 : 'auto',
+                      top: isCompact ? 104 : 'auto',
                       right: isCompact ? 10 : 56,
                       bottom: isCompact ? 'auto' : 10,
                       width: isCompact ? 40 : 38,
@@ -8950,7 +8946,11 @@ export default function ShopGalleryPage() {
                       data-spotlight-product-actions="true"
                       style={{
                         position: "absolute",
-                        top: isCompact ? 104 : 68,
+                        top: isCompact
+                          ? miniSpotlightView.videoUrl
+                            ? 150
+                            : 58
+                          : 68,
                         right: isCompact ? 9 : 12,
                         zIndex: 6,
                         display: "grid",

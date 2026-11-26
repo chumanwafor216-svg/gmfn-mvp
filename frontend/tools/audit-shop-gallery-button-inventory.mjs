@@ -731,8 +731,13 @@ assertNotContains(
 assertFileContains(
   publicShopStylesFile,
   publicShopStylesSource,
-  /\.public-shop-product-update-ticker ~ details\[data-public-shop-more=secondary\][\s\S]*?padding: 0;[\s\S]*?background: transparent;[\s\S]*?box-shadow: none;[\s\S]*?\.public-shop-spotlight-stage[\s\S]*?background: #020c1b;[\s\S]*?\.public-shop-spotlight-action-row[\s\S]*?border-top: 0;/,
-  "The P&S ticker, edge-to-edge dark Spotlight stage, and bottom action row must retain one joined presentation without duplicate side panels or an internal top gap."
+  /\.public-shop-product-update-ticker \{[\s\S]*?position: absolute;[\s\S]*?inset: 0 0 auto;[\s\S]*?z-index: 8;[\s\S]*?\.public-shop-spotlight-stage[\s\S]*?border-radius: 18px;[\s\S]*?background: #020c1b;[\s\S]*?\.public-shop-spotlight-action-row[\s\S]*?border-top: 0;/,
+  "The P&S ticker must float over the edge-to-edge dark Spotlight stage without reserving a separate row, while the bottom action row remains joined."
+);
+
+assertContains(
+  /data-spotlight-screen="true"[\s\S]*?position: "relative"[\s\S]*?className="public-shop-product-update-ticker"[\s\S]*?data-public-shop-product-update-ticker="true"[\s\S]*?<SpotlightMediaFrame/,
+  "The compact P&S Update must be rendered inside the positioned Spotlight media screen so media extends behind the overlay."
 );
 
 assertFileContains(

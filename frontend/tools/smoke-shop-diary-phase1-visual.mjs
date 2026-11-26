@@ -639,6 +639,11 @@ async function collectMetrics(page) {
       productUpdateTickerAnimationName: productUpdateTrack
         ? getComputedStyle(productUpdateTrack).animationName
         : null,
+      spotlightScreenContainsTicker: Boolean(
+        spotlightScreen &&
+        productUpdateTicker &&
+        spotlightScreen.contains(productUpdateTicker)
+      ),
       returnMarketplacePresent: Boolean(returnMarketplaceAction),
       returnMarketplaceHeight: returnMarketplaceRect
         ? Math.round(returnMarketplaceRect.height)
@@ -1284,11 +1289,14 @@ async function run() {
           metrics.spotlightScreenHeight < 510 ||
           metrics.spotlightScreenHeight > 620 ||
           metrics.spotlightScreenTop === null ||
+          metrics.productUpdateTickerTop === null ||
           metrics.productUpdateTickerBottom === null ||
-          Math.abs(metrics.spotlightScreenTop - metrics.productUpdateTickerBottom) > 1 ||
+          !metrics.spotlightScreenContainsTicker ||
+          Math.abs(metrics.spotlightScreenTop - metrics.productUpdateTickerTop) > 1 ||
+          metrics.spotlightScreenBottom === null ||
+          metrics.productUpdateTickerBottom > metrics.spotlightScreenBottom + 1 ||
           metrics.spotlightOverlayTop === null ||
           metrics.spotlightOverlayBottom === null ||
-          metrics.spotlightScreenBottom === null ||
           metrics.spotlightOverlayTop < metrics.spotlightScreenTop - 1 ||
           metrics.spotlightOverlayBottom > metrics.spotlightScreenBottom + 1 ||
           metrics.spotlightActionRowTop === null ||
@@ -1305,7 +1313,9 @@ async function run() {
               JSON.stringify({
                 layout: metrics.spotlightLayout,
                 separatePanel: metrics.spotlightInformationPanelPresent,
+                tickerTop: metrics.productUpdateTickerTop,
                 tickerBottom: metrics.productUpdateTickerBottom,
+                tickerInsideScreen: metrics.spotlightScreenContainsTicker,
                 screenTop: metrics.spotlightScreenTop,
                 screenBottom: metrics.spotlightScreenBottom,
                 screenHeight: metrics.spotlightScreenHeight,
