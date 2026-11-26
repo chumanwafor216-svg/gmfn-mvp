@@ -2418,7 +2418,10 @@ export default function DemandBoxPage() {
                         Chat on GSN is recommended. Contact does not confirm availability, agreement, payment, or protection.
                       </div>
                     </div>
-                    <div style={{ color: "#0B4FA8", fontSize: 12, fontWeight: 900 }}>
+                    <div
+                      data-gsn-demand-contact-channel="gsn-primary"
+                      style={{ color: "#0B4FA8", fontSize: 12, fontWeight: 900 }}
+                    >
                       GSN conversation (recommended)
                     </div>
                     <DemandResponsePanel
@@ -2450,6 +2453,7 @@ export default function DemandBoxPage() {
                           type="button"
                           onClick={() => openMatchedSellerWhatsApp(selectedContact)}
                           debugId={`${debugBase}.seller-contact.whatsapp`}
+                          data-gsn-demand-contact-channel="whatsapp-alternative"
                           stableHeight={42}
                           style={{ borderRadius: 12, fontSize: 12 }}
                         >
@@ -3131,11 +3135,6 @@ export default function DemandBoxPage() {
                     {protectedTarget ? (
                       <span data-gsn-demand-protected-target-chip="true" style={badge(true)}>Private to matched person</span>
                     ) : null}
-                    {demandHasReadyWhatsApp(row) ? (
-                      <span style={badge(false)}>WhatsApp available</span>
-                    ) : safeStr(row?.whatsapp_number) ? (
-                      <span style={badge(false)}>WhatsApp not ready</span>
-                    ) : null}
                     {safeStr(row?.payment_mode) ? <span style={badge(false)}>Terms: {safeStr(row?.payment_mode)}</span> : null}
                     {row?.allow_trust_credit ? <span style={badge(false)}>Trust-credit openness only</span> : null}
                     {scope === "owner" ? (
@@ -3146,17 +3145,6 @@ export default function DemandBoxPage() {
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 12, lineHeight: 1.45 }}>
                     GSN records the request and contact path. It does not guarantee a provider or fulfilment.
-                  </div>
-                  <div
-                    data-gsn-demand-contact-actions="private"
-                    style={{
-                      marginTop: 12,
-                      display: "grid",
-                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                      gap: 8,
-                    }}
-                  >
-                    {demandContactActions(row, debugBase + ".contact", true)}
                   </div>
                 </div>
               ) : null}
@@ -3217,11 +3205,6 @@ export default function DemandBoxPage() {
           ) : null}
           {safeStr(row?.requester_gmfn_id) && scope === "community" ? (
             <span style={badge(false)}>GSN ID {safeStr(row?.requester_gmfn_id)}</span>
-          ) : null}
-          {demandHasReadyWhatsApp(row) ? (
-            <span style={badge(false)}>WhatsApp available</span>
-          ) : safeStr(row?.whatsapp_number) ? (
-            <span style={badge(false)}>WhatsApp not ready</span>
           ) : null}
           {firstTruthy(row?.marketplace_name, row?.clan_name) ? (
             <span style={badge(false)}>Community: {firstTruthy(row?.marketplace_name, row?.clan_name)}</span>

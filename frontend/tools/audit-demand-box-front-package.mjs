@@ -81,7 +81,6 @@ function forbidPattern(input, file, pattern, message) {
   [/data-gsn-demand-detail-tabs="compact"[\s\S]*?\.privacy-terms[\s\S]*?data-gsn-demand-detail-panel="privacy"/, "phone privacy metadata must stay behind the compact Privacy control"],
   [/data-gsn-demand-expand-search="true"[\s\S]*?Search one more community[\s\S]*?Stop expanded search[\s\S]*?One community only/, "the phone one-hop card must keep the approved compact search actions and boundary"],
   [/data-gsn-demand-action-dock=\{isCompact \? "compact" : "standard"\}[\s\S]*?demandDockStyle\(canClose \? 3 : 1\)[\s\S]*?fulfilled[\s\S]*?cancelled[\s\S]*?demandPaperAction\(row, scope, copyDebugId\)/, "opened owner requests must keep the calm three-action lifecycle dock"],
-  [/data-gsn-demand-contact-actions="private"[\s\S]*?demandContactActions\(row, debugBase \+ "\.contact", true\)/, "WhatsApp contact actions must remain reachable under privacy and terms"],
   [/debugId=\{`\$\{debugBase\}\.whatsapp`\}/, "DemandBox contact actions must use one WhatsApp entry point rather than separate chat and call buttons"],
   [/showMoreQueueRows \? 12 : 1[\s\S]*?debugId="demand-box\.queue\.view-more"[\s\S]*?View more needs/, "phone queues must start with one request and provide a deliberate view-more action"],
   [/directDemandId[\s\S]*?setActiveQueueLane\([\s\S]*?myOpenRows[\s\S]*?"mine"[\s\S]*?"open"[\s\S]*?setOpenDemandRecordKey\(String\(directDemandId\)\)/, "direct demand links must select My requests or All requests and open the requested card"],
@@ -91,7 +90,7 @@ function forbidPattern(input, file, pattern, message) {
   [/getDemandSupplyMatches/, "possible supply matching must remain server-driven"],
   [/getDemandSupplySellerContact[\s\S]*?setSellerContactHandoff[\s\S]*?function openMatchedSellerWhatsApp[\s\S]*?buildWhatsAppChatUrl[\s\S]*?prepared_message/, "Ask seller must use the authenticated handoff before the explicit WhatsApp alternative"],
   [/isMineRow\(row, me\)[\s\S]*?data-gsn-demand-ask-seller="validated"/, "direct seller contact must remain requester-only in the interface"],
-  [/data-gsn-demand-ask-seller-card="expanded"[\s\S]*?GSN conversation \(recommended\)[\s\S]*?<DemandResponsePanel[\s\S]*?Continue on WhatsApp[\s\S]*?View shop/, "Ask Seller must expand in place with GSN chat primary and WhatsApp as an explicit alternative"],
+  [/data-gsn-demand-ask-seller-card="expanded"[\s\S]*?data-gsn-demand-contact-channel="gsn-primary"[\s\S]*?<DemandResponsePanel[\s\S]*?data-gsn-demand-contact-channel="whatsapp-alternative"[\s\S]*?Continue on WhatsApp[\s\S]*?View shop/, "Ask Seller must expand in place with GSN chat primary and WhatsApp as an explicit alternative"],
   [/sellerConversationExpanded[\s\S]*?rowId && !sellerConversationExpanded[\s\S]*?data-gsn-demand-conversations="integrated"/, "Ask Seller must not mount a duplicate general conversation and polling controller"],
   [/reliableDemandMatches[\s\S]*?RELEVANCE_RELIABLE[\s\S]*?\.slice\(0, 3\)/, "only the first three reliable matches may surface immediately"],
   [/data-gsn-demand-supply-intelligence="true"[\s\S]*?Check these listings\. Availability and suitability are not confirmed\.[\s\S]*?data-gsn-demand-match-list="compact"[\s\S]*?data-gsn-demand-match-row="compact"[\s\S]*?data-gsn-demand-ask-seller="validated"[\s\S]*?Ask seller[\s\S]*?View shop/, "truthful compact supply rows must keep direct validated seller contact and optional Shop access"],
@@ -102,6 +101,19 @@ function forbidPattern(input, file, pattern, message) {
   [/const DEMAND_BOX_PAGE_SIZE = 200/, "the backend-safe page size must remain explicit"],
   [/pulseDestination="demand_box"/, "Ask a question must still post into DemandBox"],
 ].forEach(([pattern, message]) => requirePattern(source, pageFile, pattern, message));
+
+const privacyPanelStart = source.indexOf('data-gsn-demand-detail-panel="privacy"');
+const privacyPanelEnd = source.indexOf("GSN records the request and contact path.", privacyPanelStart);
+const privacyPanelSource =
+  privacyPanelStart >= 0 && privacyPanelEnd > privacyPanelStart
+    ? source.slice(privacyPanelStart, privacyPanelEnd)
+    : "";
+if (!privacyPanelSource) {
+  failures.push(pageFile + ": phone Privacy panel could not be isolated for communication-boundary checks");
+} else {
+  forbidPattern(privacyPanelSource, pageFile, /WhatsApp|demandContactActions/, "Privacy must not contain WhatsApp state or communication actions");
+}
+forbidPattern(source, pageFile, /WhatsApp available|WhatsApp not ready/, "WhatsApp state must not be presented as Privacy or Request Details metadata");
 
 [
   [/queue_keys\?: string\[\] \| null/, "request types must keep saved queue keys"],

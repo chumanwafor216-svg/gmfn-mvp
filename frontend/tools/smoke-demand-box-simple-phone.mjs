@@ -625,7 +625,9 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(apiCalls.sellerContactGets === 1, "Ask seller did not use the authenticated validated handoff endpoint exactly once.");
   const contactResult = ownerMatchPanel.locator('[data-gsn-demand-seller-contact-result="prepared"]');
   await contactResult.waitFor();
+  assert(await contactResult.locator('[data-gsn-demand-contact-channel="gsn-primary"]').isVisible(), "GSN chat is not presented as the primary seller-contact route.");
   assert(await contactResult.getByText("GSN conversation (recommended)", { exact: true }).isVisible(), "GSN chat is not the primary seller-contact route.");
+  assert(await contactResult.locator('[data-gsn-demand-contact-channel="whatsapp-alternative"]').isVisible(), "WhatsApp is not contained in Ask Seller as the alternative route.");
   assert(await contactResult.getByRole("link", { name: "View shop", exact: true }).isVisible(), "View shop is missing from Ask Seller.");
   await contactResult.getByRole("button", { name: "Continue on WhatsApp", exact: true }).click();
   await page.waitForFunction(() => Boolean(window.__gsnOpenedSellerChatUrl));
@@ -657,11 +659,11 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await ownerPrivateReplies.locator('[data-gsn-demand-conversation-heading="true"]').isVisible(), "The opened request lacks the conversation-first heading.");
   assert(await ownerPrivateReplies.isVisible(), "Existing private replies are not visible immediately.");
   await compactTabs.getByRole("button", { name: "Privacy", exact: true }).click();
-  assert(await freezerCard.locator('[data-gsn-demand-detail-panel="privacy"]').isVisible(), "Privacy did not open.");
-  const contactActions = freezerCard.locator('[data-gsn-demand-contact-actions="private"]');
-  assert((await contactActions.getByRole("button").count()) === 1, "Private WhatsApp contact action is missing.");
-  assert(await contactActions.getByRole("button", { name: "WhatsApp", exact: true }).isVisible(), "Private WhatsApp contact action is not visible.");
-    await compactTabs.getByRole("button", { name: "Privacy", exact: true }).click();
+  const privacyPanel = freezerCard.locator('[data-gsn-demand-detail-panel="privacy"]');
+  assert(await privacyPanel.isVisible(), "Privacy did not open.");
+  assert((await privacyPanel.locator('[data-gsn-demand-contact-actions]').count()) === 0, "Privacy still contains communication actions.");
+  assert((await privacyPanel.getByText(/WhatsApp/i).count()) === 0, "Privacy still contains WhatsApp communication state.");
+  await compactTabs.getByRole("button", { name: "Privacy", exact: true }).click();
 
   assert((await freezerCard.getByRole("button", { name: "Listen & reply", exact: true }).count()) === 0, "The obsolete second listen-and-reply action returned.");
   const threadList = ownerConversationZone.locator('[data-gsn-demand-thread-list="true"]');
