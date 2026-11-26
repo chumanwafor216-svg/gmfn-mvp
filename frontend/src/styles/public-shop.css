@@ -225,11 +225,11 @@
   z-index: 2;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(116px, 42%) minmax(0, 1fr) auto;
   align-items: center;
   width: 100%;
-  height: 44px;
-  min-height: 44px;
+  height: 48px;
+  min-height: 48px;
   overflow: hidden;
   color: #07172c;
   border: 1px solid rgba(83, 189, 255, 0.78);
@@ -247,18 +247,11 @@
 .public-shop-product-update-ticker ~ details[data-public-shop-more=secondary] {
   min-width: 0;
   margin-top: 0;
-  padding: 0 7px 7px;
-  border: 1px solid rgba(83, 189, 255, 0.78);
-  border-top: 0;
-  border-radius: 0 0 20px 20px;
-  background:
-    radial-gradient(circle at top right, rgba(242, 207, 119, 0.2), transparent 34%),
-    linear-gradient(145deg, rgba(11, 58, 92, 0.98) 0%, rgba(3, 30, 51, 0.99) 74%);
-  box-shadow:
-    0 14px 32px rgba(3, 23, 39, 0.32),
-    0 0 14px rgba(58, 151, 255, 0.30),
-    0 0 22px rgba(142, 72, 255, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .public-shop-product-update-label {
@@ -268,12 +261,12 @@
   align-items: center;
   align-self: stretch;
   gap: 4px;
-  max-width: 46%;
-  padding: 0 6px;
+  max-width: none;
+  padding: 0 9px;
   color: #6f4b00;
   border-right: 1px solid rgba(214, 170, 69, 0.28);
   background: linear-gradient(180deg, rgba(255, 249, 225, 0.99), rgba(246, 222, 158, 0.94));
-  font-size: 9px;
+  font-size: 10.5px;
   font-weight: 950;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -300,9 +293,9 @@
 }
 
 .public-shop-product-update-label-copy small {
-  max-width: 92px;
+  max-width: 88px;
   color: #7c5a16;
-  font-size: 8px;
+  font-size: 8.5px;
   font-weight: 850;
   letter-spacing: 0;
   text-transform: none;
@@ -348,7 +341,7 @@
   min-width: 0;
   padding-inline: 6px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.96);
+  background: transparent;
   white-space: nowrap;
 }
 
@@ -365,7 +358,7 @@
   flex: 0 0 auto;
   align-items: center;
   padding-right: 42px;
-  color: #17324d;
+  color: #f8fbff;
   font-size: 11.5px;
   font-weight: 820;
   line-height: 1;
@@ -549,10 +542,8 @@
 .public-shop-spotlight-stage {
   min-width: 0;
   overflow: hidden;
-  border-radius: 18px;
-  background:
-    radial-gradient(circle at 92% 2%, rgba(142, 72, 255, 0.20), transparent 32%),
-    linear-gradient(180deg, #061827 0%, #04101c 100%);
+  border-radius: 0 0 18px 18px;
+  background: #020c1b;
   box-shadow:
     inset 0 0 0 1px rgba(83, 189, 255, 0.44),
     inset 0 0 18px rgba(142, 72, 255, 0.12);
@@ -622,6 +613,27 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.public-shop-neon-environment [data-media-control="true"],
+.public-shop-neon-environment [data-spotlight-product-action],
+.public-shop-neon-environment [data-spotlight-view-action="immersive"] {
+  outline: 0;
+  outline-offset: 0;
+}
+
+@supports ((-webkit-mask-composite: xor) or (mask-composite: exclude)) {
+  .public-shop-neon-environment [data-media-control="true"]::after,
+  .public-shop-neon-environment [data-spotlight-product-action]::after,
+  .public-shop-neon-environment [data-spotlight-view-action="immersive"]::after {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .public-shop-spotlight-screen {
+    border-radius: 0 !important;
+  }
 }
 
 .public-shop-spotlight-action-row[data-spotlight-action-count="1"] .public-shop-spotlight-badge {

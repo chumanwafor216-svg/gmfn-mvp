@@ -26,8 +26,8 @@ requirePattern(frameFile, /filter: props\.preserveNaturalColor[\s\S]*?\? "blur\(
 requirePattern(galleryFile, /preserveNaturalColor=\{true\}/, "expanded Public Shop Spotlight must opt into natural-colour rendering");
 requirePattern(galleryFile, /imageLoading="eager"[\s\S]*?imageFetchPriority="high"[\s\S]*?imageSizes="\(max-width: 720px\) 100vw, 720px"/, "active Spotlight image must receive high-priority mobile sizing");
 requirePattern(galleryFile, /imageFetchPriority="low"[\s\S]*?preloadVideo='auto'/, "the next governed medium must preload without competing at high priority");
-requirePattern(galleryFile, /radial-gradient\(circle at 50% 16%, rgba\(36,78,112,0\.92\)[\s\S]*?#04101C 100%\)/, "expanded Spotlight must retain one continuous premium dark presentation");
-requirePattern(galleryFile, /data-spotlight-screen="true"[\s\S]*?objectFit: "contain"[\s\S]*?objectFit: 'contain'/, "active and preloaded Spotlight media must preserve source proportions");
+requirePattern(galleryFile, /data-spotlight-screen="true"[\s\S]*?background: "#020C1B"/, "expanded Spotlight must retain one continuous premium dark presentation");
+requirePattern(galleryFile, /data-spotlight-screen="true"[\s\S]*?objectFit: "cover"[\s\S]*?objectFit: 'cover'/, "active and preloaded Spotlight media must fill the approved edge-to-edge stage");
 requirePattern(galleryFile, /loopVideo=\{[\s\S]*?preloadVideo='auto'/, "existing smooth bounded video loop and preload behavior must remain");
 
 if (findings.length > 0) {

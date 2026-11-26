@@ -370,8 +370,8 @@ assertContains(
 assertFileContains(
   publicShopStylesFile,
   publicShopStylesSource,
-  /\.public-shop-product-update-ticker \{[\s\S]*?grid-template-columns: auto minmax\(0, 1fr\) auto;[\s\S]*?height: 44px;[\s\S]*?data-existing-workflow-plus="shop-diary"\][\s\S]*?width: 30px;[\s\S]*?\.public-shop-inline-voice \{[\s\S]*?width: min\(100px, 27vw\);[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: public-shop-product-update-scroll 20s linear infinite;[\s\S]*?@keyframes public-shop-product-update-scroll[\s\S]*?@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: none !important;/,
-  "The combined Shop Update strip must keep a 30px visual owner plus, a 100px maximum voice pill, phone-safe continuous rotation, and reduced-motion support inside its 44px height."
+  /\.public-shop-product-update-ticker \{[\s\S]*?grid-template-columns: minmax\(116px, 42%\) minmax\(0, 1fr\) auto;[\s\S]*?height: 48px;[\s\S]*?data-existing-workflow-plus="shop-diary"\][\s\S]*?width: 30px;[\s\S]*?\.public-shop-inline-voice \{[\s\S]*?width: min\(100px, 27vw\);[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: public-shop-product-update-scroll 20s linear infinite;[\s\S]*?@keyframes public-shop-product-update-scroll[\s\S]*?@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.public-shop-product-update-track \{[\s\S]*?animation: none !important;/,
+  "The combined Shop Update strip must keep a readable label, 30px visual owner plus, 100px maximum voice pill, phone-safe continuous rotation, and reduced-motion support inside its compact 48px height."
 );
 
 assertFileContains(
@@ -504,7 +504,7 @@ if (mediaFrameInvocationCount !== expectedMediaFrameInvocations) {
 }
 
 assertContains(
-  /<SpotlightMediaFrame[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?audioUnlockErrorLabel="Play"[\s\S]*?audioUnlockStyle=\{\{[\s\S]*?minWidth: isCompact \? 44 : 38[\s\S]*?width: isCompact \? 44 : 38[\s\S]*?minHeight: isCompact \? 44 : 38/,
+  /<SpotlightMediaFrame[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?audioUnlockErrorLabel="Play"[\s\S]*?audioUnlockStyle=\{\{[\s\S]*?minWidth: isCompact \? 40 : 38[\s\S]*?width: isCompact \? 40 : 38[\s\S]*?minHeight: isCompact \? 40 : 38/,
   "Public Shop mini Spotlight media audio control must stay icon-only and fixed-size."
 );
 
@@ -704,8 +704,8 @@ assertContains(
 );
 
 assertContains(
-  /const spotlightScreenHeight = spotlightImmersiveOpen[\s\S]*?"calc\(100dvh - 64px\)"[\s\S]*?"calc\(100dvh - 72px\)"[\s\S]*?"clamp\(510px, 66svh, 620px\)"[\s\S]*?: "clamp\(500px, 64vh, 680px\)";[\s\S]*?data-spotlight-layout="unified-spotlight-stage"[\s\S]*?data-spotlight-information-shell="true"[\s\S]*?display: "contents"[\s\S]*?data-spotlight-action-row="true"[\s\S]*?data-spotlight-information-overlay="true"[\s\S]*?maxHeight: "45%"[\s\S]*?data-spotlight-screen="true"[\s\S]*?minHeight: spotlightScreenHeight[\s\S]*?height: spotlightScreenHeight[\s\S]*?objectFit: "contain"[\s\S]*?objectPosition: "center"/,
-  "Public Shop Spotlight must keep the responsive enlarged media, layout-neutral information shell, in-media disclosure overlay, normal-flow action row, and unchanged media fit.",
+  /const spotlightScreenHeight = spotlightImmersiveOpen[\s\S]*?"calc\(100dvh - 64px\)"[\s\S]*?"calc\(100dvh - 72px\)"[\s\S]*?"clamp\(560px, 74svh, 620px\)"[\s\S]*?: "clamp\(500px, 64vh, 680px\)";[\s\S]*?data-spotlight-layout="unified-spotlight-stage"[\s\S]*?data-spotlight-information-shell="true"[\s\S]*?display: "contents"[\s\S]*?data-spotlight-action-row="true"[\s\S]*?data-spotlight-information-overlay="true"[\s\S]*?maxHeight: "45%"[\s\S]*?data-spotlight-screen="true"[\s\S]*?minHeight: spotlightScreenHeight[\s\S]*?height: spotlightScreenHeight[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,
+  "Public Shop Spotlight must keep the responsive enlarged media, layout-neutral information shell, restrained in-media disclosure overlay, normal-flow action row, and edge-to-edge media fit.",
 );
 
 assertContains(
@@ -731,8 +731,8 @@ assertNotContains(
 assertFileContains(
   publicShopStylesFile,
   publicShopStylesSource,
-  /\.public-shop-product-update-ticker ~ details\[data-public-shop-more=secondary\][\s\S]*?padding: 0 7px 7px;[\s\S]*?border-top: 0;[\s\S]*?\.public-shop-spotlight-stage[\s\S]*?linear-gradient\(180deg, #061827 0%, #04101c 100%\)[\s\S]*?\.public-shop-spotlight-action-row[\s\S]*?border-top: 0;/,
-  "The P&S ticker, dark Spotlight stage, and bottom action row must retain one joined outer presentation without an internal top gap."
+  /\.public-shop-product-update-ticker ~ details\[data-public-shop-more=secondary\][\s\S]*?padding: 0;[\s\S]*?background: transparent;[\s\S]*?box-shadow: none;[\s\S]*?\.public-shop-spotlight-stage[\s\S]*?background: #020c1b;[\s\S]*?\.public-shop-spotlight-action-row[\s\S]*?border-top: 0;/,
+  "The P&S ticker, edge-to-edge dark Spotlight stage, and bottom action row must retain one joined presentation without duplicate side panels or an internal top gap."
 );
 
 assertFileContains(

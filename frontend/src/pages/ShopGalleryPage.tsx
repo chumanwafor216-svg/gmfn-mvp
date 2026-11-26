@@ -4864,7 +4864,7 @@ export default function ShopGalleryPage() {
       ? "calc(100dvh - 64px)"
       : "calc(100dvh - 72px)"
     : isCompact
-    ? "clamp(510px, 66svh, 620px)"
+    ? "clamp(560px, 74svh, 620px)"
     : "clamp(500px, 64vh, 680px)";
   const spotlightAdvertiserLabel = firstMeaningful(
     miniSpotlight?.sourceShopName,
@@ -4890,11 +4890,21 @@ export default function ShopGalleryPage() {
   );
   const spotlightInformationDetail = firstMeaningful(
     ownerSpotlightStatusView?.detail,
+    publicShopSpotlightActive ? miniSpotlight?.sourceProductDescription : "",
     safeStr(miniSpotlightView.detail).trim().toLocaleLowerCase() !==
       safeStr(miniSpotlightView.title).trim().toLocaleLowerCase()
       ? miniSpotlightView.detail
       : ""
   );
+  const spotlightInformationTitle = ownerSpotlightStatusView
+    ? ownerSpotlightStatusView.title
+    : publicShopSpotlightActive
+    ? firstMeaningful(
+        miniSpotlight?.sourceProductTitle,
+        miniSpotlightView.title,
+        "Spotlight product"
+      )
+    : "Discover what's new";
   const spotlightWhatsAppAvailable = Boolean(
     publicShopSpotlightActive &&
       normalizeWhatsAppRecipient(miniSpotlightView.sourceShopWhatsApp)
@@ -8252,25 +8262,24 @@ export default function ShopGalleryPage() {
                   }}
                   style={{
                     position: "absolute",
-                    left: isCompact ? 10 : 14,
-                    right: isCompact ? 64 : 76,
+                    left: 0,
+                    right: isCompact ? 58 : 76,
                     bottom: isCompact ? 74 : 86,
                     zIndex: 4,
                     minWidth: 0,
                     maxHeight: "45%",
                     overflow: "hidden",
-                    borderRadius: isCompact ? 16 : 18,
+                    borderRadius: isCompact ? "0 14px 14px 0" : "0 18px 18px 0",
                     color: "#FFFFFF",
                     background:
-                      "linear-gradient(180deg, rgba(2,12,27,0.62) 0%, rgba(2,12,27,0.92) 100%)",
-                    boxShadow: "0 14px 30px rgba(2,12,27,0.30)",
-                    backdropFilter: "blur(8px)",
+                      "linear-gradient(90deg, rgba(2,12,27,0.92) 0%, rgba(2,12,27,0.72) 70%, rgba(2,12,27,0.10) 100%)",
+                    boxShadow: "none",
+                    backdropFilter: "blur(3px)",
                   }}
                 >
                   <StableDisclosureSummary
                     debugId="shop-gallery.spotlight.information-toggle"
-                    stableHeight={isCompact ? 64 : 70}
-                    data-public-shop-neon-action="true"
+                    stableHeight={isCompact ? 54 : 64}
                     aria-expanded={spotlightInformationOpen}
                     aria-controls="public-shop-spotlight-information-details"
                     style={{
@@ -8279,7 +8288,7 @@ export default function ShopGalleryPage() {
                       alignItems: "center",
                       gap: 10,
                       minWidth: 0,
-                      padding: isCompact ? "8px 10px" : "10px 12px",
+                      padding: isCompact ? "7px 10px" : "9px 12px",
                       color: "#FFFFFF",
                       borderRadius: isCompact ? 16 : 18,
                       background: "transparent",
@@ -8322,16 +8331,12 @@ export default function ShopGalleryPage() {
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
                           color: "#FFFFFF",
-                          fontSize: isCompact ? 18 : 22,
+                          fontSize: isCompact ? 16 : 20,
                           fontWeight: 950,
                           lineHeight: 1.12,
                         }}
                       >
-                        {ownerSpotlightStatusView
-                          ? ownerSpotlightStatusView.title
-                          : publicShopSpotlightActive
-                          ? miniSpotlightView.title
-                          : "Discover what's new"}
+                        {spotlightInformationTitle}
                       </strong>
                     </span>
                     <span
@@ -8339,8 +8344,8 @@ export default function ShopGalleryPage() {
                       style={{
                         display: "grid",
                         placeItems: "center",
-                        width: isCompact ? 34 : 38,
-                        height: isCompact ? 34 : 38,
+                        width: isCompact ? 30 : 36,
+                        height: isCompact ? 30 : 36,
                         borderRadius: 999,
                         background: spotlightInformationOpen
                           ? "rgba(255,255,255,0.92)"
@@ -8479,14 +8484,13 @@ export default function ShopGalleryPage() {
                 style={{
                   minHeight: spotlightScreenHeight,
                   height: spotlightScreenHeight,
-                  borderRadius: isCompact ? "18px 18px 0 0" : "20px 20px 0 0",
+                  borderRadius: isCompact ? 0 : "20px 20px 0 0",
                   overflow: "hidden",
                   position: "relative",
                   gridColumn: "1",
                   gridRow: "1",
                   zIndex: 1,
-                  background:
-                    "radial-gradient(circle at 50% 16%, rgba(36,78,112,0.92) 0%, rgba(7,24,39,0.98) 58%, #04101C 100%)",
+                  background: "#020C1B",
                   border: "1px solid rgba(83,189,255,0.66)",
                   borderBottom: 0,
                   boxShadow:
@@ -8579,36 +8583,36 @@ export default function ShopGalleryPage() {
                     audioUnlockErrorLabel="Play"
                     audioUnlockStyle={{
                       top: isCompact ? 12 : "auto",
-                      right: isCompact ? 12 : 10,
+                      right: isCompact ? 10 : 10,
                       bottom: isCompact ? "auto" : 10,
-                      minWidth: isCompact ? 44 : 38,
-                      width: isCompact ? 44 : 38,
-                      minHeight: isCompact ? 44 : 38,
+                      minWidth: isCompact ? 40 : 38,
+                      width: isCompact ? 40 : 38,
+                      minHeight: isCompact ? 40 : 38,
                       padding: 0,
                       fontSize: isCompact ? 14 : 18,
                       boxShadow: "0 10px 18px rgba(2, 12, 27, 0.22)",
                     }}
                     playbackControlStyle={{
-                      top: isCompact ? 12 : 'auto',
-                      right: isCompact ? 64 : 56,
+                      top: isCompact ? 58 : 'auto',
+                      right: isCompact ? 10 : 56,
                       bottom: isCompact ? 'auto' : 10,
-                      width: isCompact ? 44 : 38,
-                      minWidth: isCompact ? 44 : 38,
-                      minHeight: isCompact ? 44 : 38,
+                      width: isCompact ? 40 : 38,
+                      minWidth: isCompact ? 40 : 38,
+                      minHeight: isCompact ? 40 : 38,
                     }}
                     maxVideoSeconds={SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS}
                     frameStyle={{
                       width: "100%",
                       height: spotlightScreenHeight,
                       minHeight: spotlightScreenHeight,
-                      borderRadius: isCompact ? "18px 18px 0 0" : "20px 20px 0 0",
+                      borderRadius: isCompact ? 0 : "20px 20px 0 0",
                       position: 'relative',
                       zIndex: 1,
                     }}
                     mediaStyle={{
                       width: "100%",
                       height: "100%",
-                      objectFit: "contain",
+                      objectFit: "cover",
                       objectPosition: "center",
                     }}
                   />
@@ -8658,7 +8662,7 @@ export default function ShopGalleryPage() {
                         width: '100%',
                         height: spotlightScreenHeight,
                         minHeight: spotlightScreenHeight,
-                        borderRadius: isCompact ? "18px 18px 0 0" : "20px 20px 0 0",
+                        borderRadius: isCompact ? 0 : "20px 20px 0 0",
                         opacity: 0,
                         pointerEvents: 'none',
                         zIndex: 0,
@@ -8666,7 +8670,7 @@ export default function ShopGalleryPage() {
                       mediaStyle={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'contain',
+                        objectFit: 'cover',
                         objectPosition: 'center',
                       }}
                     />
@@ -8803,7 +8807,7 @@ export default function ShopGalleryPage() {
                       data-spotlight-product-actions="true"
                       style={{
                         position: "absolute",
-                        top: isCompact ? 62 : 68,
+                        top: isCompact ? 104 : 68,
                         right: isCompact ? 9 : 12,
                         zIndex: 6,
                         display: "grid",
