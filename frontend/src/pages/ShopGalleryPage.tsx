@@ -92,6 +92,7 @@ import {
 const SPOTLIGHT_REFRESH_RETRY_DELAY_MS = 2000;
 const SPOTLIGHT_REFRESH_RETRY_LIMIT = 3;
 const SPOTLIGHT_MEDIA_PRELOAD_TIMEOUT_MS = 8000;
+const SPOTLIGHT_AUTHORIZED_FRAME_HOLD_MS = 1500;
 
 type ShopProfile = {
   id?: number;
@@ -228,6 +229,14 @@ type ShopBroadcast = {
   authorizedExpiresAt?: string;
   createdAt?: string;
   expiresAt?: string;
+};
+
+type SpotlightTransitionState = {
+  phase: 'holding' | 'neutral' | 'handoff';
+  sourceOccurrenceId: string;
+  startedAtMs: number;
+  targetItem: ShopBroadcast | null;
+  targetMediaKey: string;
 };
 
 type PublicShopSpotlightSelectionCycle = {
@@ -2107,6 +2116,14 @@ export default function ShopGalleryPage() {
   const spotlightMediaStatusByKeyRef = useRef<
     Record<string, SpotlightMediaStatus>
   >({});
+  const [spotlightActiveMediaStatusByOccurrence, setSpotlightActiveMediaStatusByOccurrence] =
+    useState<Record<string, SpotlightMediaStatus>>({});
+  const spotlightActiveMediaStatusByOccurrenceRef = useRef<
+    Record<string, SpotlightMediaStatus>
+  >({});
+  const [spotlightTransition, setSpotlightTransition] =
+    useState<SpotlightTransitionState | null>(null);
+  const spotlightTransitionRef = useRef<SpotlightTransitionState | null>(null);
   const [spotlightPlaybackStatusByKey, setSpotlightPlaybackStatusByKey] =
     useState<Record<string, SpotlightPlaybackStateDetails>>({});
   const spotlightPlaybackStatusByKeyRef = useRef<
@@ -3048,6 +3065,10 @@ export default function ShopGalleryPage() {
     communitySpotlightsRef.current = [];
     setSpotlightMediaStatusByKey({});
     spotlightMediaStatusByKeyRef.current = {};
+    setSpotlightActiveMediaStatusByOccurrence({});
+    spotlightActiveMediaStatusByOccurrenceRef.current = {};
+    spotlightTransitionRef.current = null;
+    setSpotlightTransition(null);
     setSpotlightPlaybackStatusByKey({});
     spotlightPlaybackStatusByKeyRef.current = {};
     spotlightPresentationAutoOpenedRef.current = false;
@@ -3632,6 +3653,25 @@ export default function ShopGalleryPage() {
 
     const expiryTimer = window.setTimeout(() => {
       prunePublicShopSpotlightSelectionCycles(Date.now());
+      const activeItem =
+        communitySpotlightsRef.current[miniSpotlightIndexRef.current] || null;
+      if (
+        activeItem?.isCanonicalOpportunity &&
+        !publicShopSpotlightPresentationIsCurrent(activeItem)
+      ) {
+        const transition: SpotlightTransitionState = {
+          phase: 'neutral',
+          sourceOccurrenceId: firstMeaningful(
+            activeItem.opportunityPresentationId,
+            spotlightBroadcastKey(activeItem)
+          ),
+          startedAtMs: Date.now(),
+          targetItem: null,
+          targetMediaKey: '',
+        };
+        spotlightTransitionRef.current = transition;
+        setSpotlightTransition(transition);
+      }
       setCommunitySpotlights((current) =>
         current.filter(
           (item) =>
@@ -4036,7 +4076,8 @@ export default function ShopGalleryPage() {
   const spotlightProductPreferenceAvailable = Boolean(spotlightSourceProductId);
   const spotlightAdvertPreferenceAvailable = Boolean(spotlightCampaignId);
   const spotlightEngagementAvailable = Boolean(
-    spotlightProductPreferenceAvailable || spotlightAdvertPreferenceAvailable
+    (spotlightProductPreferenceAvailable || spotlightAdvertPreferenceAvailable) &&
+      spotlightTransition?.phase !== 'neutral'
   );
   const spotlightPreferenceKind = spotlightProductPreferenceAvailable
     ? "product"
@@ -4238,6 +4279,17 @@ export default function ShopGalleryPage() {
     [nextMiniSpotlight]
   );
   const nextSpotlightMediaKey = spotlightItemMediaKey(nextMiniSpotlight);
+  const spotlightPreloadItem =
+    spotlightTransition?.phase === 'handoff' && spotlightTransition.targetItem
+      ? spotlightTransition.targetItem
+      : nextMiniSpotlight;
+  const spotlightPreloadView = spotlightItemView(spotlightPreloadItem);
+  const spotlightPreloadMediaKey = spotlightItemMediaKey(spotlightPreloadItem);
+  const spotlightPreloadIsHandoff = Boolean(
+    spotlightTransition?.phase === 'handoff' &&
+      spotlightTransition.targetMediaKey &&
+      spotlightTransition.targetMediaKey === spotlightPreloadMediaKey
+  );
 
   const spotlightMediaKey = miniSpotlight
     ? [
@@ -4305,10 +4357,100 @@ export default function ShopGalleryPage() {
     spotlightPlaybackStatusByKeyRef.current = spotlightPlaybackStatusByKey;
   }, [spotlightPlaybackStatusByKey]);
 
+  const spotlightRotationActiveKey = useMemo(
+    () => {
+      if (!miniSpotlight) return '';
+      const presentationId = firstMeaningful(
+        miniSpotlight.opportunityPresentationId
+      );
+      if (presentationId) return presentationId;
+      const existing = spotlightLegacyOccurrenceIdsRef.current.get(miniSpotlight);
+      if (existing) return existing;
+      spotlightLegacyOccurrenceSequenceRef.current += 1;
+      const occurrenceId = `${spotlightMediaKey}::legacy-occurrence-${spotlightLegacyOccurrenceSequenceRef.current}`;
+      spotlightLegacyOccurrenceIdsRef.current.set(miniSpotlight, occurrenceId);
+      return occurrenceId;
+    },
+    [miniSpotlight, spotlightMediaKey]
+  );
+
+  const reportSpotlightActiveMediaStatus = useCallback(
+    (occurrenceKey: string, status: SpotlightMediaStatus) => {
+      if (!occurrenceKey) return;
+      const next = { [occurrenceKey]: status };
+      spotlightActiveMediaStatusByOccurrenceRef.current = next;
+      setSpotlightActiveMediaStatusByOccurrence(next);
+    },
+    []
+  );
+
+  const completeSpotlightMediaHandoff = useCallback(
+    (occurrenceKey: string, mediaKey: string) => {
+      const transition = spotlightTransitionRef.current;
+      if (
+        !transition ||
+        !['handoff', 'neutral'].includes(transition.phase) ||
+        transition.targetMediaKey !== mediaKey ||
+        occurrenceKey !== spotlightRotationActiveKey
+      ) {
+        return;
+      }
+      const finish = () => {
+        const latest = spotlightTransitionRef.current;
+        if (
+          !latest ||
+          !['handoff', 'neutral'].includes(latest.phase) ||
+          latest.targetMediaKey !== mediaKey
+        ) {
+          return;
+        }
+        spotlightTransitionRef.current = null;
+        setSpotlightTransition(null);
+      };
+      if (typeof window === 'undefined') {
+        finish();
+        return;
+      }
+      window.requestAnimationFrame(() => window.requestAnimationFrame(finish));
+    },
+    [spotlightRotationActiveKey]
+  );
+  const activeSpotlightMediaStatus =
+    spotlightActiveMediaStatusByOccurrence[spotlightRotationActiveKey];
   const spotlightRotationMediaSettled =
-    !spotlightHasRenderableMedia ||
-    Boolean(spotlightMediaStatusByKey[spotlightMediaKey]);
-  const activeSpotlightMediaStatus = spotlightMediaStatusByKey[spotlightMediaKey];
+    !spotlightHasRenderableMedia || Boolean(activeSpotlightMediaStatus);
+
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      !spotlightHasRenderableMedia ||
+      !spotlightRotationActiveKey ||
+      activeSpotlightMediaStatus
+    ) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const status: SpotlightMediaStatus = { status: 'unavailable' };
+      reportSpotlightActiveMediaStatus(spotlightRotationActiveKey, status);
+      const transition = spotlightTransitionRef.current;
+      if (
+        transition &&
+        ['handoff', 'neutral'].includes(transition.phase) &&
+        transition.targetMediaKey === spotlightMediaKey
+      ) {
+        spotlightTransitionRef.current = null;
+        setSpotlightTransition(null);
+      }
+    }, SPOTLIGHT_MEDIA_PRELOAD_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [
+    activeSpotlightMediaStatus,
+    reportSpotlightActiveMediaStatus,
+    spotlightHasRenderableMedia,
+    spotlightMediaKey,
+    spotlightRotationActiveKey,
+  ]);
+
   // Reduced Motion changes playback, not the governed campaign dwell.
   const governedSpotlightDwellMs = publicShopSpotlightRotationMs({
     mediaKind:
@@ -4326,6 +4468,7 @@ export default function ShopGalleryPage() {
   // Terminally unavailable media has no user-facing dwell budget. Keep the
   // active occurrence in place only until a ready successor can replace it.
   const spotlightRotationDelayMs =
+    !spotlightHasRenderableMedia ||
     activeSpotlightMediaStatus?.status === 'unavailable'
       ? 0
       : governedSpotlightDwellMs;
@@ -4350,22 +4493,7 @@ export default function ShopGalleryPage() {
       miniSpotlight?.isCanonicalOpportunity &&
         !ownerSpotlightPreviewAuthorized
     );
-  const spotlightRotationActiveKey = useMemo(
-    () => {
-      if (!miniSpotlight) return '';
-      const presentationId = firstMeaningful(
-        miniSpotlight.opportunityPresentationId
-      );
-      if (presentationId) return presentationId;
-      const existing = spotlightLegacyOccurrenceIdsRef.current.get(miniSpotlight);
-      if (existing) return existing;
-      spotlightLegacyOccurrenceSequenceRef.current += 1;
-      const occurrenceId = `${spotlightMediaKey}::legacy-occurrence-${spotlightLegacyOccurrenceSequenceRef.current}`;
-      spotlightLegacyOccurrenceIdsRef.current.set(miniSpotlight, occurrenceId);
-      return occurrenceId;
-    },
-    [miniSpotlight, spotlightMediaKey]
-  );
+
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -4401,6 +4529,7 @@ export default function ShopGalleryPage() {
 
   useEffect(() => {
     if (
+      spotlightTransitionRef.current ||
       !spotlightRotationCanAdvance ||
       !spotlightRotationActiveKey ||
       !spotlightRotationMediaSettled
@@ -4441,11 +4570,27 @@ export default function ShopGalleryPage() {
       if (activeCampaignId > 0) {
         spotlightSeenCampaignIdsRef.current.add(activeCampaignId);
       }
+      const beginWaitingTransition = () => {
+        const currentTransition = spotlightTransitionRef.current;
+        if (
+          currentTransition?.sourceOccurrenceId ===
+          spotlightRotationActiveKey
+        ) {
+          return;
+        }
+        const transition: SpotlightTransitionState = {
+          phase: 'holding',
+          sourceOccurrenceId: spotlightRotationActiveKey,
+          startedAtMs: Date.now(),
+          targetItem: null,
+          targetMediaKey: '',
+        };
+        spotlightTransitionRef.current = transition;
+        setSpotlightTransition(transition);
+      };
+
       if (activeRows.length <= 1) {
-        communitySpotlightsRef.current = [];
-        miniSpotlightIndexRef.current = 0;
-        setCommunitySpotlights([]);
-        setMiniSpotlightIndex(0);
+        beginWaitingTransition();
         void requestNextCanonicalSpotlight();
         return true;
       }
@@ -4460,7 +4605,8 @@ export default function ShopGalleryPage() {
         : undefined;
 
       if (nextHasMedia && !nextMediaStatus) {
-        return false;
+        beginWaitingTransition();
+        return true;
       }
       if (nextHasMedia && nextMediaStatus?.status === 'unavailable') {
         const remainingRows = activeRows.filter(
@@ -4474,12 +4620,24 @@ export default function ShopGalleryPage() {
         miniSpotlightIndexRef.current = safeActiveIndex;
         setCommunitySpotlights(remainingRows);
         setMiniSpotlightIndex(safeActiveIndex);
+        beginWaitingTransition();
         void requestNextCanonicalSpotlight();
-        return false;
+        return true;
       }
 
       const nextRows = activeRows.filter((_, index) => index !== activeIndex);
       const nextIndex = nextRows.length > 0 ? activeIndex % nextRows.length : 0;
+      const transition: SpotlightTransitionState | null = nextHasMedia
+        ? {
+            phase: 'handoff',
+            sourceOccurrenceId: spotlightRotationActiveKey,
+            startedAtMs: Date.now(),
+            targetItem: nextItem,
+            targetMediaKey: nextMediaKey,
+          }
+        : null;
+      spotlightTransitionRef.current = transition;
+      setSpotlightTransition(transition);
       communitySpotlightsRef.current = nextRows;
       miniSpotlightIndexRef.current = nextIndex;
       setCommunitySpotlights(nextRows);
@@ -4562,9 +4720,132 @@ export default function ShopGalleryPage() {
     requestNextCanonicalSpotlight,
     ownerSpotlightInspectionMode,
     ownerSpotlightPreviewAuthorized,
+    spotlightTransition,
+  ]);
+
+  useEffect(() => {
+    const transition = spotlightTransition;
+    if (!transition || transition.phase === 'handoff') return;
+
+    if (spotlightRotationActiveKey !== transition.sourceOccurrenceId) {
+      if (!miniSpotlight) {
+        if (transition.phase !== 'neutral') {
+          const neutralTransition = { ...transition, phase: 'neutral' as const };
+          spotlightTransitionRef.current = neutralTransition;
+          setSpotlightTransition(neutralTransition);
+        }
+        void requestNextCanonicalSpotlight();
+        return;
+      }
+      const targetMediaKey = spotlightItemMediaKey(miniSpotlight);
+      const replacementTransition: SpotlightTransitionState = {
+        ...transition,
+        phase: 'neutral',
+        targetItem: miniSpotlight,
+        targetMediaKey,
+      };
+      spotlightTransitionRef.current = replacementTransition;
+      setSpotlightTransition(replacementTransition);
+      if (!targetMediaKey) {
+        window.requestAnimationFrame(() => {
+          spotlightTransitionRef.current = null;
+          setSpotlightTransition(null);
+        });
+      }
+      return;
+    }
+
+    if (!nextMiniSpotlight) {
+      void requestNextCanonicalSpotlight();
+      const remainingHoldMs = Math.max(
+        0,
+        SPOTLIGHT_AUTHORIZED_FRAME_HOLD_MS -
+          (Date.now() - transition.startedAtMs)
+      );
+      if (transition.phase === 'holding' && remainingHoldMs <= 0) {
+        const neutralTransition = { ...transition, phase: 'neutral' as const };
+        spotlightTransitionRef.current = neutralTransition;
+        setSpotlightTransition(neutralTransition);
+        return;
+      }
+      if (transition.phase === 'holding') {
+        const timer = window.setTimeout(() => {
+          const current = spotlightTransitionRef.current;
+          if (
+            current?.phase === 'holding' &&
+            current.sourceOccurrenceId === transition.sourceOccurrenceId
+          ) {
+            const neutralTransition = {
+              ...current,
+              phase: 'neutral' as const,
+            };
+            spotlightTransitionRef.current = neutralTransition;
+            setSpotlightTransition(neutralTransition);
+          }
+        }, remainingHoldMs);
+        return () => window.clearTimeout(timer);
+      }
+      return;
+    }
+
+    const nextMediaKey = spotlightItemMediaKey(nextMiniSpotlight);
+    const nextView = spotlightItemView(nextMiniSpotlight);
+    const nextHasMedia = Boolean(nextView.imageUrl || nextView.videoUrl);
+    const nextStatus = nextMediaKey
+      ? spotlightMediaStatusByKeyRef.current[nextMediaKey]
+      : undefined;
+    if (nextHasMedia && !nextStatus) return;
+
+    if (nextHasMedia && nextStatus?.status === 'unavailable') {
+      const rows = communitySpotlightsRef.current;
+      const filteredRows = rows.filter((item) => item !== nextMiniSpotlight);
+      const sourceIndex = Math.max(
+        filteredRows.findIndex(
+          (item) => item === rows[miniSpotlightIndexRef.current]
+        ),
+        0
+      );
+      communitySpotlightsRef.current = filteredRows;
+      miniSpotlightIndexRef.current = sourceIndex;
+      setCommunitySpotlights(filteredRows);
+      setMiniSpotlightIndex(sourceIndex);
+      void requestNextCanonicalSpotlight();
+      return;
+    }
+
+    const rows = communitySpotlightsRef.current;
+    const activeIndex = Math.min(
+      Math.max(miniSpotlightIndexRef.current, 0),
+      Math.max(rows.length - 1, 0)
+    );
+    const nextRows = rows.filter((_, index) => index !== activeIndex);
+    const nextIndex = nextRows.length > 0 ? activeIndex % nextRows.length : 0;
+    const handoffTransition: SpotlightTransitionState | null = nextHasMedia
+      ? {
+          ...transition,
+          phase: 'handoff',
+          targetItem: nextMiniSpotlight,
+          targetMediaKey: nextMediaKey,
+        }
+      : null;
+    spotlightTransitionRef.current = handoffTransition;
+    setSpotlightTransition(handoffTransition);
+    communitySpotlightsRef.current = nextRows;
+    miniSpotlightIndexRef.current = nextIndex;
+    setCommunitySpotlights(nextRows);
+    setMiniSpotlightIndex(nextIndex);
+    if (nextRows.length <= 1) void requestNextCanonicalSpotlight();
+  }, [
+    miniSpotlight,
+    nextMiniSpotlight,
+    requestNextCanonicalSpotlight,
+    spotlightMediaStatusByKey,
+    spotlightRotationActiveKey,
+    spotlightTransition,
   ]);
 
   const ownerSpotlightStatusView = useMemo(() => {
+    if (spotlightTransition) return null;
     if (!ownerSpotlightInspectionMode) return null;
     if (miniSpotlight && !miniSpotlightIsOwnerInspection) return null;
 
@@ -4642,12 +4923,14 @@ export default function ShopGalleryPage() {
     ownerSpotlightInspection,
     ownerSpotlightInspectionMode,
     ownerSpotlightPreviewAuthorized,
+    spotlightTransition,
   ]);
 
   useEffect(() => {
     const qualifyingMediaStatus =
-      spotlightMediaStatusByKey[spotlightMediaKey];
+      spotlightActiveMediaStatusByOccurrence[spotlightRotationActiveKey];
     if (
+      spotlightTransition ||
       loading ||
       error ||
       !miniSpotlight ||
@@ -4801,24 +5084,11 @@ export default function ShopGalleryPage() {
         return;
       }
 
-      if (
-        activeSpotlight.isCanonicalOpportunity &&
-        activeSpotlight.opportunityPresentationToken &&
-        !spotlightSuppliedKeysRef.current.has(presentationKey)
-      ) {
-        spotlightSuppliedKeysRef.current.add(presentationKey);
-        void acknowledgeSpotlightPresentationSupply({
-          presentation_token: activeSpotlight.opportunityPresentationToken,
-          visible_ratio: spotlightVisibleRatioRef.current,
-          document_visible: currentDocumentVisible(),
-          owner_preview: false,
-        }).catch(() => {
-          if (alive) spotlightSuppliedKeysRef.current.delete(presentationKey);
-        });
-      }
 
       const latestMediaStatus =
-        spotlightMediaStatusByKeyRef.current[spotlightMediaKey];
+        spotlightActiveMediaStatusByOccurrenceRef.current[
+          spotlightRotationActiveKey
+        ];
       if (
         latestMediaStatus?.status === 'ready' &&
         latestMediaStatus.kind === 'video'
@@ -4834,6 +5104,22 @@ export default function ShopGalleryPage() {
           spotlightQualificationTimerRef.current = qualificationTimer;
           return;
         }
+      }
+
+      if (
+        activeSpotlight.isCanonicalOpportunity &&
+        activeSpotlight.opportunityPresentationToken &&
+        !spotlightSuppliedKeysRef.current.has(presentationKey)
+      ) {
+        spotlightSuppliedKeysRef.current.add(presentationKey);
+        void acknowledgeSpotlightPresentationSupply({
+          presentation_token: activeSpotlight.opportunityPresentationToken,
+          visible_ratio: spotlightVisibleRatioRef.current,
+          document_visible: currentDocumentVisible(),
+          owner_preview: false,
+        }).catch(() => {
+          if (alive) spotlightSuppliedKeysRef.current.delete(presentationKey);
+        });
       }
 
       if (visibleSince <= 0) visibleSince = Date.now();
@@ -4926,12 +5212,15 @@ export default function ShopGalleryPage() {
     requestNextCanonicalSpotlight,
     spotlightHasRenderableMedia,
     spotlightMediaKey,
-    spotlightMediaStatusByKey,
+    spotlightActiveMediaStatusByOccurrence,
     spotlightRotationActiveKey,
+    spotlightTransition,
     trackMarketplaceAttention,
   ]);
 
-  const publicShopSpotlightActive = Boolean(miniSpotlight);
+  const publicShopSpotlightActive = Boolean(
+    miniSpotlight && spotlightTransition?.phase !== 'neutral'
+  );
   const spotlightScreenHeight = spotlightImmersiveOpen
     ? isCompact
       ? "calc(100dvh - 64px)"
@@ -4961,23 +5250,29 @@ export default function ShopGalleryPage() {
       ].filter(Boolean)
     )
   );
-  const spotlightInformationDetail = firstMeaningful(
-    ownerSpotlightStatusView?.detail,
-    publicShopSpotlightActive ? miniSpotlight?.sourceProductDescription : "",
+  const spotlightViewDetail =
     safeStr(miniSpotlightView.detail).trim().toLocaleLowerCase() !==
-      safeStr(miniSpotlightView.title).trim().toLocaleLowerCase()
+    safeStr(miniSpotlightView.title).trim().toLocaleLowerCase()
       ? miniSpotlightView.detail
-      : ""
-  );
-  const spotlightInformationTitle = ownerSpotlightStatusView
-    ? ownerSpotlightStatusView.title
-    : publicShopSpotlightActive
+      : "";
+  const spotlightInformationDetail = publicShopSpotlightActive
+    ? firstMeaningful(
+        miniSpotlight?.sourceProductDescription,
+        spotlightViewDetail
+      )
+    : firstMeaningful(ownerSpotlightStatusView?.detail, spotlightViewDetail);
+  const spotlightInformationTitle = publicShopSpotlightActive
     ? firstMeaningful(
         miniSpotlight?.sourceProductTitle,
         miniSpotlightView.title,
         "Spotlight product"
       )
+    : ownerSpotlightStatusView
+    ? ownerSpotlightStatusView.title
     : "Discover what's new";
+  const spotlightInformationAvailable = Boolean(
+    publicShopSpotlightActive || ownerSpotlightStatusView
+  );
   const spotlightWhatsAppAvailable = Boolean(
     publicShopSpotlightActive &&
       normalizeWhatsAppRecipient(miniSpotlightView.sourceShopWhatsApp)
@@ -8041,15 +8336,20 @@ export default function ShopGalleryPage() {
         {!focusedBlockLinkActive &&
         (hiddenShelfEntryCount > 0 ||
           showAllProducts ||
-          (isCompact && routeDiaryEntryId <= 0)) ? (
+          ((isCompact || spotlightInformationAvailable) &&
+            routeDiaryEntryId <= 0)) ? (
           <div
             className="public-shop-compact-reveal-row"
             data-public-shop-reveal-controls="true"
             style={{
               order: routeDiaryEntryId > 0 ? 3 : 2,
+              position: "relative",
+              zIndex: 20,
               display: "grid",
               gridTemplateColumns:
-                isCompact && (hiddenShelfEntryCount > 0 || showAllProducts)
+                (hiddenShelfEntryCount > 0 || showAllProducts) &&
+                ((isCompact || spotlightInformationAvailable) &&
+                  routeDiaryEntryId <= 0)
                   ? "repeat(2, minmax(0, 1fr))"
                   : "minmax(0, 1fr)",
               gap: isCompact ? 7 : 10,
@@ -8061,12 +8361,18 @@ export default function ShopGalleryPage() {
                 onClick={() => setShowAllProducts((current) => !current)}
                 minWidth={0}
                 fullWidth
-                stableHeight={isCompact ? 46 : 48}
+                stableHeight={
+                  spotlightInformationAvailable ? 54 : isCompact ? 46 : 48
+                }
                 debugId="shop-gallery.toggle-all-products"
                 data-public-shop-neon-action="true"
                 style={{
                   ...secondaryBtn(false),
-                  minHeight: isCompact ? 46 : 48,
+                  minHeight: spotlightInformationAvailable
+                    ? 54
+                    : isCompact
+                    ? 46
+                    : 48,
                   borderRadius: isCompact ? 14 : 16,
                   padding: isCompact ? "5px 7px" : "8px 12px",
                   fontSize: isCompact ? 11.2 : 13.5,
@@ -8075,19 +8381,39 @@ export default function ShopGalleryPage() {
                 {showAllProducts ? "Show less" : `Show ${hiddenShelfEntryCount} more`}
               </SecondaryButton>
             ) : null}
-            {isCompact && routeDiaryEntryId <= 0 ? (
+            {(isCompact || spotlightInformationAvailable) &&
+            routeDiaryEntryId <= 0 ? (
               <SecondaryButton
-                onClick={() => setShopMoreOpen((current) => !current)}
+                onClick={() => {
+                  if (spotlightInformationAvailable) {
+                    setShopMoreOpen(true);
+                    setSpotlightInformationOpen((current) => !current);
+                    pauseSpotlightPresentationRotation();
+                    return;
+                  }
+                  setShopMoreOpen((current) => !current);
+                }}
                 minWidth={0}
                 fullWidth
-                stableHeight={46}
+                stableHeight={spotlightInformationAvailable ? 54 : 46}
                 debugId="shop-gallery.more.compact-toggle"
                 data-public-shop-neon-action="true"
-                aria-expanded={publicShopMoreDisclosureOpen}
-                aria-controls="public-shop-more-panel"
+                data-spotlight-information-disclosure={
+                  spotlightInformationAvailable ? "true" : undefined
+                }
+                aria-expanded={
+                  spotlightInformationAvailable
+                    ? spotlightInformationOpen
+                    : publicShopMoreDisclosureOpen
+                }
+                aria-controls={
+                  spotlightInformationAvailable
+                    ? "public-shop-spotlight-information-details"
+                    : "public-shop-more-panel"
+                }
                 style={{
                   ...secondaryBtn(false),
-                  minHeight: 46,
+                  minHeight: spotlightInformationAvailable ? 54 : 46,
                   borderRadius: 14,
                   padding: "5px 8px",
                   fontSize: 11.2,
@@ -8095,11 +8421,97 @@ export default function ShopGalleryPage() {
                   gap: 6,
                 }}
               >
-                <span>{publicShopMoreLabel}</span>
+                <span
+                  style={{
+                    display: "grid",
+                    minWidth: 0,
+                    gap: 1,
+                    textAlign: "left",
+                  }}
+                >
+                  <span>{publicShopMoreLabel}</span>
+                  {spotlightInformationAvailable ? (
+                    <small
+                      data-spotlight-information-title="true"
+                      style={{
+                        minWidth: 0,
+                        overflow: "hidden",
+                        color: "#50647A",
+                        fontSize: 10.5,
+                        fontWeight: 780,
+                        lineHeight: 1.15,
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {spotlightInformationTitle}
+                    </small>
+                  ) : null}
+                </span>
                 <span aria-hidden="true">
-                  {publicShopMoreDisclosureOpen ? "-" : "+"}
+                  {spotlightInformationAvailable
+                    ? spotlightInformationOpen
+                      ? "\u25B4"
+                      : "\u25BE"
+                    : publicShopMoreDisclosureOpen
+                    ? "-"
+                    : "+"}
                 </span>
               </SecondaryButton>
+            ) : null}
+            {spotlightInformationAvailable &&
+            spotlightInformationOpen &&
+            routeDiaryEntryId <= 0 ? (
+              <div
+                id="public-shop-spotlight-information-details"
+                className="public-shop-spotlight-information-popover"
+                data-spotlight-information-overlay="true"
+                data-spotlight-information-popover="true"
+                data-spotlight-information-details="true"
+                role="region"
+                aria-label={`${spotlightInformationTitle} details`}
+                aria-live="polite"
+              >
+                {spotlightAdvertiserLabel || spotlightCommunityLabel ? (
+                  <span data-spotlight-source-line="true">
+                    {spotlightAdvertiserLabel || "GSN Spotlight"}
+                    {spotlightCommunityLabel
+                      ? ` \u00B7 ${spotlightCommunityLabel}`
+                      : ""}
+                  </span>
+                ) : null}
+                {spotlightInformationDetail ? (
+                  <div data-spotlight-information-detail="true">
+                    {spotlightInformationDetail}
+                  </div>
+                ) : null}
+                {spotlightFeedError ? (
+                  <div data-spotlight-feed-error="true">
+                    {spotlightFeedError}
+                  </div>
+                ) : null}
+                {spotlightMediaStatusByKey[spotlightMediaKey]?.status ===
+                  "unavailable" && spotlightMediaKey ? (
+                  <div data-spotlight-media-status="unavailable">
+                    Media could not be shown. GSN will not count this showing and
+                    will retry automatically.
+                  </div>
+                ) : null}
+                {publicShopSpotlightActive && spotlightFactLabels.length > 0 ? (
+                  <div data-spotlight-fact-line="true">
+                    {spotlightFactLabels.map((label) => (
+                      <span key={label}>{label}</span>
+                    ))}
+                  </div>
+                ) : null}
+                {spotlightProductLinked ? (
+                  <div data-spotlight-protected-sales-path="true">
+                    Contact Seller opens a GSN enquiry first. Any transaction
+                    continues through the existing Protected Sales workflow;
+                    Spotlight is not verification or a completed sale.
+                  </div>
+                ) : null}
+              </div>
             ) : null}
           </div>
         ) : null}
@@ -8180,6 +8592,7 @@ export default function ShopGalleryPage() {
               ownerSpotlightStatusView?.state || "visitor"
             }
             data-spotlight-layout="unified-spotlight-stage"
+            data-spotlight-transition={spotlightTransition?.phase || "settled"}
             data-spotlight-immersive={spotlightImmersiveOpen ? "true" : "false"}
             onPointerEnter={pauseSpotlightPresentationRotation}
             onPointerDown={pauseSpotlightPresentationRotation}
@@ -8344,232 +8757,6 @@ export default function ShopGalleryPage() {
                     </PrimaryButton>
                   ) : null}
                 </div>
-                <details
-                  className="public-shop-spotlight-information-overlay"
-                  data-spotlight-information-overlay="true"
-                  data-spotlight-information-disclosure="true"
-                  open={spotlightInformationOpen}
-                  onToggle={(event) => {
-                    setSpotlightInformationOpen(event.currentTarget.open);
-                    pauseSpotlightPresentationRotation();
-                  }}
-                  style={{
-                    position: "absolute",
-                    left: 0,
-                    right: isCompact ? 58 : 76,
-                    bottom: isCompact ? 74 : 86,
-                    zIndex: 4,
-                    minWidth: 0,
-                    maxHeight: "45%",
-                    overflow: "hidden",
-                    borderRadius: isCompact ? "0 14px 14px 0" : "0 18px 18px 0",
-                    color: "#FFFFFF",
-                    background:
-                      "linear-gradient(90deg, rgba(2,12,27,0.92) 0%, rgba(2,12,27,0.72) 70%, rgba(2,12,27,0.10) 100%)",
-                    boxShadow: "none",
-                    backdropFilter: "blur(3px)",
-                  }}
-                >
-                  <StableDisclosureSummary
-                    debugId="shop-gallery.spotlight.information-toggle"
-                    stableHeight={isCompact ? 54 : 64}
-                    aria-expanded={spotlightInformationOpen}
-                    aria-controls="public-shop-spotlight-information-details"
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "minmax(0, 1fr) auto",
-                      alignItems: "center",
-                      gap: 10,
-                      minWidth: 0,
-                      padding: isCompact ? "7px 10px" : "9px 12px",
-                      color: "#FFFFFF",
-                      borderRadius: isCompact ? 16 : 18,
-                      background: "transparent",
-                    }}
-                  >
-                    <span
-                      style={{
-                        display: "grid",
-                        gap: 3,
-                        minWidth: 0,
-                        textAlign: "left",
-                      }}
-                    >
-                      {publicShopSpotlightActive &&
-                      (spotlightAdvertiserLabel || spotlightCommunityLabel) ? (
-                        <span
-                          data-spotlight-source-line="true"
-                          style={{
-                            minWidth: 0,
-                            color: "#CFE4F6",
-                            fontSize: isCompact ? 10.5 : 12,
-                            fontWeight: 820,
-                            lineHeight: 1.2,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {spotlightAdvertiserLabel || "GSN Spotlight"}
-                          {spotlightCommunityLabel
-                            ? ` · ${spotlightCommunityLabel}`
-                            : ""}
-                        </span>
-                      ) : null}
-                      <strong
-                        data-spotlight-information-title="true"
-                        style={{
-                          minWidth: 0,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          color: "#FFFFFF",
-                          fontSize: isCompact ? 16 : 20,
-                          fontWeight: 950,
-                          lineHeight: 1.12,
-                        }}
-                      >
-                        {spotlightInformationTitle}
-                      </strong>
-                    </span>
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        display: "grid",
-                        placeItems: "center",
-                        width: isCompact ? 30 : 36,
-                        height: isCompact ? 30 : 36,
-                        borderRadius: 999,
-                        background: spotlightInformationOpen
-                          ? "rgba(255,255,255,0.92)"
-                          : "#0B63D1",
-                        color: spotlightInformationOpen ? "#0B4E8A" : "#FFFFFF",
-                        fontSize: 22,
-                        fontWeight: 950,
-                      }}
-                    >
-                      {spotlightInformationOpen ? "\u25B4" : "\u25BE"}
-                    </span>
-                  </StableDisclosureSummary>
-                  <div
-                    id="public-shop-spotlight-information-details"
-                    data-spotlight-information-details="true"
-                    style={{
-                      display: "grid",
-                      gap: 7,
-                      maxHeight: isCompact ? "180px" : "240px",
-                      overflowY: "auto",
-                      overscrollBehavior: "contain",
-                      padding: isCompact ? "0 10px 10px" : "0 12px 12px",
-                    }}
-                  >
-                    {spotlightFeedError ? (
-                  <div
-                    data-spotlight-feed-error='true'
-                    style={{
-                      marginTop: 7,
-                      color: '#F8D66D',
-                      fontSize: 12,
-                      lineHeight: 1.4,
-                      fontWeight: 820,
-                    }}
-                  >
-                    {spotlightFeedError}
-                  </div>
-                ) : null}
-                {spotlightMediaStatusByKey[spotlightMediaKey]?.status === 'unavailable' &&
-                spotlightMediaKey ? (
-                  <div
-                    data-spotlight-media-status='unavailable'
-                    style={{
-                      marginTop: 7,
-                      color: '#F8D66D',
-                      fontSize: 12,
-                      lineHeight: 1.4,
-                      fontWeight: 820,
-                    }}
-                  >
-                    Media could not be shown. GSN will not count this showing and will retry automatically.
-                  </div>
-                ) : null}
-                {isCompact && spotlightInformationDetail ? (
-                  <div
-                    data-spotlight-information-detail="true"
-                    style={{
-                      color: "#E7F0F8",
-                      fontSize: 12.5,
-                      lineHeight: 1.4,
-                      fontWeight: 720,
-                      overflow: "hidden",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical" as any,
-                    }}
-                  >
-                    {spotlightInformationDetail}
-                  </div>
-                ) : null}
-                {publicShopSpotlightActive && spotlightFactLabels.length > 0 ? (
-                  <div
-                    data-spotlight-fact-line="true"
-                    style={{ display: "flex", flexWrap: "wrap", gap: 6 }}
-                  >
-                    {spotlightFactLabels.map((label) => (
-                      <span
-                        key={label}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          minHeight: 25,
-                          maxWidth: "100%",
-                          padding: "4px 8px",
-                          borderRadius: 999,
-                          background: "rgba(242,207,119,0.18)",
-                          color: "#F8D66D",
-                          fontSize: 10.5,
-                          fontWeight: 850,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {label}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-                {spotlightProductLinked ? (
-                  <div
-                    data-spotlight-protected-sales-path="true"
-                    style={{ color: "#D7E8F7", fontSize: 11, lineHeight: 1.35, fontWeight: 760 }}
-                  >
-                    Contact Seller opens a GSN enquiry first. Any transaction continues through the existing Protected Sales workflow; Spotlight is not verification or a completed sale.
-                  </div>
-                ) : null}
-                {!isCompact && (!ownerSpotlightStatusView || ownerSpotlightStatusView.detail) ? (
-                  <div
-                    style={{
-                      marginTop: 10,
-                      color: "#E7F0F8",
-                      fontSize: 15,
-                      lineHeight: 1.35,
-                      fontWeight: 720,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 3,
-                      WebkitBoxOrient: "vertical" as any,
-                    }}
-                  >
-                    {ownerSpotlightStatusView
-                      ? ownerSpotlightStatusView.detail
-                      : publicShopSpotlightActive
-                      ? miniSpotlightView.detail
-                      : "Fresh items, hot deals, and public shop updates."}
-                  </div>
-                ) : null}
-                  </div>
-                </details>
               </div>
               <div
                 className="public-shop-spotlight-screen"
@@ -8655,18 +8842,43 @@ export default function ShopGalleryPage() {
                     alt={miniSpotlightView.title}
                     onMediaReady={(details) => {
                       if (details.occurrenceId !== spotlightRotationActiveKey) return;
-                      reportSpotlightMediaStatus(spotlightMediaKey, {
+                      const status: SpotlightMediaStatus = {
                         status: 'ready',
                         kind: details.kind,
                         durationSeconds: details.durationSeconds,
                         fallbackFromVideo: Boolean(details.fallbackFromVideo),
-                      });
+                      };
+                      reportSpotlightMediaStatus(spotlightMediaKey, status);
+                      reportSpotlightActiveMediaStatus(
+                        spotlightRotationActiveKey,
+                        status
+                      );
+                      completeSpotlightMediaHandoff(
+                        spotlightRotationActiveKey,
+                        spotlightMediaKey
+                      );
                     }}
                     onMediaUnavailable={(details) => {
                       if (details.occurrenceId !== spotlightRotationActiveKey) return;
-                      reportSpotlightMediaStatus(spotlightMediaKey, {
+                      const status: SpotlightMediaStatus = {
                         status: 'unavailable',
-                      });
+                      };
+                      reportSpotlightMediaStatus(spotlightMediaKey, status);
+                      reportSpotlightActiveMediaStatus(
+                        spotlightRotationActiveKey,
+                        status
+                      );
+                      if (
+                        spotlightTransitionRef.current &&
+                        ['handoff', 'neutral'].includes(
+                          spotlightTransitionRef.current.phase
+                        ) &&
+                        spotlightTransitionRef.current.targetMediaKey ===
+                          spotlightMediaKey
+                      ) {
+                        spotlightTransitionRef.current = null;
+                        setSpotlightTransition(null);
+                      }
                     }}
                     fallback={
                       <div
@@ -8765,23 +8977,24 @@ export default function ShopGalleryPage() {
                       objectPosition: "center",
                     }}
                   />
-                  {nextMiniSpotlight &&
-                  nextSpotlightMediaKey &&
-                  nextSpotlightMediaKey !== spotlightMediaKey &&
-                  (nextMiniSpotlightView.imageUrl ||
-                    nextMiniSpotlightView.videoUrl) ? (
+                  {spotlightPreloadItem &&
+                  spotlightPreloadMediaKey &&
+                  (spotlightPreloadIsHandoff ||
+                    spotlightPreloadMediaKey !== spotlightMediaKey) &&
+                  (spotlightPreloadView.imageUrl ||
+                    spotlightPreloadView.videoUrl) ? (
                     <SpotlightMediaFrame
-                      key={`public-shop-spotlight-preload-${nextSpotlightMediaKey}`}
-                      imageUrl={nextMiniSpotlightView.imageUrl}
+                      key={`public-shop-spotlight-preload-${spotlightPreloadMediaKey}`}
+                      imageUrl={spotlightPreloadView.imageUrl}
                       imageLoading="eager"
                       imageFetchPriority="low"
                       imageSizes="(max-width: 720px) 100vw, 720px"
                       preserveNaturalColor={true}
-                      videoUrl={nextMiniSpotlightView.videoUrl}
-                      videoPoster={nextMiniSpotlightView.imageUrl}
+                      videoUrl={spotlightPreloadView.videoUrl}
+                      videoPoster={spotlightPreloadView.imageUrl}
                       alt=''
                       onMediaReady={(details) =>
-                        reportSpotlightMediaStatus(nextSpotlightMediaKey, {
+                        reportSpotlightMediaStatus(spotlightPreloadMediaKey, {
                           status: 'ready',
                           kind: details.kind,
                           durationSeconds: details.durationSeconds,
@@ -8792,7 +9005,7 @@ export default function ShopGalleryPage() {
                       }
                       onMediaUnavailable={() =>
                         reportSpotlightMediaStatus(
-                          nextSpotlightMediaKey,
+                          spotlightPreloadMediaKey,
                           { status: 'unavailable' }
                         )
                       }
@@ -8812,9 +9025,9 @@ export default function ShopGalleryPage() {
                         height: spotlightScreenHeight,
                         minHeight: spotlightScreenHeight,
                         borderRadius: 0,
-                        opacity: 0,
+                        opacity: spotlightPreloadIsHandoff ? 1 : 0,
                         pointerEvents: 'none',
-                        zIndex: 0,
+                        zIndex: spotlightPreloadIsHandoff ? 5 : 0,
                       }}
                       mediaStyle={{
                         width: '100%',
@@ -8861,6 +9074,44 @@ export default function ShopGalleryPage() {
                     )}
                   </div>
                 )}
+                {spotlightTransition?.phase === 'neutral' ? (
+                  <div
+                    data-spotlight-transition-bridge="neutral"
+                    role="status"
+                    aria-live="polite"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      zIndex: 4,
+                      display: "grid",
+                      placeItems: "center",
+                      padding: isCompact ? "70px 18px 18px" : 24,
+                      color: "#E8F2FF",
+                      background:
+                        "radial-gradient(circle at 50% 42%, rgba(21,82,138,0.58), rgba(2,12,27,0.96) 62%)",
+                      textAlign: "center",
+                      pointerEvents: "auto",
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "grid",
+                        gap: 6,
+                        maxWidth: 280,
+                        fontSize: isCompact ? 12 : 14,
+                        fontWeight: 850,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      <strong style={{ color: "#FFFFFF", fontSize: "1.15em" }}>
+                        Preparing the next Spotlight
+                      </strong>
+                      <span>
+                        GSN is checking the next eligible advert. No blank showing is counted.
+                      </span>
+                    </span>
+                  </div>
+                ) : null}
                 <SecondaryButton
                   onClick={() => {
                     setSpotlightImmersiveOpen((open) => !open);

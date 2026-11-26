@@ -324,8 +324,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /const spotlightContactAvailable = Boolean\([\s\S]*?const spotlightContactActionAvailable = Boolean\([\s\S]*?spotlightContactAvailable && !spotlightSelfActionsBlocked[\s\S]*?data-spotlight-action-row="true"[\s\S]*?\{spotlightContactActionAvailable \? \([\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?: null\}[\s\S]*?data-spotlight-information-overlay="true"[\s\S]*?data-spotlight-screen="true"[\s\S]*?heroImage && !ownerSpotlightStatusView && !miniSpotlight/,
-  "Spotlight contact must remain in the normal-flow action row, disappear without a live contact or for the source-shop owner, preserve the in-media information overlay, and never reuse shop hero media for owner status."
+  /const spotlightContactAvailable = Boolean\([\s\S]*?const spotlightContactActionAvailable = Boolean\([\s\S]*?spotlightContactAvailable && !spotlightSelfActionsBlocked[\s\S]*?data-spotlight-information-popover="true"[\s\S]*?data-spotlight-action-row="true"[\s\S]*?\{spotlightContactActionAvailable \? \([\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?: null\}[\s\S]*?data-spotlight-screen="true"[\s\S]*?heroImage && !ownerSpotlightStatusView && !miniSpotlight/,
+  "Spotlight contact must remain in the normal-flow action row, disappear without a live contact or for the source-shop owner, preserve the relocated information popover, and never reuse shop hero media for owner status."
 );
 
 assertContains(
@@ -336,7 +336,7 @@ assertContains(
 
 assertContains(
   'frontend/src/components/SpotlightMediaFrame.tsx',
-  /onMediaReady\?: \(details: SpotlightMediaReadyDetails\)[\s\S]*?kind: 'image' \| 'video'[\s\S]*?IMAGE_AUTO_RETRY_LIMIT[\s\S]*?video\.readyState >= HTMLMediaElement\.HAVE_CURRENT_DATA[\s\S]*?kind: 'video'[\s\S]*?\(!videoSrc \|\| videoFailed\)[\s\S]*?kind: 'image'[\s\S]*?A cover is not the effective medium while its video is pending/,
+/onMediaReady\?: \(details: SpotlightMediaReadyDetails\)[\s\S]*?kind: 'image' \| 'video'[\s\S]*?IMAGE_AUTO_RETRY_LIMIT[\s\S]*?video\.readyState >= HTMLMediaElement\.HAVE_CURRENT_DATA[\s\S]*?reportVideoReadyAfterPaint[\s\S]*?reportImageReadyAfterDecode[\s\S]*?image\.decode\(\)[\s\S]*?A cover is not the effective medium while its video is pending/,
   'Shared Spotlight media must report real image/video readiness and terminal unavailability after bounded retries.'
 );
 
@@ -420,7 +420,7 @@ assertContains(
 
 assertContains(
   'frontend/src/pages/ShopGalleryPage.tsx',
-  /key='public-shop-spotlight-active-media'[^]*?key=\{`public-shop-spotlight-preload-\$\{nextSpotlightMediaKey\}`\}/,
+/key='public-shop-spotlight-active-media'[^]*?key=\{`public-shop-spotlight-preload-\$\{spotlightPreloadMediaKey\}`\}[^]*?opacity: spotlightPreloadIsHandoff \? 1 : 0/,
   'Public Shop must preserve the sound-authorized active media element across rotations instead of promoting a different preloaded element.'
 );
 
@@ -545,8 +545,13 @@ assertContains(
 );
 assertContains(
   'frontend/src/pages/ShopGalleryPage.tsx',
-  /SPOTLIGHT_MEDIA_PRELOAD_TIMEOUT_MS[^]*?nextSpotlightMediaKey[^]*?activeRows.length <= 1[^]*?setCommunitySpotlights\(\[\]\)[^]*?requestNextCanonicalSpotlight[^]*?return true[^]*?activeRowsAtStart.length <= 1[^]*?requestNextCanonicalSpotlight[^]*?preloadVideo='auto'/,
-  'Public Shop must preload and refill early, then remove a consumed final occurrence instead of leaving stale media painted during refill cooldown.'
+  /SPOTLIGHT_AUTHORIZED_FRAME_HOLD_MS[^]*?spotlightPreloadIsHandoff[^]*?phase: 'holding'[^]*?activeRows.length <= 1[^]*?requestNextCanonicalSpotlight[^]*?data-spotlight-transition-bridge="neutral"/,
+  'Public Shop must retain a bounded authorised frame, promote the prepared successor, and use a neutral non-advertising bridge instead of clearing the media stage.'
+);
+assertContains(
+  'frontend/src/pages/ShopGalleryPage.tsx',
+  /spotlightActiveMediaStatusByOccurrence\[spotlightRotationActiveKey\][^]*?spotlightPlaybackCanQualify\(playbackStatus\)[^]*?acknowledgeSpotlightPresentationSupply/,
+  'Spotlight delivery accounting must use active-occurrence readiness and verify video progression before acknowledging commercial supply.'
 );
 
 assertContains(

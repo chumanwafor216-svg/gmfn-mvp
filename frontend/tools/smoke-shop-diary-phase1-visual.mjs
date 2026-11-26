@@ -481,11 +481,12 @@ async function collectMetrics(page) {
     const spotlight = document.querySelector(".public-shop-spotlight");
     const spotlightRect = spotlight?.getBoundingClientRect();
     const spotlightScreen = spotlight?.querySelector('[data-spotlight-screen="true"]');
-    const spotlightOverlay = spotlight?.querySelector('[data-spotlight-information-overlay="true"]');
+    const spotlightLowerOverlay = spotlight?.querySelector(
+      '[data-spotlight-information-overlay="true"]'
+    );
     const spotlightActionRow = spotlight?.querySelector('[data-spotlight-action-row="true"]');
     const spotlightProductRail = spotlight?.querySelector('[data-spotlight-product-actions="true"]');
     const spotlightScreenRect = spotlightScreen?.getBoundingClientRect();
-    const spotlightOverlayRect = spotlightOverlay?.getBoundingClientRect();
     const spotlightActionRowRect = spotlightActionRow?.getBoundingClientRect();
     const spotlightProductRailRect = spotlightProductRail?.getBoundingClientRect();
     const spotlightActionRects = Array.from(spotlightActionRow?.children || []).map(
@@ -602,12 +603,10 @@ async function collectMetrics(page) {
       spotlightInformationPanelPresent: Boolean(
         spotlight?.querySelector('[data-spotlight-information-panel="true"]')
       ),
+      spotlightLowerOverlayPresent: Boolean(spotlightLowerOverlay),
       spotlightScreenTop: spotlightScreenRect ? Math.round(spotlightScreenRect.top) : null,
       spotlightScreenBottom: spotlightScreenRect ? Math.round(spotlightScreenRect.bottom) : null,
       spotlightScreenHeight: spotlightScreenRect ? Math.round(spotlightScreenRect.height) : null,
-      spotlightOverlayTop: spotlightOverlayRect ? Math.round(spotlightOverlayRect.top) : null,
-      spotlightOverlayRight: spotlightOverlayRect ? Math.round(spotlightOverlayRect.right) : null,
-      spotlightOverlayBottom: spotlightOverlayRect ? Math.round(spotlightOverlayRect.bottom) : null,
       spotlightActionRowTop: spotlightActionRowRect ? Math.round(spotlightActionRowRect.top) : null,
       spotlightActionRowBottom: spotlightActionRowRect ? Math.round(spotlightActionRowRect.bottom) : null,
       spotlightActionCount: spotlightActionRects.length,
@@ -841,15 +840,32 @@ async function run() {
         if (!spotlightBox || spotlightBox.height < 400) {
           throw new Error("The open-by-default live Spotlight billboard did not render.");
         }
+        const rotatingTitle = spotlightRevealAction.locator(
+          '[data-spotlight-information-title="true"]'
+        );
+        if (!(await rotatingTitle.isVisible()) || !(await rotatingTitle.textContent())?.trim()) {
+          throw new Error("The upper Live Spotlight control did not show the active title.");
+        }
         await spotlightRevealAction.click();
-        await page.waitForFunction(
-          () => document.querySelector('[data-public-shop-more="secondary"]')?.open === false
+        const informationPopover = page.locator(
+          '[data-spotlight-information-popover="true"]'
         );
-        await page.waitForTimeout(350);
-        await spotlightRevealAction.click({ force: true });
-        await page.waitForFunction(
-          () => document.querySelector('[data-public-shop-more="secondary"]')?.open === true
-        );
+        await informationPopover.waitFor({ state: "visible" });
+        if (!(await details.evaluate((node) => node.open))) {
+          throw new Error("Opening Spotlight information incorrectly closed the media stage.");
+        }
+        const popoverBox = await informationPopover.boundingBox();
+        const viewport = page.viewportSize();
+        if (
+          !popoverBox ||
+          !viewport ||
+          popoverBox.x < -1 ||
+          popoverBox.x + popoverBox.width > viewport.width + 1
+        ) {
+          throw new Error("The upper Spotlight information popover overflowed the viewport.");
+        }
+        await spotlightRevealAction.click();
+        await informationPopover.waitFor({ state: "detached" });
         await page.waitForTimeout(250);
       }
       const metrics = await collectMetrics(page);
@@ -1285,6 +1301,7 @@ async function run() {
         if (
           metrics.spotlightLayout !== "unified-spotlight-stage" ||
           metrics.spotlightInformationPanelPresent ||
+          metrics.spotlightLowerOverlayPresent ||
           metrics.spotlightScreenHeight === null ||
           metrics.spotlightScreenHeight < 510 ||
           metrics.spotlightScreenHeight > 620 ||
@@ -1295,17 +1312,10 @@ async function run() {
           metrics.productUpdateTickerTop < metrics.spotlightScreenTop - 1 ||
           metrics.spotlightScreenBottom === null ||
           metrics.productUpdateTickerBottom > metrics.spotlightScreenBottom + 1 ||
-          metrics.spotlightOverlayTop === null ||
-          metrics.spotlightOverlayBottom === null ||
-          metrics.spotlightOverlayTop < metrics.spotlightScreenTop - 1 ||
-          metrics.spotlightOverlayBottom > metrics.spotlightScreenBottom + 1 ||
           metrics.spotlightActionRowTop === null ||
           Math.abs(metrics.spotlightActionRowTop - metrics.spotlightScreenBottom) > 1 ||
           metrics.spotlightActionCount !== 3 ||
           metrics.spotlightActionWidths.some((width) => width < 44) ||
-          (metrics.spotlightProductRailLeft !== null &&
-            metrics.spotlightOverlayRight !== null &&
-            metrics.spotlightOverlayRight > metrics.spotlightProductRailLeft + 1) ||
           metrics.scrollWidth > metrics.innerWidth
         ) {
           throw new Error(
@@ -1313,15 +1323,13 @@ async function run() {
               JSON.stringify({
                 layout: metrics.spotlightLayout,
                 separatePanel: metrics.spotlightInformationPanelPresent,
+                lowerOverlay: metrics.spotlightLowerOverlayPresent,
                 tickerTop: metrics.productUpdateTickerTop,
                 tickerBottom: metrics.productUpdateTickerBottom,
                 tickerInsideScreen: metrics.spotlightScreenContainsTicker,
                 screenTop: metrics.spotlightScreenTop,
                 screenBottom: metrics.spotlightScreenBottom,
                 screenHeight: metrics.spotlightScreenHeight,
-                overlayTop: metrics.spotlightOverlayTop,
-                overlayRight: metrics.spotlightOverlayRight,
-                overlayBottom: metrics.spotlightOverlayBottom,
                 productRailLeft: metrics.spotlightProductRailLeft,
                 actionRowTop: metrics.spotlightActionRowTop,
                 actionRowBottom: metrics.spotlightActionRowBottom,

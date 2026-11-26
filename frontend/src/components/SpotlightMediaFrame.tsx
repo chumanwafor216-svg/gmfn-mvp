@@ -333,10 +333,7 @@ export default function SpotlightMediaFrame(
       video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
       mediaReportRef.current === 'pending'
     ) {
-      reportMediaReady({
-        kind: 'video',
-        durationSeconds: readableVideoDurationSeconds(video),
-      }, occurrenceGeneration, video);
+      reportVideoReadyAfterPaint(video, occurrenceGeneration);
       return;
     }
 
@@ -348,11 +345,12 @@ export default function SpotlightMediaFrame(
       image.naturalWidth > 0 &&
       mediaReportRef.current === 'pending'
     ) {
-      reportMediaReady({
-        kind: 'image',
-        durationSeconds: null,
-        fallbackFromVideo: videoFailed,
-      });
+      reportImageReadyAfterDecode(
+        image,
+        occurrenceGeneration,
+        imageSrc,
+        videoFailed
+      );
     }
   }, [imageSrc, occurrenceGeneration, videoFailed, videoSrc]);
 
@@ -442,6 +440,56 @@ export default function SpotlightMediaFrame(
         generation
       );
     }
+  }
+
+  function afterNextMediaPaint(callback: () => void) {
+    if (typeof window === 'undefined') {
+      callback();
+      return;
+    }
+    window.requestAnimationFrame(() => window.requestAnimationFrame(callback));
+  }
+
+  function reportVideoReadyAfterPaint(
+    video: HTMLVideoElement,
+    generation = occurrenceGeneration
+  ) {
+    afterNextMediaPaint(() => {
+      if (!isCurrentOccurrenceVideo(video, generation)) return;
+      reportMediaReady(
+        {
+          kind: 'video',
+          durationSeconds: readableVideoDurationSeconds(video),
+        },
+        generation,
+        video
+      );
+    });
+  }
+
+  function reportImageReadyAfterDecode(
+    image: HTMLImageElement,
+    generation: typeof occurrenceGeneration,
+    expectedSource: string,
+    fallbackFromVideo: boolean
+  ) {
+    const decoded =
+      typeof image.decode === 'function'
+        ? image.decode().catch(() => undefined)
+        : Promise.resolve();
+    void decoded.then(() => {
+      afterNextMediaPaint(() => {
+        if (!isCurrentOccurrenceImage(image, generation, expectedSource)) return;
+        reportMediaReady(
+          {
+            kind: 'image',
+            durationSeconds: null,
+            fallbackFromVideo,
+          },
+          generation
+        );
+      });
+    });
   }
 
   function playbackBufferAheadSeconds(video: HTMLVideoElement): number {
@@ -1028,10 +1076,10 @@ export default function SpotlightMediaFrame(
           videoIsVisible &&
           isCurrentOccurrenceVideo(event.currentTarget, occurrenceGeneration)
         ) {
-          reportMediaReady({
-            kind: 'video',
-            durationSeconds: readableVideoDurationSeconds(event.currentTarget),
-          }, occurrenceGeneration, event.currentTarget);
+          reportVideoReadyAfterPaint(
+            event.currentTarget,
+            occurrenceGeneration
+          );
         }
       }}
       onCanPlay={(event) => {
@@ -1039,10 +1087,10 @@ export default function SpotlightMediaFrame(
           videoIsVisible &&
           isCurrentOccurrenceVideo(event.currentTarget, occurrenceGeneration)
         ) {
-          reportMediaReady({
-            kind: 'video',
-            durationSeconds: readableVideoDurationSeconds(event.currentTarget),
-          }, occurrenceGeneration, event.currentTarget);
+          reportVideoReadyAfterPaint(
+            event.currentTarget,
+            occurrenceGeneration
+          );
           resumeRecoveredVideo(event.currentTarget, occurrenceGeneration);
           if (props.autoPlayVideo ?? false) {
             requestVideoPlayback(
@@ -1224,11 +1272,12 @@ export default function SpotlightMediaFrame(
         // It becomes the governed image only when there is no video or the
         // video has failed.
         if (!videoSrc || videoFailed) {
-          reportMediaReady({
-            kind: 'image',
-            durationSeconds: null,
-            fallbackFromVideo: videoFailed,
-          });
+          reportImageReadyAfterDecode(
+            event.currentTarget,
+            occurrenceGeneration,
+            imageSrc,
+            videoFailed
+          );
         }
       }}
       onError={(event) => {

@@ -305,7 +305,40 @@ assert.match(
 );
 assert.match(
   publicShopSource,
-  /monitorPlayback=\{Boolean\(miniSpotlightView\.videoUrl\)\}[\s\S]*?nextMiniSpotlight[\s\S]*?autoPlayVideo=\{false\}/
+  /monitorPlayback=\{Boolean\(miniSpotlightView\.videoUrl\)\}[\s\S]*?spotlightPreloadItem[\s\S]*?autoPlayVideo=\{false\}/
+);
+assert.match(
+  publicShopSource,
+  /SPOTLIGHT_AUTHORIZED_FRAME_HOLD_MS[\s\S]*?phase: 'holding'[\s\S]*?phase: 'neutral'[\s\S]*?phase: 'handoff'/
+);
+assert.match(
+  publicShopSource,
+  /spotlightPreloadIsHandoff \? 1 : 0[\s\S]*?data-spotlight-transition-bridge="neutral"/
+);
+assert.match(
+  publicShopSource,
+  /spotlightActiveMediaStatusByOccurrence\[spotlightRotationActiveKey\][\s\S]*?spotlightPlaybackCanQualify\(playbackStatus\)[\s\S]*?acknowledgeSpotlightPresentationSupply/
+);
+assert.match(
+  mediaFrameSource,
+  /image\.decode\(\)[\s\S]*?afterNextMediaPaint[\s\S]*?reportVideoReadyAfterPaint/
+);
+const advanceStart = publicShopSource.indexOf(
+  'const advancePastActiveOccurrence = () => {'
+);
+const activeRowsStart = publicShopSource.indexOf(
+  'const activeRowsAtStart =',
+  advanceStart
+);
+assert.ok(advanceStart >= 0 && activeRowsStart > advanceStart);
+assert.doesNotMatch(
+  publicShopSource.slice(advanceStart, activeRowsStart),
+  /setCommunitySpotlights\(\[\]\)/
+);
+
+assert.match(
+  publicShopSource,
+  /spotlightActiveMediaStatusByOccurrence\[spotlightRotationActiveKey\][\s\S]*?spotlightTransition \|\|[\s\S]*?acknowledgeSpotlightPresentationSupply/
 );
 
 console.log('Spotlight playback reliability policy tests passed.');

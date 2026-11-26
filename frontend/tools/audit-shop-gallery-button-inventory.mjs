@@ -521,7 +521,7 @@ assertFileContains(
 );
 
 assertContains(
-  /key='public-shop-spotlight-active-media'[\s\S]*?audioEnabled=\{spotlightSoundEnabled\}[\s\S]*?key=\{`public-shop-spotlight-preload-\$\{nextSpotlightMediaKey\}`\}[\s\S]*?autoPlayVideo=\{false\}[\s\S]*?mutedVideo=\{true\}[\s\S]*?showAudioUnlock=\{false\}/,
+  /key='public-shop-spotlight-active-media'[\s\S]*?audioEnabled=\{spotlightSoundEnabled\}[\s\S]*?key=\{`public-shop-spotlight-preload-\$\{spotlightPreloadMediaKey\}`\}[\s\S]*?autoPlayVideo=\{false\}[\s\S]*?mutedVideo=\{true\}[\s\S]*?showAudioUnlock=\{false\}/,
   "Public Shop must keep one sound-authorized active Spotlight frame plus one separate muted, non-interactive preload frame."
 );
 
@@ -637,8 +637,8 @@ assertContains(
 );
 
 assertContains(
-  /const \[shopMoreOpen, setShopMoreOpen\] = useState\(true\);[\s\S]*?const publicShopMoreHashOpen = \[[\s\S]*?const publicShopMoreDisclosureOpen =[\s\S]*?!isCompact \|\| shopMoreOpen \|\| publicShopMoreHashOpen;[\s\S]*?className="public-shop-compact-reveal-row"[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)[\s\S]*?debugId="shop-gallery\.toggle-all-products"[\s\S]*?debugId="shop-gallery\.more\.compact-toggle"[\s\S]*?aria-expanded=\{publicShopMoreDisclosureOpen\}[\s\S]*?id="public-shop-more-panel"[\s\S]*?open=\{publicShopMoreDisclosureOpen\}[\s\S]*?display: isCompact && routeDiaryEntryId > 0 \? "flex" : "none"/,
-  "Public Shop phone must keep Show more and Live Spotlight in one compact two-button row, keep Spotlight open until intentionally closed, and preserve hash-driven or exact-update disclosure behavior."
+  /const \[shopMoreOpen, setShopMoreOpen\] = useState\(true\);[\s\S]*?const spotlightInformationAvailable = Boolean\([\s\S]*?publicShopSpotlightActive \|\| ownerSpotlightStatusView[\s\S]*?className="public-shop-compact-reveal-row"[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)[\s\S]*?debugId="shop-gallery\.toggle-all-products"[\s\S]*?debugId="shop-gallery\.more\.compact-toggle"[\s\S]*?data-spotlight-information-disclosure=[\s\S]*?aria-expanded=[\s\S]*?spotlightInformationOpen[\s\S]*?aria-controls=[\s\S]*?public-shop-spotlight-information-details[\s\S]*?id="public-shop-more-panel"[\s\S]*?open=\{publicShopMoreDisclosureOpen\}/,
+  "Public Shop must keep Show more and the dynamic Live Spotlight information control in one row while preserving the Spotlight/Vault panel disclosure contract."
 );
 
 assertNotContains(
@@ -716,8 +716,8 @@ assertContains(
 );
 
 assertContains(
-  /const spotlightScreenHeight = spotlightImmersiveOpen[\s\S]*?"calc\(100dvh - 64px\)"[\s\S]*?"calc\(100dvh - 72px\)"[\s\S]*?"clamp\(560px, 74svh, 620px\)"[\s\S]*?: "clamp\(500px, 64vh, 680px\)";[\s\S]*?data-spotlight-layout="unified-spotlight-stage"[\s\S]*?data-spotlight-information-shell="true"[\s\S]*?display: "contents"[\s\S]*?data-spotlight-action-row="true"[\s\S]*?data-spotlight-information-overlay="true"[\s\S]*?maxHeight: "45%"[\s\S]*?data-spotlight-screen="true"[\s\S]*?minHeight: spotlightScreenHeight[\s\S]*?height: spotlightScreenHeight[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,
-  "Public Shop Spotlight must keep the responsive enlarged media, layout-neutral information shell, restrained in-media disclosure overlay, normal-flow action row, and edge-to-edge media fit.",
+  /const spotlightScreenHeight = spotlightImmersiveOpen[\s\S]*?"calc\(100dvh - 64px\)"[\s\S]*?"calc\(100dvh - 72px\)"[\s\S]*?"clamp\(560px, 74svh, 620px\)"[\s\S]*?: "clamp\(500px, 64vh, 680px\)";[\s\S]*?data-spotlight-layout="unified-spotlight-stage"[\s\S]*?data-spotlight-information-shell="true"[\s\S]*?display: "contents"[\s\S]*?data-spotlight-action-row="true"[\s\S]*?data-spotlight-screen="true"[\s\S]*?minHeight: spotlightScreenHeight[\s\S]*?height: spotlightScreenHeight[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,
+  "Public Shop Spotlight must keep the responsive unobstructed media, layout-neutral action shell, normal-flow action row, and edge-to-edge media fit.",
 );
 
 assertContains(
@@ -759,8 +759,13 @@ assertFileContains(
   "The Public Shop visual smoke must cover unified Spotlight geometry and overflow at 360px, 390px, and 430px."
 );
 assertContains(
-  /const \[spotlightInformationOpen, setSpotlightInformationOpen\][\s\S]*?window\.innerWidth > 980[\s\S]*?data-spotlight-information-disclosure="true"[\s\S]*?open=\{spotlightInformationOpen\}[\s\S]*?debugId="shop-gallery\.spotlight\.information-toggle"[\s\S]*?aria-expanded=\{spotlightInformationOpen\}[\s\S]*?\{spotlightInformationOpen \? "\\u25B4" : "\\u25BE"\}[\s\S]*?data-spotlight-information-details="true"[\s\S]*?data-spotlight-screen="true"/,
-  "Public Shop Spotlight must start with secondary information collapsed on phone, use arrow disclosure signs instead of a second plus, and leave the media screen outside that disclosure."
+  /const \[spotlightInformationOpen, setSpotlightInformationOpen\][\s\S]*?window\.innerWidth > 980[\s\S]*?const spotlightInformationTitle =[\s\S]*?miniSpotlight\?\.sourceProductTitle[\s\S]*?miniSpotlightView\.title[\s\S]*?debugId="shop-gallery\.more\.compact-toggle"[\s\S]*?data-spotlight-information-disclosure=[\s\S]*?aria-expanded=[\s\S]*?spotlightInformationOpen[\s\S]*?data-spotlight-information-title="true"[\s\S]*?\? "\\u25B4"[\s\S]*?: "\\u25BE"[\s\S]*?data-spotlight-information-popover="true"[\s\S]*?data-spotlight-information-details="true"/,
+  "Public Shop Spotlight must bind the rotating title to the upper disclosure, start collapsed on phone, use arrow signs, and relocate complete details into a bounded upper popover."
+);
+
+assertNotContains(
+  /className="public-shop-spotlight-information-overlay"|debugId="shop-gallery\.spotlight\.information-toggle"/,
+  "Public Shop Spotlight must not restore the redundant lower description card or its separate toggle."
 );
 
 
