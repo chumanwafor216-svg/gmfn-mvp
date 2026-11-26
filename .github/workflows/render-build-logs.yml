@@ -41,8 +41,16 @@ jobs:
           deploy_json="$(curl -fsS "$api_base/services/$RENDER_FRONTEND_SERVICE_ID/deploys/$RENDER_DEPLOY_ID" \
             -H "accept: application/json" -H "$auth_header")"
           build_id="$(printf '%s' "$deploy_json" | jq -r '.buildId // .deploy.buildId // empty')"
-          if [ -z "$build_id" ]; then
-            echo "::error::Render did not return a build id for $RENDER_DEPLOY_ID."
+          started_at="$(printf '%s' "$deploy_json" | jq -r '.startedAt // .createdAt // .deploy.startedAt // .deploy.createdAt // empty')"
+          finished_at="$(printf '%s' "$deploy_json" | jq -r '.finishedAt // .updatedAt // .deploy.finishedAt // .deploy.updatedAt // empty')"
+          log_scope=()
+          if [ -n "$build_id" ]; then
+            log_scope+=(--data-urlencode "build=$build_id")
+          elif [ -n "$started_at" ] && [ -n "$finished_at" ]; then
+            log_scope+=(--data-urlencode "startTime=$started_at")
+            log_scope+=(--data-urlencode "endTime=$finished_at")
+          else
+            echo "::error::Render did not return a build id or deploy time range for $RENDER_DEPLOY_ID."
             exit 1
           fi
 
@@ -51,9 +59,9 @@ jobs:
             --data-urlencode "ownerId=$owner_id" \
             --data-urlencode "resource=$RENDER_FRONTEND_SERVICE_ID" \
             --data-urlencode "type=build" \
-            --data-urlencode "build=$build_id" \
             --data-urlencode "direction=forward" \
-            --data-urlencode "limit=100")"
+            --data-urlencode "limit=100" \
+            "${log_scope[@]}")"
 
           printf '%s' "$logs_json" | jq -r '.logs[].message' \
             | sed -E \
