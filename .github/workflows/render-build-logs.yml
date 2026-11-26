@@ -1,4 +1,4 @@
-﻿name: Render Build Logs
+name: Render Build Logs
 
 on:
   workflow_dispatch:
@@ -38,12 +38,20 @@ jobs:
             exit 1
           fi
 
+          deploy_json="$(curl -fsS "$api_base/services/$RENDER_FRONTEND_SERVICE_ID/deploys/$RENDER_DEPLOY_ID" \
+            -H "accept: application/json" -H "$auth_header")"
+          build_id="$(printf '%s' "$deploy_json" | jq -r '.buildId // .deploy.buildId // empty')"
+          if [ -z "$build_id" ]; then
+            echo "::error::Render did not return a build id for $RENDER_DEPLOY_ID."
+            exit 1
+          fi
+
           logs_json="$(curl -fsS -G "$api_base/logs" \
             -H "accept: application/json" -H "$auth_header" \
             --data-urlencode "ownerId=$owner_id" \
             --data-urlencode "resource=$RENDER_FRONTEND_SERVICE_ID" \
             --data-urlencode "type=build" \
-            --data-urlencode "build=$RENDER_DEPLOY_ID" \
+            --data-urlencode "build=$build_id" \
             --data-urlencode "direction=forward" \
             --data-urlencode "limit=100")"
 
