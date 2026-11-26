@@ -689,28 +689,29 @@ function positiveNumber(value: any): number {
 
 function spotlightProductRailButtonStyle(
   compact: boolean,
-  background: string
+  _background: string
 ): React.CSSProperties {
-  const size = compact ? 42 : 46;
+  const size = compact ? 44 : 46;
   return {
     width: size,
     minWidth: size,
     maxWidth: size,
     height: size,
     minHeight: size,
+    maxHeight: size,
     padding: 0,
     display: "inline-grid",
     placeItems: "center",
     borderRadius: 999,
-    border: "1px solid rgba(255,255,255,0.96)",
-    color: "#07172C",
-    background,
-    boxShadow:
-      "0 8px 20px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.96)",
-    fontSize: compact ? 19 : 21,
+    border: 0,
+    color: "#F8FBFF",
+    background: "transparent",
+    boxShadow: "none",
+    fontSize: compact ? 16 : 18,
     fontWeight: 950,
     lineHeight: 1,
     cursor: "pointer",
+    overflow: "visible",
   };
 }
 
@@ -8720,20 +8721,33 @@ export default function ShopGalleryPage() {
                       top: isCompact ? 62 : "auto",
                       right: isCompact ? 10 : 10,
                       bottom: isCompact ? "auto" : 10,
-                      minWidth: isCompact ? 40 : 38,
-                      width: isCompact ? 40 : 38,
-                      minHeight: isCompact ? 40 : 38,
+                      minWidth: isCompact ? 44 : 46,
+                      width: isCompact ? 44 : 46,
+                      height: isCompact ? 44 : 46,
+                      minHeight: isCompact ? 44 : 46,
+                      maxHeight: isCompact ? 44 : 46,
                       padding: 0,
-                      fontSize: isCompact ? 14 : 18,
-                      boxShadow: "0 10px 18px rgba(2, 12, 27, 0.22)",
+                      border: 0,
+                      background: "transparent",
+                      color: "#F8FBFF",
+                      fontSize: isCompact ? 13 : 16,
+                      boxShadow: "none",
+                      overflow: "visible",
                     }}
                     playbackControlStyle={{
                       top: isCompact ? 108 : 'auto',
                       right: isCompact ? 10 : 56,
                       bottom: isCompact ? 'auto' : 10,
-                      width: isCompact ? 40 : 38,
-                      minWidth: isCompact ? 40 : 38,
-                      minHeight: isCompact ? 40 : 38,
+                      width: isCompact ? 44 : 46,
+                      minWidth: isCompact ? 44 : 46,
+                      height: isCompact ? 44 : 46,
+                      minHeight: isCompact ? 44 : 46,
+                      maxHeight: isCompact ? 44 : 46,
+                      border: 0,
+                      background: 'transparent',
+                      color: '#F8FBFF',
+                      boxShadow: 'none',
+                      overflow: 'visible',
                     }}
                     maxVideoSeconds={SPOTLIGHT_PREMIUM_MAX_VIDEO_SECONDS}
                     frameStyle={{
@@ -8853,7 +8867,7 @@ export default function ShopGalleryPage() {
                     pauseSpotlightPresentationRotation();
                   }}
                   minWidth={0}
-                  stableHeight={isCompact ? 42 : 46}
+                  stableHeight={isCompact ? 44 : 46}
                   debugId="shop-gallery.spotlight.immersive"
                   aria-label={spotlightImmersiveOpen ? "Close full-screen Spotlight" : "Open full-screen Spotlight"}
                   title={spotlightImmersiveOpen ? "Close full screen" : "Full screen"}
@@ -8950,7 +8964,7 @@ export default function ShopGalleryPage() {
                         right: isCompact ? 9 : 12,
                         zIndex: 6,
                         display: "grid",
-                        gap: isCompact ? 7 : 8,
+                        gap: isCompact ? 2 : 4,
                         justifyItems: "center",
                       }}
                     >
@@ -8959,7 +8973,7 @@ export default function ShopGalleryPage() {
                           setSpotlightProductActionsOpen((open) => !open)
                         }
                         minWidth={0}
-                        stableHeight={isCompact ? 42 : 46}
+                        stableHeight={isCompact ? 44 : 46}
                         debugId="shop-gallery.spotlight-product.toggle"
                         aria-label={
                           spotlightProductActionsOpen
@@ -8993,7 +9007,7 @@ export default function ShopGalleryPage() {
                                     : savingSpotlightCampaignId === spotlightCampaignId
                                 }
                                 minWidth={0}
-                                stableHeight={isCompact ? 42 : 46}
+                                stableHeight={isCompact ? 44 : 46}
                                 debugId="shop-gallery.spotlight-product.save"
                                 aria-label={
                                   spotlightProductSaved
@@ -9033,7 +9047,7 @@ export default function ShopGalleryPage() {
                                     : likingSpotlightCampaignId === spotlightCampaignId
                                 }
                                 minWidth={0}
-                                stableHeight={isCompact ? 42 : 46}
+                                stableHeight={isCompact ? 44 : 46}
                                 debugId="shop-gallery.spotlight-product.like"
                                 aria-label={spotlightProductLiked ? "\u2665" : "\u2661"}
                                 title={spotlightProductLiked ? "\u2665" : "\u2661"}
@@ -9056,7 +9070,7 @@ export default function ShopGalleryPage() {
                                     void contactSpotlightProductSeller()
                                   }
                                   minWidth={0}
-                                  stableHeight={isCompact ? 42 : 46}
+                                  stableHeight={isCompact ? 44 : 46}
                                   debugId="shop-gallery.spotlight-product.ask-seller"
                                   aria-label="Ask seller about this product"
                                   title="Ask seller"
@@ -9077,7 +9091,7 @@ export default function ShopGalleryPage() {
                             ariaLabel={`Share this ${spotlightPreferenceKind}`}
                             triggerIcon={<span>{"\u2197"}</span>}
                             minWidth={0}
-                            stableHeight={isCompact ? 42 : 46}
+                            stableHeight={isCompact ? 44 : 46}
                             debugId="shop-gallery.spotlight-product.share"
                             onBeforeOpen={() => {
                               pauseSpotlightPresentationRotation();
@@ -9120,7 +9134,7 @@ export default function ShopGalleryPage() {
                                 spotlightShopFollowState.busy
                               }
                               minWidth={0}
-                              stableHeight={isCompact ? 42 : 46}
+                              stableHeight={isCompact ? 44 : 46}
                               debugId="shop-gallery.spotlight-product.follow-shop"
                               aria-label={
                                 spotlightShopFollowState.isFollowing
@@ -9147,7 +9161,7 @@ export default function ShopGalleryPage() {
                             <SecondaryButton
                               onClick={showSpotlightBusinessArea}
                               minWidth={0}
-                              stableHeight={isCompact ? 42 : 46}
+                              stableHeight={isCompact ? 44 : 46}
                               debugId="shop-gallery.spotlight-product.business-area"
                               aria-label={`Show public business area ${spotlightCommunityLabel}`}
                               title="Business area"
@@ -9165,7 +9179,7 @@ export default function ShopGalleryPage() {
                             <SecondaryButton
                               onClick={openSpotlightSimilarProducts}
                               minWidth={0}
-                              stableHeight={isCompact ? 42 : 46}
+                              stableHeight={isCompact ? 44 : 46}
                               debugId="shop-gallery.spotlight-product.similar"
                               aria-label="See similar products"
                               title="See similar products"

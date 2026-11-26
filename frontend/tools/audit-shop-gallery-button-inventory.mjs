@@ -504,8 +504,20 @@ if (mediaFrameInvocationCount !== expectedMediaFrameInvocations) {
 }
 
 assertContains(
-  /<SpotlightMediaFrame[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?audioUnlockErrorLabel="Play"[\s\S]*?audioUnlockStyle=\{\{[\s\S]*?minWidth: isCompact \? 40 : 38[\s\S]*?width: isCompact \? 40 : 38[\s\S]*?minHeight: isCompact \? 40 : 38/,
-  "Public Shop mini Spotlight media audio control must stay icon-only and fixed-size."
+  /<SpotlightMediaFrame[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?audioUnlockErrorLabel="Play"[\s\S]*?audioUnlockStyle=\{\{[\s\S]*?minWidth: isCompact \? 44 : 46[\s\S]*?width: isCompact \? 44 : 46[\s\S]*?height: isCompact \? 44 : 46[\s\S]*?minHeight: isCompact \? 44 : 46[\s\S]*?background: "transparent"/,
+  "Public Shop mini Spotlight media audio control must keep an accessible fixed tap target with a compact translucent visual treatment."
+);
+
+assertContains(
+  /function spotlightProductRailButtonStyle\([\s\S]*?const size = compact \? 44 : 46;[\s\S]*?background: "transparent"[\s\S]*?overflow: "visible"[\s\S]*?data-spotlight-product-actions="true"[\s\S]*?gap: isCompact \? 2 : 4/,
+  "Public Shop Spotlight product controls must share consistent compact tap targets and spacing without a separate rail panel."
+);
+
+assertFileContains(
+  publicShopStylesFile,
+  publicShopStylesSource,
+  /\.public-shop-spotlight-screen button\[data-media-control="true"\]::before[\s\S]*?inset: 7px;[\s\S]*?border: 1px solid rgba\(83, 189, 255, 0\.68\);[\s\S]*?background: rgba\(2, 18, 34, 0\.62\);[\s\S]*?backdrop-filter: blur\(6px\);[\s\S]*?:focus-visible[\s\S]*?outline: 2px solid #f2cf77 !important;/,
+  "Spotlight media and engagement controls must render as smaller translucent glass circles with subtle neon outlines over the media while retaining visible keyboard focus."
 );
 
 assertContains(

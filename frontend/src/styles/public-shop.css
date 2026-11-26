@@ -620,6 +620,66 @@
   outline-offset: 0;
 }
 
+.public-shop-spotlight-screen [data-spotlight-product-actions="true"] {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.public-shop-spotlight-screen button[data-media-control="true"],
+.public-shop-spotlight-screen [data-spotlight-product-actions="true"] [data-gmfn-action-root="true"],
+.public-shop-spotlight-screen [data-spotlight-view-action="immersive"] {
+  position: relative;
+  isolation: isolate;
+  overflow: visible !important;
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.public-shop-spotlight-screen button[data-media-control="true"]::before,
+.public-shop-spotlight-screen [data-spotlight-product-actions="true"] [data-gmfn-action-root="true"]::before,
+.public-shop-spotlight-screen [data-spotlight-view-action="immersive"]::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  z-index: 0;
+  border: 1px solid rgba(83, 189, 255, 0.68);
+  border-radius: 999px;
+  background: rgba(2, 18, 34, 0.62);
+  box-shadow:
+    0 3px 10px rgba(2, 12, 27, 0.24),
+    0 0 8px rgba(142, 72, 255, 0.16);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+
+.public-shop-spotlight-screen button[data-media-control="true"] > span,
+.public-shop-spotlight-screen [data-spotlight-product-actions="true"] [data-gmfn-action-root="true"] > span,
+.public-shop-spotlight-screen [data-spotlight-view-action="immersive"] > span {
+  position: relative;
+  z-index: 1;
+}
+
+.public-shop-spotlight-screen button[data-media-control="true"]::after,
+.public-shop-spotlight-screen [data-spotlight-product-actions="true"] [data-gmfn-action-root="true"]::after,
+.public-shop-spotlight-screen [data-spotlight-view-action="immersive"]::after {
+  display: none !important;
+}
+
+.public-shop-spotlight-screen [data-cta-id="spotlight-media-frame.toggle-audio"] > span {
+  transform: scale(0.72);
+}
+
+.public-shop-spotlight-screen button[data-media-control="true"]:focus-visible,
+.public-shop-spotlight-screen [data-spotlight-product-actions="true"] [data-gmfn-action-root="true"]:focus-visible,
+.public-shop-spotlight-screen [data-spotlight-view-action="immersive"]:focus-visible {
+  outline: 2px solid #f2cf77 !important;
+  outline-offset: 2px !important;
+}
+
 @supports ((-webkit-mask-composite: xor) or (mask-composite: exclude)) {
   .public-shop-neon-environment [data-media-control="true"]::after,
   .public-shop-neon-environment [data-spotlight-product-action]::after,
