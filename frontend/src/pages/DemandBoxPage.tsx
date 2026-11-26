@@ -1186,8 +1186,10 @@ export default function DemandBoxPage() {
   const [demandMatchesById, setDemandMatchesById] = useState<Record<string, DemandMatchState>>({});
   const [preparingSellerContactKey, setPreparingSellerContactKey] = useState("");
   const [sellerContactHandoff, setSellerContactHandoff] = useState<DemandSellerHandoffState | null>(null);
+  const [focusedProductContact, setFocusedProductContact] = useState<DemandSupplySellerContactResponse | null>(null);
   const [openDemandRecordKey, setOpenDemandRecordKey] = useState("");
   const [focusedConversationRequestId, setFocusedConversationRequestId] = useState(0);
+  const [focusedTradeRequestId, setFocusedTradeRequestId] = useState(0);
   const [focusedMatchRequestId, setFocusedMatchRequestId] = useState(0);
   const [showMoreQueueRows, setShowMoreQueueRows] = useState(false);
   const [requestSearch, setRequestSearch] = useState("");
@@ -1195,8 +1197,10 @@ export default function DemandBoxPage() {
 
   useEffect(() => {
     setFocusedConversationRequestId(0);
+    setFocusedTradeRequestId(0);
     setFocusedMatchRequestId(0);
     setSellerContactHandoff(null);
+    setFocusedProductContact(null);
   }, [openDemandRecordKey]);
 
   const [title, setTitle] = useState("");
@@ -2201,11 +2205,65 @@ export default function DemandBoxPage() {
       const contact = await getDemandSupplySellerContact(demandId, productId, {
         shop_id: shopId,
       });
+      setFocusedProductContact(null);
+      setFocusedConversationRequestId(0);
+      setFocusedTradeRequestId(0);
       setSellerContactHandoff({ ...contact, shopPath });
     } catch (error: any) {
       showNotice(
         "error",
         String(error?.message || "This seller contact could not be prepared safely.")
+      );
+    } finally {
+      setPreparingSellerContactKey("");
+    }
+  }
+
+  function focusProductConversation(demandId: number, openTradeRecords: boolean) {
+    setSellerContactHandoff(null);
+    setFocusedMatchRequestId(0);
+    setFocusedTradeRequestId(openTradeRecords ? demandId : 0);
+    setFocusedConversationRequestId(demandId);
+    if (typeof window !== "undefined") {
+      window.requestAnimationFrame(() => {
+        document
+          .querySelector(`[data-gsn-demand-conversation-request-id="${demandId}"]`)
+          ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    }
+  }
+
+  async function openProductConversation(row: DemandRow, openTradeRecords: boolean) {
+    const demandId = positiveNumber(row?.id);
+    const productId = positiveNumber(row?.product_context?.product_id);
+    const shopId = positiveNumber(row?.product_context?.shop_id);
+    if (!demandId || !productId || !shopId || !isMineRow(row, me)) {
+      showNotice("error", "Only the requester can open this seller conversation.");
+      return;
+    }
+
+    if (
+      focusedProductContact?.demand_id === demandId &&
+      focusedProductContact?.product_id === productId &&
+      focusedProductContact?.shop_id === shopId
+    ) {
+      focusProductConversation(demandId, openTradeRecords);
+      return;
+    }
+
+    const contactKey = `${demandId}:${productId}:${shopId}`;
+    if (preparingSellerContactKey) return;
+    setPreparingSellerContactKey(contactKey);
+    try {
+      const contact = await getDemandSupplySellerContact(demandId, productId, {
+        shop_id: shopId,
+      });
+      setFocusedProductContact(contact);
+      focusProductConversation(demandId, openTradeRecords);
+    } catch (error: any) {
+      showNotice(
+        "error",
+        String(error?.message || "This seller conversation could not be prepared safely.")
       );
     } finally {
       setPreparingSellerContactKey("");
@@ -2582,6 +2640,10 @@ export default function DemandBoxPage() {
       positiveNumber(sellerContactHandoff?.demand_id) === rowId;
     const conversationFocused =
       isCompact && focusedConversationRequestId === rowId;
+    const focusedContact =
+      positiveNumber(focusedProductContact?.demand_id) === rowId
+        ? focusedProductContact
+        : null;
     const busy = updatingDemandId === rowId;
     const canClose = options.canClose === true;
     const trustPosture = requesterTrustPostureLabel(row);
@@ -2811,9 +2873,7 @@ export default function DemandBoxPage() {
                   data-gsn-demand-product-enquiry-summary="merged"
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "minmax(0, 1fr) auto",
-                    alignItems: "center",
-                    gap: 10,
+                    gap: 9,
                     marginTop: 2,
                     padding: "10px 11px",
                     borderRadius: 14,
@@ -2840,34 +2900,78 @@ export default function DemandBoxPage() {
                     ) : null}
                   </div>
                   {rowId ? (
-                    <PrimaryButton
-                      type="button"
-                      onClick={() => {
-                        setSellerContactHandoff(null);
-                        setFocusedConversationRequestId(0);
-                        setFocusedMatchRequestId(rowId);
-                        if (typeof window !== "undefined") {
-                          window.requestAnimationFrame(() => {
-                            document
-                              .querySelector(`[data-gsn-demand-supply-request-id="${rowId}"]`)
-                              ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                          });
-                        }
-                      }}
-                      debugId={`${debugBase}.product-enquiry.possible-match`}
-                      data-gsn-demand-product-match-action="true"
-                      stableHeight={42}
+                    <div
+                      data-gsn-demand-product-actions="complete-journey"
                       style={{
-                        minWidth: 108,
-                        padding: "8px 10px",
-                        borderRadius: 12,
-                        fontSize: 12,
-                        fontWeight: 900,
-                        whiteSpace: "nowrap",
+                        display: "grid",
+                        gridTemplateColumns: isMineRow(row, me)
+                          ? "repeat(3, minmax(0, 1fr))"
+                          : "minmax(0, 1fr)",
+                        gap: 6,
+                        minWidth: 0,
                       }}
                     >
-                      Possible match
-                    </PrimaryButton>
+                      <PrimaryButton
+                        type="button"
+                        onClick={() => {
+                          setSellerContactHandoff(null);
+                          setFocusedProductContact(null);
+                          setFocusedConversationRequestId(0);
+                          setFocusedTradeRequestId(0);
+                          setFocusedMatchRequestId(rowId);
+                          if (typeof window !== "undefined") {
+                            window.requestAnimationFrame(() => {
+                              document
+                                .querySelector(`[data-gsn-demand-supply-request-id="${rowId}"]`)
+                                ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                            });
+                          }
+                        }}
+                        debugId={`${debugBase}.product-enquiry.possible-match`}
+                        data-gsn-demand-product-match-action="true"
+                        stableHeight={42}
+                        style={{
+                          minWidth: 0,
+                          padding: "8px 5px",
+                          borderRadius: 12,
+                          fontSize: 11.5,
+                          fontWeight: 900,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Possible match
+                      </PrimaryButton>
+                      {isMineRow(row, me) ? (
+                        <>
+                          <SecondaryButton
+                            type="button"
+                            onClick={() => void openProductConversation(row, true)}
+                            disabled={Boolean(preparingSellerContactKey)}
+                            busy={preparingSellerContactKey === `${rowId}:${positiveNumber(row.product_context?.product_id)}:${positiveNumber(row.product_context?.shop_id)}`}
+                            busyLabel="Opening..."
+                            debugId={`${debugBase}.product-enquiry.buy-now`}
+                            data-gsn-demand-product-buy-action="trade-record"
+                            stableHeight={42}
+                            style={{ minWidth: 0, padding: "8px 5px", borderRadius: 12, fontSize: 11.5, fontWeight: 900, whiteSpace: "nowrap" }}
+                          >
+                            Buy now
+                          </SecondaryButton>
+                          <SecondaryButton
+                            type="button"
+                            onClick={() => void openProductConversation(row, false)}
+                            disabled={Boolean(preparingSellerContactKey)}
+                            busy={preparingSellerContactKey === `${rowId}:${positiveNumber(row.product_context?.product_id)}:${positiveNumber(row.product_context?.shop_id)}`}
+                            busyLabel="Opening..."
+                            debugId={`${debugBase}.product-enquiry.chat`}
+                            data-gsn-demand-product-chat-action="gsn-complete"
+                            stableHeight={42}
+                            style={{ minWidth: 0, padding: "8px 5px", borderRadius: 12, fontSize: 11.5, fontWeight: 900, whiteSpace: "nowrap" }}
+                          >
+                            Chat
+                          </SecondaryButton>
+                        </>
+                      ) : null}
+                    </div>
                   ) : null}
                 </div>
               ) : null}
@@ -3216,6 +3320,8 @@ export default function DemandBoxPage() {
                 );
                 if (nextOpen) {
                   setSellerContactHandoff(null);
+                } else {
+                  setFocusedTradeRequestId(0);
                 }
               }}
               style={{ ...detailsShell(), marginTop: isCompact && compactProductEnquiry ? 0 : 12 }}
@@ -3235,6 +3341,7 @@ export default function DemandBoxPage() {
               <div
                 data-gsn-demand-respond-in-place="true"
                 data-gsn-demand-conversation-zone="primary"
+                data-gsn-demand-conversation-request-id={rowId}
                 style={{ padding: isCompact ? "0 8px 8px" : "0 12px 12px" }}
               >
                 <DemandResponsePanel
@@ -3245,8 +3352,11 @@ export default function DemandBoxPage() {
                   compact={isCompact}
                   embedded
                   communityId={positiveNumber(selectedClanId)}
+                  preferredRecipientUserId={positiveNumber(focusedContact?.seller_user_id)}
+                  preferredRecipientName={focusedContact?.shop_name || row?.product_context?.shop_name || "Seller"}
                   supplyProductId={positiveNumber(row?.product_context?.product_id)}
                   supplyShopId={positiveNumber(row?.product_context?.shop_id)}
+                  openTradeRecords={focusedTradeRequestId === rowId}
                   onUnreadChanged={refreshUnreadSummary}
                 />
                 {conversationFocused && isMineRow(row, me) && row?.product_context ? (

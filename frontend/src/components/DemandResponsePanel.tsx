@@ -57,6 +57,7 @@ type DemandResponsePanelProps = {
   preferredRecipientName?: string;
   supplyProductId?: number;
   supplyShopId?: number;
+  openTradeRecords?: boolean;
   onUnreadChanged?: () => void;
 };
 
@@ -115,6 +116,7 @@ export default function DemandResponsePanel({
   preferredRecipientName = "Seller",
   supplyProductId = 0,
   supplyShopId = 0,
+  openTradeRecords = false,
   onUnreadChanged,
 }: DemandResponsePanelProps) {
   const [rows, setRows] = useState<MarketplaceRequestResponseItem[]>([]);
@@ -136,7 +138,7 @@ export default function DemandResponsePanel({
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [sendingPaymentDetails, setSendingPaymentDetails] = useState(false);
   const [paymentAccountSetupRequired, setPaymentAccountSetupRequired] = useState(false);
-  const [tradeStepsOpen, setTradeStepsOpen] = useState(false);
+  const [tradeStepsOpen, setTradeStepsOpen] = useState(Boolean(openTradeRecords));
   const [protectedTradeFormOpen, setProtectedTradeFormOpen] = useState(false);
   const [creatingProtectedTrade, setCreatingProtectedTrade] = useState(false);
   const [recordingAgreementTradeId, setRecordingAgreementTradeId] = useState(0);
@@ -153,6 +155,7 @@ export default function DemandResponsePanel({
     "loading" | "available" | "unavailable"
   >("loading");
   const threadRef = useRef<HTMLDivElement | null>(null);
+  const tradeStepsRef = useRef<HTMLDetailsElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const rowsRef = useRef<MarketplaceRequestResponseItem[]>([]);
   const recipientRef = useRef(recipientUserId);
@@ -346,6 +349,21 @@ export default function DemandResponsePanel({
 
   const activePeerUserId = isOwner ? recipientUserId : ownerUserId;
   const tradeContextAvailable = Boolean(requestId && supplyProductId && supplyShopId);
+
+  useEffect(() => {
+    if (!tradeContextAvailable) return;
+    if (!openTradeRecords) {
+      setTradeStepsOpen(false);
+      return;
+    }
+    setTradeStepsOpen(true);
+    if (typeof window !== "undefined") {
+      window.requestAnimationFrame(() => {
+        tradeStepsRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    }
+  }, [openTradeRecords, tradeContextAvailable]);
+
   const matchedProtectedTrade = useMemo(() => {
     if (!tradeContextAvailable) return null;
     return (
@@ -1604,7 +1622,9 @@ export default function DemandResponsePanel({
           ) : null}
           {tradeContextAvailable ? (
             <details
-              data-gsn-demand-trade-steps="collapsed"
+              ref={tradeStepsRef}
+              data-gsn-demand-trade-steps={tradeStepsOpen ? "open" : "collapsed"}
+              open={tradeStepsOpen ? true : undefined}
               onToggle={(event) => setTradeStepsOpen(event.currentTarget.open)}
               style={{ minWidth: 0 }}
             >

@@ -7793,3 +7793,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The archive now exposes only saved-record selection, record/payment/release/receipt/issue status, agreement terms and amount, the existing private evidence paper, event history, refresh and copy-paper actions.
 - Backend protected-trade APIs, stored records, generated payment codes, seller-direct payment rules, Merchant Verification tracking and DemandBox conversation behavior are unchanged.
 - Verification: Marketplace front-package audit and all changed audit-script syntax checks pass; `git diff --check` passes. The broad Marketplace button-inventory and trusted-trade audits retain unrelated pre-existing extraction/baseline failures and were not dishonestly rebased. Full TypeScript/Vite build still requires deployment CI because this worktree has no installed frontend dependencies.
+# DemandBox product-card Buy now and GSN Chat - 2026-11-26
+
+- The compact matched-product description card keeps `Possible match` and now adds `Buy now` and `Chat` in one bounded three-action row.
+- Both new actions resolve the seller through the existing authenticated demand/product/Shop seller-contact authority. No seller id is guessed and no parallel messaging or checkout engine was created.
+- `Chat` mounts the existing complete GSN private conversation with its real-time messages, attachments, voice, preset responses and participant boundary.
+- `Buy now` mounts that same GSN conversation and opens its existing conversation-owned `Trade Records` control. It does not charge the buyer, bypass seller-issued agreement, or expose the historical archive editor.
+- The seller, demand, product and Shop association remains attached to the conversation. Trade Records continue to govern agreement, direct seller payment plus generated evidence code, and Merchant Verification dispatch/tracking.
+- Verification: DemandBox front-package audit passed; audit and phone-smoke scripts pass Node syntax checks; `git diff --check` passed. Full TypeScript/Vite build and Playwright execution remain locally unavailable because neither the isolated worktree nor root frontend has `node_modules`, `tsc` or Playwright installed.

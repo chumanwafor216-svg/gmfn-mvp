@@ -186,6 +186,27 @@ async function installApiMocks(page, apiCalls) {
       const requestId = Number(parts[3] || 0);
       const productId = Number(parts[5] || 0);
       const shopId = Number(url.searchParams.get("shop_id") || 0);
+      if (requestId === 73 && productId === 810 && shopId === 81) {
+        return route.fulfill(json({
+          demand_id: 73,
+          product_id: 810,
+          shop_id: 81,
+          clan_id: 8,
+          demand_title: "Need school transport",
+          demand_description: "I need weekday school transport.",
+          demand_area: "Awka",
+          product_title: "Weekday school transport",
+          shop_name: "Awka Family Transport",
+          seller_user_id: 309,
+          seller_is_gsn_member: true,
+          whatsapp_number: "+2348011111111",
+          contact_available: true,
+          public_shop_path: "/shop/GSN-U-810?product_id=810&clan_id=8",
+          back_to_request_path: "/app/demand-box?demand_id=73",
+          prepared_message: "Hello Awka Family Transport. I want to discuss Weekday school transport.",
+          boundary_note: "Contact only; no agreement has been made.",
+        }));
+      }
       if (requestId !== 72 || productId !== 900 || shopId !== 90) {
         return route.fulfill(json({ detail: "DemandBox match contact not found" }, 404));
       }
@@ -487,6 +508,10 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await mergedProductEnquiry.isVisible(), "The product enquiry was not merged into the opened request card.");
   assert(await mergedProductEnquiry.getByText("Awka Family Transport", { exact: true }).isVisible(), "The concise merged Shop identity is missing.");
   assert(await mergedProductEnquiry.getByText("Listed price GBP 15", { exact: true }).isVisible(), "The concise merged listed price is missing.");
+  for (const label of ["Possible match", "Buy now", "Chat"]) {
+    assert(await mergedProductEnquiry.getByRole("button", { name: label, exact: true }).isVisible(), `The ${label} product action is missing.`);
+  }
+  assert((await mergedProductEnquiry.locator('[data-gsn-demand-product-actions="complete-journey"]').count()) === 1, "The compact product journey actions are not grouped inside the description card.");
   assert((await transportCard.locator('[data-gsn-demand-primary-message="true"]').count()) === 0, "The verbose product-enquiry message returned as a second block.");
   assert(!(await page.getByText("Please confirm availability, final price and collection or delivery arrangements.", { exact: true }).isVisible().catch(() => false)), "Verbose generated product guidance remained exposed.");
   const transportConversations = transportCard.locator('[data-gsn-demand-conversations="integrated"]');
@@ -657,6 +682,18 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(!(await page.getByText("Source: DemandBox", { exact: true }).isVisible()), "Technical request details opened before the user asked.");
   assert((await transportCard.getByRole("button", { name: "Reply privately", exact: true }).count()) === 0, "The obsolete second reply-opening action returned.");
 
+  await mergedProductEnquiry.getByRole("button", { name: "Chat", exact: true }).click();
+  assert(apiCalls.sellerContactGets === 1, "Product Chat did not resolve the authenticated matched seller exactly once.");
+  const productConversation = transportCard.locator('[data-gsn-demand-conversations="integrated"]');
+  await productConversation.waitFor();
+  assert(await productConversation.locator('[data-gsn-demand-private-replies="true"]').isVisible(), "Product Chat did not open the complete GSN conversation engine.");
+  const productTradeSteps = productConversation.locator('[data-gsn-demand-trade-steps="collapsed"]');
+  assert(await productTradeSteps.isVisible(), "Ordinary Product Chat should keep Trade Records available but collapsed.");
+  await mergedProductEnquiry.getByRole("button", { name: "Buy now", exact: true }).click();
+  assert(apiCalls.sellerContactGets === 1, "Buy now repeated seller resolution instead of reusing the validated conversation.");
+  await productConversation.locator('[data-gsn-demand-trade-steps="open"]').waitFor();
+  assert(await productConversation.getByText("Agree, pay, verify", { exact: true }).isVisible(), "Buy now did not focus Trade Records inside the GSN conversation.");
+
   await page.getByRole("button", { name: "View more needs", exact: true }).click();
   assert((await cards.count()) === 2, "View more needs did not reveal the remaining request preview.");
   const freezerCard = cards.filter({ hasText: "Need a freezer repair" });
@@ -677,7 +714,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await requesterViewShop.isVisible(), "View shop is missing from the requester product description card.");
   assert(await ownerMatchPanel.getByRole("button", { name: "Ask seller", exact: true }).isVisible(), "Ask Seller is missing.");
   await ownerMatchPanel.getByRole("button", { name: "Ask seller", exact: true }).click();
-  assert(apiCalls.sellerContactGets === 1, "Ask seller did not use the authenticated validated handoff endpoint exactly once.");
+  assert(apiCalls.sellerContactGets === 2, "Ask seller did not add exactly one authenticated validated handoff request after the product journey.");
   const contactResult = ownerMatchPanel.locator('[data-gsn-demand-seller-contact-result="prepared"]');
   await contactResult.waitFor();
   assert(await contactResult.locator('[data-gsn-demand-contact-channel="gsn-primary"]').isVisible(), "GSN chat is not presented as the primary seller-contact route.");
