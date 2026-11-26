@@ -79,6 +79,30 @@ def test_protected_trade_create_and_lifecycle_logs_trust_events(
             ),
             current_user=buyer,
         )
+        with pytest.raises(ValueError, match="bank details with a payment code"):
+            add_trade_event(
+                db,
+                trade=trade,
+                payload=ProtectedTradeEventIn(
+                    event_type="payment.claimed",
+                    expected_payment_id=55,
+                    note="Buyer tried to record payment before receiving a code.",
+                ),
+                current_user=buyer,
+            )
+        seller = db.get(User, 1)
+        assert seller is not None
+        add_trade_event(
+            db,
+            trade=trade,
+            payload=ProtectedTradeEventIn(
+                event_type="payment.instruction_added",
+                expected_payment_id=55,
+                note="Seller sent bank details with the generated payment code.",
+                meta={"payment_reference": "GSN-PAY-TEST-1"},
+            ),
+            current_user=seller,
+        )
         add_trade_event(
             db,
             trade=trade,
@@ -117,6 +141,7 @@ def test_protected_trade_create_and_lifecycle_logs_trust_events(
         "protected_trade.created",
         "protected_trade.terms.issued",
         "protected_trade.terms.agreed",
+        "protected_trade.payment.instruction_added",
         "protected_trade.payment.claimed",
         "protected_trade.payment.received",
         "protected_trade.release.recorded",
@@ -132,7 +157,7 @@ def test_protected_trade_create_and_lifecycle_logs_trust_events(
             .order_by(ProtectedTradeEvent.id.asc())
             .all()
         )
-        assert len(trade_events) == 6
+        assert len(trade_events) == 7
         trust_events = (
             db.query(TrustEvent)
             .filter(TrustEvent.event_type.like("protected_trade.%"))
@@ -143,11 +168,12 @@ def test_protected_trade_create_and_lifecycle_logs_trust_events(
             "protected_trade.created",
             "protected_trade.terms.issued",
             "protected_trade.terms.agreed",
+            "protected_trade.payment.instruction_added",
             "protected_trade.payment.claimed",
             "protected_trade.payment.received",
             "protected_trade.release.recorded",
         ]
-        meta = json.loads(trust_events[3].meta_json or "{}")
+        meta = json.loads(trust_events[4].meta_json or "{}")
         assert meta["trade_id"] == trade_id
         assert meta["expected_payment_id"] == 55
         assert "not automatic payout" in meta["boundary_note"]

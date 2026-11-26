@@ -91,9 +91,9 @@ assertNotContains(
   "Trade Evidence must not stay as a duplicate front card after being grouped under Marketing Tools."
 );
 
-assertContains(
-  /debugId="marketplace\.progressive\.trade-evidence"[\s\S]*?openMarketplaceSection\(event, "trade", "marketplace-trade-evidence"\)[\s\S]*?Record a trade/,
-  "Trade Evidence must be available through progressive evidence intent while staying separate from other Marketplace lanes."
+assertNotContains(
+  /debugId="marketplace\.progressive\.trade-evidence"|Record a trade/,
+  "Trade Records must not start from a generic Marketplace launcher; DemandBox conversation owns agreement creation."
 );
 
 assertContains(

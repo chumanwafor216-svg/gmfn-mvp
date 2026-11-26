@@ -7774,3 +7774,14 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Removed the three owner-marked match helper texts: `Check each listing before agreeing.`, each per-match community/availability evidence sentence, and the final community-connection disclaimer.
 - The Possible matches summary still retains `Availability not confirmed`; listing identity, View shop, Ask seller, validated seller handoff, private conversation and Trade Records remain unchanged.
 - Ordinary-request conversation access, desktop behavior and backend matching/permission rules are unchanged.
+# DemandBox conversation-owned Trade Record sequence - 2026-11-26
+
+- Trade Record / invoice creation and progression now remain inside the matched private DemandBox conversation. The former conversation links that reopened the oversized standalone Marketplace Trade Evidence form were removed.
+- The normal Marketplace front surface no longer exposes `Record a trade`; trade/delivery/negotiation guidance now sends the member to DemandBox. The historical Trade Records archive still exists for explicit Shop Control context and was not deleted.
+- The staged conversation order is now explicit: `1 Agreement`, `2 Payment` (or agreed credit), then `3 Dispatch`. The seller issues the agreement; the buyer accepts or requests changes.
+- For pay-now trades, the backend no longer accepts `payment.claimed` directly after agreement. The seller must first send direct seller bank details with the generated payment code, which moves the record to `payment_instructed`.
+- The generated code refreshes into the same Trade Record agreement card, so buyer and seller see the same linked evidence code. The buyer's `I have paid` action appears only after that code exists.
+- Dispatch and tracking unlock only after the seller acknowledges payment, or immediately after both sides accept explicit deferred-credit terms. The seller then opens the existing Merchant Verification dispatch/tracking rail.
+- Payment remains direct to the seller and non-custodial. This change uses the existing code generator only; it does not add or alter GSN bank reconciliation, Pipeline Credit, escrow or money custody.
+- Verification: protected-trade backend tests `8 passed`; DemandBox front-package audit passed; Marketplace front-package audit passed; Python compilation, audit-script Node syntax and `git diff --check` passed.
+- Local production build remains unavailable because neither the isolated worktree nor root frontend has `node_modules`/`tsc`. The broad Marketplace Trade Evidence and button-inventory audits remain red on known extracted-component/baseline expectations; the removed general trade launcher is intentionally absent. GitHub deployment CI must provide final TypeScript/Vite build evidence.

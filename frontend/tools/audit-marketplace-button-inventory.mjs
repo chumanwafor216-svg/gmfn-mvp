@@ -414,8 +414,8 @@ assertNotContains(
 );
 
 assertContains(
-  /debugId="marketplace\.progressive\.tools"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?debugId="marketplace\.progressive\.marketing"[\s\S]*?setActiveLinkCenterTool\("repost"\)[\s\S]*?debugId="marketplace\.progressive\.trade-evidence"[\s\S]*?openMarketplaceSection\(event, "trade", "marketplace-trade-evidence"\)/,
-  "Marketplace tools, marketing, and Trade Evidence must be progressive access, not neutral member front-door jobs."
+  /debugId="marketplace\.progressive\.tools"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?debugId="marketplace\.progressive\.marketing"[\s\S]*?setActiveLinkCenterTool\("repost"\)/,
+  "Marketplace links and marketing must remain progressive access rather than permanent front-door jobs."
 );
 
 assertContains(

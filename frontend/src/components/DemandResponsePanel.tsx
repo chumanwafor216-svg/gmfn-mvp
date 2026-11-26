@@ -57,7 +57,6 @@ type DemandResponsePanelProps = {
   preferredRecipientName?: string;
   supplyProductId?: number;
   supplyShopId?: number;
-  protectedTradePath?: string;
   onUnreadChanged?: () => void;
 };
 
@@ -104,19 +103,6 @@ function responsePreview(row: MarketplaceRequestResponseItem): string {
   return "Private reply";
 }
 
-function focusedTradePath(
-  basePath: string,
-  tradeId: number,
-  focus: "record" | "confirmation"
-): string {
-  const [pathAndSearch] = String(basePath || APP_ROUTES.MARKETPLACE).split("#", 1);
-  const [pathname, search = ""] = pathAndSearch.split("?", 2);
-  const query = new URLSearchParams(search);
-  query.set("protected_trade_id", String(tradeId));
-  query.set("trade_focus", focus);
-  return `${pathname}?${query.toString()}#marketplace-trade-evidence`;
-}
-
 export default function DemandResponsePanel({
   requestId,
   ownerUserId,
@@ -129,7 +115,6 @@ export default function DemandResponsePanel({
   preferredRecipientName = "Seller",
   supplyProductId = 0,
   supplyShopId = 0,
-  protectedTradePath = "",
   onUnreadChanged,
 }: DemandResponsePanelProps) {
   const [rows, setRows] = useState<MarketplaceRequestResponseItem[]>([]);
@@ -396,6 +381,11 @@ export default function DemandResponsePanel({
   const matchedTradeStatus = String(matchedProtectedTrade?.status || "").toLowerCase();
   const matchedPaymentStatus = String(matchedProtectedTrade?.payment_status || "").toLowerCase();
   const matchedTradeCode = String(matchedProtectedTrade?.trade_code || "Trade Record");
+  const matchedTradeMeta = matchedProtectedTrade?.meta || {};
+  const matchedPaymentReference = String(matchedTradeMeta.payment_reference || "").trim();
+  const matchedPaymentTiming = matchedTradeMeta.payment_timing === "deferred_credit"
+    ? "deferred_credit"
+    : "pay_now";
   const tradeAgreementAccepted = [
     "agreed",
     "payment_instructed",
@@ -408,12 +398,12 @@ export default function DemandResponsePanel({
     "not_received",
     "disputed",
   ].includes(matchedTradeStatus);
+  const deferredCreditAccepted =
+    matchedPaymentTiming === "deferred_credit" && tradeAgreementAccepted;
+  const dispatchUnlocked =
+    matchedPaymentStatus === "seller_confirmed_received" || deferredCreditAccepted;
   const payoutDetailsPath = withCommunityQuery(APP_ROUTES.PAYOUT_DETAILS, communityId);
   const merchantVerificationPath = `${withCommunityQuery(APP_ROUTES.SHOP, communityId)}#shop-control-merchant-release-rail`;
-  const protectedTradeBasePath = withCommunityQuery(
-    protectedTradePath || APP_ROUTES.MARKETPLACE,
-    communityId
-  );
 
   useEffect(() => {
     if (!tradeContextAvailable) {
@@ -469,6 +459,8 @@ export default function DemandResponsePanel({
         client_response_id: clientKey("demand-seller-payment"),
         show_sender_photo: false,
       });
+      const items = await listProtectedTrades({ limit: 50 });
+      setProtectedTrades(Array.isArray(items) ? items : []);
       stickToLatestRef.current = true;
       await load();
     } catch (err: any) {
@@ -1075,6 +1067,9 @@ export default function DemandResponsePanel({
                 ) || null
               : null;
             const agreementStatus = String(agreementTrade?.status || "").toLowerCase();
+            const agreementPaymentReference = String(
+              agreementTrade?.meta?.payment_reference || ""
+            ).trim();
             const agreementIsLatest = protectedTradeAgreement
               ? latestAgreementMessageIdByTrade.get(protectedTradeAgreement.tradeId) === Number(row.id || 0)
               : false;
@@ -1213,6 +1208,22 @@ export default function DemandResponsePanel({
                             ? "Deferred payment / credit terms"
                             : "Payment due now"} · {protectedTradeAgreement.tradeCode}
                         </div>
+                        {agreementPaymentReference ? (
+                          <div
+                            data-gsn-demand-trade-payment-code="linked-evidence"
+                            style={{
+                              padding: "7px 8px",
+                              borderRadius: 10,
+                              background: "#EAF3FF",
+                              color: "#0B4FA8",
+                              fontSize: 11,
+                              fontWeight: 950,
+                              overflowWrap: "anywhere",
+                            }}
+                          >
+                            Payment code: {agreementPaymentReference}
+                          </div>
+                        ) : null}
                         {isOwner && !mine && agreementAwaitingBuyer ? (
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 7 }}>
                             <PrimaryButton
@@ -1730,6 +1741,19 @@ export default function DemandResponsePanel({
                   </div>
                 ) : null}
 
+                {matchedProtectedTrade?.id ? (
+                  <div
+                    data-gsn-demand-trade-sequence="agreement-payment-dispatch"
+                    style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 5 }}
+                  >
+                    <span style={{ padding: "6px 5px", borderRadius: 9, background: "#E7F5EC", color: "#17663D", fontSize: 10, fontWeight: 950, textAlign: "center" }}>1 Agreement</span>
+                    <span style={{ padding: "6px 5px", borderRadius: 9, background: matchedPaymentReference || deferredCreditAccepted ? "#EAF3FF" : "#F3F5F7", color: matchedPaymentReference || deferredCreditAccepted ? "#0B4FA8" : "#64748B", fontSize: 10, fontWeight: 950, textAlign: "center" }}>
+                      2 {deferredCreditAccepted ? "Credit" : "Payment"}
+                    </span>
+                    <span style={{ padding: "6px 5px", borderRadius: 9, background: dispatchUnlocked ? "#FFF3D5" : "#F3F5F7", color: dispatchUnlocked ? "#805A0F" : "#64748B", fontSize: 10, fontWeight: 950, textAlign: "center" }}>3 Dispatch</span>
+                  </div>
+                ) : null}
+
                 {matchedProtectedTrade?.id && !isOwner ? (
                   <div style={{ display: "grid", gap: 7 }}>
                     {matchedTradeStatus === "awaiting_buyer_acceptance" || matchedTradeStatus === "amendment_requested" ? (
@@ -1738,7 +1762,7 @@ export default function DemandResponsePanel({
                           ? "The buyer requested changes. Agree the amendment in chat, then reissue the agreement."
                           : "Waiting for the buyer to accept the agreement card."}
                       </div>
-                    ) : tradeAgreementAccepted && !["claimed", "seller_confirmed_received"].includes(matchedPaymentStatus) ? (
+                    ) : tradeAgreementAccepted && matchedPaymentTiming === "pay_now" && !["claimed", "seller_confirmed_received"].includes(matchedPaymentStatus) ? (
                       <SecondaryButton
                         type="button"
                         onClick={() => void sendSellerPaymentDetails()}
@@ -1749,8 +1773,13 @@ export default function DemandResponsePanel({
                         stableHeight={42}
                         style={{ borderRadius: 12, fontSize: 12 }}
                       >
-                        Send bank details + payment code
+                        {matchedPaymentReference ? "Resend bank details + payment code" : "Send bank details + payment code"}
                       </SecondaryButton>
+                    ) : null}
+                    {deferredCreditAccepted ? (
+                      <div style={{ color: "#17663D", fontSize: 11.5, fontWeight: 900, lineHeight: 1.4 }}>
+                        Deferred credit is agreed. You can continue to dispatch through Merchant Verification.
+                      </div>
                     ) : null}
                     {matchedPaymentStatus === "claimed" ? (
                       <PrimaryButton
@@ -1783,13 +1812,13 @@ export default function DemandResponsePanel({
                   </div>
                 ) : matchedProtectedTrade?.id && isOwner ? (
                   <div style={{ display: "grid", gap: 7 }}>
-                    {tradeAgreementAccepted && !["claimed", "seller_confirmed_received"].includes(matchedPaymentStatus) ? (
+                    {matchedPaymentTiming === "pay_now" && tradeAgreementAccepted && matchedPaymentStatus === "instruction_added" && matchedPaymentReference ? (
                       <PrimaryButton
                         type="button"
                         onClick={() => void recordProtectedTradeStage(
                           "payment.claimed",
-                          "Buyer recorded that payment was sent or handed to the seller.",
-                          `Payment sent for ${matchedTradeCode}. Seller confirmation is still required.`
+                          "Buyer recorded that payment was sent or handed to the seller using the shared payment code.",
+                          `Payment sent for ${matchedTradeCode} using code ${matchedPaymentReference}. Seller confirmation is still required.`
                         )}
                         busy={recordingAgreementTradeId === Number(matchedProtectedTrade.id)}
                         busyLabel="Saving"
@@ -1799,76 +1828,53 @@ export default function DemandResponsePanel({
                       >
                         I have paid
                       </PrimaryButton>
-                    ) : null}
-                    {matchedPaymentStatus === "claimed" ? (
+                    ) : matchedPaymentTiming === "pay_now" && tradeAgreementAccepted && !["claimed", "seller_confirmed_received"].includes(matchedPaymentStatus) ? (
                       <div style={{ color: "#587087", fontSize: 11.5, lineHeight: 1.4 }}>
-                        Payment recorded as sent. Waiting for seller acknowledgement.
+                        Waiting for the seller to send bank details with the shared payment code.
+                      </div>
+                    ) : null}
+                    {deferredCreditAccepted ? (
+                      <div style={{ color: "#17663D", fontSize: 11.5, fontWeight: 900, lineHeight: 1.4 }}>
+                        Deferred credit is agreed. Dispatch and tracking can now continue through Merchant Verification.
+                      </div>
+                    ) : matchedPaymentStatus === "claimed" ? (
+                      <div style={{ color: "#587087", fontSize: 11.5, lineHeight: 1.4 }}>
+                        Payment recorded as sent with the shared code. Waiting for seller acknowledgement.
                       </div>
                     ) : matchedPaymentStatus === "seller_confirmed_received" ? (
                       <div style={{ color: "#17663D", fontSize: 11.5, fontWeight: 900 }}>
-                        Seller acknowledged payment. Merchant Verification can continue with dispatch and tracking.
+                        Seller acknowledged payment. Dispatch and tracking can now continue.
                       </div>
                     ) : null}
                   </div>
                 ) : null}
 
                 {matchedProtectedTrade?.id ? (
-                  <StableCtaLink
-                    to={focusedTradePath(
-                      protectedTradeBasePath,
-                      Number(matchedProtectedTrade.id),
-                      "record"
-                    )}
-                    debugId={`demand-box.response.${requestId}.protected-trade.open`}
-                    data-gsn-demand-protected-trade="associated-record"
-                    stableHeight={44}
-                    style={{ borderRadius: 12, fontSize: 12 }}
-                  >
-                    Open Trade Record
-                  </StableCtaLink>
-                ) : null}
-
-                {matchedProtectedTrade?.id ? (
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                      gap: 7,
-                    }}
-                  >
-                    {!isOwner ? (
+                  dispatchUnlocked ? (
+                    !isOwner ? (
                       <StableCtaLink
                         to={merchantVerificationPath}
                         debugId={`demand-box.response.${requestId}.merchant-verification-tracking`}
                         data-gsn-demand-trade-stage="merchant-verification-tracking"
                         stableHeight={42}
-                        style={{ borderRadius: 12, padding: "8px 7px", fontSize: 11.5 }}
+                        style={{ borderRadius: 12, padding: "8px 10px", fontSize: 11.5 }}
                       >
-                        Merchant Verification & tracking
+                        Start dispatch & tracking
                       </StableCtaLink>
                     ) : (
                       <div style={{ color: "#587087", fontSize: 11, lineHeight: 1.35, padding: "7px 4px" }}>
-                        Tracking is shared from Merchant Verification after dispatch.
+                        The seller starts dispatch in Merchant Verification. Tracking updates stay linked to this Trade Record.
                       </div>
-                    )}
-                    <StableCtaLink
-                      to={focusedTradePath(
-                        protectedTradeBasePath,
-                        Number(matchedProtectedTrade.id),
-                        "confirmation"
-                      )}
-                      debugId={`demand-box.response.${requestId}.trade-confirmation`}
-                      data-gsn-demand-trade-stage="confirmation-remarks"
-                      stableHeight={42}
-                      style={{ borderRadius: 12, padding: "8px 7px", fontSize: 11.5 }}
-                    >
-                      Confirm / remarks
-                    </StableCtaLink>
-                  </div>
+                    )
+                  ) : (
+                    <div style={{ color: "#64748B", fontSize: 11, lineHeight: 1.35 }}>
+                      Dispatch unlocks after the seller acknowledges payment, or immediately when deferred credit is agreed.
+                    </div>
+                  )
                 ) : null}
 
                 <div style={{ color: "#64748B", fontSize: 10.5, lineHeight: 1.35 }}>
-                  Only the compact bank-details card and payment code are sent in chat. The Finance page is never attached. Payment goes directly to the seller's saved account; GSN does not hold or automatically verify the money.
+                  Only the compact bank-details card and shared payment code are sent in chat. The Finance page is never attached. Payment goes directly to the seller's saved account; GSN does not hold or automatically verify the money.
                 </div>
               </div>
             </details>

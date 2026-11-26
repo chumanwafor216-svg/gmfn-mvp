@@ -2176,46 +2176,6 @@ export default function DemandBoxPage() {
   }
 
 
-  function demandMatchTradePath(row: DemandRow, match: DemandSupplyMatchItem): string {
-    if (!isMineRow(row, me)) return routes.marketplace;
-
-    const [pathAndSearch] = routes.marketplace.split("#", 2);
-    const [path, existingSearch = ""] = pathAndSearch.split("?", 2);
-    const params = new URLSearchParams(existingSearch);
-    const clanId = positiveNumber(match.clan_id || selectedClanId);
-    const demandId = positiveNumber(row?.id || match.demand_id);
-    const productId = positiveNumber(match.product_id);
-    const shopId = positiveNumber(match.shop_id);
-    if (clanId) params.set("community", String(clanId));
-    if (demandId) params.set("source_demand_id", String(demandId));
-    if (productId) params.set("source_match_product_id", String(productId));
-    if (shopId) params.set("source_match_shop_id", String(shopId));
-    params.set("trade_source", "demand_supply_match");
-    const reasonCodes = Array.isArray(match.reason_codes)
-      ? match.reason_codes.filter(Boolean).join(",")
-      : "";
-    if (reasonCodes) params.set("source_match_reason_codes", reasonCodes);
-    const query = params.toString();
-    return `${path}${query ? `?${query}` : ""}#marketplace-trade-evidence`;
-  }
-  function demandProductContextTradePath(row: DemandRow): string {
-    const context = row?.product_context;
-    if (!context || !isMineRow(row, me)) return routes.marketplace;
-
-    const [pathAndSearch] = routes.marketplace.split("#", 2);
-    const [path, existingSearch = ""] = pathAndSearch.split("?", 2);
-    const params = new URLSearchParams(existingSearch);
-    const demandId = positiveNumber(row?.id);
-    const productId = positiveNumber(context.product_id);
-    const shopId = positiveNumber(context.shop_id);
-    if (selectedClanId) params.set("community", String(selectedClanId));
-    if (demandId) params.set("source_demand_id", String(demandId));
-    if (productId) params.set("source_match_product_id", String(productId));
-    if (shopId) params.set("source_match_shop_id", String(shopId));
-    params.set("trade_source", "demand_supply_match");
-    const query = params.toString();
-    return `${path}${query ? `?${query}` : ""}#marketplace-trade-evidence`;
-  }
   async function askMatchedSeller(row: DemandRow, match: DemandSupplyMatchItem, shopPath: string) {
     const demandId = positiveNumber(row?.id || match.demand_id);
     const productId = positiveNumber(match.product_id);
@@ -2308,7 +2268,6 @@ export default function DemandBoxPage() {
         <div data-gsn-demand-match-list="compact" style={{ display: "grid", gap: 6 }}>
           {visibleMatches.map((match) => {
             const to = demandMatchSupplyPath(row, match);
-            const tradeTo = demandMatchTradePath(row, match);
             const title = firstTruthy(match.product_title, "Possible listing");
             const shopName = firstTruthy(match.shop_name, "Marketplace shop");
             const canAskSeller = isMineRow(row, me);
@@ -2468,7 +2427,6 @@ export default function DemandBoxPage() {
                       preferredRecipientName={selectedContact.shop_name}
                       supplyProductId={positiveNumber(match.product_id)}
                       supplyShopId={positiveNumber(match.shop_id)}
-                      protectedTradePath={tradeTo}
                       onUnreadChanged={refreshUnreadSummary}
                     />
 
@@ -3289,9 +3247,6 @@ export default function DemandBoxPage() {
                   communityId={positiveNumber(selectedClanId)}
                   supplyProductId={positiveNumber(row?.product_context?.product_id)}
                   supplyShopId={positiveNumber(row?.product_context?.shop_id)}
-                  protectedTradePath={
-                    row?.product_context ? demandProductContextTradePath(row) : ""
-                  }
                   onUnreadChanged={refreshUnreadSummary}
                 />
                 {conversationFocused && isMineRow(row, me) && row?.product_context ? (

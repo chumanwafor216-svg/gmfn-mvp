@@ -160,7 +160,7 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /More things you can do[\s\S]*?Links to share[\s\S]*?Promote a shop[\s\S]*?Record a trade[\s\S]*?Your recorded money here[\s\S]*?Your recorded money position in this community[\s\S]*?See money details/,
+  /More things you can do[\s\S]*?Links to share[\s\S]*?Promote a shop[\s\S]*?Your recorded money here[\s\S]*?Your recorded money position in this community[\s\S]*?See money details/,
   "Marketplace secondary tools and money summary must use direct task language."
 );
 
@@ -292,11 +292,11 @@ assertNotContains(
   "Trade Evidence must not stay as a duplicate front card after being grouped under Marketing Tools."
 );
 
-assertContains(
+assertNotContains(
   marketplaceFile,
   marketplaceSource,
-  /debugId="marketplace\.progressive\.trade-evidence"[\s\S]*?openMarketplaceSection\(event, "trade", "marketplace-trade-evidence"\)[\s\S]*?Record a trade/,
-  "Trade Evidence must remain reachable only through progressive or contextual evidence intent, not as a neutral front-door job."
+  /debugId="marketplace\.progressive\.trade-evidence"|>\s*Record a trade\s*</g,
+  "Trade Records must start inside the private DemandBox conversation, not from the Marketplace front surface."
 );
 
 assertContains(

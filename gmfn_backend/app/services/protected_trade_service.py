@@ -642,8 +642,10 @@ def add_trade_event(
         raise ValueError("This Trade Record agreement is not awaiting the buyer's decision")
     if event_key == "terms.reissued" and old_status != "amendment_requested":
         raise ValueError("The seller can reissue terms only after the buyer requests changes")
-    if event_key == "payment.claimed" and old_status not in {"agreed", "payment_instructed"}:
-        raise ValueError("The buyer can record payment only after accepting the Trade Record")
+    if event_key == "payment.claimed" and old_status != "payment_instructed":
+        raise ValueError(
+            "The buyer can record payment only after the seller sends bank details with a payment code"
+        )
     if event_key == "payment.received" and old_status not in {"payment_claimed", "payment_under_review"}:
         raise ValueError("The seller can acknowledge payment only after the buyer records it as sent")
     if event_key == "release.recorded":

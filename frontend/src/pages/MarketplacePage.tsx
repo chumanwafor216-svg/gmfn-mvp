@@ -1256,12 +1256,12 @@ function marketplaceWisdomActionFor(
     text.includes("dispute") ||
     text.includes("negotiation")
   ) {
-    return makeAction(
-      "trade",
-      "marketplace-trade-evidence",
-      "Open Trade Evidence",
-      "Record the item, agreement, and outcome before the story becomes unclear.",
-      "trade",
+    return makeCtaAction(
+      "demandBox",
+      "marketplace-demand-box",
+      "Open DemandBox",
+      "Continue the private conversation, agreement, coded payment, and dispatch there.",
+      "demand",
       "#0B4EA2",
       "#E7F1FE"
     );
@@ -10861,18 +10861,6 @@ export default function MarketplacePage() {
               style={marketplaceInlineActionStyle("secondary", false, isCompact)}
             >
               Promote a shop
-            </StableButton>
-            <StableButton
-              type="button"
-              debugId="marketplace.progressive.trade-evidence"
-              aria-label="Open Trade Evidence intentionally"
-              onClick={(event) =>
-                openMarketplaceSection(event, "trade", "marketplace-trade-evidence")
-              }
-              stableHeight={isCompact ? 54 : 58}
-              style={marketplaceInlineActionStyle("secondary", false, isCompact)}
-            >
-              Record a trade
             </StableButton>
           </div>
         </details>
