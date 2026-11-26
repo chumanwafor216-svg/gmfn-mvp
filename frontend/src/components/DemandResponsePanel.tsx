@@ -1,12 +1,18 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   createDemandMediaAttachment,
   createMarketplaceRequestResponse,
+  getMyWithdrawalDestination,
   listMarketplaceRequestResponses,
+  listProtectedTrades,
   markMarketplaceRequestResponsesRead,
   type MarketplaceRequestResponseItem,
+  type ProtectedTradeRecord,
 } from "../lib/api";
+import { APP_ROUTES } from "../lib/appRoutes";
+import { withCommunityQuery } from "../lib/communityRouteContext";
 import { resolveProfileImageUrl } from "../lib/profileImage";
+import GsnMicrophoneIcon from "./GsnMicrophoneIcon";
 import { GsnLegacyIcon } from "./GsnLegacyIcon";
 import ProtectedVoiceNotePlayer from "./ProtectedVoiceNotePlayer";
 import ProtectedDemandMedia from "./ProtectedDemandMedia";
@@ -15,6 +21,7 @@ import {
   SecondaryButton,
   StableButton,
   StableCtaLink,
+  StableDisclosureSummary,
   SubtleButton,
 } from "./StableButton";
 import VoiceNoteRecorder from "./VoiceNoteRecorder";
@@ -32,6 +39,7 @@ type DemandResponsePanelProps = {
   isOwner: boolean;
   compact?: boolean;
   embedded?: boolean;
+  communityId?: number;
   preferredRecipientUserId?: number;
   preferredRecipientName?: string;
   supplyProductId?: number;
@@ -82,6 +90,48 @@ function responsePreview(row: MarketplaceRequestResponseItem): string {
   if (Number(row.audio_attachment_id || 0) > 0 || row.audio_deleted_at) return "Voice note";
   return "Private reply";
 }
+
+function focusedTradePath(
+  basePath: string,
+  tradeId: number,
+  focus: "record" | "tracking" | "confirmation"
+): string {
+  const [pathAndSearch] = String(basePath || APP_ROUTES.MARKETPLACE).split("#", 1);
+  const [pathname, search = ""] = pathAndSearch.split("?", 2);
+  const query = new URLSearchParams(search);
+  query.set("protected_trade_id", String(tradeId));
+  query.set("trade_focus", focus);
+  return `${pathname}?${query.toString()}#marketplace-trade-evidence`;
+}
+
+function accountDetailsMessage(destination: any): string {
+  const accountName = String(
+    destination?.account_name || destination?.destination_name || ""
+  ).trim();
+  const accountNumber = String(
+    destination?.account_number || destination?.bank_account_number || ""
+  ).trim();
+  if (!accountName || !accountNumber) return "";
+
+  const bankName = String(destination?.bank_name || destination?.bank || "").trim();
+  const sortCode = String(
+    destination?.sort_code || destination?.bank_sort_code || ""
+  ).trim();
+  const currency = String(destination?.currency || "").trim().toUpperCase();
+
+  return [
+    "Payment account details (please verify before paying):",
+    `Account name: ${accountName}`,
+    `Account number / wallet: ${accountNumber}`,
+    bankName ? `Bank / wallet provider: ${bankName}` : "",
+    sortCode ? `Sort code: ${sortCode}` : "",
+    currency ? `Currency: ${currency}` : "",
+    "GSN has not verified these details and does not move the money.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 export default function DemandResponsePanel({
   requestId,
   ownerUserId,
@@ -89,6 +139,7 @@ export default function DemandResponsePanel({
   isOwner,
   compact = false,
   embedded = false,
+  communityId = 0,
   preferredRecipientUserId = 0,
   preferredRecipientName = "Seller",
   supplyProductId = 0,
@@ -113,6 +164,9 @@ export default function DemandResponsePanel({
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [attachmentsOpen, setAttachmentsOpen] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
+  const [addingAccountDetails, setAddingAccountDetails] = useState(false);
+  const [tradeStepsOpen, setTradeStepsOpen] = useState(false);
+  const [protectedTrades, setProtectedTrades] = useState<ProtectedTradeRecord[]>([]);
   const [conversationAccess, setConversationAccess] = useState<
     "loading" | "available" | "unavailable"
   >("loading");
@@ -297,6 +351,101 @@ export default function DemandResponsePanel({
   }, [isOwner, ownerUserId, recipientUserId, rows]);
 
   const activePeerUserId = isOwner ? recipientUserId : ownerUserId;
+  const tradeContextAvailable = Boolean(requestId && supplyProductId && supplyShopId);
+  const matchedProtectedTrade = useMemo(() => {
+    if (!tradeContextAvailable) return null;
+    return (
+      protectedTrades.find((trade) => {
+        const meta = trade?.meta || {};
+        const sourceDemandId = Number(meta?.source_demand_id || 0);
+        const sourceProductId = Number(
+          meta?.source_match_product_id || trade?.product_id || 0
+        );
+        const sourceShopId = Number(meta?.source_match_shop_id || trade?.shop_id || 0);
+        const participantIds = [
+          Number(trade?.buyer_user_id || 0),
+          Number(trade?.seller_user_id || 0),
+        ];
+        return (
+          sourceDemandId === requestId &&
+          sourceProductId === supplyProductId &&
+          sourceShopId === supplyShopId &&
+          participantIds.includes(currentUserId) &&
+          (!activePeerUserId || participantIds.includes(activePeerUserId))
+        );
+      }) || null
+    );
+  }, [
+    activePeerUserId,
+    currentUserId,
+    protectedTrades,
+    requestId,
+    supplyProductId,
+    supplyShopId,
+    tradeContextAvailable,
+  ]);
+  const payoutDetailsPath = withCommunityQuery(APP_ROUTES.PAYOUT_DETAILS, communityId);
+  const protectedTradeBasePath = withCommunityQuery(
+    protectedTradePath || APP_ROUTES.MARKETPLACE,
+    communityId
+  );
+
+  useEffect(() => {
+    if (!tradeContextAvailable) {
+      setProtectedTrades([]);
+      return;
+    }
+    if (!tradeStepsOpen) return;
+    let cancelled = false;
+    void listProtectedTrades({ limit: 50 })
+      .then((items) => {
+        if (!cancelled) setProtectedTrades(Array.isArray(items) ? items : []);
+      })
+      .catch(() => {
+        if (!cancelled) setProtectedTrades([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    requestId,
+    supplyProductId,
+    supplyShopId,
+    tradeContextAvailable,
+    tradeStepsOpen,
+  ]);
+
+  async function addSavedAccountDetails() {
+    if (addingAccountDetails) return;
+    setAddingAccountDetails(true);
+    setError("");
+    try {
+      const destination = await getMyWithdrawalDestination({
+        clan_id: communityId || undefined,
+        gmfn_id: String(currentUser?.gmfn_id || "").trim() || undefined,
+      });
+      const preparedMessage = accountDetailsMessage(destination);
+      if (!preparedMessage) {
+        setError(
+          "Saved account details are incomplete. Open Account details, save the account name and number, then return here."
+        );
+        return;
+      }
+      setText((current) =>
+        [current.trim(), preparedMessage].filter(Boolean).join("\n\n")
+      );
+      window.requestAnimationFrame(() => textareaRef.current?.focus());
+    } catch (err: any) {
+      setError(
+        String(
+          err?.message ||
+            "Saved account details could not be loaded. Open Account details and check them first."
+        )
+      );
+    } finally {
+      setAddingAccountDetails(false);
+    }
+  }
 
   function scrollToLatest() {
     const thread = threadRef.current;
@@ -553,7 +702,7 @@ export default function DemandResponsePanel({
                         textOverflow: "ellipsis",
                       }}
                     >
-                      {thread.count} {thread.count === 1 ? "reply" : "replies"} · {thread.preview}
+                      {thread.count} {thread.count === 1 ? "reply" : "replies"} Â· {thread.preview}
                     </span>
                   </span>
                   {thread.unreadCount > 0 ? (
@@ -577,7 +726,7 @@ export default function DemandResponsePanel({
                     </span>
                   ) : (
                     <span aria-hidden="true" style={{ color: "#0B4FA8", fontSize: 22, lineHeight: 1 }}>
-                      ›
+                      â€º
                     </span>
                   )}
                 </StableButton>
@@ -841,7 +990,7 @@ export default function DemandResponsePanel({
                 cursor: "pointer",
               }}
             >
-              {newMessageCount} new {newMessageCount === 1 ? "message" : "messages"} ↓
+              {newMessageCount} new {newMessageCount === 1 ? "message" : "messages"} â†“
             </SubtleButton>
           ) : null}
         </div>
@@ -882,11 +1031,36 @@ export default function DemandResponsePanel({
           }}
         >
           {!isOwner ? (
-            <details data-gsn-demand-seller-quick-replies="optional" style={{ minWidth: 0 }}>
-              <summary style={{ color: "#0B4FA8", fontSize: 11.5, fontWeight: 900, cursor: "pointer" }}>
-                Quick replies
-              </summary>
-              <div aria-label="Optional quick replies" style={{ display: "flex", gap: 6, overflowX: "auto", paddingTop: 7, paddingBottom: 2 }}>
+            <details data-gsn-demand-preset-messages="collapsed" style={{ minWidth: 0 }}>
+              <StableDisclosureSummary
+                debugId={`demand-box.response.${requestId}.preset-messages`}
+                stableHeight={38}
+                style={{
+                  width: "100%",
+                  minHeight: 38,
+                  padding: "7px 10px",
+                  borderRadius: 12,
+                  border: "1px solid rgba(13,95,168,0.14)",
+                  background: "#FFFFFF",
+                  color: "#0B4FA8",
+                  fontSize: 11.5,
+                  fontWeight: 900,
+                  justifyContent: "space-between",
+                }}
+              >
+                <span>Preset messages</span>
+                <span aria-hidden="true">+</span>
+              </StableDisclosureSummary>
+              <div
+                aria-label="Preset messages"
+                style={{
+                  display: "flex",
+                  gap: 6,
+                  overflowX: "auto",
+                  paddingTop: 7,
+                  paddingBottom: 2,
+                }}
+              >
                 {SELLER_QUICK_REPLIES.map((reply) => (
                   <SecondaryButton
                     key={reply}
@@ -896,13 +1070,166 @@ export default function DemandResponsePanel({
                       setText(reply);
                       window.requestAnimationFrame(() => textareaRef.current?.focus());
                     }}
-                    debugId={`demand-box.response.${requestId}.quick.${reply.toLowerCase().replace(/[^a-z]+/g, "-")}`}
+                    debugId={`demand-box.response.${requestId}.preset.${reply.toLowerCase().replace(/[^a-z]+/g, "-")}`}
                     stableHeight={38}
-                    style={{ flex: "0 0 auto", borderRadius: 999, padding: "7px 10px", fontSize: 11.5, fontWeight: 850 }}
+                    style={{
+                      flex: "0 0 auto",
+                      borderRadius: 999,
+                      padding: "7px 10px",
+                      fontSize: 11.5,
+                      fontWeight: 850,
+                    }}
                   >
                     {reply}
                   </SecondaryButton>
                 ))}
+              </div>
+            </details>
+          ) : null}
+          {tradeContextAvailable ? (
+            <details
+              data-gsn-demand-trade-steps="collapsed"
+              onToggle={(event) => setTradeStepsOpen(event.currentTarget.open)}
+              style={{ minWidth: 0 }}
+            >
+              <StableDisclosureSummary
+                debugId={`demand-box.response.${requestId}.trade-steps`}
+                stableHeight={40}
+                style={{
+                  width: "100%",
+                  minHeight: 40,
+                  padding: "8px 10px",
+                  borderRadius: 12,
+                  border: "1px solid rgba(214,170,69,0.32)",
+                  background: "linear-gradient(180deg, #FFFDF7 0%, #F7FAFD 100%)",
+                  color: "#17324A",
+                  fontSize: 12,
+                  fontWeight: 950,
+                  justifyContent: "space-between",
+                }}
+              >
+                <span>Trade steps</span>
+                <span style={{ color: "#64748B", fontSize: 11, fontWeight: 850 }}>
+                  {matchedProtectedTrade ? "Continue record" : "Account, protect, track"}
+                </span>
+              </StableDisclosureSummary>
+              <div
+                data-gsn-demand-trade-steps-panel="true"
+                style={{
+                  display: "grid",
+                  gap: 7,
+                  marginTop: 7,
+                  padding: 9,
+                  borderRadius: 14,
+                  border: "1px solid rgba(13,95,168,0.12)",
+                  background: "#FFFFFF",
+                }}
+              >
+                {!isOwner ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "minmax(0, 1fr) auto",
+                      gap: 7,
+                      alignItems: "center",
+                    }}
+                  >
+                    <SecondaryButton
+                      type="button"
+                      onClick={() => void addSavedAccountDetails()}
+                      busy={addingAccountDetails}
+                      busyLabel="Loading"
+                      debugId={`demand-box.response.${requestId}.account-details`}
+                      data-gsn-demand-account-details="review-before-send"
+                      stableHeight={42}
+                      style={{ borderRadius: 12, fontSize: 12 }}
+                    >
+                      Add account details
+                    </SecondaryButton>
+                    <StableCtaLink
+                      to={payoutDetailsPath}
+                      debugId={`demand-box.response.${requestId}.manage-account-details`}
+                      stableHeight={42}
+                      style={{ borderRadius: 12, padding: "8px 10px", fontSize: 11.5 }}
+                    >
+                      Manage
+                    </StableCtaLink>
+                  </div>
+                ) : null}
+
+                {matchedProtectedTrade?.id ? (
+                  <StableCtaLink
+                    to={focusedTradePath(
+                      protectedTradeBasePath,
+                      Number(matchedProtectedTrade.id),
+                      "record"
+                    )}
+                    debugId={`demand-box.response.${requestId}.protected-trade.open`}
+                    data-gsn-demand-protected-trade="associated-record"
+                    stableHeight={44}
+                    style={{ borderRadius: 12, fontSize: 12 }}
+                  >
+                    Open Protected Trade
+                  </StableCtaLink>
+                ) : isOwner ? (
+                  <StableCtaLink
+                    to={protectedTradeBasePath}
+                    debugId={`demand-box.response.${requestId}.protected-trade.start`}
+                    data-gsn-demand-protected-trade="requester-start"
+                    stableHeight={44}
+                    style={{ borderRadius: 12, fontSize: 12 }}
+                  >
+                    Start Protected Trade
+                  </StableCtaLink>
+                ) : (
+                  <div
+                    data-gsn-demand-protected-trade="waiting-for-requester"
+                    style={{ color: "#587087", fontSize: 11.5, lineHeight: 1.4 }}
+                  >
+                    The requester starts the linked Protected Trade. It will appear here for both sides.
+                  </div>
+                )}
+
+                {matchedProtectedTrade?.id ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gap: 7,
+                    }}
+                  >
+                    <StableCtaLink
+                      to={focusedTradePath(
+                        protectedTradeBasePath,
+                        Number(matchedProtectedTrade.id),
+                        "tracking"
+                      )}
+                      debugId={`demand-box.response.${requestId}.trade-tracking`}
+                      data-gsn-demand-trade-stage="tracking-evidence"
+                      stableHeight={42}
+                      style={{ borderRadius: 12, padding: "8px 7px", fontSize: 11.5 }}
+                    >
+                      Tracking update
+                    </StableCtaLink>
+                    <StableCtaLink
+                      to={focusedTradePath(
+                        protectedTradeBasePath,
+                        Number(matchedProtectedTrade.id),
+                        "confirmation"
+                      )}
+                      debugId={`demand-box.response.${requestId}.trade-confirmation`}
+                      data-gsn-demand-trade-stage="confirmation-remarks"
+                      stableHeight={42}
+                      style={{ borderRadius: 12, padding: "8px 7px", fontSize: 11.5 }}
+                    >
+                      Confirm / remarks
+                    </StableCtaLink>
+                  </div>
+                ) : null}
+
+                <div style={{ color: "#64748B", fontSize: 10.5, lineHeight: 1.35 }}>
+                  Account details stay in the draft until you press Send. GSN records evidence; it does not verify payment or guarantee delivery.
+                </div>
               </div>
             </details>
           ) : null}
@@ -982,7 +1309,7 @@ export default function DemandResponsePanel({
                 stableHeight={46}
                 style={{ minWidth: 46, width: 46, padding: 0, borderRadius: 999 }}
               >
-                <GsnLegacyIcon name="audio" size={22} />
+                <GsnMicrophoneIcon size={22} />
               </PrimaryButton>
             )}
           </div>
@@ -1075,16 +1402,6 @@ export default function DemandResponsePanel({
             <div style={{ color: "#587087", fontSize: 12, textAlign: "center" }}>
               Recording continues here. Tap Stop before sending.
             </div>
-          ) : null}
-          {protectedTradePath ? (
-            <StableCtaLink
-              to={protectedTradePath}
-              debugId={`demand-box.response.${requestId}.protected-trade`}
-              stableHeight={42}
-              style={{ borderRadius: 12, fontSize: 12 }}
-            >
-              Protected Trade (if agreed)
-            </StableCtaLink>
           ) : null}
         </div>
       ) : null}

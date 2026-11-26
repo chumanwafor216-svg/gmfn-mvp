@@ -94,6 +94,7 @@ export type MarketplaceTradeEvidenceSectionData = {
   protectedTradeEventNote: string;
   protectedTradeEventType: string;
   protectedTradeEvidencePaperText: string;
+  routeProtectedTradeFocus: string;
   protectedTradeStatusLabel: (value: unknown, fallback?: string) => string;
   protectedTrades: ProtectedTradeRecord[];
   recentProtectedTradeEvents: ProtectedTradeEventRecord[];
@@ -169,6 +170,7 @@ export default function MarketplaceTradeEvidenceSection({
     protectedTradeEventNote,
     protectedTradeEventType,
     protectedTradeEvidencePaperText,
+    routeProtectedTradeFocus,
     protectedTradeStatusLabel,
     protectedTrades,
     recentProtectedTradeEvents,
@@ -390,10 +392,14 @@ export default function MarketplaceTradeEvidenceSection({
                   ? recentProtectedTrades.length
                     ? "Complete the new buyer and seller record below."
                     : "Start one record before goods, services, or money change hands."
-                  : `Confirm what happened with ${
-                      safeStr(selectedProtectedTrade?.item_title) ||
-                      "the selected trade"
-                    }.`}
+                  : routeProtectedTradeFocus === "tracking"
+                    ? "Add the courier, tracking, or delivery reference as an evidence note."
+                    : routeProtectedTradeFocus === "confirmation"
+                      ? "Confirm the outcome, then add remarks if more context is needed."
+                      : `Confirm what happened with ${
+                          safeStr(selectedProtectedTrade?.item_title) ||
+                          "the selected trade"
+                        }.`}
               </div>
               <div
                 style={{
@@ -774,7 +780,7 @@ export default function MarketplaceTradeEvidenceSection({
 
             {recentProtectedTrades.length ? (
               <details
-                open={!isCompact}
+                open={Boolean(routeProtectedTradeFocus) || !isCompact}
                 style={{
                   borderRadius: 16,
                   border: "1px solid rgba(16,37,59,0.10)",
@@ -1024,7 +1030,11 @@ export default function MarketplaceTradeEvidenceSection({
                         setProtectedTradeEventNote(event.target.value)
                       }
                       style={{ ...textAreaStyle(), marginTop: 6, minHeight: 72 }}
-                      placeholder="Write what happened and who can stand by this update."
+                      placeholder={
+                        routeProtectedTradeFocus === "tracking"
+                          ? "Add courier, tracking reference, expected delivery, or delivery remarks. Do not include a full private address."
+                          : "Write what happened and who can stand by this update."
+                      }
                       maxLength={4000}
                     />
                   </label>

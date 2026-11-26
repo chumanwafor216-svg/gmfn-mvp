@@ -1,4 +1,4 @@
-# Active Handoff Notes
+﻿# Active Handoff Notes
 
 ## Spotlight Phase A functionality candidate - 2026-11-25
 
@@ -7203,7 +7203,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Honest residual: the screenshots do not expose the failed request status or selected file size, and Render log access had no confirmed workspace in this session. The exact production request failure therefore remains unproven; the reported handset/file should be retried after deployment to confirm the live network path.
 - The protected browser sweep passes but still logs the unrelated pre-existing duplicate React-key warning.
 
-# 2026-11-20 â€” Brainstorming record reconciled with canonical commercial summary
+# 2026-11-20 Ã¢â‚¬â€ Brainstorming record reconciled with canonical commercial summary
 
 - Reconciled the supplied `GSN Brainstorming Summary and Working Decision Record` against the existing commercial, Spotlight, financial-engine, and TrustSlip records.
 - Added `docs/GSN_BRAINSTORMING_RECONCILIATION_AND_WORKING_DECISION_RECORD_2026-11-20.md` as the consolidated management record.
@@ -7214,7 +7214,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 - No product behaviour, payment state, schema, forecast, external communication, or deployment changed.
 - Security boundary: the supplied attachment included an unrelated session/account dump. It was excluded completely and no sensitive material was copied into the repository. The exposed session should be revoked by the product owner.
 
-# 2026-11-20 â€” Public discovery, Spotlight and merchant-pilot current-revision audit
+# 2026-11-20 Ã¢â‚¬â€ Public discovery, Spotlight and merchant-pilot current-revision audit
 
 - Audited the supplied Public Discovery, Spotlight and Merchant Pilot Protocol against revision `cabbfb04048e418a86ef16390c32cfa685dead5c` without changing product behavior, payment state, environment, forecast, external communication or deployment.
 - Added `docs/GSN_PUBLIC_DISCOVERY_SPOTLIGHT_MERCHANT_PILOT_CURRENT_REVISION_AUDIT_2026-11-20.md` with a preservation map, proposed decision defaults, minimal implementation sequence, test advertiser report, metric dictionary, negative purchase/remedy trace, Community Domain service sheet, Demand Box recommendation, Scottish pilot design and sponsor boundary.
@@ -7234,7 +7234,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Updated the frozen screen specification and freeze policy to supersede the earlier owner numbered-position presentation detail without changing the twelve-space capacity or exact write target.
 - Verification passed: focused ESLint, Public Shop button inventory audit, the focused 390x844 progressive-shelf browser smoke, TypeScript and the 329-module production build, the isolated Dashboard passport guard, and the complete protected-button-freeze suite. The protected browser sweep still logs its unrelated pre-existing duplicate React-key warning while passing.
 
-# 2026-11-20 â€” Corrected Public Discovery, Spotlight and Merchant Pilot implementation protocol
+# 2026-11-20 Ã¢â‚¬â€ Corrected Public Discovery, Spotlight and Merchant Pilot implementation protocol
 
 - Added `docs/GSN_PUBLIC_DISCOVERY_SPOTLIGHT_MERCHANT_PILOT_CORRECTED_IMPLEMENTATION_PROTOCOL_2026-11-20.md` as the sanitized version 1.1 implementation handoff.
 - The protocol corrects commercial interpretation without rewriting the completed source audit: GBP 0.50 buys one Pipeline Credit and 30 genuine scheduled opportunities split 10/10/10; mere consideration is not supplied delivery; the five-view founder threshold is preserved; entitlement, genuine supply, impressions, shortfall and remedy remain separate evidence.
@@ -7244,7 +7244,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Existing audit facts and no-release verdict remain valid: public cross-community shop/offer search and the complete canonical paid Spotlight chain are not implemented, and live payment remains unapproved.
 - Security boundary: the supplied attachment contained a live account/session export after the protocol. It was excluded completely. The product owner should revoke the exposed session, remove unsafe copies and sign in again before treating the account as secure.
 
-# 2026-11-20 â€” Public merchant discovery Slice 1 candidate
+# 2026-11-20 Ã¢â‚¬â€ Public merchant discovery Slice 1 candidate
 
 - Implemented the authorized public merchant discovery slice as a separate explicit publication authority. Legacy products receive no publication row and remain excluded until their owner confirms them product by product.
 - Added anonymous `GET /marketplace/public-discovery`, owner preview and owner publication-state endpoints. Search fails closed unless both `GSN_PUBLIC_MERCHANT_DISCOVERY_V1_ENABLED` and `GSN_SHOP_PRIVACY_AUTHORITY_V1_ENABLED` are enabled.
@@ -7481,7 +7481,7 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Verification passed: DemandBox phone smoke at 360/390/430, DemandBox front-package audit, DemandBox expanded-search audit, Community Home button inventory, Community Home phone-button audit, production frontend build and the complete protected-button freeze suite.
 - The protected suite still emits the pre-existing duplicate React key 0 browser warnings and Babel large-file notes outside this DemandBox correction; all protected contracts passed.
 - No push, merge, migration, production deployment or environment change was performed.
-## Enugu CDW adoption pilot candidate — 23 November 2026
+## Enugu CDW adoption pilot candidate â€” 23 November 2026
 
 - Isolated branch: `codex/enugu-cdw-adoption-pilot`; based on `origin/main` plus the accepted DemandBox relevance and compact-row commits.
 - Added authenticated requester-only **Ask seller** handoff from a reliable DemandBox match, preserving validated demand/product/Shop context in a prepared WhatsApp draft.
@@ -7710,3 +7710,13 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Blockers: this isolated worktree has no `node_modules`, so TypeScript/Vite build and Playwright phone smoke could not execute without an unauthorised dependency installation. The broad protected-button suite also retains pre-existing raw controls in `VoiceNoteRecorder.tsx`, a pre-existing Marketplace tap audit failure, and Playwright-dependent audits unavailable without dependencies.
 - Storage after implementation remained above the mandatory threshold. No dependency installation, production data write, migration execution against production, push, merge or deployment was performed at this checkpoint.
 - The inherited conflict markers earlier in this document were preserved and not resolved by this work.
+
+# DemandBox compact conversation-to-trade progression - 2026-11-26
+
+- The responder phrases are now collapsed under one `Preset messages` control, and the idle voice action uses a microphone rather than the former speaker symbol.
+- One collapsed `Trade steps` control now sits inside the private conversation. Seller account details load into the editable draft for review and are never sent automatically.
+- The requester starts the existing server-validated demand/product/Shop Protected Trade. Both associated participants can reopen that same record from the conversation after it exists.
+- Optional tracking opens the existing evidence-note lane and is explicitly not a delivery guarantee. Confirmation and remarks reuse the existing role-aware outcome and evidence-note controls.
+- No escrow, payment verification, automatic payout, delivery guarantee, participant-authority expansion, schema or backend contract was added.
+- Verification: `frontend/tools/audit-demand-box-front-package.mjs` passed; Node syntax checks for the DemandBox audit and phone smoke passed; `git diff --check` passed. The isolated worktree has no `node_modules`, so the TypeScript/Vite build and Playwright phone smoke were not executable locally.
+- Local only: no commit, push, main promotion or deployment was performed.

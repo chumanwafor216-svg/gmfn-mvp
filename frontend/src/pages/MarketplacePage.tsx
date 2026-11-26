@@ -455,8 +455,8 @@ const PROTECTED_TRADE_EVENT_OPTIONS = [
   },
   {
     value: "evidence.attached",
-    label: "Evidence note",
-    detail: "Record a supporting reference or note for the trade file.",
+    label: "Tracking / evidence note",
+    detail: "Record a courier, tracking, delivery, or other supporting reference. This is evidence, not a delivery guarantee.",
   },
   {
     value: "trade.closed",
@@ -4731,6 +4731,17 @@ export default function MarketplacePage() {
       safeStr(query.get("ask_market") || query.get("market_need_pulse")).toLowerCase()
     );
   }, [location.search]);
+  const routeProtectedTradeId = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return positiveNumber(query.get("protected_trade_id"));
+  }, [location.search]);
+  const routeProtectedTradeFocus = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    const focus = safeStr(query.get("trade_focus")).toLowerCase();
+    return ["record", "tracking", "confirmation"].includes(focus)
+      ? focus
+      : "";
+  }, [location.search]);
   const routeDemandTradeHandoff = useMemo(() => {
     const query = new URLSearchParams(location.search);
     const source = safeStr(query.get("trade_source")).toLowerCase();
@@ -7555,6 +7566,19 @@ export default function MarketplacePage() {
     const firstId = positiveNumber(protectedTrades[0]?.id);
     setSelectedProtectedTradeId(firstId ? String(firstId) : "");
   }, [protectedTrades, selectedProtectedTradeId]);
+
+  useEffect(() => {
+    if (!routeProtectedTradeId) return;
+    const routeTradeAvailable = protectedTrades.some(
+      (trade) => positiveNumber(trade.id) === routeProtectedTradeId
+    );
+    if (!routeTradeAvailable) return;
+    setSelectedProtectedTradeId(String(routeProtectedTradeId));
+    setProtectedTradeCreateOpen(false);
+    if (routeProtectedTradeFocus === "tracking") {
+      setProtectedTradeEventType("evidence.attached");
+    }
+  }, [protectedTrades, routeProtectedTradeFocus, routeProtectedTradeId]);
 
   const roscaSelectableMembers = useMemo(() => {
     return memberRows
@@ -11145,6 +11169,7 @@ export default function MarketplacePage() {
               protectedTradeEventNote,
               protectedTradeEventType,
               protectedTradeEvidencePaperText,
+              routeProtectedTradeFocus,
               protectedTradeStatusLabel,
               protectedTrades,
               recentProtectedTradeEvents,

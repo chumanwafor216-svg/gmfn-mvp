@@ -43,6 +43,9 @@ requirePattern(
   "The principal commercial action must create a source-attributed structured purchase intention."
 );
 requirePattern(
+  /const spotlightCommercialAction = useMemo\(\(\) => \{[\s\S]*?label: "Visit shop"[\s\S]*?label: "Notify me"[\s\S]*?label: hasPrice \? "Book now" : "Request quote"[\s\S]*?label: hasPrice \? "Buy now" : "Request quote"/,
+  "Spotlight must use contextual Visit shop, Notify me, Book now, Buy now, or Request quote wording instead of Call advertiser."
+);requirePattern(
   /data-spotlight-primary-action="follow-shop"[\s\S]*?data-spotlight-primary-action=\{[\s\S]*?spotlightCommercialAction\.intentType/,
   "Visitor Follow and adaptive commercial actions must be principal Spotlight controls."
 );

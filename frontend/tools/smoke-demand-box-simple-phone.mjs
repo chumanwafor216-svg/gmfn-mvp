@@ -52,7 +52,7 @@ const requests = [
     id: 73,
     user_id: 309,
     title: "Need school transport",
-    description: "A driver is needed on weekday mornings.",
+    description: "Product: Weekday school transport\nShop: Awka Family Transport\nListed price: GBP 15\n@GSN-U-216\nPlease confirm availability, final price and collection or delivery arrangements.\nBuyer note: Is this product still available?",
     category: "Transport",
     urgency: "high",
     area: "Awka",
@@ -65,8 +65,10 @@ const requests = [
     is_tagged_for_me: true,
     mentioned_member_count: 1,
     mentioned_handles: ["@GSN-U-216"],
-    visibility_scope: "community_visible",
+    visibility_scope: "protected_target",
     product_context: {
+      product_id: 810,
+      shop_id: 81,
       product_title: "Weekday school transport",
       shop_name: "Awka Family Transport",
       listed_price: "15",
@@ -207,6 +209,17 @@ async function installApiMocks(page, apiCalls) {
         boundary_note: "Contact only; no agreement has been made.",
       }));
     }
+    if (path === "/protected-trades" && method === "GET") {
+      return route.fulfill(json([]));
+    }
+    if (path === "/withdrawal-destinations/me" && method === "GET") {
+      return route.fulfill(json({
+        account_name: "Ada Example",
+        account_number: "0123456789",
+        bank_name: "Example Community Bank",
+        currency: "NGN",
+      }));
+    }
     if (path === "/demand-box/responses/unread-summary" && method === "GET") {
       return route.fulfill(json({
         total_unread: 2,
@@ -262,6 +275,21 @@ async function installApiMocks(page, apiCalls) {
           author_profile_image_url: null,
           text: "I can also inspect it tomorrow morning.",
           created_at: "2026-11-07T15:49:00Z",
+          read_at: null,
+          is_unread: true,
+          is_mine: false,
+        },
+      ] : requestId === 73 ? [
+        {
+          id: 601,
+          marketplace_request_id: 73,
+          author_user_id: 309,
+          recipient_user_id: 216,
+          author_display_name: "Chidi Member",
+          author_gmfn_id: "GSN-U-309",
+          author_profile_image_url: "/src/assets/dashboard/dashboard-trustslip-verification.jpg",
+          text: "Is this product still available?",
+          created_at: "2026-11-25T14:57:00Z",
           read_at: null,
           is_unread: true,
           is_mine: false,
@@ -407,7 +435,21 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await frontDoor.locator('[data-gsn-demand-human-hero="market"]').isVisible(), "The human market image is missing.");
   assert(await frontDoor.getByText("People helping people", { exact: true }).isVisible(), "The GSN human-market promise is missing.");
   assert(await frontDoor.getByRole("link", { name: /Blessed Satch family Marketplace/ }).isVisible(), "The selected marketplace identity is missing.");
-  assert(await page.getByRole("button", { name: "Post a need", exact: true }).isVisible(), "Post a need is missing.");
+  const postNeedButton = frontDoor.getByRole("button", { name: "Post a need", exact: true });
+  const compactRequestSearch = frontDoor.getByRole("searchbox", { name: "Search requests", exact: true });
+  assert(await postNeedButton.isVisible(), "Post a need is missing.");
+  assert(await compactRequestSearch.isVisible(), "Compact request search is missing beside Post a need.");
+  const postNeedBounds = await postNeedButton.boundingBox();
+  const requestSearchBounds = await compactRequestSearch.locator("xpath=..").boundingBox();
+  assert(Boolean(postNeedBounds && requestSearchBounds), "Post and search geometry could not be measured.");
+  assert(
+    Math.abs((postNeedBounds?.y || 0) - (requestSearchBounds?.y || 0)) <= 3,
+    "Search requests is not on the same row as Post a need."
+  );
+  assert(
+    (requestSearchBounds?.width || 0) <= (postNeedBounds?.width || 0) * 1.08,
+    "Search requests returned as an oversized control."
+  );
   assert((await frontDoor.getByRole("button").count()) === 1, "The first surface has extra buttons.");
   assert((await frontDoor.getByRole("link").count()) === 1, "The first surface must contain only the marketplace selector link; Post a need is the sole general-purpose action.");
   assert(!(await page.getByText("Current state", { exact: true }).isVisible().catch(() => false)), "The repeated Current state card returned.");
@@ -429,7 +471,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   const cards = page.locator('[data-gsn-demand-record]');
   assert((await cards.count()) === 1, "The phone queue should begin with one compact request preview.");
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 0, "A phone request opened before a tap.");
-  assert(!(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible()), "Request detail leaked from a closed card.");
+  assert(!(await page.getByText("Product: Weekday school transport", { exact: true }).isVisible()), "Product-enquiry detail leaked from a closed card.");
 
   const transportCard = cards.filter({ hasText: "Need school transport" });
   assert((await transportCard.getAttribute("data-gsn-demand-request-preview")) === "message-first", "The closed request is not using the message-first preview.");
@@ -438,26 +480,43 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await transportCard.getByText("Need school transport", { exact: true }).isVisible(), "The request message is missing from the closed preview.");
   await transportCard.getByRole("button", { name: "Open request", exact: true }).click();
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "Opening a request did not expose exactly one card.");
-  assert(await transportCard.locator('[data-gsn-demand-request-hero="request"]').isVisible(), "Opened request hero is missing.");
+  const transportHero = transportCard.locator('[data-gsn-demand-request-hero="request"]');
+  assert(await transportHero.isVisible(), "Opened request hero is missing.");
   assert((await transportCard.locator('[data-gsn-demand-product-context]').count()) === 0, "The duplicate Product Enquiry card returned below the request hero.");
-  assert(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible(), "The complete request message did not open with the request.");
+  const mergedProductEnquiry = transportHero.locator('[data-gsn-demand-product-enquiry-summary="merged"]');
+  assert(await mergedProductEnquiry.isVisible(), "The product enquiry was not merged into the opened request card.");
+  assert(await mergedProductEnquiry.getByText("Awka Family Transport", { exact: true }).isVisible(), "The concise merged Shop identity is missing.");
+  assert(await mergedProductEnquiry.getByText("Listed price GBP 15", { exact: true }).isVisible(), "The concise merged listed price is missing.");
+  assert((await transportCard.locator('[data-gsn-demand-primary-message="true"]').count()) === 0, "The verbose product-enquiry message returned as a second block.");
+  assert(!(await page.getByText("Please confirm availability, final price and collection or delivery arrangements.", { exact: true }).isVisible().catch(() => false)), "Verbose generated product guidance remained exposed.");
+  const transportConversations = transportCard.locator('[data-gsn-demand-conversations="integrated"]');
+  const transportConversationZone = transportConversations.locator('[data-gsn-demand-conversation-zone="primary"]');
+  const transportPrivateReplies = transportConversationZone.locator('[data-gsn-demand-private-replies="true"]');
+  await mergedProductEnquiry.getByRole("button", { name: "Send message", exact: true }).click();
+  await transportPrivateReplies.waitFor();
+  assert(await transportPrivateReplies.getByText("Is this product still available?", { exact: true }).isVisible(), "Send message did not open the protected buyer-seller thread.");
+  await transportConversations.locator("summary").click();
   const matchPanel = transportCard.locator('[data-gsn-demand-supply-intelligence="true"]');
   await matchPanel.waitFor();
-  const transportConversations = transportCard.locator('[data-gsn-demand-conversations="integrated"]');
   const matchBeforeConversation = await matchPanel.evaluate((match, conversation) =>
     Boolean(conversation && (match.compareDocumentPosition(conversation) & Node.DOCUMENT_POSITION_FOLLOWING))
   , await transportConversations.elementHandle());
   assert(matchBeforeConversation, "Possible matches must appear before the integrated conversation.");
   await transportConversations.locator("summary").click();
-  const transportConversationZone = transportConversations.locator('[data-gsn-demand-conversation-zone="primary"]');
-  const transportPrivateReplies = transportConversationZone.locator('[data-gsn-demand-private-replies="true"]');
   await transportPrivateReplies.waitFor();
-  const quickReplies = transportPrivateReplies.locator('[data-gsn-demand-seller-quick-replies="optional"]');
-  assert(await quickReplies.isVisible(), "The optional seller-response helpers are missing for an authorised responder.");
+  const quickReplies = transportPrivateReplies.locator('[data-gsn-demand-preset-messages="collapsed"]');
+  assert(await quickReplies.isVisible(), "The collapsed Preset messages control is missing for an authorised responder.");
   await quickReplies.locator("summary").click();
   await quickReplies.getByRole("button", { name: "I can help.", exact: true }).click();
   const responderText = transportPrivateReplies.getByPlaceholder("Message...");
-  assert((await responderText.inputValue()) === "I can help.", "A seller helper did not populate ordinary editable text.");
+  assert((await responderText.inputValue()) === "I can help.", "A preset message did not populate ordinary editable text.");
+  const responderTradeSteps = transportPrivateReplies.locator('[data-gsn-demand-trade-steps="collapsed"]');
+  assert(await responderTradeSteps.isVisible(), "The compact Trade steps control is missing beside the conversation.");
+  await responderTradeSteps.locator("summary").click();
+  await responderTradeSteps.getByRole("button", { name: "Add account details", exact: true }).click();
+  assert((await responderText.inputValue()).includes("Account number / wallet: 0123456789"), "Saved account details were not prepared in the editable private-message draft.");
+  assert(apiCalls.responsePosts === 0, "Preparing account details sent a message without review.");
+  assert(await transportPrivateReplies.locator('[data-gsn-microphone-icon="true"]').isVisible(), "The voice-note action is not using a microphone icon.");
   await transportConversations.locator("summary").click();
   await matchPanel.waitFor();
   await matchPanel.locator("summary").click();
@@ -623,7 +682,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   const freezerCard = cards.filter({ hasText: "Need a freezer repair" });
   await freezerCard.getByRole("button", { name: "Open request", exact: true }).click();
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "More than one phone request stayed open.");
-  assert(!(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible()), "Opening the next card did not close the first.");
+  assert(!(await mergedProductEnquiry.isVisible().catch(() => false)), "Opening the next card did not close the merged product enquiry.");
 
   const ownerHero = freezerCard.locator('[data-gsn-demand-request-hero="request"]');
   await ownerHero.waitFor();
@@ -633,6 +692,9 @@ async function verifyViewport(browser, baseURL, viewport) {
   await ownerMatchPanel.waitFor();
   await ownerMatchPanel.locator("summary").click();
   assert((await ownerMatchPanel.locator('[data-gsn-demand-reliable-match="true"]').count()) === 1, "The requester match is missing.");
+  const requesterDescriptionCard = ownerMatchPanel.locator('[data-gsn-demand-match-description-card="true"]');
+  const requesterViewShop = requesterDescriptionCard.getByRole("link", { name: /View Shop:/ });
+  assert(await requesterViewShop.isVisible(), "View shop is missing from the requester product description card.");
   assert(await ownerMatchPanel.getByRole("button", { name: "Ask seller", exact: true }).isVisible(), "Ask Seller is missing.");
   await ownerMatchPanel.getByRole("button", { name: "Ask seller", exact: true }).click();
   assert(apiCalls.sellerContactGets === 1, "Ask seller did not use the authenticated validated handoff endpoint exactly once.");
@@ -642,29 +704,26 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await contactResult.getByText("GSN conversation (recommended)", { exact: true }).isVisible(), "GSN chat is not the primary seller-contact route.");
   const whatsappAlternative = contactResult.locator('[data-gsn-demand-contact-channel="whatsapp-alternative"]');
   const privateConversation = contactResult.locator('[data-gsn-demand-private-replies="true"]');
-  const protectedTrade = contactResult.locator('[data-gsn-demand-protected-trade-position="after-conversation"]');
-  const viewShop = contactResult.getByRole("link", { name: "View shop", exact: true });
   assert(await whatsappAlternative.isVisible(), "WhatsApp is not contained in Ask Seller as the alternative route.");
   assert(await privateConversation.isVisible(), "The GSN conversation is missing from Ask Seller.");
-  assert(await protectedTrade.isVisible(), "Protected Trade is missing immediately after the conversation.");
-  assert(await contactResult.getByRole("link", { name: "Protected Trade (if agreed)", exact: true }).isVisible(), "The protected-trade action is not clearly labelled.");
-  assert(await viewShop.isVisible(), "View shop is missing from Ask Seller.");
+  assert((await contactResult.locator('[data-gsn-demand-protected-trade-position="after-conversation"]').count()) === 0, "A duplicate Protected Trade button returned outside the conversation.");
+  const tradeSteps = privateConversation.locator('[data-gsn-demand-trade-steps="collapsed"]');
+  assert(await tradeSteps.isVisible(), "The protected progression is missing from the compact Trade steps control.");
+  await tradeSteps.locator("summary").click();
+  const startProtectedTrade = tradeSteps.getByRole("link", { name: "Start Protected Trade", exact: true });
+  assert(await startProtectedTrade.isVisible(), "The requester cannot start the associated Protected Trade from the conversation.");
+  const startTradeHref = await startProtectedTrade.getAttribute("href");
+  assert(startTradeHref?.includes("source_demand_id=72") && startTradeHref?.includes("source_match_product_id=900") && startTradeHref?.includes("source_match_shop_id=90"), "The Protected Trade handoff lost its demand, product, or shop association.");
+  assert((await contactResult.getByRole("link", { name: "View shop", exact: true }).count()) === 0, "View shop is duplicated inside Ask Seller.");
   const sellerJourneyOrder = await contactResult.evaluate((container) => {
     const whatsapp = container.querySelector('[data-gsn-demand-contact-channel="whatsapp-alternative"]');
     const conversation = container.querySelector('[data-gsn-demand-private-replies="true"]');
-    const trade = container.querySelector('[data-gsn-demand-protected-trade-position="after-conversation"]');
-    const shop = container.querySelector('[data-debug-id$="seller-contact.view-shop"]');
-    if (!whatsapp || !conversation || !trade || !shop) return null;
-    const follows = (first, second) => Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
+    if (!whatsapp || !conversation) return null;
     return {
-      whatsappBeforeConversation: follows(whatsapp, conversation),
-      conversationBeforeTrade: follows(conversation, trade),
-      tradeBeforeShop: follows(trade, shop),
+      whatsappBeforeConversation: Boolean(whatsapp.compareDocumentPosition(conversation) & Node.DOCUMENT_POSITION_FOLLOWING),
     };
   });
-  assert(sellerJourneyOrder?.whatsappBeforeConversation, "WhatsApp must remain the alternative channel choice before opening the GSN conversation.");
-  assert(sellerJourneyOrder?.conversationBeforeTrade, "Protected Trade must appear immediately after the GSN conversation.");
-  assert(sellerJourneyOrder?.tradeBeforeShop, "View shop must not appear before Protected Trade.");
+  assert(sellerJourneyOrder?.whatsappBeforeConversation, "WhatsApp must remain the alternative channel choice before the GSN conversation.");
   await contactResult.getByRole("button", { name: "Continue on WhatsApp (Alternative)", exact: true }).click();
   await page.waitForFunction(() => Boolean(window.__gsnOpenedSellerChatUrl));
   const decodedSellerChatUrl = decodeURIComponent(await page.evaluate(() => window.__gsnOpenedSellerChatUrl));
@@ -683,16 +742,11 @@ async function verifyViewport(browser, baseURL, viewport) {
   const heroBackground = await ownerHero.evaluate((node) => getComputedStyle(node).backgroundImage);
   assert(!heroBackground.includes("url("), "The category-neutral request hero unexpectedly contains a photo.");
 
-  const compactTabs = freezerCard.locator('[data-gsn-demand-detail-tabs="compact"]');
-  assert((await compactTabs.getByRole("button").count()) === 1, "The compact Details control is missing.");
-  assert(await compactTabs.getByRole("button", { name: "Details", exact: true }).isVisible(), "Request evidence is not available behind Details.");
-  assert(await freezerCard.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible(), "The compact request summary is missing.");
-  await compactTabs.getByRole("button", { name: "Details", exact: true }).click();
-  const detailsPanel = freezerCard.locator('[data-gsn-demand-detail-panel="details"]');
-  assert(await detailsPanel.isVisible(), "Details did not open.");
-  assert((await detailsPanel.locator('[data-gsn-demand-contact-actions]').count()) === 0, "Details contains communication actions.");
-  assert((await detailsPanel.getByText(/WhatsApp/i).count()) === 0, "Details contains WhatsApp communication state.");
-  await compactTabs.getByRole("button", { name: "Details", exact: true }).click();
+  assert((await freezerCard.locator('[data-gsn-demand-detail-tabs="compact"]').count()) === 0, "The standalone compact Privacy or Details card returned.");
+  assert((await freezerCard.getByRole("button", { name: /^(Privacy|Details)$/ }).count()) === 0, "The standalone Privacy or Details button returned.");
+  assert(await freezerCard.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible(), "The complete compact request message is missing.");
+  const compactRequestDetails = freezerCard.locator('[data-gsn-demand-request-details="compact"]');
+  assert(!(await compactRequestDetails.isVisible().catch(() => false)), "Privacy metadata escaped the closed Request options disclosure.");
   const ownerConversations = freezerCard.locator('[data-gsn-demand-conversations="integrated"]');
   await ownerConversations.locator("summary").click();
   const ownerConversationZone = ownerConversations.locator('[data-gsn-demand-conversation-zone="primary"]');
@@ -753,7 +807,6 @@ async function verifyViewport(browser, baseURL, viewport) {
     "The private conversation boundary is missing."
   );
   await ownerConversations.locator("summary").click();
-  await freezerCard.locator('[data-gsn-demand-detail-tabs="compact"]').getByRole("button", { name: "Details", exact: true }).click();
 
   const deleteVoiceButton = freezerCard.getByRole("button", {
     name: "Delete",
@@ -814,6 +867,9 @@ async function verifyViewport(browser, baseURL, viewport) {
   const requestOptions = freezerCard.locator('[data-gsn-demand-request-options="compact"]');
   assert(await requestOptions.isVisible(), "Compact Request options are missing.");
   await requestOptions.locator("summary").click();
+  assert(await compactRequestDetails.isVisible(), "Privacy metadata is missing from Request options.");
+  assert(await compactRequestDetails.getByText("Visible in this community.", { exact: false }).isVisible(), "The community visibility boundary is missing from Request options.");
+  assert((await compactRequestDetails.getByText(/WhatsApp/i).count()) === 0, "Request options privacy metadata contains WhatsApp communication state.");
   assert((await requestOptions.getByRole("button").count()) === 3, "Request options must contain three lifecycle actions.");
   for (const label of ["Fulfilled", "Cancel", "Copy request"]) {
     assert(await requestOptions.getByRole("button", { name: label, exact: true }).isVisible(), "Missing compact request option: " + label);

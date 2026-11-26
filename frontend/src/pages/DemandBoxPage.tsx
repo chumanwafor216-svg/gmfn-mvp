@@ -1199,7 +1199,6 @@ export default function DemandBoxPage() {
   const [preparingSellerContactKey, setPreparingSellerContactKey] = useState("");
   const [sellerContactHandoff, setSellerContactHandoff] = useState<DemandSellerHandoffState | null>(null);
   const [openDemandRecordKey, setOpenDemandRecordKey] = useState("");
-  const [openDemandDetailTab, setOpenDemandDetailTab] = useState("");
   const [focusedConversationRequestId, setFocusedConversationRequestId] = useState(0);
   const [showMoreQueueRows, setShowMoreQueueRows] = useState(false);
   const [requestSearch, setRequestSearch] = useState("");
@@ -1207,7 +1206,6 @@ export default function DemandBoxPage() {
 
   useEffect(() => {
     setFocusedConversationRequestId(0);
-    setOpenDemandDetailTab("");
     setSellerContactHandoff(null);
   }, [openDemandRecordKey]);
 
@@ -2320,12 +2318,6 @@ export default function DemandBoxPage() {
             const title = firstTruthy(match.product_title, "Possible listing");
             const shopName = firstTruthy(match.shop_name, "Marketplace shop");
             const canAskSeller = isMineRow(row, me);
-            const canOpenProtectedTrade = canAskSeller
-              && positiveNumber(row?.id || match.demand_id) > 0
-              && positiveNumber(match.product_id) > 0
-              && positiveNumber(match.shop_id) > 0;
-            const actionCount = 1;
-            const spreadCompactActions = isCompact && actionCount > 1;
             const contactKey = `${rowId}:${positiveNumber(match.product_id)}:${positiveNumber(match.shop_id)}`;
             const preparingContact = preparingSellerContactKey === contactKey;
             const selectedContact =
@@ -2351,7 +2343,7 @@ export default function DemandBoxPage() {
                   padding: isCompact ? "9px 9px 9px 11px" : "11px 12px",
                 }}
               >
-                <div style={{ minWidth: 0, display: "grid", gap: 2 }}>
+                <div data-gsn-demand-match-description-card="true" style={{ minWidth: 0, display: "grid", gap: 4 }}>
                   <div
                     data-gsn-demand-match-title="true"
                     style={{
@@ -2387,59 +2379,59 @@ export default function DemandBoxPage() {
                   >
                     {evidence}
                   </div>
+                  <StableCtaLink
+                    to={to}
+                    onClick={() => trackDemandMatchAttention("supply_opened", match, rowId)}
+                    debugId={`${debugBase}.supply.${match.product_id}`}
+                    aria-label={`View Shop: ${title} from ${shopName}`}
+                    data-gsn-demand-match-action="compact"
+                    stableHeight={44}
+                    style={{
+                      justifySelf: "end",
+                      minWidth: 96,
+                      borderRadius: 12,
+                      padding: "8px 10px",
+                      fontSize: 12,
+                      fontWeight: 900,
+                    }}
+                  >
+                    View shop
+                  </StableCtaLink>
                 </div>
+                {canAskSeller ? (
                 <div
                   data-gsn-demand-match-actions="compact"
                   style={{
-                    display: spreadCompactActions ? "grid" : "flex",
-                    gridTemplateColumns: spreadCompactActions
-                      ? `repeat(${actionCount}, minmax(0, 1fr))`
-                      : undefined,
+                    display: "flex",
                     gap: 5,
-                    alignItems: spreadCompactActions ? "stretch" : "center",
-                    flexWrap: spreadCompactActions ? undefined : "wrap",
+                    alignItems: "center",
+                    flexWrap: "wrap",
                     justifyContent: "flex-end",
                     minWidth: 0,
-                    width: spreadCompactActions ? "100%" : undefined,
                   }}
                 >
-                  {canAskSeller ? (
-                    <PrimaryButton
-                      type="button"
-                      onClick={() => void askMatchedSeller(row, match, to)}
-                      disabled={Boolean(preparingSellerContactKey) && !preparingContact}
-                      busy={preparingContact}
-                      busyLabel="Opening..."
-                      debugId={`${debugBase}.ask-seller.${match.product_id}`}
-                      data-gsn-demand-ask-seller="validated"
-                      stableHeight={44}
-                      minWidth={spreadCompactActions ? 0 : 82}
-                      style={{
-                        borderRadius: 12,
-                        padding: "8px 7px",
-                        fontSize: 12,
-                        fontWeight: 900,
-                        width: spreadCompactActions ? "100%" : undefined,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      Ask seller
-                    </PrimaryButton>
-                  ) : null}
-                  {!canAskSeller ? (
-                    <StableCtaLink
-                      to={to}
-                      onClick={() => trackDemandMatchAttention("supply_opened", match, rowId)}
-                      debugId={`${debugBase}.supply.${match.product_id}`}
-                      aria-label={`View Shop: ${title} from ${shopName}`}
-                      data-gsn-demand-match-action="compact"
-                      stableHeight={44}
-                      style={{ borderRadius: 12, padding: "8px 10px", fontSize: 12, fontWeight: 900 }}
-                    >
-                      View shop
-                    </StableCtaLink>
-                  ) : null}
+                  <PrimaryButton
+                    type="button"
+                    onClick={() => void askMatchedSeller(row, match, to)}
+                    disabled={Boolean(preparingSellerContactKey) && !preparingContact}
+                    busy={preparingContact}
+                    busyLabel="Opening..."
+                    debugId={`${debugBase}.ask-seller.${match.product_id}`}
+                    data-gsn-demand-ask-seller="validated"
+                    stableHeight={44}
+                    minWidth={82}
+                    style={{
+                      borderRadius: 12,
+                      padding: "8px 7px",
+                      fontSize: 12,
+                      fontWeight: 900,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Ask seller
+                  </PrimaryButton>
                 </div>
+                ) : null}
                 {selectedContact ? (
                   <div
                     data-gsn-demand-ask-seller-card="expanded"
@@ -2488,32 +2480,15 @@ export default function DemandBoxPage() {
                       isOwner
                       compact
                       embedded
+                      communityId={positiveNumber(match.clan_id || selectedClanId)}
                       preferredRecipientUserId={positiveNumber(selectedContact.seller_user_id)}
                       preferredRecipientName={selectedContact.shop_name}
                       supplyProductId={positiveNumber(match.product_id)}
                       supplyShopId={positiveNumber(match.shop_id)}
+                      protectedTradePath={tradeTo}
                       onUnreadChanged={refreshUnreadSummary}
                     />
-                    {canOpenProtectedTrade ? (
-                      <StableCtaLink
-                        to={tradeTo}
-                        debugId={`${debugBase}.seller-contact.protected-trade`}
-                        data-gsn-demand-protected-trade-position="after-conversation"
-                        stableHeight={44}
-                        style={{ borderRadius: 12, fontSize: 12 }}
-                      >
-                        Protected Trade (if agreed)
-                      </StableCtaLink>
-                    ) : null}
-                    <StableCtaLink
-                      to={to}
-                      onClick={() => trackDemandMatchAttention("supply_opened", match, rowId)}
-                      debugId={`${debugBase}.seller-contact.view-shop`}
-                      stableHeight={42}
-                      style={{ borderRadius: 12, fontSize: 12 }}
-                    >
-                      View shop
-                    </StableCtaLink>
+
                     {selectedContact.seller_is_gsn_member === false ? (
                       <StableCtaLink
                         to={routeTarget("buildFirstCircle", selectedClanId, `${debugBase}.seller-contact.invite`)}
@@ -2674,6 +2649,17 @@ export default function DemandBoxPage() {
     const trustPosture = requesterTrustPostureLabel(row);
     const fromAskCommunity = isAskCommunityDemand(row);
     const protectedTarget = isProtectedTargetDemand(row);
+    const compactProductEnquiry = Boolean(
+      isCompact &&
+        protectedTarget &&
+        row?.product_context &&
+        !row?.commercial_intent
+    );
+    const compactProductPrice = row?.product_context?.listed_price
+      ? [safeStr(row.product_context.currency), safeStr(row.product_context.listed_price)]
+          .filter(Boolean)
+          .join(" ")
+      : "";
     const sourceLabel = firstTruthy(row?.source_label, protectedTarget ? "Ask Person" : fromAskCommunity ? "Ask Community" : "DemandBox");
     const mentionedHandles = mentionedHandlesOf(row);
     const matchedTagCount = positiveNumber(row?.mentioned_member_count);
@@ -2691,10 +2677,6 @@ export default function DemandBoxPage() {
           : visibleFallbackCopyDebugId;
     const matchState = demandMatchStateForRow(demandMatchesById, row);
     const recordOpen = !isCompact || openDemandRecordKey === rowKey;
-    const detailTabPrefix = `${rowKey}:`;
-    const activeDetailTab = openDemandDetailTab.startsWith(detailTabPrefix)
-      ? openDemandDetailTab.slice(detailTabPrefix.length)
-      : "";
 
     return (
       <div
@@ -2886,6 +2868,63 @@ export default function DemandBoxPage() {
                   </span>
                 ) : null}
               </div>
+              {compactProductEnquiry && row.product_context ? (
+                <div
+                  data-gsn-demand-product-enquiry-summary="merged"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr) auto",
+                    alignItems: "center",
+                    gap: 10,
+                    marginTop: 2,
+                    padding: "10px 11px",
+                    borderRadius: 14,
+                    border: "1px solid rgba(13,95,168,0.14)",
+                    background: "#F6FAFF",
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        color: "#17324A",
+                        fontSize: 13,
+                        fontWeight: 900,
+                        lineHeight: 1.25,
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {row.product_context.shop_name}
+                    </div>
+                    {compactProductPrice ? (
+                      <div style={{ marginTop: 3, color: "#587087", fontSize: 11.5, fontWeight: 800 }}>
+                        Listed price {compactProductPrice}
+                      </div>
+                    ) : null}
+                  </div>
+                  {rowId ? (
+                    <PrimaryButton
+                      type="button"
+                      onClick={() => {
+                        setSellerContactHandoff(null);
+                        setFocusedConversationRequestId(rowId);
+                      }}
+                      debugId={`${debugBase}.product-enquiry.send-message`}
+                      data-gsn-demand-product-message-action="true"
+                      stableHeight={42}
+                      style={{
+                        minWidth: 108,
+                        padding: "8px 10px",
+                        borderRadius: 12,
+                        fontSize: 12,
+                        fontWeight: 900,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Send message
+                    </PrimaryButton>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </div>
         ) : (
@@ -3033,6 +3072,10 @@ export default function DemandBoxPage() {
         <>
           {!conversationFocused && !sellerConversationExpanded ? (
           <>
+          {(!compactProductEnquiry ||
+            positiveNumber(row?.audio_attachment_id) ||
+            row?.audio_deleted_at ||
+            row?.media_attachments?.length) ? (
           <div
             data-gsn-demand-primary-message="true"
             style={{
@@ -3045,10 +3088,7 @@ export default function DemandBoxPage() {
               fontSize: isCompact ? 15 : 14,
               lineHeight: 1.55,
               whiteSpace: "pre-wrap",
-              display: isCompact && activeDetailTab !== "details" ? "-webkit-box" : "block",
-              WebkitBoxOrient: "vertical",
-              WebkitLineClamp: isCompact && activeDetailTab !== "details" ? 2 : undefined,
-              overflow: isCompact && activeDetailTab !== "details" ? "hidden" : undefined,
+              display: "block",
             }}
           >
             {row?.commercial_intent && row?.product_context ? (
@@ -3102,10 +3142,10 @@ export default function DemandBoxPage() {
                   Purchase intention recorded. This is not payment, confirmed availability, or a completed order.
                 </div>
               </div>
-            ) : safeStr(row?.description) ? (
+            ) : !compactProductEnquiry && safeStr(row?.description) ? (
               <div>{safeStr(row?.description)}</div>
             ) : null}
-            {(!isCompact || activeDetailTab === "details") && (positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at) ? (
+            {positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at ? (
               <div style={{ marginTop: 8 }}>
                 <ProtectedVoiceNotePlayer
                   attachmentId={positiveNumber(row?.audio_attachment_id)}
@@ -3119,7 +3159,7 @@ export default function DemandBoxPage() {
                 />
               </div>
             ) : null}
-            {(!isCompact || activeDetailTab === "details") && row?.media_attachments?.length ? (
+            {row?.media_attachments?.length ? (
               <div
                 data-gsn-demand-request-media="true"
                 style={{ display: "grid", gap: 8, marginTop: 8 }}
@@ -3129,7 +3169,8 @@ export default function DemandBoxPage() {
                 ))}
               </div>
             ) : null}
-            {!row?.commercial_intent &&
+            {!compactProductEnquiry &&
+            !row?.commercial_intent &&
             !safeStr(row?.description) &&
             !positiveNumber(row?.audio_attachment_id) &&
             !row?.audio_deleted_at &&
@@ -3137,96 +3178,9 @@ export default function DemandBoxPage() {
               <span>No details yet.</span>
             ) : null}
           </div>
-
-          {isCompact ? (
-            <div style={{ padding: "12px 12px 0" }}>
-              <div
-                data-gsn-demand-detail-tabs="compact"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr",
-                  padding: 4,
-                  borderRadius: 18,
-                  background: "#F4F7FB",
-                  border: "1px solid rgba(148,163,184,0.16)",
-                  boxShadow: "0 8px 18px rgba(15,23,42,0.06)",
-                }}
-              >
-                <SubtleButton
-                  type="button"
-                  aria-pressed={activeDetailTab === "details"}
-                  onClick={() =>
-                    setOpenDemandDetailTab(
-                      activeDetailTab === "details" ? "" : `${detailTabPrefix}details`
-                    )
-                  }
-                  debugId={debugBase + ".privacy-terms"}
-                  stableHeight={48}
-                  style={{
-                    borderRadius: 14,
-                    border: 0,
-                    color: activeDetailTab === "details" ? "#FFFFFF" : "#0B1F33",
-                    background:
-                      activeDetailTab === "details"
-                        ? "linear-gradient(180deg, #116DDA 0%, #0755B5 100%)"
-                        : "transparent",
-                    boxShadow:
-                      activeDetailTab === "details"
-                        ? "0 8px 18px rgba(7,85,181,0.22)"
-                        : "none",
-                    fontSize: 12,
-                  }}
-                >
-                  {demandIconText("shield", "Details", 17)}
-                </SubtleButton>
-              </div>
-
-              {activeDetailTab === "details" ? (
-                <div
-                  data-gsn-demand-detail-panel="details"
-                  style={{
-                    marginTop: 9,
-                    padding: 12,
-                    borderRadius: 16,
-                    background: "#F8FBFF",
-                    border: "1px solid rgba(13,95,168,0.10)",
-                  }}
-                >
-                  <div style={{ color: "#0B1F33", fontSize: 13, fontWeight: 850, lineHeight: 1.5 }}>
-                    {protectedTarget
-                      ? "This request is private to the matched person. Do not forward it as a community request."
-                      : "Visible in this community. Other communities and providers stay hidden until an authorised bridge accepts."}
-                  </div>
-                  <div style={{ marginTop: 10, display: "flex", gap: 7, flexWrap: "wrap" }}>
-                    {protectedTarget ? (
-                      <span data-gsn-demand-protected-target-chip="true" style={badge(true)}>Private to matched person</span>
-                    ) : null}
-                    {safeStr(row?.payment_mode) ? <span style={badge(false)}>Terms: {safeStr(row?.payment_mode)}</span> : null}
-                    {row?.allow_trust_credit ? <span style={badge(false)}>Trust-credit openness only</span> : null}
-                    {scope === "owner" ? (
-                      <span style={badge(Boolean(row?.relay_consent_granted))}>
-                        {row?.relay_consent_granted ? "Relay allowed" : "Community only"}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div style={{ marginTop: 10, ...helperText(), fontSize: 12, lineHeight: 1.45 }}>
-                    GSN records the request and contact path. It does not guarantee a provider or fulfilment.
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          ) : (
-          <>
-          {isCompact && (safeStr(row?.status) || (trustPosture && scope === "community")) ? (
-            <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {safeStr(row?.status) ? (
-                <span style={badge(false)}>{safeStr(row?.status)}</span>
-              ) : null}
-              {trustPosture && scope === "community" ? (
-                <span style={badge(false)}>Evidence: {trustPosture}</span>
-              ) : null}
-            </div>
           ) : null}
+
+          {!isCompact ? (
           <details style={{ ...detailsShell(), marginTop: 12 }}>
             <StableDisclosureSummary
               style={{ ...detailsSummary(), padding: "12px 14px", fontSize: 14 }}
@@ -3296,8 +3250,7 @@ export default function DemandBoxPage() {
           ) : null}
             </div>
           </details>
-          </>
-          )}
+          ) : null}
           </>
           ) : null}
 
@@ -3316,7 +3269,6 @@ export default function DemandBoxPage() {
                   nextOpen ? rowId : current === rowId ? 0 : current
                 );
                 if (nextOpen) {
-                  setOpenDemandDetailTab("");
                   setSellerContactHandoff(null);
                 }
               }}
@@ -3344,6 +3296,12 @@ export default function DemandBoxPage() {
                   isOwner={scope === "owner"}
                   compact={isCompact}
                   embedded
+                  communityId={positiveNumber(selectedClanId)}
+                  supplyProductId={positiveNumber(row?.product_context?.product_id)}
+                  supplyShopId={positiveNumber(row?.product_context?.shop_id)}
+                  protectedTradePath={
+                    row?.product_context ? demandProductContextTradePath(row) : ""
+                  }
                   onUnreadChanged={refreshUnreadSummary}
                 />
                 {conversationFocused && isMineRow(row, me) && row?.product_context ? (
@@ -3351,15 +3309,6 @@ export default function DemandBoxPage() {
                     data-gsn-demand-conversation-commerce="after-conversation"
                     style={{ display: "grid", gap: 7, marginTop: 8 }}
                   >
-                    <StableCtaLink
-                      to={demandProductContextTradePath(row)}
-                      debugId={`${debugBase}.conversation.protected-trade`}
-                      data-gsn-demand-protected-trade-position="after-conversation"
-                      stableHeight={44}
-                      style={{ borderRadius: 12, fontSize: 12 }}
-                    >
-                      Protected Trade (if agreed)
-                    </StableCtaLink>
                     <StableCtaLink
                       to={safeStr(row.product_context.shop_path) || routes.marketplace}
                       debugId={`${debugBase}.conversation.view-shop`}
@@ -3423,6 +3372,37 @@ export default function DemandBoxPage() {
                     </>
                   ) : null}
                   {demandPaperAction(row, scope, copyDebugId)}
+                </div>
+                <div
+                  data-gsn-demand-request-details="compact"
+                  style={{
+                    margin: "0 10px 10px",
+                    padding: "10px 11px",
+                    borderRadius: 12,
+                    background: "#F8FBFF",
+                    border: "1px solid rgba(13,95,168,0.10)",
+                  }}
+                >
+                  <div style={{ color: "#0B1F33", fontSize: 12, fontWeight: 850, lineHeight: 1.45 }}>
+                    {protectedTarget
+                      ? "This request is private to the matched person. Do not forward it as a community request."
+                      : "Visible in this community. Other communities and providers stay hidden until an authorised bridge accepts."}
+                  </div>
+                  <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <span style={badge(fromAskCommunity || protectedTarget)}>Source: {sourceLabel}</span>
+                    <span style={badge(false)}>Need type: {categoryLabel(row)}</span>
+                    {safeStr(row?.area) ? <span style={badge(false)}>Area: {safeStr(row?.area)}</span> : null}
+                    {safeStr(row?.payment_mode) ? <span style={badge(false)}>Terms: {safeStr(row?.payment_mode)}</span> : null}
+                    {row?.allow_trust_credit ? <span style={badge(false)}>Trust-credit openness only</span> : null}
+                    {scope === "owner" ? (
+                      <span style={badge(Boolean(row?.relay_consent_granted))}>
+                        {row?.relay_consent_granted ? "Relay allowed" : "Community only"}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 11.5, lineHeight: 1.4 }}>
+                    GSN records the request and contact path. It does not guarantee a provider or fulfilment.
+                  </div>
                 </div>
               </details>
             ) : (
@@ -4219,7 +4199,7 @@ export default function DemandBoxPage() {
               Ask, request or get help from people in {currentCommunityName}.
             </div>
 
-            <div style={demandHeroActionRowStyle(isCompact)}>
+            <div data-gsn-demand-hero-actions="post-search" style={demandHeroActionRowStyle(isCompact)}>
               <PrimaryButton
                 onClick={() => {
                   openCreateDemandPanel();
@@ -4260,6 +4240,50 @@ export default function DemandBoxPage() {
                   demandIconText("document", "Post a need", 20)
                 )}
               </PrimaryButton>
+              {isCompact ? (
+                <label
+                  data-gsn-demand-request-search="compact"
+                  style={{
+                    minWidth: 0,
+                    minHeight: isCompact ? 52 : 54,
+                    display: "grid",
+                    gridTemplateColumns: "auto minmax(0, 1fr)",
+                    alignItems: "center",
+                    gap: isCompact ? 6 : 8,
+                    padding: isCompact ? "0 10px" : "0 12px",
+                    borderRadius: isCompact ? 20 : 16,
+                    border: "1px solid rgba(94,217,255,0.62)",
+                    background: isCompact ? "rgba(2,28,50,0.88)" : "#F8FBFF",
+                    color: isCompact ? "#F8FBFF" : "#29445E",
+                    boxShadow: isCompact
+                      ? "0 0 8px rgba(0,224,255,0.42), inset 0 1px 0 rgba(255,255,255,0.10)"
+                      : undefined,
+                  }}
+                >
+                  <GsnLegacyIcon name="search" size={isCompact ? 18 : 20} />
+                  <input
+                    type="search"
+                    value={requestSearch}
+                    onChange={(event) => {
+                      setRequestSearch(event.target.value);
+                      setShowMoreQueueRows(true);
+                    }}
+                    placeholder={isCompact ? "Search" : "Search requests"}
+                    aria-label="Search requests"
+                    style={{
+                      width: "100%",
+                      minWidth: 0,
+                      minHeight: isCompact ? 50 : 52,
+                      border: 0,
+                      outline: 0,
+                      background: "transparent",
+                      color: "inherit",
+                      font: "inherit",
+                      fontSize: isCompact ? 14 : undefined,
+                    }}
+                  />
+                </label>
+              ) : null}
             </div>
 
             <div
@@ -5048,45 +5072,46 @@ export default function DemandBoxPage() {
             </div>
           ) : null}
 
-          <label
-            data-gsn-demand-request-search="compact"
-            style={{
-              marginTop: isCompact ? 0 : 14,
-              minHeight: 46,
-              display: "grid",
-              gridTemplateColumns: "auto minmax(0, 1fr)",
-              alignItems: "center",
-              gap: 8,
-              padding: "0 12px",
-              borderRadius: 16,
-              border: "1px solid rgba(94,217,255,0.42)",
-              background: isCompact ? "rgba(2,28,50,0.82)" : "#F8FBFF",
-              color: isCompact ? "#F8FBFF" : "#29445E",
-            }}
-          >
-            <GsnLegacyIcon name="search" size={20} />
-            <input
-              type="search"
-              value={requestSearch}
-              onChange={(event) => {
-                setRequestSearch(event.target.value);
-                setShowMoreQueueRows(true);
-              }}
-              placeholder="Search requests"
-              aria-label="Search requests"
+          {!isCompact ? (
+            <label
+              data-gsn-demand-request-search="desktop"
               style={{
-                width: "100%",
-                minWidth: 0,
-                minHeight: 44,
-                border: 0,
-                outline: 0,
-                background: "transparent",
-                color: "inherit",
-                font: "inherit",
+                marginTop: 14,
+                minHeight: 46,
+                display: "grid",
+                gridTemplateColumns: "auto minmax(0, 1fr)",
+                alignItems: "center",
+                gap: 8,
+                padding: "0 12px",
+                borderRadius: 16,
+                border: "1px solid rgba(94,217,255,0.42)",
+                background: "#F8FBFF",
+                color: "#29445E",
               }}
-            />
-          </label>
-
+            >
+              <GsnLegacyIcon name="search" size={20} />
+              <input
+                type="search"
+                value={requestSearch}
+                onChange={(event) => {
+                  setRequestSearch(event.target.value);
+                  setShowMoreQueueRows(true);
+                }}
+                placeholder="Search requests"
+                aria-label="Search requests"
+                style={{
+                  width: "100%",
+                  minWidth: 0,
+                  minHeight: 44,
+                  border: 0,
+                  outline: 0,
+                  background: "transparent",
+                  color: "inherit",
+                  font: "inherit",
+                }}
+              />
+            </label>
+          ) : null}
           <div
             data-gsn-demand-queue-lanes="true"
             style={{
