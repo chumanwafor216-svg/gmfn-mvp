@@ -1030,6 +1030,176 @@ export default function DemandResponsePanel({
             zIndex: 2,
           }}
         >
+          <div
+            data-gsn-demand-composer-row="compact"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "42px minmax(0, 1fr) 46px",
+              gap: 7,
+              alignItems: "end",
+              minWidth: 0,
+            }}
+          >
+            <SubtleButton
+              type="button"
+              aria-label="Add attachment"
+              aria-expanded={attachmentsOpen}
+              onClick={() => setAttachmentsOpen((current) => !current)}
+              debugId={`demand-box.response.${requestId}.attachments`}
+              stableHeight={42}
+              style={{ minWidth: 42, width: 42, padding: 0, borderRadius: 999, fontSize: 22 }}
+            >
+              +
+            </SubtleButton>
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  if (!sending && !voiceRecording && (text.trim() || voice || mediaFile || mediaLink.trim())) {
+                    void send();
+                  }
+                }
+              }}
+              placeholder="Message..."
+              aria-label="Private message"
+              maxLength={1500}
+              rows={1}
+              style={{
+                width: "100%",
+                minWidth: 0,
+                minHeight: 42,
+                maxHeight: 110,
+                resize: "vertical",
+                borderRadius: 18,
+                border: "1px solid rgba(13,95,168,0.18)",
+                padding: "10px 12px",
+                color: "#0B1F33",
+                background: "#FFFFFF",
+                font: "inherit",
+                lineHeight: 1.35,
+              }}
+            />
+            {text.trim() || voice || mediaFile || mediaLink.trim() ? (
+              <PrimaryButton
+                type="button"
+                aria-label="Send message"
+                onClick={() => void send()}
+                disabled={sending || voiceRecording}
+                busy={sending}
+                busyLabel="..."
+                debugId={`demand-box.response.${requestId}.send`}
+                stableHeight={46}
+                style={{ minWidth: 46, width: 46, padding: 0, borderRadius: 999, fontSize: 19 }}
+              >
+                Send
+              </PrimaryButton>
+            ) : (
+              <PrimaryButton
+                type="button"
+                aria-label="Record voice note"
+                aria-expanded={voiceOpen}
+                onClick={() => setVoiceOpen((current) => !current)}
+                debugId={`demand-box.response.${requestId}.voice-toggle`}
+                stableHeight={46}
+                style={{ minWidth: 46, width: 46, padding: 0, borderRadius: 999 }}
+              >
+                <GsnMicrophoneIcon size={22} />
+              </PrimaryButton>
+            )}
+          </div>
+          {voiceOpen || voice ? (
+            <VoiceNoteRecorder
+              value={voice}
+              onChange={setVoice}
+              onRecordingChange={setVoiceRecording}
+              maxSeconds={60}
+              disabled={sending}
+              debugPrefix={`demand-box.response.${requestId}.voice`}
+              compact
+              startLabel="Record voice note"
+            />
+          ) : null}
+          {attachmentsOpen ? (
+            <div
+              data-gsn-demand-attachment-options="expanded"
+              style={{
+                display: "grid",
+                gap: 7,
+                padding: 9,
+                borderRadius: 14,
+                border: "1px solid rgba(13,95,168,0.12)",
+                background: "#FFFFFF",
+              }}
+            >
+              <div style={{ color: "#29445E", fontSize: 12, fontWeight: 900 }}>
+                Photo, video, document or link
+              </div>
+              <div style={{ display: "grid", gap: 7, marginTop: 8 }}>
+              <input
+                type="file"
+                data-gmfn-action-root="true"
+                data-cta-id={`demand-box.response.${requestId}.attachment-file`}
+                aria-label="Choose attachment"
+                accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                onChange={(event) => {
+                  const selected = event.target.files?.[0] || null;
+                  setMediaFile(selected);
+                  setMediaLink("");
+                  setMediaKind(
+                    selected?.type.startsWith("video/")
+                      ? "video"
+                      : selected?.type.startsWith("image/")
+                        ? "image"
+                        : "document"
+                  );
+                }}
+              />
+              <input
+                type="url"
+                value={mediaLink}
+                onChange={(event) => {
+                  setMediaLink(event.target.value);
+                  if (event.target.value) setMediaFile(null);
+                }}
+                placeholder="https://example.com/item"
+                aria-label="Attached link"
+                style={{ minHeight: 42, borderRadius: 12, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 10px", font: "inherit" }}
+              />
+              {mediaFile ? <span style={{ color: "#587087", fontSize: 11 }}>{mediaFile.name}</span> : null}
+            </div>
+            {canSharePhoto ? (
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 9, color: "#29445E", fontSize: 12 }}>
+              <input
+                type="checkbox"
+                checked={showPhoto}
+                onChange={(event) => setShowPhoto(event.target.checked)}
+              />
+              <img
+                src={resolveProfileImageUrl(currentUser?.profile_image_url)}
+                alt=""
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 999,
+                  objectFit: "cover",
+                  border: "1px solid rgba(13,95,168,0.16)",
+                }}
+              />
+              <span>
+                Show my current profile photo with this reply. This is optional and does not prove reliability.
+              </span>
+            </label>
+            ) : null}
+            </div>
+          ) : null}
+          {voiceRecording ? (
+            <div style={{ color: "#587087", fontSize: 12, textAlign: "center" }}>
+              Recording continues here. Tap Stop before sending.
+            </div>
+          ) : null}
           {!isOwner ? (
             <details data-gsn-demand-preset-messages="collapsed" style={{ minWidth: 0 }}>
               <StableDisclosureSummary
@@ -1232,176 +1402,6 @@ export default function DemandResponsePanel({
                 </div>
               </div>
             </details>
-          ) : null}
-          <div
-            data-gsn-demand-composer-row="compact"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "42px minmax(0, 1fr) 46px",
-              gap: 7,
-              alignItems: "end",
-              minWidth: 0,
-            }}
-          >
-            <SubtleButton
-              type="button"
-              aria-label="Add attachment"
-              aria-expanded={attachmentsOpen}
-              onClick={() => setAttachmentsOpen((current) => !current)}
-              debugId={`demand-box.response.${requestId}.attachments`}
-              stableHeight={42}
-              style={{ minWidth: 42, width: 42, padding: 0, borderRadius: 999, fontSize: 22 }}
-            >
-              +
-            </SubtleButton>
-            <textarea
-              ref={textareaRef}
-              value={text}
-              onChange={(event) => setText(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  if (!sending && !voiceRecording && (text.trim() || voice || mediaFile || mediaLink.trim())) {
-                    void send();
-                  }
-                }
-              }}
-              placeholder="Message..."
-              aria-label="Private message"
-              maxLength={1500}
-              rows={1}
-              style={{
-                width: "100%",
-                minWidth: 0,
-                minHeight: 42,
-                maxHeight: 110,
-                resize: "vertical",
-                borderRadius: 18,
-                border: "1px solid rgba(13,95,168,0.18)",
-                padding: "10px 12px",
-                color: "#0B1F33",
-                background: "#FFFFFF",
-                font: "inherit",
-                lineHeight: 1.35,
-              }}
-            />
-            {text.trim() || voice || mediaFile || mediaLink.trim() ? (
-              <PrimaryButton
-                type="button"
-                aria-label="Send message"
-                onClick={() => void send()}
-                disabled={sending || voiceRecording}
-                busy={sending}
-                busyLabel="..."
-                debugId={`demand-box.response.${requestId}.send`}
-                stableHeight={46}
-                style={{ minWidth: 46, width: 46, padding: 0, borderRadius: 999, fontSize: 19 }}
-              >
-                Send
-              </PrimaryButton>
-            ) : (
-              <PrimaryButton
-                type="button"
-                aria-label="Record voice note"
-                aria-expanded={voiceOpen}
-                onClick={() => setVoiceOpen((current) => !current)}
-                debugId={`demand-box.response.${requestId}.voice-toggle`}
-                stableHeight={46}
-                style={{ minWidth: 46, width: 46, padding: 0, borderRadius: 999 }}
-              >
-                <GsnMicrophoneIcon size={22} />
-              </PrimaryButton>
-            )}
-          </div>
-          {voiceOpen || voice ? (
-            <VoiceNoteRecorder
-              value={voice}
-              onChange={setVoice}
-              onRecordingChange={setVoiceRecording}
-              maxSeconds={60}
-              disabled={sending}
-              debugPrefix={`demand-box.response.${requestId}.voice`}
-              compact
-              startLabel="Record voice note"
-            />
-          ) : null}
-          {attachmentsOpen ? (
-            <div
-              data-gsn-demand-attachment-options="expanded"
-              style={{
-                display: "grid",
-                gap: 7,
-                padding: 9,
-                borderRadius: 14,
-                border: "1px solid rgba(13,95,168,0.12)",
-                background: "#FFFFFF",
-              }}
-            >
-              <div style={{ color: "#29445E", fontSize: 12, fontWeight: 900 }}>
-                Photo, video, document or link
-              </div>
-              <div style={{ display: "grid", gap: 7, marginTop: 8 }}>
-              <input
-                type="file"
-                data-gmfn-action-root="true"
-                data-cta-id={`demand-box.response.${requestId}.attachment-file`}
-                aria-label="Choose attachment"
-                accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={(event) => {
-                  const selected = event.target.files?.[0] || null;
-                  setMediaFile(selected);
-                  setMediaLink("");
-                  setMediaKind(
-                    selected?.type.startsWith("video/")
-                      ? "video"
-                      : selected?.type.startsWith("image/")
-                        ? "image"
-                        : "document"
-                  );
-                }}
-              />
-              <input
-                type="url"
-                value={mediaLink}
-                onChange={(event) => {
-                  setMediaLink(event.target.value);
-                  if (event.target.value) setMediaFile(null);
-                }}
-                placeholder="https://example.com/item"
-                aria-label="Attached link"
-                style={{ minHeight: 42, borderRadius: 12, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 10px", font: "inherit" }}
-              />
-              {mediaFile ? <span style={{ color: "#587087", fontSize: 11 }}>{mediaFile.name}</span> : null}
-            </div>
-            {canSharePhoto ? (
-            <label style={{ display: "flex", alignItems: "flex-start", gap: 9, color: "#29445E", fontSize: 12 }}>
-              <input
-                type="checkbox"
-                checked={showPhoto}
-                onChange={(event) => setShowPhoto(event.target.checked)}
-              />
-              <img
-                src={resolveProfileImageUrl(currentUser?.profile_image_url)}
-                alt=""
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 999,
-                  objectFit: "cover",
-                  border: "1px solid rgba(13,95,168,0.16)",
-                }}
-              />
-              <span>
-                Show my current profile photo with this reply. This is optional and does not prove reliability.
-              </span>
-            </label>
-            ) : null}
-            </div>
-          ) : null}
-          {voiceRecording ? (
-            <div style={{ color: "#587087", fontSize: 12, textAlign: "center" }}>
-              Recording continues here. Tap Stop before sending.
-            </div>
           ) : null}
         </div>
       ) : null}
