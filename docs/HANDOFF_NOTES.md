@@ -7730,3 +7730,11 @@ under `docs/` or `docs/archive/`, then link that file here.
 - No Pipeline Credit top-up/acquisition route is reused, so the payment cannot award credits or be mistaken for a community payment.
 - Verification: Protected Trade module `6 passed`; affected Python files compile; Demand Box front-package audit and Node syntax check pass; `git diff --check` passes. The TypeScript/Vite build is blocked because this isolated worktree has no installed `tsc`/`node_modules`.
 - Local only: no commit, push, main promotion or deployment was performed for this seller-direct payment change.
+
+# DemandBox seller bank-card full-page escape correction - 2026-11-26
+
+- The supplied 16:53 video shows the pre-deploy `Add account details` plus `Manage` flow leaving the conversation for the complete Finance task and payout snapshot. The video predates the 17:34 seller-reference deployment, but the deployed panel still kept a nearby `Manage account` escape that could reproduce the wrong journey.
+- The seller trade panel now exposes one normal payment action: `Send seller bank details + code`. It calls the existing seller-only Protected Trade reference endpoint and sends only the compact in-chat bank-details card; it does not attach the Finance page.
+- The payout-details route is hidden during the normal send journey. `Add seller account details` appears only after the send endpoint reports that the seller account is missing or incomplete. Before a linked Protected Trade exists, the seller sees a waiting explanation instead of a Finance-page action.
+- No backend route, payment record, reference format, reconciliation rule, schema, migration, buyer authority or historical message was changed.
+- Verification: DemandBox front-package audit, Node syntax check and `git diff --check` pass. This isolated worktree has no frontend dependencies, so the full TypeScript/Vite build must run in GitHub CI before the correction is called deployed.

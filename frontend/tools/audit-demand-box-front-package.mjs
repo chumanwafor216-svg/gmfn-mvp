@@ -127,6 +127,7 @@ forbidPattern(source, pageFile, /data-gsn-demand-product-enquiry-summary="merged
 forbidPattern(source, pageFile, /data-gsn-demand-product-context=/, "the opened request must not repeat its product and shop details in a second Product Enquiry card");
 forbidPattern(source, pageFile, /data-gsn-demand-queue="simple"[\s\S]*?data-gsn-demand-request-search="compact"/, "request search must not return as an oversized row above the queue tabs");
 forbidPattern(source, pageFile, /seller-contact\.view-shop/, "View shop must not be duplicated inside the expanded seller conversation");
+forbidPattern(responsePanelSource, responsePanelFile, /manage-account-details/, "the full Finance account page must not remain a normal parallel send action");
 
 [
   [/queue_keys\?: string\[\] \| null/, "request types must keep saved queue keys"],
@@ -184,6 +185,8 @@ forbidPattern(source, pageFile, /seller-contact\.view-shop/, "View shop must not
   [/data-gsn-demand-composer-row="compact"[\s\S]*?<VoiceNoteRecorder[\s\S]*?data-gsn-demand-attachment-options="expanded"[\s\S]*?Recording continues here[\s\S]*?data-gsn-demand-preset-messages="collapsed"[\s\S]*?data-gsn-demand-trade-steps="collapsed"/, "the composer, voice recorder, and attachment controls must appear before Preset messages and Trade steps"],
   [/data-gsn-demand-preset-messages="collapsed"[\s\S]*?Preset messages/, "repeated response helpers must stay behind one compact disclosure"],
   [/data-gsn-demand-trade-steps="collapsed"[\s\S]*?data-gsn-demand-account-details="seller-direct-reference"[\s\S]*?data-gsn-demand-protected-trade="associated-record"[\s\S]*?data-gsn-demand-trade-stage="tracking-evidence"[\s\S]*?data-gsn-demand-trade-stage="confirmation-remarks"/, "the conversation must keep seller-direct account, protected-trade, tracking, and confirmation handoffs inside one staged control"],
+  [/setPaymentAccountSetupRequired\(false\)[\s\S]*?createProtectedTradePaymentReference[\s\S]*?setPaymentAccountSetupRequired\([\s\S]*?data-gsn-demand-account-setup="missing-details-only"/, "the full account-setup page must appear only after the compact send action reports missing seller details"],
+  [/Send seller bank details \+ code[\s\S]*?Only the compact bank-details card and payment code are sent in chat\. The Finance page is never attached\./, "the seller must see one direct compact-send action and an explicit no-full-page boundary"],
   [/createProtectedTradePaymentReference[\s\S]*?serializeSellerPaymentMessage[\s\S]*?createMarketplaceRequestResponse/, "seller payment details must receive a Protected Trade code and send only the compact message"],
   [/parseSellerPaymentMessage\(row\.text\)[\s\S]*?<DemandPaymentDetailsCard details=\{sellerPaymentMessage\}/, "compact seller payment messages must render as a dedicated in-chat card"],
   [/Payment goes directly to the seller's saved account[\s\S]*?does not hold or automatically verify the money/, "the payment handoff must state the direct-seller and non-custodial boundary"],

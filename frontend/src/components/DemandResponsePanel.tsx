@@ -142,6 +142,7 @@ export default function DemandResponsePanel({
   const [attachmentsOpen, setAttachmentsOpen] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [sendingPaymentDetails, setSendingPaymentDetails] = useState(false);
+  const [paymentAccountSetupRequired, setPaymentAccountSetupRequired] = useState(false);
   const [tradeStepsOpen, setTradeStepsOpen] = useState(false);
   const [protectedTrades, setProtectedTrades] = useState<ProtectedTradeRecord[]>([]);
   const [conversationAccess, setConversationAccess] = useState<
@@ -401,6 +402,7 @@ export default function DemandResponsePanel({
     }
 
     setSendingPaymentDetails(true);
+    setPaymentAccountSetupRequired(false);
     setError("");
     try {
       const details = await createProtectedTradePaymentReference(tradeId);
@@ -423,12 +425,16 @@ export default function DemandResponsePanel({
       stickToLatestRef.current = true;
       await load();
     } catch (err: any) {
-      setError(
-        String(
-          err?.message ||
-            "Seller payment details could not be sent. Check the Protected Trade amount and saved account details."
+      const message = String(
+        err?.message ||
+          "Seller payment details could not be sent. Check the Protected Trade amount and saved account details."
+      );
+      setPaymentAccountSetupRequired(
+        /(?:seller|saved) account details (?:are missing|are incomplete)|account name, number, and bank/i.test(
+          message
         )
       );
+      setError(message);
     } finally {
       setSendingPaymentDetails(false);
     }
@@ -1286,14 +1292,7 @@ export default function DemandResponsePanel({
                 }}
               >
                 {!isOwner ? (
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: matchedProtectedTrade?.id ? "minmax(0, 1fr) auto" : "1fr",
-                      gap: 7,
-                      alignItems: "center",
-                    }}
-                  >
+                  <div style={{ display: "grid", gap: 7 }}>
                     {matchedProtectedTrade?.id ? (
                       <SecondaryButton
                         type="button"
@@ -1305,17 +1304,27 @@ export default function DemandResponsePanel({
                         stableHeight={42}
                         style={{ borderRadius: 12, fontSize: 12 }}
                       >
-                        Send payment details
+                        Send seller bank details + code
                       </SecondaryButton>
+                    ) : (
+                      <div
+                        data-gsn-demand-account-details="waiting-for-protected-trade"
+                        style={{ color: "#587087", fontSize: 11.5, lineHeight: 1.4 }}
+                      >
+                        Bank details can be sent after the requester starts the linked Protected Trade.
+                      </div>
+                    )}
+                    {paymentAccountSetupRequired ? (
+                      <StableCtaLink
+                        to={payoutDetailsPath}
+                        debugId={`demand-box.response.${requestId}.fix-seller-account`}
+                        data-gsn-demand-account-setup="missing-details-only"
+                        stableHeight={42}
+                        style={{ borderRadius: 12, padding: "8px 10px", fontSize: 11.5 }}
+                      >
+                        Add seller account details
+                      </StableCtaLink>
                     ) : null}
-                    <StableCtaLink
-                      to={payoutDetailsPath}
-                      debugId={`demand-box.response.${requestId}.manage-account-details`}
-                      stableHeight={42}
-                      style={{ borderRadius: 12, padding: "8px 10px", fontSize: 11.5 }}
-                    >
-                      Manage account
-                    </StableCtaLink>
                   </div>
                 ) : null}
 
@@ -1390,7 +1399,7 @@ export default function DemandResponsePanel({
                 ) : null}
 
                 <div style={{ color: "#64748B", fontSize: 10.5, lineHeight: 1.35 }}>
-                  Payment goes directly to the seller's saved account. GSN adds a trade code to link the record, but does not hold or automatically verify the money.
+                  Only the compact bank-details card and payment code are sent in chat. The Finance page is never attached. Payment goes directly to the seller's saved account; GSN does not hold or automatically verify the money.
                 </div>
               </div>
             </details>
