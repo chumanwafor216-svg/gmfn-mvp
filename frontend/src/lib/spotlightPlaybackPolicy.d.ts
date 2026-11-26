@@ -95,3 +95,9 @@ export function spotlightPlaybackCanQualify(
 export function spotlightPlaybackPausesDisplayClock(
   tracker: SpotlightPlaybackStatus
 ): boolean;
+export function spotlightTransitionCanRetainFrame(input?: {
+  hasActiveItem?: boolean;
+  isCanonicalOpportunity?: boolean;
+  presentationIsCurrent?: boolean;
+  mediaStatus?: string;
+}): boolean;

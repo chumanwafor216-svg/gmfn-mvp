@@ -235,3 +235,16 @@ export function spotlightPlaybackPausesDisplayClock(tracker) {
     'unavailable',
   ].includes(tracker.phase);
 }
+
+export function spotlightTransitionCanRetainFrame({
+  hasActiveItem = false,
+  isCanonicalOpportunity = false,
+  presentationIsCurrent = false,
+  mediaStatus = '',
+} = {}) {
+  return Boolean(
+    hasActiveItem &&
+      mediaStatus === 'ready' &&
+      (!isCanonicalOpportunity || presentationIsCurrent)
+  );
+}

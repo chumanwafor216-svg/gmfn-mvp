@@ -51,6 +51,7 @@ type SpotlightMediaFrameProps = {
   audioEnabled?: boolean;
   onAudioEnabledChange?: (enabled: boolean) => void;
   preserveVideoElement?: boolean;
+  showFallbackNotice?: boolean;
   monitorPlayback?: boolean;
   occurrenceId?: string;
   presentationDurationMs?: number | null;
@@ -862,7 +863,7 @@ export default function SpotlightMediaFrame(
   ) : null;
 
   const fallbackNotice =
-    videoSrc && videoFailed ? (
+    videoSrc && videoFailed && (props.showFallbackNotice ?? true) ? (
       <div
         style={{
           position: "absolute",

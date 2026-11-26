@@ -12,6 +12,7 @@ import {
   spotlightPlaybackCanQualify,
   spotlightPlaybackOccurrenceMatches,
   spotlightPlaybackPausesDisplayClock,
+  spotlightTransitionCanRetainFrame,
 } from '../src/lib/spotlightPlaybackPolicy.js';
 
 const mediaFrameSource = readFileSync(
@@ -72,6 +73,36 @@ function runStallUntilAction(tracker, startMs, action, options = {}) {
     }
   }
   throw new Error(`Expected playback action: ${action}`);
+}
+
+{
+  assert.equal(
+    spotlightTransitionCanRetainFrame({
+      hasActiveItem: true,
+      isCanonicalOpportunity: true,
+      presentationIsCurrent: true,
+      mediaStatus: 'ready',
+    }),
+    true
+  );
+  assert.equal(
+    spotlightTransitionCanRetainFrame({
+      hasActiveItem: true,
+      isCanonicalOpportunity: true,
+      presentationIsCurrent: false,
+      mediaStatus: 'ready',
+    }),
+    false
+  );
+  assert.equal(
+    spotlightTransitionCanRetainFrame({
+      hasActiveItem: true,
+      isCanonicalOpportunity: true,
+      presentationIsCurrent: true,
+      mediaStatus: 'unavailable',
+    }),
+    false
+  );
 }
 
 {
@@ -310,6 +341,14 @@ assert.match(
 assert.match(
   publicShopSource,
   /SPOTLIGHT_AUTHORIZED_FRAME_HOLD_MS[\s\S]*?phase: 'holding'[\s\S]*?phase: 'neutral'[\s\S]*?phase: 'handoff'/
+);
+assert.match(
+  publicShopSource,
+  /spotlightTransitionCanRetainFrame\([\s\S]*?presentationIsCurrent[\s\S]*?mediaStatus: activeSpotlightMediaStatus\?\.status[\s\S]*?phase: 'holding'/
+);
+assert.match(
+  publicShopSource,
+  /showFallbackNotice=\{spotlightTransition\?\.phase !== 'neutral'\}/
 );
 assert.match(
   publicShopSource,

@@ -87,6 +87,7 @@ import {
 import {
   spotlightPlaybackCanQualify,
   spotlightPlaybackPausesDisplayClock,
+  spotlightTransitionCanRetainFrame,
 } from '../lib/spotlightPlaybackPolicy.js';
 
 const SPOTLIGHT_REFRESH_RETRY_DELAY_MS = 2000;
@@ -4757,6 +4758,28 @@ export default function ShopGalleryPage() {
 
     if (!nextMiniSpotlight) {
       void requestNextCanonicalSpotlight();
+      const retainAuthorizedFrame = spotlightTransitionCanRetainFrame({
+        hasActiveItem: Boolean(miniSpotlight),
+        isCanonicalOpportunity: Boolean(
+          miniSpotlight?.isCanonicalOpportunity
+        ),
+        presentationIsCurrent: Boolean(
+          miniSpotlight &&
+            publicShopSpotlightPresentationIsCurrent(miniSpotlight)
+        ),
+        mediaStatus: activeSpotlightMediaStatus?.status,
+      });
+      if (retainAuthorizedFrame) {
+        if (transition.phase !== 'holding') {
+          const holdingTransition = {
+            ...transition,
+            phase: 'holding' as const,
+          };
+          spotlightTransitionRef.current = holdingTransition;
+          setSpotlightTransition(holdingTransition);
+        }
+        return;
+      }
       const remainingHoldMs = Math.max(
         0,
         SPOTLIGHT_AUTHORIZED_FRAME_HOLD_MS -
@@ -4842,6 +4865,7 @@ export default function ShopGalleryPage() {
     spotlightMediaStatusByKey,
     spotlightRotationActiveKey,
     spotlightTransition,
+    activeSpotlightMediaStatus,
   ]);
 
   const ownerSpotlightStatusView = useMemo(() => {
@@ -8903,6 +8927,7 @@ export default function ShopGalleryPage() {
                     audioEnabled={spotlightSoundEnabled}
                     onAudioEnabledChange={setSpotlightSoundEnabled}
                     preserveVideoElement={true}
+                    showFallbackNotice={spotlightTransition?.phase !== 'neutral'}
                     audioUnlockLabel="Sound on"
                     audioUnlockOffLabel="Muted"
                     audioUnlockErrorLabel="Play"
