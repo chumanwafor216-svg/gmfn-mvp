@@ -3375,37 +3375,6 @@ export default function DemandBoxPage() {
                   ) : null}
                   {demandPaperAction(row, scope, copyDebugId)}
                 </div>
-                <div
-                  data-gsn-demand-request-details="compact"
-                  style={{
-                    margin: "0 10px 10px",
-                    padding: "10px 11px",
-                    borderRadius: 12,
-                    background: "#F8FBFF",
-                    border: "1px solid rgba(13,95,168,0.10)",
-                  }}
-                >
-                  <div style={{ color: "#0B1F33", fontSize: 12, fontWeight: 850, lineHeight: 1.45 }}>
-                    {protectedTarget
-                      ? "This request is private to the matched person. Do not forward it as a community request."
-                      : "Visible in this community. Other communities and providers stay hidden until an authorised bridge accepts."}
-                  </div>
-                  <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    <span style={badge(fromAskCommunity || protectedTarget)}>Source: {sourceLabel}</span>
-                    <span style={badge(false)}>Need type: {categoryLabel(row)}</span>
-                    {safeStr(row?.area) ? <span style={badge(false)}>Area: {safeStr(row?.area)}</span> : null}
-                    {safeStr(row?.payment_mode) ? <span style={badge(false)}>Terms: {safeStr(row?.payment_mode)}</span> : null}
-                    {row?.allow_trust_credit ? <span style={badge(false)}>Trust-credit openness only</span> : null}
-                    {scope === "owner" ? (
-                      <span style={badge(Boolean(row?.relay_consent_granted))}>
-                        {row?.relay_consent_granted ? "Relay allowed" : "Community only"}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 11.5, lineHeight: 1.4 }}>
-                    GSN records the request and contact path. It does not guarantee a provider or fulfilment.
-                  </div>
-                </div>
               </details>
             ) : (
               <div

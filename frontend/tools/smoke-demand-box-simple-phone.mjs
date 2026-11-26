@@ -739,8 +739,6 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert((await freezerCard.locator('[data-gsn-demand-detail-tabs="compact"]').count()) === 0, "The standalone compact Privacy or Details card returned.");
   assert((await freezerCard.getByRole("button", { name: /^(Privacy|Details)$/ }).count()) === 0, "The standalone Privacy or Details button returned.");
   assert(await freezerCard.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible(), "The complete compact request message is missing.");
-  const compactRequestDetails = freezerCard.locator('[data-gsn-demand-request-details="compact"]');
-  assert(!(await compactRequestDetails.isVisible().catch(() => false)), "Privacy metadata escaped the closed Request options disclosure.");
   const ownerConversations = freezerCard.locator('[data-gsn-demand-conversations="integrated"]');
   await ownerConversations.locator("summary").click();
   const ownerConversationZone = ownerConversations.locator('[data-gsn-demand-conversation-zone="primary"]');
@@ -861,9 +859,8 @@ async function verifyViewport(browser, baseURL, viewport) {
   const requestOptions = freezerCard.locator('[data-gsn-demand-request-options="compact"]');
   assert(await requestOptions.isVisible(), "Compact Request options are missing.");
   await requestOptions.locator("summary").click();
-  assert(await compactRequestDetails.isVisible(), "Privacy metadata is missing from Request options.");
-  assert(await compactRequestDetails.getByText("Visible in this community.", { exact: false }).isVisible(), "The community visibility boundary is missing from Request options.");
-  assert((await compactRequestDetails.getByText(/WhatsApp/i).count()) === 0, "Request options privacy metadata contains WhatsApp communication state.");
+  assert((await requestOptions.locator('[data-gsn-demand-request-details="compact"]').count()) === 0, "The marked request metadata block returned.");
+  assert((await requestOptions.getByText("This request is private to the matched person.", { exact: false }).count()) === 0, "The marked private-request explanation returned.");
   assert((await requestOptions.getByRole("button").count()) === 3, "Request options must contain three lifecycle actions.");
   for (const label of ["Fulfilled", "Cancel", "Copy request"]) {
     assert(await requestOptions.getByRole("button", { name: label, exact: true }).isVisible(), "Missing compact request option: " + label);

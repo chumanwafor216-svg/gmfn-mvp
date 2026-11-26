@@ -88,7 +88,6 @@ function forbidPattern(input, file, pattern, message) {
   [/data-gsn-demand-past-requests="true"[\s\S]*?stableHeight=\{44\}[\s\S]*?Past requests[\s\S]*?<DemandHistoryCard/, "closed requests must remain reachable in a compact collapsed history row"],
   [/const \[showSenderPhoto, setShowSenderPhoto\] = useState\(true\)/, "request portraits must begin included when a saved profile photo exists"],
   [/data-gsn-demand-photo-consent="true"[\s\S]*?Include my current profile photo[\s\S]*?Turn this off before posting/, "request portraits must remain visibly disableable before posting"],
-  [/data-gsn-demand-request-options="compact"[\s\S]*?data-gsn-demand-request-details="compact"[\s\S]*?Visible in this community\.[\s\S]*?GSN records the request and contact path\./, "phone privacy metadata must remain inside Request options without a standalone Privacy or Details control"],
   [/data-gsn-demand-expand-search="true"[\s\S]*?Search one more community[\s\S]*?Stop expanded search[\s\S]*?One community only/, "the phone one-hop card must keep the approved compact search actions and boundary"],
   [/data-gsn-demand-request-options="compact"[\s\S]*?Request options[\s\S]*?fulfilled[\s\S]*?cancelled[\s\S]*?demandPaperAction\(row, scope, copyDebugId\)/, "opened owner requests must keep fulfil, cancel and copy behind compact Request options"],
   [/debugId=\{`\$\{debugBase\}\.whatsapp`\}/, "DemandBox contact actions must use one WhatsApp entry point rather than separate chat and call buttons"],
@@ -112,17 +111,7 @@ function forbidPattern(input, file, pattern, message) {
   [/pulseDestination="demand_box"/, "Ask a question must still post into DemandBox"],
 ].forEach(([pattern, message]) => requirePattern(source, pageFile, pattern, message));
 
-const compactRequestDetailsStart = source.indexOf('data-gsn-demand-request-details="compact"');
-const compactRequestDetailsEnd = source.indexOf("GSN records the request and contact path.", compactRequestDetailsStart);
-const compactRequestDetailsSource =
-  compactRequestDetailsStart >= 0 && compactRequestDetailsEnd > compactRequestDetailsStart
-    ? source.slice(compactRequestDetailsStart, compactRequestDetailsEnd)
-    : "";
-if (!compactRequestDetailsSource) {
-  failures.push(pageFile + ": compact Request options details could not be isolated for privacy checks");
-} else {
-  forbidPattern(compactRequestDetailsSource, pageFile, /WhatsApp|demandContactActions/, "Request options privacy details must not contain communication actions");
-}
+forbidPattern(source, pageFile, /data-gsn-demand-request-details="compact"|This request is private to the matched person|GSN records the request and contact path\./, "the marked compact request metadata block must not return");
 forbidPattern(source, pageFile, /data-gsn-demand-detail-tabs="compact"|\.privacy-terms|demandIconText\("shield", "(?:Privacy|Details)"/, "the standalone phone Privacy or Details control must not return");
 forbidPattern(source, pageFile, /WhatsApp available|WhatsApp not ready/, "WhatsApp state must not be presented as Privacy or Request Details metadata");
 forbidPattern(source, pageFile, /data-gsn-demand-product-enquiry-summary="merged"[\s\S]*?Product:|data-gsn-demand-product-enquiry-summary="merged"[\s\S]*?Buyer note:/, "the merged product enquiry must not expose generated field labels or the stored buyer-note transcript");

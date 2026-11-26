@@ -7763,3 +7763,8 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The existing `Send message` button remains the single direct phone entry into the private buyer-seller conversation. Once selected, the conversation opens in place without reintroducing a second Conversations summary.
 - The cleanup is intentionally scoped to matched-product enquiries. Ordinary requests retain their Conversations and Request options disclosures because those rows remain their only compact chat and lifecycle-action entry points.
 - Desktop DemandBox presentation, backend routes, unread state, request lifecycle actions, Trade Records and seller-direct payment behavior are unchanged.
+# DemandBox compact request metadata removal - 2026-11-26
+
+- Removed the marked compact Request options explanation block containing private/community forwarding guidance, Source, Need type, area/terms badges and the GSN guarantee disclaimer.
+- Compact Request options still contains the existing Fulfilled, Cancel and Copy request actions where authorised. Conversation access and product-enquiry direct messaging are unchanged.
+- Desktop request details and backend privacy/permission enforcement are unchanged; this is presentation cleanup only.
