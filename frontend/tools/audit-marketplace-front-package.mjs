@@ -9,12 +9,14 @@ const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const marketplaceToolsFile = "src/pages/marketplace/MarketplaceToolsSection.tsx";
 const marketplaceTradeEvidenceFile = "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx";
+const demandBoxFile = "src/pages/DemandBoxPage.tsx";
 const packageFile = "package.json";
 const protocolFile = "../docs/GUIDED_WORK_SURFACE_PROTOCOL.md";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
 const marketplaceToolsSource = readFileSync(join(frontendRoot, marketplaceToolsFile), "utf8");
 const marketplaceTradeEvidenceSource = readFileSync(join(frontendRoot, marketplaceTradeEvidenceFile), "utf8");
+const demandBoxSource = readFileSync(join(frontendRoot, demandBoxFile), "utf8");
 const packageSource = readFileSync(join(frontendRoot, packageFile), "utf8");
 const protocolSource = readFileSync(join(frontendRoot, protocolFile), "utf8");
 const marketplaceSource = marketplacePageSource
@@ -186,10 +188,23 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /isCompactAppViewport.+?orientationchange.+?pageshow.+?visualViewport.+?addEventListener.+?resize.+?marketplace[.]front[.]invite-someone.+?marketplace[.]front[.]needs.+?Needs [/] Demand.+?Add need.+?marketplace[.]front[.]shops.+?Shops & Services.+?marketplace[.]job[.]find-people-services.+?Open directory.+?marketplace[.]progressive[.]support-members.+?Support members.+?marketplace[.]progressive[.]share-resource.+?Share a resource.+?marketplace[.]front[.]suggested-next-step/s,
+  /isCompactAppViewport.+?orientationchange.+?pageshow.+?visualViewport.+?addEventListener.+?resize.+?marketplace[.]front[.]invite-someone.+?marketplace[.]front[.]needs.+?Demand Box.+?Post a need.+?All requests.+?My requests.+?marketplace[.]front[.]shops.+?Shops & Services.+?marketplace[.]job[.]find-people-services.+?Open directory.+?marketplace[.]progressive[.]support-members.+?Support members.+?marketplace[.]progressive[.]share-resource.+?Share a resource.+?marketplace[.]front[.]suggested-next-step/s,
   "Marketplace phone front must stay foldable-aware and preserve the approved identity, invite, needs, single shop-directory entry, two secondary actions, and suggested-step order."
 );
 
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /visibleMarketNeeds = marketplaceNeedRows\.slice\(0, isCompact \? 1 : 4\)[\s\S]*?marketplace\.front\.need-provider[\s\S]*?\.open-shop[\s\S]*?\.buy-now[\s\S]*?\.chat[\s\S]*?data-gmfn-debug-id="marketplace\.front\.needs-queues"[\s\S]*?marketplace\.front\.needs\.all-requests[\s\S]*?marketplace\.front\.needs\.my-requests/,
+  "Marketplace mobile Demand Box must keep one concise request, real queue links, and Open shop, Buy now, and Chat actions."
+);
+
+assertContains(
+  demandBoxFile,
+  demandBoxSource,
+  /directDemandFocus[\s\S]*?params\.get\("focus"\)[\s\S]*?directDemandFocus !== "conversation"[\s\S]*?setFocusedConversationRequestId\(directDemandId\)/,
+  "Marketplace Chat must deep-link into the selected DemandBox conversation instead of behaving like a decorative button."
+);
 assertNotContains(
   marketplaceFile,
   marketplaceSource,
@@ -232,7 +247,7 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /marketplaceMatchesByNeedId\.get\(needId\)[\s\S]*?Community need[\s\S]*?visibleProviders\.map\(\(item, matchIndex\) =>[\s\S]*?renderNeedProviderMatch\(item, matchIndex, "need"\)[\s\S]*?No matching shop was found in this community\.[\s\S]*?Browse all shops or open the request in DemandBox/,
+  /marketplaceMatchesByNeedId\.get\(needId\)[\s\S]*?primaryProvider[\s\S]*?Community need[\s\S]*?visibleProviders\.map\(\(item, matchIndex\) =>[\s\S]*?renderNeedProviderMatch\(item, matchIndex, "need"\)[\s\S]*?Open request in DemandBox/,
   "Marketplace needs must show contextual relevant providers, hand off to Public Shop, and keep no-match wording community-scoped."
 );
 assertContains(
@@ -285,10 +300,10 @@ assertContains(
 );
 
 assertContains(
-  marketplaceFile,
-  marketplaceSource,
-  /id="marketplace-trade-evidence"[\s\S]*?Trade Evidence[\s\S]*?Record the item, the other side, and agreed terms[\s\S]*?marketplace\.trade\.evidence-module[\s\S]*?Trade Evidence Record[\s\S]*?Confirm outcome[\s\S]*?event evidence,\s+not a human score[\s\S]*?debugId="marketplace\.protected-trade\.outcome\.good"[\s\S]*?debugId="marketplace\.protected-trade\.create"/,
-  "Trade Evidence must render as a separate lane with a simple outcome surface before the detailed record form."
+  marketplaceTradeEvidenceFile,
+  marketplaceTradeEvidenceSource,
+  /id="marketplace-trade-evidence"[\s\S]*?Trade Records[\s\S]*?marketplace\.trade\.evidence-module[\s\S]*?Trade Record[\s\S]*?Record the item, other side, and basic terms[\s\S]*?Confirm outcome[\s\S]*?event evidence,\s+not a human score[\s\S]*?debugId="marketplace\.protected-trade\.outcome\.good"[\s\S]*?debugId="marketplace\.protected-trade\.create"/,
+  "Trade Records must render as a separate lane with a simple outcome surface before the detailed record form."
 );
 
 assertContains(

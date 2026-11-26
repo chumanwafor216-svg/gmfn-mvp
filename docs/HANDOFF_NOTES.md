@@ -1,4 +1,4 @@
-﻿# Active Handoff Notes
+# Active Handoff Notes
 
 ## Spotlight Phase A functionality candidate - 2026-11-25
 
@@ -7711,26 +7711,26 @@ under `docs/` or `docs/archive/`, then link that file here.
 - Storage after implementation remained above the mandatory threshold. No dependency installation, production data write, migration execution against production, push, merge or deployment was performed at this checkpoint.
 - The inherited conflict markers earlier in this document were preserved and not resolved by this work.
 
-# DemandBox compact conversation-to-trade progression - 2026-11-26
+# DemandBox Trade Records progression - 2026-11-26
 
-- The responder phrases are now collapsed under one `Preset messages` control, and the idle voice action uses a microphone rather than the former speaker symbol.
-- One collapsed `Trade steps` control now sits inside the private conversation. Seller account details load into the editable draft for review and are never sent automatically.
-- The requester starts the existing server-validated demand/product/Shop Protected Trade. Both associated participants can reopen that same record from the conversation after it exists.
-- Optional tracking opens the existing evidence-note lane and is explicitly not a delivery guarantee. Confirmation and remarks reuse the existing role-aware outcome and evidence-note controls.
-- No escrow, payment verification, automatic payout, delivery guarantee, participant-authority expansion, schema or backend contract was added.
-- Verification: `frontend/tools/audit-demand-box-front-package.mjs` passed; Node syntax checks for the DemandBox audit and phone smoke passed; `git diff --check` passed. The isolated worktree has no `node_modules`, so the TypeScript/Vite build and Playwright phone smoke were not executable locally.
-- Local only: no commit, push, main promotion or deployment was performed.
-
+- User-facing product copy is `Trade Record` / `Trade Records`; `protected_trade` remains only the internal route, model and event contract.
+- The responder phrases remain collapsed under one `Preset messages` control, and the idle voice action uses a microphone.
+- One collapsed `Trade Records` control sits inside the private conversation. The seller issues the demand/product/Shop-linked agreement with item, quantity, amount, currency, payment timing and terms. The buyer accepts or requests amendment; an amendment reissues the same record rather than creating a duplicate.
+- Only the newest agreement card is actionable. Older agreement cards are visibly superseded so the buyer cannot accept obsolete terms.
+- After acceptance, the seller explicitly sends the compact saved bank-details card plus one generated `GSNTP` payment code. The same copyable code is visible to buyer and seller, stored on the Trade Record and printed on its evidence paper. The full Finance page is never attached.
+- The code generator is used only for shared payment identification and evidence in this flow. Trade Record payments remain excluded from bank reconciliation; no reconciliation or Pipeline Credit application was connected.
+- The buyer records payment sent and the seller acknowledges receipt. Explicit deferred-credit terms may proceed under the existing Trade Record evidence rules.
+- Dispatch and tracking belong inside Merchant Verification. Trade Records do not expose a separate tracking stage.
+- Focused verification: `41 passed` across `test_protected_trades.py` and `test_demand_supply_intelligence_service.py`; Python compilation, DemandBox front-package audit, audit/smoke Node syntax and `git diff --check` pass.
+- Frontend production build remains blocked because this worktree has no installed `tsc`/`node_modules`. No commit, push, main promotion or deployment is claimed at this checkpoint.
 # DemandBox seller-direct payment reference - 2026-11-26
 
-- The seller—not the community—receives the buyer's transfer directly into the seller's saved account. The buyer cannot generate or retrieve the seller's payment instruction through the new endpoint.
-- A seller-only Protected Trade endpoint creates one idempotent bank-safe `GSNTP` reference tied to the trade, demand, item, buyer and seller. It snapshots only the seller account fields needed for the transfer; no full Finance/Payout page or unrelated private content is attached to chat.
-- The conversation sends one compact payment-details message and renders it as a compact card containing item, exact amount/currency, account name/number, bank, optional sort code and payment code.
-- This is non-custodial: GSN does not hold the money and cannot automatically confirm a transfer into an external seller account. The new `protected_trade_payment` association record is explicitly excluded from GSN's own-bank reconciliation until an authorised seller-bank feed exists.
-- No Pipeline Credit top-up/acquisition route is reused, so the payment cannot award credits or be mistaken for a community payment.
-- Verification: Protected Trade module `6 passed`; affected Python files compile; Demand Box front-package audit and Node syntax check pass; `git diff --check` passes. The TypeScript/Vite build is blocked because this isolated worktree has no installed `tsc`/`node_modules`.
-- Local only: no commit, push, main promotion or deployment was performed for this seller-direct payment change.
-
+- The seller—not the community—receives the buyer's transfer directly into the seller's saved account. The buyer cannot generate or retrieve the seller's payment instruction through the endpoint.
+- A seller-only internal `protected_trade` endpoint reuses the established code generator to create one idempotent bank-safe `GSNTP` reference tied to the Trade Record, demand, item, buyer and seller. It snapshots only the seller account fields needed for the transfer.
+- The conversation sends one compact payment-details message and renders it for both parties as a compact card containing item, exact amount/currency, account name/number, bank, optional sort code and the shared copyable payment code.
+- The generated code is persisted in the Trade Record metadata and evidence paper for later identification. Per the owner's correction, this flow uses the generator only and does not connect the seller-direct payment to GSN bank reconciliation or Pipeline Credits.
+- This remains non-custodial: GSN does not hold the money. The seller acknowledges receipt in the Trade Record after the buyer records payment sent.
+- Verification is included in the final Trade Records progression section. Local only: no commit, push, main promotion or deployment was performed for this seller-direct payment change.
 # DemandBox seller bank-card full-page escape correction - 2026-11-26
 
 - The supplied 16:53 video shows the pre-deploy `Add account details` plus `Manage` flow leaving the conversation for the complete Finance task and payout snapshot. The video predates the 17:34 seller-reference deployment, but the deployed panel still kept a nearby `Manage account` escape that could reproduce the wrong journey.
@@ -7738,3 +7738,14 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The payout-details route is hidden during the normal send journey. `Add seller account details` appears only after the send endpoint reports that the seller account is missing or incomplete. Before a linked Protected Trade exists, the seller sees a waiting explanation instead of a Finance-page action.
 - No backend route, payment record, reference format, reconciliation rule, schema, migration, buyer authority or historical message was changed.
 - Verification: DemandBox front-package audit, Node syntax check and `git diff --check` pass. This isolated worktree has no frontend dependencies, so the full TypeScript/Vite build must run in GitHub CI before the correction is called deployed.
+# Marketplace compact Demand Box enhancement - 2026-11-26
+
+- Replaced the crowded phone `Needs / Demand` presentation with the approved compact `Demand Box` card while retaining the existing desktop workbench.
+- The `Post a need` action now sits inline with the Demand Box identity. `All requests` and `My requests` are real links into the existing DemandBox queues.
+- Marketplace phone view shows one highlighted request, optional request image or deterministic Demand Box icon, concise matched Shop/product context, and one action row: `Open shop`, `Buy now`, `Chat`.
+- `Open shop` retains the canonical public Shop path. `Buy now` carries the matched product/request context into that Shop path. `Chat` deep-links to the selected DemandBox request and opens its existing private conversation focus; no parallel chat system was added.
+- Request description, poster/community/date/visibility details, and additional records are no longer exposed as nested cards on the Marketplace phone surface. Desktop retains the existing optional Request details disclosure.
+- Mobile shows one request and compact counts for further requests or provider matches. Hidden requests and providers remain available in DemandBox; match order, permissions, selected-community scope and backend contracts are unchanged.
+- Verification: Marketplace front-package audit and DemandBox front-package audit pass; Marketplace phone smoke syntax passes. Full TypeScript/Vite build and Playwright phone execution remain blocked because this isolated worktree has no installed frontend dependencies.
+- The broad Marketplace button-inventory audit remains red on this branch because its stored native/stable-action counts and inline Trade Evidence/Directory expectations predate the extracted components and seller-only Trade Records changes. This enhancement adds the explicitly audited queue and request actions but does not reset that broad baseline.
+- No commit, push, main promotion or deployment was performed for this enhancement.

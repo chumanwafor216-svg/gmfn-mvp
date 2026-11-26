@@ -40,7 +40,7 @@ export function serializeSellerPaymentMessage(details: SellerPaymentMessage): st
     `Bank / wallet: ${bankName}`,
     sortCode ? `Sort code: ${sortCode}` : "",
     `Payment code: ${paymentReference}`,
-    tradeCode ? `Protected Trade: ${tradeCode}` : "",
+    tradeCode ? `Trade record: ${tradeCode}` : "",
     "Use the payment code as the bank transfer reference.",
     "Payment goes directly to the seller. GSN does not hold or automatically verify the money.",
   ]
@@ -68,7 +68,7 @@ export function parseSellerPaymentMessage(value: unknown): SellerPaymentMessage 
     bankName: field("Bank / wallet"),
     sortCode: field("Sort code") || undefined,
     paymentReference: field("Payment code"),
-    tradeCode: field("Protected Trade") || undefined,
+    tradeCode: field("Trade record") || field("Protected Trade") || undefined,
   };
 
   return parsed.itemTitle && parsed.amount && parsed.currency && parsed.accountName &&

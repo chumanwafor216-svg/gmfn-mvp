@@ -1486,11 +1486,16 @@ def get_marketplace_request_trade_handoff(
         product_id=int(product_id),
         shop_id=int(shop_id),
         current_user_id=int(current_user.id),
+        allow_matched_seller=True,
     )
     if not handoff:
         raise HTTPException(status_code=404, detail="DemandBox match handoff not found")
-    if int(handoff.get("requester_user_id") or 0) != int(current_user.id):
-        raise HTTPException(status_code=403, detail="Only the requester can start trade evidence for this demand")
+    participant_ids = {
+        int(handoff.get("requester_user_id") or 0),
+        int(handoff.get("seller_user_id") or 0),
+    }
+    if int(current_user.id) not in participant_ids:
+        raise HTTPException(status_code=403, detail="Only this buyer or matched seller can open the trade handoff")
 
     return DemandSupplyTradeHandoffOut(
         demand_id=int(handoff.get("demand_id") or 0),

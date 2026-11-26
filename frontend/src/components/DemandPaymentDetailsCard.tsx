@@ -1,10 +1,13 @@
+import { useState } from "react";
 import type { SellerPaymentMessage } from "../lib/protectedTradePaymentMessage";
+import { SecondaryButton } from "./StableAction";
 
 type DemandPaymentDetailsCardProps = {
   details: SellerPaymentMessage;
 };
 
 export default function DemandPaymentDetailsCard({ details }: DemandPaymentDetailsCardProps) {
+  const [codeCopied, setCodeCopied] = useState(false);
   const rows = [
     ["Item", details.itemTitle],
     ["Amount", `${details.currency} ${details.amount}`],
@@ -56,7 +59,12 @@ export default function DemandPaymentDetailsCard({ details }: DemandPaymentDetai
         ))}
       </div>
       <div
+        data-gsn-demand-payment-reference="shared-evidence"
         style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1fr) auto",
+          gap: 8,
+          alignItems: "center",
           padding: "8px 9px",
           borderRadius: 10,
           background: "#EEF5FF",
@@ -67,10 +75,25 @@ export default function DemandPaymentDetailsCard({ details }: DemandPaymentDetai
           overflowWrap: "anywhere",
         }}
       >
-        Payment code: {details.paymentReference}
+        <span>Shared payment code: {details.paymentReference}</span>
+        <SecondaryButton
+          type="button"
+          onClick={() => {
+            if (!navigator.clipboard?.writeText) return;
+            void navigator.clipboard.writeText(details.paymentReference).then(() => {
+              setCodeCopied(true);
+              window.setTimeout(() => setCodeCopied(false), 1600);
+            }).catch(() => setCodeCopied(false));
+          }}
+          debugId="demand-payment-details.copy-code"
+          stableHeight={34}
+          style={{ borderRadius: 9, padding: "5px 9px", fontSize: 10.5 }}
+        >
+          {codeCopied ? "Copied" : "Copy code"}
+        </SecondaryButton>
       </div>
       <div style={{ color: "#64748B", fontSize: 9.5, lineHeight: 1.35 }}>
-        Use this code as the transfer reference. GSN links the record but does not hold or automatically verify the money.
+        Buyer and seller see this same code. Use it as the transfer reference; GSN stores it with the Trade Record but does not hold or automatically verify the money.
       </div>
     </section>
   );

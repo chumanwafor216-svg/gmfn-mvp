@@ -370,7 +370,7 @@ type PaidRepostHandoff = {
 const PAID_REPOST_HANDOFF_STORAGE_KEY = "gmfn_paid_repost_handoff_v1";
 
 export type ProtectedTradeDraft = {
-  role: "seller" | "buyer";
+  role: "seller";
   counterpartUserId: string;
   itemTitle: string;
   amount: string;
@@ -394,6 +394,7 @@ export type ProtectedTradeOutcomeAction = {
   note: string;
   success: string;
   tone: "primary" | "secondary";
+  disabled?: boolean;
 };
 
 export type ProtectedTradeEventOption = {
@@ -404,6 +405,16 @@ export type ProtectedTradeEventOption = {
 
 const PROTECTED_TRADE_EVENT_OPTIONS = [
   {
+    value: "terms.agreed",
+    label: "Agreement accepted",
+    detail: "Buyer accepts the seller-issued item, quantity, amount, and terms.",
+  },
+  {
+    value: "terms.amendment_requested",
+    label: "Agreement changes requested",
+    detail: "Buyer asks the seller to correct the Trade Record before continuing.",
+  },
+  {
     value: "payment.claimed",
     label: "Payment claimed",
     detail: "Someone says payment was sent. This is not bank confirmation.",
@@ -412,6 +423,11 @@ const PROTECTED_TRADE_EVENT_OPTIONS = [
     value: "payment.recorded",
     label: "Payment note recorded",
     detail: "Record payment evidence seen by the parties, not automatic payout.",
+  },
+  {
+    value: "payment.received",
+    label: "Seller acknowledged payment",
+    detail: "Seller confirms receipt of the buyer's money; this is the seller's acknowledgement.",
   },
   {
     value: "payment.under_review",
@@ -455,8 +471,8 @@ const PROTECTED_TRADE_EVENT_OPTIONS = [
   },
   {
     value: "evidence.attached",
-    label: "Tracking / evidence note",
-    detail: "Record a courier, tracking, delivery, or other supporting reference. This is evidence, not a delivery guarantee.",
+    label: "Supporting evidence note",
+    detail: "Record a supporting reference. Dispatch and tracking are handled inside Merchant Verification.",
   },
   {
     value: "trade.closed",
@@ -476,69 +492,161 @@ function protectedTradeUserSide(
 }
 
 function protectedTradeOutcomeActions(
-  side: ProtectedTradeUserSide
+  side: ProtectedTradeUserSide,
+  trade: ProtectedTradeRecord | null | undefined
 ): Record<ProtectedTradeOutcomeAction["key"], ProtectedTradeOutcomeAction> {
-  if (side === "seller") {
+  const status = safeStr(trade?.status).toLowerCase();
+  const paymentStatus = safeStr(trade?.payment_status).toLowerCase();
+  const waitingAction = (label: string, detail: string): ProtectedTradeOutcomeAction => ({
+    key: "good",
+    eventType: "community.note_added",
+    label,
+    detail,
+    note: detail,
+    success: detail,
+    tone: "secondary",
+    disabled: true,
+  });
+  const issueAction: ProtectedTradeOutcomeAction = {
+    key: "issue",
+    eventType: "dispute.opened",
+    label: "Open issue",
+    detail: "There is a problem with the item, payment, service, or agreement.",
+    note: "A party opened an issue for this Trade Record.",
+    success: "Issue opened.",
+    tone: "secondary",
+  };
+
+  if (side === "buyer" && status === "awaiting_buyer_acceptance") {
     return {
       good: {
         key: "good",
-        eventType: "release.recorded",
-        label: "Released / done",
-        detail: "The goods or service left your side.",
-        note: "Seller recorded that the item or service was released or completed.",
-        success: "Release outcome recorded.",
+        eventType: "terms.agreed",
+        label: "Accept agreement",
+        detail: "Accept the seller's item, quantity, amount, and terms.",
+        note: "Buyer accepted the seller's Trade Record agreement.",
+        success: "Trade Record agreement accepted.",
+        tone: "primary",
+      },
+      blocked: {
+        key: "blocked",
+        eventType: "terms.amendment_requested",
+        label: "Request changes",
+        detail: "Ask the seller to correct the agreement before payment or dispatch.",
+        note: "Buyer requested changes to the Trade Record agreement.",
+        success: "Changes requested.",
+        tone: "secondary",
+      },
+      issue: issueAction,
+    };
+  }
+
+  if (side === "seller") {
+    if (paymentStatus === "claimed") {
+      return {
+        good: {
+          key: "good",
+          eventType: "payment.received",
+          label: "Payment received",
+          detail: "Acknowledge that the buyer's money reached you.",
+          note: "Seller acknowledged receipt of the buyer's payment.",
+          success: "Payment receipt acknowledged.",
+          tone: "primary",
+        },
+        blocked: {
+          key: "blocked",
+          eventType: "payment.under_review",
+          label: "Payment issue",
+          detail: "Payment needs checking before fulfilment continues.",
+          note: "Seller recorded that payment needs review.",
+          success: "Payment issue recorded.",
+          tone: "secondary",
+        },
+        issue: issueAction,
+      };
+    }
+    if (paymentStatus === "seller_confirmed_received" || status === "payment_received") {
+      return {
+        good: {
+          key: "good",
+          eventType: "release.recorded",
+          label: "Released / done",
+          detail: "Record that the goods or service left the seller's side.",
+          note: "Seller recorded that the item or service was released or completed.",
+          success: "Release outcome recorded.",
+          tone: "primary",
+        },
+        blocked: {
+          key: "blocked",
+          eventType: "release.declined",
+          label: "Release paused",
+          detail: "Record why dispatch or completion is paused.",
+          note: "Seller recorded that release is paused.",
+          success: "Release pause recorded.",
+          tone: "secondary",
+        },
+        issue: issueAction,
+      };
+    }
+    const waiting = waitingAction(
+      status === "amendment_requested" ? "Amend in conversation" : "Waiting for buyer",
+      status === "amendment_requested"
+        ? "Agree the correction in the DemandBox conversation and reissue the Trade Record."
+        : "The buyer must accept the Trade Record before payment continues."
+    );
+    return { good: waiting, blocked: { ...waiting, key: "blocked" }, issue: issueAction };
+  }
+
+  if (["released", "received", "not_received"].includes(status)) {
+    return {
+      good: {
+        key: "good",
+        eventType: "receipt.confirmed",
+        label: "Received and OK",
+        detail: "The item or service arrived and is acceptable.",
+        note: "Buyer confirmed receipt and acceptance.",
+        success: "Receipt outcome recorded.",
+        tone: "primary",
+      },
+      blocked: {
+        key: "blocked",
+        eventType: "receipt.not_received",
+        label: "Not received",
+        detail: "The item or service has not arrived.",
+        note: "Buyer recorded that the item or service was not received.",
+        success: "Not-received outcome recorded.",
+        tone: "secondary",
+      },
+      issue: issueAction,
+    };
+  }
+
+  if (["agreed", "payment_instructed"].includes(status)) {
+    return {
+      good: {
+        key: "good",
+        eventType: "payment.claimed",
+        label: "I have paid",
+        detail: "Record that money was sent or handed to the seller; seller acknowledgement still follows.",
+        note: "Buyer recorded that payment was sent or handed to the seller.",
+        success: "Payment recorded as sent.",
         tone: "primary",
       },
       blocked: {
         key: "blocked",
         eventType: "payment.under_review",
         label: "Payment issue",
-        detail: "Payment needs checking before this can close.",
-        note: "Seller recorded that payment needs review before the trade can close.",
+        detail: "Record a payment concern without calling it bank-confirmed.",
+        note: "Buyer recorded a payment concern.",
         success: "Payment issue recorded.",
         tone: "secondary",
       },
-      issue: {
-        key: "issue",
-        eventType: "dispute.opened",
-        label: "Open issue",
-        detail: "Something needs review by the parties or community.",
-        note: "Seller opened an issue for this trade outcome.",
-        success: "Issue opened.",
-        tone: "secondary",
-      },
+      issue: issueAction,
     };
   }
 
-  return {
-    good: {
-      key: "good",
-      eventType: "receipt.confirmed",
-      label: side === "buyer" ? "Received and OK" : "Completed",
-      detail: "The item or service arrived and is acceptable.",
-      note: "Buyer-side outcome recorded: received and acceptable.",
-      success: "Receipt outcome recorded.",
-      tone: "primary",
-    },
-    blocked: {
-      key: "blocked",
-      eventType: "receipt.not_received",
-      label: "Not received",
-      detail: "The item or service has not arrived.",
-      note: "Buyer-side outcome recorded: item or service not received.",
-      success: "Not-received outcome recorded.",
-      tone: "secondary",
-    },
-    issue: {
-      key: "issue",
-      eventType: "dispute.opened",
-      label: "Open issue",
-      detail: "There is a problem with the item, service, or agreement.",
-      note: "Buyer-side issue opened for this trade outcome.",
-      success: "Issue opened.",
-      tone: "secondary",
-    },
-  };
+  const waiting = waitingAction("Waiting for seller", "The seller must acknowledge payment or release before the next buyer confirmation.");
+  return { good: waiting, blocked: { ...waiting, key: "blocked" }, issue: issueAction };
 }
 
 export type ExpectedPaymentRecord = {
@@ -2149,10 +2257,13 @@ function buildProtectedTradeEvidencePaperText({
   const itemTitle = safeStr(trade.item_title) || "Item or service not named";
   const termsSummary =
     safeStr(trade.terms_summary) || "No terms summary recorded yet.";
-  const minimumPacket =
-    trade.meta && typeof trade.meta === "object"
-      ? (trade.meta.minimum_trade_packet || null)
-      : null;
+  const tradeMeta = trade.meta && typeof trade.meta === "object" ? trade.meta : {};
+  const minimumPacket = tradeMeta.minimum_trade_packet || null;
+  const quantity = safeStr(tradeMeta.quantity) || "Not recorded";
+  const paymentTiming = safeStr(tradeMeta.payment_timing) === "deferred_credit"
+    ? "Deferred payment / credit"
+    : "Payment due now";
+  const paymentReference = safeStr(tradeMeta.payment_reference) || "Not generated yet";
   const minimumPacketNote = safeStr(minimumPacket?.evidence_packet_note);
   const minimumPacketContext =
     safeStr(minimumPacket?.trade_context) || "gsn_gsn";
@@ -2165,7 +2276,7 @@ function buildProtectedTradeEvidencePaperText({
 
   return [
     "GLOBAL SUPPORT NETWORK (GSN)",
-    "Title: GSN Trade Evidence Paper",
+    "Title: GSN Trade Record",
     "Purpose: Recorded trade evidence. GSN does not hold money or release funds.",
     `Generated (UTC): ${generatedAt}`,
     `Record code: ${tradeCode}`,
@@ -2181,13 +2292,16 @@ function buildProtectedTradeEvidencePaperText({
     `Amount: ${protectedTradeAmountLabel(trade)}`,
     "What you need to know",
     `Item or service: ${itemTitle}`,
+    `Quantity: ${quantity}`,
     `Basic terms: ${termsSummary}`,
+    `Payment timing: ${paymentTiming}`,
+    `Payment code: ${paymentReference}`,
     "Minimum trade packet",
     `Trade shape: ${minimumPacketContext === "gsn_gsn" ? "GSN + GSN" : minimumPacketContext}`,
-    `Invoice / product / agreement / courier / payment references: ${
+    `Invoice / product / agreement / payment references: ${
       minimumPacketNote || "No minimum packet note recorded yet."
     }`,
-    "Conversation boundary: GSN keeps the agreed evidence reference. Outside chats or calls stay outside GSN unless final evidence is added.",
+    "Conversation boundary: GSN keeps the agreed Trade Record. Dispatch and tracking belong inside Merchant Verification.",
     `Created in GSN: ${createdAt}`,
     `Last updated in GSN: ${updatedAt}`,
     ...timelineLines,
@@ -2607,6 +2721,23 @@ function marketplaceRequestVisibilityLabel(value: unknown): string {
     return "Shared only with the intended person";
   }
   return marketplaceRequestDetailLabel(normalized);
+}
+
+function marketplaceRouteWithQuery(
+  path: string,
+  entries: Record<string, string | number | null | undefined>
+): string {
+  const [pathAndSearch, hash = ""] = path.split("#", 2);
+  const [base, search = ""] = pathAndSearch.split("?", 2);
+  const params = new URLSearchParams(search);
+
+  Object.entries(entries).forEach(([key, value]) => {
+    const text = safeStr(value);
+    if (text) params.set(key, text);
+  });
+
+  const query = params.toString();
+  return `${base}${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
 }
 
 function supportCadenceLabel(value: any): string {
@@ -4992,20 +5123,25 @@ export default function MarketplacePage() {
   const demandBoxFeatureOff = communityDomainFeatureIsOff(
     demandBoxDomainFeatureMatch
   );
-  const demandBoxCreatePath = useMemo(() => {
+  const demandBoxRootPath = useMemo(() => {
     const target = resolveCtaTarget("demandBox", {
       communityId: activeCommunityId,
-      debugId: "marketplace.route.demandBox.create",
+      debugId: "marketplace.route.demandBox",
     }).to;
-    const raw = typeof target === "string" ? target : APP_ROUTES.DEMAND_BOX;
-    const [baseAndQuery, hash = ""] = raw.split("#");
-    const params = new URLSearchParams(
-      baseAndQuery.includes("?") ? baseAndQuery.split("?")[1] : ""
-    );
-    params.set("mode", "create");
-    const base = baseAndQuery.split("?")[0];
-    return `${base}?${params.toString()}${hash ? `#${hash}` : ""}`;
+    return typeof target === "string" ? target : APP_ROUTES.DEMAND_BOX;
   }, [activeCommunityId]);
+  const demandBoxCreatePath = useMemo(
+    () => marketplaceRouteWithQuery(demandBoxRootPath, { mode: "create" }),
+    [demandBoxRootPath]
+  );
+  const demandBoxAllRequestsPath = useMemo(
+    () => marketplaceRouteWithQuery(demandBoxRootPath, { queue: "open" }),
+    [demandBoxRootPath]
+  );
+  const demandBoxMyRequestsPath = useMemo(
+    () => marketplaceRouteWithQuery(demandBoxRootPath, { queue: "mine" }),
+    [demandBoxRootPath]
+  );
   const canCreateMarketplaceDemand = Boolean(
     activeCommunityId &&
       me &&
@@ -7495,7 +7631,8 @@ export default function MarketplacePage() {
     currentUserId
   );
   const selectedProtectedTradeOutcomeActions = protectedTradeOutcomeActions(
-    selectedProtectedTradeUserSide
+    selectedProtectedTradeUserSide,
+    selectedProtectedTrade
   );
   const showProtectedTradeCreateForm =
     !recentProtectedTrades.length || protectedTradeCreateOpen;
@@ -7640,13 +7777,13 @@ export default function MarketplacePage() {
             : item
         )
       );
-      showNotice("success", "Protected trade records refreshed.");
+      showNotice("success", "Trade Records refreshed.");
     } catch (err: any) {
       showNotice(
         "error",
         marketplaceErrorMessage(
           err,
-          "Protected trade records could not load."
+          "Trade Records could not load."
         )
       );
     } finally {
@@ -7660,7 +7797,7 @@ export default function MarketplacePage() {
     consumeMarketplaceButtonEvent(event);
 
     if (!activeCommunityId) {
-      showNotice("error", "Choose a community before starting protected trade.");
+      showNotice("error", "Choose a community before issuing a Trade Record.");
       return;
     }
 
@@ -7672,7 +7809,7 @@ export default function MarketplacePage() {
       protectedTradeDraft.counterpartUserId
     );
     if (!counterpartUserId && !hasDemandSupplyHandoff) {
-      showNotice("error", "Choose the buyer or seller on the other side.");
+      showNotice("error", "Choose the buyer on the other side.");
       return;
     }
 
@@ -7693,12 +7830,11 @@ export default function MarketplacePage() {
 
     setCreatingProtectedTrade(true);
     try {
-      const isSeller = protectedTradeDraft.role === "seller";
       const created = await createProtectedTrade({
         clan_id: activeCommunityId,
-        participant_role: protectedTradeDraft.role,
-        seller_user_id: hasDemandSupplyHandoff ? undefined : isSeller ? undefined : counterpartUserId,
-        buyer_user_id: hasDemandSupplyHandoff ? undefined : isSeller ? counterpartUserId : undefined,
+        participant_role: "seller",
+        seller_user_id: undefined,
+        buyer_user_id: hasDemandSupplyHandoff ? undefined : counterpartUserId,
         shop_id: hasDemandSupplyHandoff ? sourceShopId : undefined,
         product_id: hasDemandSupplyHandoff ? sourceProductId : undefined,
         source_demand_id: hasDemandSupplyHandoff ? sourceDemandId : undefined,
@@ -7757,13 +7893,13 @@ export default function MarketplacePage() {
         sourceMatchReasonCodes: [],
         sourceMatchLabel: "",
       }));
-      showNotice("success", "Protected trade record started.");
+      showNotice("success", "Trade Record issued.");
     } catch (err: any) {
       showNotice(
         "error",
         marketplaceErrorMessage(
           err,
-          "Protected trade record could not be created."
+          "Trade Record could not be issued."
         )
       );
     } finally {
@@ -7776,6 +7912,7 @@ export default function MarketplacePage() {
     outcome: ProtectedTradeOutcomeAction
   ) {
     consumeMarketplaceButtonEvent(event);
+    if (outcome.disabled) return;
 
     const tradeId = positiveNumber(selectedProtectedTrade?.id);
     if (!tradeId) {
@@ -7833,7 +7970,7 @@ export default function MarketplacePage() {
 
     const tradeId = positiveNumber(selectedProtectedTrade?.id);
     if (!tradeId) {
-      showNotice("error", "Choose a protected trade record first.");
+      showNotice("error", "Choose a Trade Record first.");
       return;
     }
 
@@ -7874,13 +8011,13 @@ export default function MarketplacePage() {
           .slice(0, 8)
       );
       setProtectedTradeEventNote("");
-      showNotice("success", "Protected trade update recorded.");
+      showNotice("success", "Trade Record update saved.");
     } catch (err: any) {
       showNotice(
         "error",
         marketplaceErrorMessage(
           err,
-          "Protected trade update could not be recorded."
+          "Trade Record update could not be saved."
         )
       );
     } finally {
@@ -7973,7 +8110,7 @@ export default function MarketplacePage() {
           : handoff.reasonCodes;
         setProtectedTradeDraft((prev) => ({
           ...prev,
-          role: "buyer",
+          role: "seller",
           counterpartUserId: "",
           itemTitle: itemTitle || prev.itemTitle,
           currency: safeStr(prev.currency || "NGN").toUpperCase(),
@@ -7983,7 +8120,7 @@ export default function MarketplacePage() {
           sourceMatchReasonCodes: reasonCodes,
           sourceMatchLabel: `${safeStr(serverHandoff.shop_name) || "Matched shop"} - provider resolved by GSN`,
         }));
-        showNotice("success", "Trade Evidence is ready to start from this DemandBox match.");
+        showNotice("success", "The DemandBox agreement is ready for the seller to issue as a Trade Record.");
       })
       .catch((err: any) => {
         if (!alive) return;
@@ -7997,7 +8134,7 @@ export default function MarketplacePage() {
         }));
         showNotice(
           "error",
-          marketplaceErrorMessage(err, "DemandBox match could not prepare Trade Evidence.")
+          marketplaceErrorMessage(err, "DemandBox match could not prepare the Trade Record.")
         );
       });
 
@@ -9040,7 +9177,7 @@ export default function MarketplacePage() {
     marketplaceShopDirectoryTotal,
     memberRows.filter((row) => row.shopTo).length
   );
-  const visibleMarketNeeds = marketplaceNeedRows.slice(0, isCompact ? 3 : 4);
+  const visibleMarketNeeds = marketplaceNeedRows.slice(0, isCompact ? 1 : 4);
   const visibleNeedIds = new Set(
     visibleMarketNeeds
       .map((need) => positiveNumber(need?.id))
@@ -9059,7 +9196,7 @@ export default function MarketplacePage() {
   }, [marketplaceMatchRows]);
   const hiddenNeedProviderMatches = marketplaceMatchRows
     .filter((item) => !visibleNeedIds.has(positiveNumber(item.request?.id || item.match?.demand_id)))
-    .slice(0, isCompact ? 1 : 3);
+    .slice(0, isCompact ? 0 : 3);
   const marketplaceStats = [
     {
       label: "Members",
@@ -9097,7 +9234,87 @@ export default function MarketplacePage() {
   ) => {
     const requestId = positiveNumber(item.request?.id || item.match?.demand_id);
     const productId = positiveNumber(item.match?.product_id);
+    const shopId = positiveNumber(item.match?.shop_id);
     const publicShopPath = firstTruthy(item.match?.public_shop_path, APP_ROUTES.MARKETPLACE);
+    const buyNowPath = marketplaceRouteWithQuery(publicShopPath, {
+      product_id: productId,
+      source_demand_id: requestId,
+      source_match_shop_id: shopId,
+      source: "demand-box-match",
+    });
+    const chatPath = marketplaceRouteWithQuery(demandBoxRootPath, {
+      demand_id: requestId,
+      focus: "conversation",
+    });
+
+    if (isCompact) {
+      return (
+        <div
+          key={`${context}:${requestId || "need"}:${productId || index}`}
+          data-gmfn-debug-id={`marketplace.front.need-provider.${requestId || "unknown"}.${productId || index}.actions`}
+          style={{
+            borderTop: "1px solid rgba(16,37,59,0.10)",
+            paddingTop: 10,
+            display: "grid",
+            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+            gap: 6,
+            minWidth: 0,
+          }}
+        >
+          <StableButton
+            type="button"
+            debugId={`marketplace.front.need-provider.${requestId || "unknown"}.${productId || index}.open-shop`}
+            onClick={(event) => openMarketplaceRoute(event, publicShopPath)}
+            stableHeight={44}
+            style={{
+              ...marketplaceInlineActionStyle("primary", false, true),
+              minWidth: 0,
+              padding: "7px 5px",
+              borderRadius: 12,
+              fontSize: 10.5,
+              gap: 4,
+            }}
+          >
+            <MarketplaceGlyph name="shop" size={16} />
+            Open shop
+          </StableButton>
+          <StableButton
+            type="button"
+            debugId={`marketplace.front.need-provider.${requestId || "unknown"}.${productId || index}.buy-now`}
+            onClick={(event) => openMarketplaceRoute(event, buyNowPath)}
+            stableHeight={44}
+            style={{
+              ...marketplaceInlineActionStyle("secondary", false, true),
+              minWidth: 0,
+              padding: "7px 5px",
+              borderRadius: 12,
+              fontSize: 10.5,
+              gap: 4,
+            }}
+          >
+            <MarketplaceGlyph name="payment" size={16} />
+            Buy now
+          </StableButton>
+          <StableButton
+            type="button"
+            debugId={`marketplace.front.need-provider.${requestId || "unknown"}.${productId || index}.chat`}
+            onClick={(event) => openMarketplaceRoute(event, chatPath)}
+            stableHeight={44}
+            style={{
+              ...marketplaceInlineActionStyle("secondary", false, true),
+              minWidth: 0,
+              padding: "7px 5px",
+              borderRadius: 12,
+              fontSize: 10.5,
+              gap: 4,
+            }}
+          >
+            <MarketplaceGlyph name="email" size={16} />
+            Chat
+          </StableButton>
+        </div>
+      );
+    }
 
     return (
       <div
@@ -9107,9 +9324,9 @@ export default function MarketplacePage() {
           border: "1px solid rgba(37,166,90,0.16)",
           background:
             "linear-gradient(180deg, rgba(248,255,250,0.98) 0%, rgba(241,249,245,0.96) 100%)",
-          padding: isCompact ? 9 : 10,
+          padding: 10,
           display: "grid",
-          gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+          gridTemplateColumns: "minmax(0, 1fr) auto",
           gap: 8,
           alignItems: "center",
           overflow: "hidden",
@@ -9122,7 +9339,7 @@ export default function MarketplacePage() {
           <div
             style={{
               color: "#07172C",
-              fontSize: isCompact ? 13.5 : 14.5,
+              fontSize: 14.5,
               fontWeight: 950,
               lineHeight: 1.18,
               overflowWrap: "break-word",
@@ -9130,11 +9347,11 @@ export default function MarketplacePage() {
           >
             {firstTruthy(item.match?.shop_name, "Marketplace shop")}
           </div>
-          <div style={marketplaceLiveMetaStyle(isCompact)}>
+          <div style={marketplaceLiveMetaStyle(false)}>
             {firstTruthy(item.match?.product_title, "Possible match")}
           </div>
           {context === "overflow" ? (
-            <div style={marketplaceLiveMetaStyle(isCompact)}>
+            <div style={marketplaceLiveMetaStyle(false)}>
               For: {firstTruthy(item.request?.title, "community need")}
             </div>
           ) : null}
@@ -9144,11 +9361,8 @@ export default function MarketplacePage() {
           debugId={`marketplace.front.need-provider.${requestId || "unknown"}.${productId || index}.open-shop`}
           onClick={(event) => openMarketplaceRoute(event, publicShopPath)}
           style={{
-            ...marketplaceInlineActionStyle("secondary", false, isCompact),
-            minWidth: isCompact ? "100%" : 118,
-            ...(isCompact
-              ? authenticatedStaticNeonAction("cyanGold")
-              : {}),
+            ...marketplaceInlineActionStyle("secondary", false, false),
+            minWidth: 118,
           }}
         >
           Open shop
@@ -9601,7 +9815,7 @@ export default function MarketplacePage() {
               data-gmfn-debug-id="marketplace.front.needs-header"
               style={{
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                gridTemplateColumns: "minmax(0, 1fr) auto",
                 gap: 10,
                 alignItems: "center",
               }}
@@ -9634,11 +9848,11 @@ export default function MarketplacePage() {
                       ...marketplaceLiveCardTitleStyle(isCompact),
                     }}
                   >
-                    {isCompact ? "Needs / Demand" : "What people here need"}
+                    {isCompact ? "Demand Box" : "What people here need"}
                   </div>
                   <div style={{ marginTop: 3, ...marketplaceLiveMetaStyle(isCompact) }}>
                     {isCompact
-                      ? "Post or view what the community needs."
+                      ? "Post a need or find what people need."
                       : "Open requests from this community. Use DemandBox to add or manage a request."}
                   </div>
                 </div>
@@ -9648,15 +9862,13 @@ export default function MarketplacePage() {
                   <StableCtaLink
                     to={demandBoxCreatePath}
                     debugId="marketplace.job.add-need-shortcut"
-                    aria-label="Add need"
+                    aria-label="Post a need"
                     stableHeight={42}
                     style={{
-                      ...marketplaceInlineActionStyle("secondary", false, true),
-                      width: "100%",
-                      minWidth: 0,
-                      padding: "8px 10px",
-                      color: "#0B4EA2",
-                      background: "#F3F8FF",
+                      ...marketplaceInlineActionStyle("primary", false, true),
+                      minWidth: 116,
+                      padding: "8px 11px",
+                      borderRadius: 14,
                       fontSize: 11.5,
                       ...authenticatedStaticNeonAction("cyanViolet"),
                     }}
@@ -9664,7 +9876,7 @@ export default function MarketplacePage() {
                     <span aria-hidden="true" style={{ marginRight: 5, fontSize: 19, lineHeight: 1 }}>
                       +
                     </span>
-                    Add need
+                    Post a need
                   </StableCtaLink>
                 ) : (
                   <ExistingWorkflowPlusLink
@@ -9678,6 +9890,52 @@ export default function MarketplacePage() {
               ) : null}
             </div>
 
+            {isCompact ? (
+              <nav
+                data-gmfn-debug-id="marketplace.front.needs-queues"
+                aria-label="Demand Box request lists"
+                style={{
+                  marginTop: 12,
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  borderRadius: 999,
+                  border: "1px solid rgba(11,99,209,0.20)",
+                  background: "#F7FAFE",
+                  padding: 3,
+                  overflow: "hidden",
+                }}
+              >
+                <StableCtaLink
+                  to={demandBoxAllRequestsPath}
+                  debugId="marketplace.front.needs.all-requests"
+                  stableHeight={40}
+                  style={{
+                    ...marketplaceInlineActionStyle("primary", false, true),
+                    minWidth: 0,
+                    borderRadius: 999,
+                    fontSize: 12,
+                    boxShadow: "none",
+                  }}
+                >
+                  All requests
+                </StableCtaLink>
+                <StableCtaLink
+                  to={demandBoxMyRequestsPath}
+                  debugId="marketplace.front.needs.my-requests"
+                  stableHeight={40}
+                  style={{
+                    ...marketplaceInlineActionStyle("secondary", false, true),
+                    minWidth: 0,
+                    border: 0,
+                    borderRadius: 999,
+                    background: "transparent",
+                    fontSize: 12,
+                  }}
+                >
+                  My requests
+                </StableCtaLink>
+              </nav>
+            ) : null}
             {!isCompact ? (
               <div
                 style={{
@@ -9717,6 +9975,7 @@ export default function MarketplacePage() {
                   const needId = positiveNumber(need?.id);
                   const providerMatches = marketplaceMatchesByNeedId.get(needId) || [];
                   const visibleProviders = providerMatches.slice(0, isCompact ? 1 : 2);
+                  const primaryProvider = visibleProviders[0] || null;
                   const extraProviderCount = Math.max(0, providerMatches.length - visibleProviders.length);
                   const needStatus = firstTruthy(need.status, "open");
                   const requesterLabel = firstPublicIdentity(
@@ -9743,18 +10002,76 @@ export default function MarketplacePage() {
                   const visibilityText = marketplaceRequestVisibilityLabel(
                     need.visibility_scope
                   );
+                  const needImageUrl = safeStr(
+                    need.media_attachments?.find(
+                      (attachment) => safeStr(attachment?.kind).toLowerCase() === "image"
+                    )?.url
+                  );
+                  const providerShopName = firstTruthy(
+                    primaryProvider?.match?.shop_name,
+                    need.product_context?.shop_name
+                  );
+                  const providerProductTitle = firstTruthy(
+                    primaryProvider?.match?.product_title,
+                    need.product_context?.product_title,
+                    need.area,
+                    needMeta
+                  );
+                  const directRequestPath = marketplaceRouteWithQuery(demandBoxRootPath, {
+                    demand_id: needId,
+                  });
 
                   return (
-                    <div key={need.id || index} style={marketplaceLiveRowStyle(isCompact)}>
+                    <div
+                      key={need.id || index}
+                      style={{
+                        ...marketplaceLiveRowStyle(isCompact),
+                        ...(isCompact
+                          ? {
+                              padding: 12,
+                              gap: 10,
+                              borderRadius: 17,
+                              background: "rgba(255,255,255,0.96)",
+                            }
+                          : {}),
+                      }}
+                    >
                       <div
                         style={{
                           display: "grid",
-                          gridTemplateColumns: "minmax(0, 1fr) auto",
-                          gap: 8,
+                          gridTemplateColumns: isCompact
+                            ? "64px minmax(0, 1fr) auto"
+                            : "minmax(0, 1fr) auto",
+                          gap: isCompact ? 10 : 8,
                           alignItems: "start",
                         }}
                       >
-                        <div style={{ minWidth: 0, display: "grid", gap: 5 }}>
+                        {isCompact ? (
+                          <span
+                            aria-hidden="true"
+                            style={{
+                              width: 64,
+                              height: 64,
+                              borderRadius: 14,
+                              display: "grid",
+                              placeItems: "center",
+                              overflow: "hidden",
+                              color: "#0B63D1",
+                              background: "linear-gradient(180deg, #EFF6FF 0%, #E2EEFC 100%)",
+                            }}
+                          >
+                            {needImageUrl ? (
+                              <img
+                                src={needImageUrl}
+                                alt=""
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              />
+                            ) : (
+                              <MarketplaceGlyph name="demand" size={28} />
+                            )}
+                          </span>
+                        ) : null}
+                        <div style={{ minWidth: 0, display: "grid", gap: 4 }}>
                           {!isCompact ? (
                             <div style={{ ...sectionLabel(), color: "#0B4EA2" }}>
                               Community need
@@ -9763,7 +10080,7 @@ export default function MarketplacePage() {
                           <div
                             style={{
                               color: "#07172C",
-                              fontSize: isCompact ? 14.5 : 15.5,
+                              fontSize: isCompact ? 15 : 15.5,
                               fontWeight: 950,
                               lineHeight: 1.18,
                               overflowWrap: "break-word",
@@ -9771,21 +10088,42 @@ export default function MarketplacePage() {
                           >
                             {firstTruthy(need.title, "Community need")}
                           </div>
-                          <div style={marketplaceLiveMetaStyle(isCompact)}>
-                            {needMeta}
+                          {isCompact && providerShopName ? (
+                            <div
+                              style={{
+                                color: "#405A73",
+                                fontSize: 12,
+                                fontWeight: 900,
+                                lineHeight: 1.25,
+                                overflowWrap: "break-word",
+                              }}
+                            >
+                              {providerShopName}
+                            </div>
+                          ) : null}
+                          <div
+                            style={{
+                              ...marketplaceLiveMetaStyle(isCompact),
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 5,
+                            }}
+                          >
+                            {isCompact ? <MarketplaceGlyph name="target" size={14} /> : null}
+                            <span>{isCompact ? providerProductTitle : needMeta}</span>
                           </div>
                         </div>
                         <span style={stableStatusPillStyle(needStatus.toLowerCase() === "open")}>
-                          {needStatus}
+                          {marketplaceRequestDetailLabel(needStatus)}
                         </span>
                       </div>
 
-                      {needDescription ? (
+                      {!isCompact && needDescription ? (
                         <div
                           style={{
-                            ...marketplaceLiveMetaStyle(isCompact),
+                            ...marketplaceLiveMetaStyle(false),
                             display: "-webkit-box",
-                            WebkitLineClamp: isCompact ? 2 : 3,
+                            WebkitLineClamp: 3,
                             WebkitBoxOrient: "vertical",
                             overflow: "hidden",
                           }}
@@ -9794,7 +10132,7 @@ export default function MarketplacePage() {
                         </div>
                       ) : null}
 
-                      {requesterLabel || needCommunity || needCreated || visibilityText ? (
+                      {!isCompact && (requesterLabel || needCommunity || needCreated || visibilityText) ? (
                         <details
                           data-gmfn-debug-id={`marketplace.front.need.${needId || index}.details`}
                           style={{
@@ -9826,22 +10164,22 @@ export default function MarketplacePage() {
                             }}
                           >
                             {requesterLabel ? (
-                              <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                              <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", false)}>
                                 Posted by {requesterLabel}
                               </span>
                             ) : null}
                             {needCommunity ? (
-                              <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                              <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", false)}>
                                 Community: {needCommunity}
                               </span>
                             ) : null}
                             {needCreated ? (
-                              <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                              <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", false)}>
                                 Posted {needCreated}
                               </span>
                             ) : null}
                             {visibilityText ? (
-                              <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                              <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", false)}>
                                 {visibilityText}
                               </span>
                             ) : null}
@@ -9860,15 +10198,30 @@ export default function MarketplacePage() {
                               renderNeedProviderMatch(item, matchIndex, "need")
                             )}
                             {extraProviderCount ? (
-                              <div style={marketplaceLiveMetaStyle(isCompact)}>
+                              <div
+                                style={{
+                                  ...marketplaceLiveMetaStyle(isCompact),
+                                  textAlign: isCompact ? "center" : "left",
+                                  fontWeight: 900,
+                                }}
+                              >
                                 +{extraProviderCount} more possible match{extraProviderCount === 1 ? "" : "es"} in DemandBox.
                               </div>
                             ) : null}
                           </>
                         ) : (
-                          <div style={marketplaceLiveMetaStyle(isCompact)}>
-                            No matching shop was found in this community. Browse all shops or open the request in DemandBox.
-                          </div>
+                          <StableCtaLink
+                            to={directRequestPath}
+                            debugId={`marketplace.front.need.${needId || index}.open-request`}
+                            stableHeight={42}
+                            style={{
+                              ...marketplaceInlineActionStyle("secondary", false, isCompact),
+                              borderRadius: 12,
+                              fontSize: isCompact ? 11 : 12,
+                            }}
+                          >
+                            Open request in DemandBox
+                          </StableCtaLink>
                         )}
                       </div>
                     </div>
@@ -9915,6 +10268,23 @@ export default function MarketplacePage() {
                   </div>
                 </div>
               )}
+              {isCompact && marketplaceNeedRows.length > visibleMarketNeeds.length ? (
+                <StableCtaLink
+                  to={demandBoxAllRequestsPath}
+                  debugId="marketplace.front.needs.more-requests"
+                  stableHeight={40}
+                  style={{
+                    border: 0,
+                    background: "transparent",
+                    color: "#29445E",
+                    fontSize: 11.5,
+                    fontWeight: 900,
+                    boxShadow: "none",
+                  }}
+                >
+                  +{marketplaceNeedRows.length - visibleMarketNeeds.length} more request{marketplaceNeedRows.length - visibleMarketNeeds.length === 1 ? "" : "s"} in DemandBox
+                </StableCtaLink>
+              ) : null}
             </div>
           </div>
 

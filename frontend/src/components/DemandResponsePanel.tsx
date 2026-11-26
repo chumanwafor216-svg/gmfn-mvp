@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  addProtectedTradeEvent,
   createDemandMediaAttachment,
   createMarketplaceRequestResponse,
+  createProtectedTrade,
   createProtectedTradePaymentReference,
+  getDemandSupplyTradeHandoff,
   listMarketplaceRequestResponses,
   listProtectedTrades,
   markMarketplaceRequestResponsesRead,
@@ -12,6 +15,11 @@ import {
 import { APP_ROUTES } from "../lib/appRoutes";
 import { withCommunityQuery } from "../lib/communityRouteContext";
 import { resolveProfileImageUrl } from "../lib/profileImage";
+import {
+  parseProtectedTradeAgreementMessage,
+  serializeProtectedTradeAgreementMessage,
+  type ProtectedTradeAgreementMessage,
+} from "../lib/protectedTradeAgreementMessage";
 import {
   parseSellerPaymentMessage,
   serializeSellerPaymentMessage,
@@ -99,7 +107,7 @@ function responsePreview(row: MarketplaceRequestResponseItem): string {
 function focusedTradePath(
   basePath: string,
   tradeId: number,
-  focus: "record" | "tracking" | "confirmation"
+  focus: "record" | "confirmation"
 ): string {
   const [pathAndSearch] = String(basePath || APP_ROUTES.MARKETPLACE).split("#", 1);
   const [pathname, search = ""] = pathAndSearch.split("?", 2);
@@ -144,6 +152,17 @@ export default function DemandResponsePanel({
   const [sendingPaymentDetails, setSendingPaymentDetails] = useState(false);
   const [paymentAccountSetupRequired, setPaymentAccountSetupRequired] = useState(false);
   const [tradeStepsOpen, setTradeStepsOpen] = useState(false);
+  const [protectedTradeFormOpen, setProtectedTradeFormOpen] = useState(false);
+  const [creatingProtectedTrade, setCreatingProtectedTrade] = useState(false);
+  const [recordingAgreementTradeId, setRecordingAgreementTradeId] = useState(0);
+  const [protectedTradeDraft, setProtectedTradeDraft] = useState({
+    itemTitle: "",
+    quantity: "1",
+    amount: "",
+    currency: "NGN",
+    termsSummary: "",
+    paymentTiming: "pay_now" as "pay_now" | "deferred_credit",
+  });
   const [protectedTrades, setProtectedTrades] = useState<ProtectedTradeRecord[]>([]);
   const [conversationAccess, setConversationAccess] = useState<
     "loading" | "available" | "unavailable"
@@ -328,6 +347,18 @@ export default function DemandResponsePanel({
     });
   }, [isOwner, ownerUserId, recipientUserId, rows]);
 
+  const latestAgreementMessageIdByTrade = useMemo(() => {
+    const latestByTrade = new Map<number, number>();
+    visibleRows.forEach((row) => {
+      const agreement = parseProtectedTradeAgreementMessage(row.text);
+      const messageId = Number(row.id || 0);
+      if (!agreement?.tradeId || !messageId) return;
+      const current = latestByTrade.get(agreement.tradeId) || 0;
+      if (messageId > current) latestByTrade.set(agreement.tradeId, messageId);
+    });
+    return latestByTrade;
+  }, [visibleRows]);
+
   const activePeerUserId = isOwner ? recipientUserId : ownerUserId;
   const tradeContextAvailable = Boolean(requestId && supplyProductId && supplyShopId);
   const matchedProtectedTrade = useMemo(() => {
@@ -362,7 +393,23 @@ export default function DemandResponsePanel({
     supplyShopId,
     tradeContextAvailable,
   ]);
+  const matchedTradeStatus = String(matchedProtectedTrade?.status || "").toLowerCase();
+  const matchedPaymentStatus = String(matchedProtectedTrade?.payment_status || "").toLowerCase();
+  const matchedTradeCode = String(matchedProtectedTrade?.trade_code || "Trade Record");
+  const tradeAgreementAccepted = [
+    "agreed",
+    "payment_instructed",
+    "payment_claimed",
+    "payment_under_review",
+    "payment_received",
+    "release_pending",
+    "released",
+    "received",
+    "not_received",
+    "disputed",
+  ].includes(matchedTradeStatus);
   const payoutDetailsPath = withCommunityQuery(APP_ROUTES.PAYOUT_DETAILS, communityId);
+  const merchantVerificationPath = `${withCommunityQuery(APP_ROUTES.SHOP, communityId)}#shop-control-merchant-release-rail`;
   const protectedTradeBasePath = withCommunityQuery(
     protectedTradePath || APP_ROUTES.MARKETPLACE,
     communityId
@@ -373,7 +420,7 @@ export default function DemandResponsePanel({
       setProtectedTrades([]);
       return;
     }
-    if (!tradeStepsOpen) return;
+    if (conversationAccess !== "available") return;
     let cancelled = false;
     void listProtectedTrades({ limit: 50 })
       .then((items) => {
@@ -390,14 +437,14 @@ export default function DemandResponsePanel({
     supplyProductId,
     supplyShopId,
     tradeContextAvailable,
-    tradeStepsOpen,
+    conversationAccess,
   ]);
 
   async function sendSellerPaymentDetails() {
     if (sendingPaymentDetails) return;
     const tradeId = Number(matchedProtectedTrade?.id || 0);
     if (isOwner || !tradeId) {
-      setError("A matched Protected Trade is required before the seller can send payment details.");
+      setError("A matched Trade Record is required before the seller can send payment details.");
       return;
     }
 
@@ -427,7 +474,7 @@ export default function DemandResponsePanel({
     } catch (err: any) {
       const message = String(
         err?.message ||
-          "Seller payment details could not be sent. Check the Protected Trade amount and saved account details."
+          "Seller payment details could not be sent. Check the Trade Record amount and saved account details."
       );
       setPaymentAccountSetupRequired(
         /(?:seller|saved) account details (?:are missing|are incomplete)|account name, number, and bank/i.test(
@@ -440,6 +487,214 @@ export default function DemandResponsePanel({
     }
   }
 
+  async function openProtectedTradeForm() {
+    setProtectedTradeFormOpen(true);
+    setError("");
+    if (matchedTradeStatus === "amendment_requested" && matchedProtectedTrade?.id) {
+      const meta = matchedProtectedTrade.meta || {};
+      setProtectedTradeDraft({
+        itemTitle: String(matchedProtectedTrade.item_title || ""),
+        quantity: String(meta.quantity || "1"),
+        amount: String(matchedProtectedTrade.amount || ""),
+        currency: String(matchedProtectedTrade.currency || "NGN").toUpperCase(),
+        termsSummary: String(matchedProtectedTrade.terms_summary || ""),
+        paymentTiming: meta.payment_timing === "deferred_credit" ? "deferred_credit" : "pay_now",
+      });
+      return;
+    }
+    if (protectedTradeDraft.itemTitle || !requestId || !supplyProductId || !supplyShopId) return;
+    try {
+      const handoff = await getDemandSupplyTradeHandoff(requestId, supplyProductId, {
+        shop_id: supplyShopId,
+      });
+      setProtectedTradeDraft((current) => ({
+        ...current,
+        itemTitle: String(handoff.item_title || handoff.product_title || "").trim(),
+      }));
+    } catch (err: any) {
+      setError(String(err?.message || "The matched product could not be loaded for Trade Record."));
+    }
+  }
+
+  async function issueProtectedTrade() {
+    if (creatingProtectedTrade) return;
+    const itemTitle = protectedTradeDraft.itemTitle.trim();
+    const quantity = protectedTradeDraft.quantity.trim();
+    const amount = protectedTradeDraft.amount.trim();
+    const currency = protectedTradeDraft.currency.trim().toUpperCase();
+    const termsSummary = protectedTradeDraft.termsSummary.trim();
+    if (!itemTitle || !quantity || !amount || !currency || !termsSummary) {
+      setError("Add the item, quantity, amount, currency, and agreed terms before issuing Trade Record.");
+      return;
+    }
+    setCreatingProtectedTrade(true);
+    setError("");
+    let created: ProtectedTradeRecord | null = null;
+    try {
+      if (matchedTradeStatus === "amendment_requested" && matchedProtectedTrade?.id) {
+        await addProtectedTradeEvent(Number(matchedProtectedTrade.id), {
+          event_type: "terms.reissued",
+          note: "Seller reissued the amended Trade Record agreement.",
+          meta: {
+            source: "demand_box_conversation",
+            item_title: itemTitle,
+            quantity,
+            amount,
+            currency,
+            terms_summary: termsSummary,
+            payment_timing: protectedTradeDraft.paymentTiming,
+            request_id: requestId,
+          },
+        });
+        created = {
+          ...matchedProtectedTrade,
+          item_title: itemTitle,
+          amount,
+          currency,
+          terms_summary: termsSummary,
+          status: "awaiting_buyer_acceptance",
+          meta: {
+            ...(matchedProtectedTrade.meta || {}),
+            quantity,
+            payment_timing: protectedTradeDraft.paymentTiming,
+            deferred_credit: protectedTradeDraft.paymentTiming === "deferred_credit",
+          },
+        };
+      } else {
+        created = await createProtectedTrade({
+          clan_id: communityId || undefined,
+          participant_role: "seller",
+          source_demand_id: requestId,
+          source_match_product_id: supplyProductId,
+          source_match_shop_id: supplyShopId,
+          item_title: itemTitle,
+          terms_summary: termsSummary,
+          amount,
+          currency,
+          meta: {
+            source: "demand_box_conversation",
+            quantity,
+            payment_timing: protectedTradeDraft.paymentTiming,
+            deferred_credit: protectedTradeDraft.paymentTiming === "deferred_credit",
+            merchant_verification_relevant: protectedTradeDraft.paymentTiming === "deferred_credit",
+            conversation_request_id: requestId,
+            not_escrow: true,
+            not_money_custody: true,
+          },
+        });
+      }
+      const agreementMessage = serializeProtectedTradeAgreementMessage({
+        tradeId: Number(created.id || 0),
+        tradeCode: String(created.trade_code || ""),
+        itemTitle,
+        quantity,
+        amount,
+        currency,
+        termsSummary,
+        paymentTiming: protectedTradeDraft.paymentTiming,
+      });
+      await createMarketplaceRequestResponse(requestId, {
+        text: agreementMessage,
+        client_response_id: clientKey("demand-protected-trade"),
+        show_sender_photo: false,
+      });
+      setProtectedTrades((current) => {
+        const createdId = Number(created?.id || 0);
+        return current.some((trade) => Number(trade.id || 0) === createdId)
+          ? current.map((trade) => Number(trade.id || 0) === createdId ? created as ProtectedTradeRecord : trade)
+          : [created as ProtectedTradeRecord, ...current];
+      });
+      setProtectedTradeFormOpen(false);
+      setProtectedTradeDraft({
+        itemTitle: "",
+        quantity: "1",
+        amount: "",
+        currency,
+        termsSummary: "",
+        paymentTiming: "pay_now",
+      });
+      stickToLatestRef.current = true;
+      await load();
+    } catch (err: any) {
+      setError(
+        created?.id
+          ? "Trade Record was created, but its conversation card could not be sent. Open the existing record instead of creating another."
+          : String(err?.message || "Trade Record could not be issued.")
+      );
+    } finally {
+      setCreatingProtectedTrade(false);
+    }
+  }
+
+  async function recordAgreementDecision(
+    agreement: ProtectedTradeAgreementMessage,
+    decision: "accept" | "amend"
+  ) {
+    if (recordingAgreementTradeId) return;
+    setRecordingAgreementTradeId(agreement.tradeId);
+    setError("");
+    try {
+      const accepted = decision === "accept";
+      await addProtectedTradeEvent(agreement.tradeId, {
+        event_type: accepted ? "terms.agreed" : "terms.amendment_requested",
+        note: accepted
+          ? "Buyer accepted the seller's Trade Record agreement."
+          : "Buyer requested changes to the Trade Record agreement in the conversation.",
+        meta: { source: "demand_box_conversation", request_id: requestId },
+      });
+      await createMarketplaceRequestResponse(requestId, {
+        text: accepted
+          ? `Trade Record accepted: ${agreement.tradeCode}`
+          : `Changes requested for Trade Record: ${agreement.tradeCode}`,
+        client_response_id: clientKey("demand-protected-trade-decision"),
+        show_sender_photo: false,
+      });
+      if (!accepted) {
+        setText(`Please amend Trade Record ${agreement.tradeCode}: `);
+        window.requestAnimationFrame(() => textareaRef.current?.focus());
+      }
+      setTradeStepsOpen(true);
+      stickToLatestRef.current = true;
+      const items = await listProtectedTrades({ limit: 50 });
+      setProtectedTrades(Array.isArray(items) ? items : []);
+      await load();
+    } catch (err: any) {
+      setError(String(err?.message || "Trade Record decision could not be recorded."));
+    } finally {
+      setRecordingAgreementTradeId(0);
+    }
+  }
+
+  async function recordProtectedTradeStage(
+    eventType: "payment.claimed" | "payment.received",
+    note: string,
+    conversationText: string
+  ) {
+    const tradeId = Number(matchedProtectedTrade?.id || 0);
+    if (!tradeId || recordingAgreementTradeId) return;
+    setRecordingAgreementTradeId(tradeId);
+    setError("");
+    try {
+      await addProtectedTradeEvent(tradeId, {
+        event_type: eventType,
+        note,
+        meta: { source: "demand_box_conversation", request_id: requestId },
+      });
+      await createMarketplaceRequestResponse(requestId, {
+        text: conversationText,
+        client_response_id: clientKey("demand-protected-trade-stage"),
+        show_sender_photo: false,
+      });
+      const items = await listProtectedTrades({ limit: 50 });
+      setProtectedTrades(Array.isArray(items) ? items : []);
+      stickToLatestRef.current = true;
+      await load();
+    } catch (err: any) {
+      setError(String(err?.message || "Trade Record step could not be recorded."));
+    } finally {
+      setRecordingAgreementTradeId(0);
+    }
+  }
   function scrollToLatest() {
     const thread = threadRef.current;
     if (!thread) return;
@@ -813,6 +1068,18 @@ export default function DemandResponsePanel({
               day === priorDay
             );
             const sellerPaymentMessage = parseSellerPaymentMessage(row.text);
+            const protectedTradeAgreement = parseProtectedTradeAgreementMessage(row.text);
+            const agreementTrade = protectedTradeAgreement
+              ? protectedTrades.find(
+                  (trade) => Number(trade.id || 0) === protectedTradeAgreement.tradeId
+                ) || null
+              : null;
+            const agreementStatus = String(agreementTrade?.status || "").toLowerCase();
+            const agreementIsLatest = protectedTradeAgreement
+              ? latestAgreementMessageIdByTrade.get(protectedTradeAgreement.tradeId) === Number(row.id || 0)
+              : false;
+            const agreementAwaitingBuyer =
+              agreementIsLatest && agreementStatus === "awaiting_buyer_acceptance";
             return (
               <React.Fragment key={row.id}>
                 {day !== priorDay ? (
@@ -912,6 +1179,78 @@ export default function DemandResponsePanel({
                     ) : null}
                     {sellerPaymentMessage ? (
                       <DemandPaymentDetailsCard details={sellerPaymentMessage} />
+                    ) : protectedTradeAgreement ? (
+                      <div
+                        data-gsn-demand-protected-trade-card={protectedTradeAgreement.tradeCode}
+                        style={{
+                          display: "grid",
+                          gap: 8,
+                          padding: 10,
+                          borderRadius: 14,
+                          border: "1px solid rgba(172,125,29,0.28)",
+                          background: "linear-gradient(180deg, #FFFDF6 0%, #F6FAFF 100%)",
+                        }}
+                      >
+                        <div style={{ color: "#8A6416", fontSize: 10, fontWeight: 950, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                          Trade Record agreement
+                        </div>
+                        <div style={{ color: "#0B1F33", fontSize: 14, fontWeight: 950 }}>
+                          {protectedTradeAgreement.itemTitle}
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 6 }}>
+                          <span style={{ color: "#41556B", fontSize: 11.5, fontWeight: 850 }}>
+                            Quantity: {protectedTradeAgreement.quantity}
+                          </span>
+                          <span style={{ color: "#0B4FA8", fontSize: 11.5, fontWeight: 950 }}>
+                            {protectedTradeAgreement.currency} {protectedTradeAgreement.amount}
+                          </span>
+                        </div>
+                        <div style={{ color: "#41556B", fontSize: 11.5, lineHeight: 1.4 }}>
+                          {protectedTradeAgreement.termsSummary}
+                        </div>
+                        <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 850 }}>
+                          {protectedTradeAgreement.paymentTiming === "deferred_credit"
+                            ? "Deferred payment / credit terms"
+                            : "Payment due now"} · {protectedTradeAgreement.tradeCode}
+                        </div>
+                        {isOwner && !mine && agreementAwaitingBuyer ? (
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 7 }}>
+                            <PrimaryButton
+                              type="button"
+                              onClick={() => void recordAgreementDecision(protectedTradeAgreement, "accept")}
+                              busy={recordingAgreementTradeId === protectedTradeAgreement.tradeId}
+                              busyLabel="Saving"
+                              debugId={`demand-box.response.${requestId}.trade.accept.${protectedTradeAgreement.tradeId}`}
+                              stableHeight={40}
+                              style={{ borderRadius: 11, fontSize: 11.5 }}
+                            >
+                              Accept agreement
+                            </PrimaryButton>
+                            <SecondaryButton
+                              type="button"
+                              onClick={() => void recordAgreementDecision(protectedTradeAgreement, "amend")}
+                              disabled={recordingAgreementTradeId === protectedTradeAgreement.tradeId}
+                              debugId={`demand-box.response.${requestId}.trade.amend.${protectedTradeAgreement.tradeId}`}
+                              stableHeight={40}
+                              style={{ borderRadius: 11, fontSize: 11.5 }}
+                            >
+                              Request changes
+                            </SecondaryButton>
+                          </div>
+                        ) : !agreementIsLatest ? (
+                          <div style={{ color: "#64748B", fontSize: 11, fontWeight: 900 }}>
+                            Superseded by the latest Trade Record agreement.
+                          </div>
+                        ) : agreementStatus === "amendment_requested" ? (
+                          <div style={{ color: "#9A5B12", fontSize: 11, fontWeight: 900 }}>
+                            Changes requested in this conversation.
+                          </div>
+                        ) : agreementStatus ? (
+                          <div style={{ color: "#17663D", fontSize: 11, fontWeight: 900 }}>
+                            Status: {agreementStatus.replace(/_/g, " ")}
+                          </div>
+                        ) : null}
+                      </div>
                     ) : row.text ? (
                       <div
                         style={{
@@ -1274,9 +1613,9 @@ export default function DemandResponsePanel({
                   justifyContent: "space-between",
                 }}
               >
-                <span>Trade steps</span>
+                <span>Trade Records</span>
                 <span style={{ color: "#64748B", fontSize: 11, fontWeight: 850 }}>
-                  {matchedProtectedTrade ? "Continue record" : "Account, protect, track"}
+                  {matchedProtectedTrade ? "Continue record" : "Agree, pay, verify"}
                 </span>
               </StableDisclosureSummary>
               <div
@@ -1291,9 +1630,115 @@ export default function DemandResponsePanel({
                   background: "#FFFFFF",
                 }}
               >
-                {!isOwner ? (
+                {(!matchedProtectedTrade?.id || matchedTradeStatus === "amendment_requested") && !isOwner ? (
                   <div style={{ display: "grid", gap: 7 }}>
-                    {matchedProtectedTrade?.id ? (
+                    <PrimaryButton
+                      type="button"
+                      onClick={() => void openProtectedTradeForm()}
+                      debugId={`demand-box.response.${requestId}.protected-trade.issue`}
+                      data-gsn-demand-protected-trade="seller-issue"
+                      stableHeight={44}
+                      style={{ borderRadius: 12, fontSize: 12 }}
+                    >
+                      {matchedTradeStatus === "amendment_requested" ? "Reissue Trade Record" : "Issue Trade Record"}
+                    </PrimaryButton>
+                    {protectedTradeFormOpen ? (
+                      <div
+                        data-gsn-demand-protected-trade-form="inline-conversation"
+                        style={{ display: "grid", gap: 7, padding: 9, borderRadius: 13, border: "1px solid rgba(214,170,69,0.28)", background: "#FFFDF7" }}
+                      >
+                        <input
+                          value={protectedTradeDraft.itemTitle}
+                          onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, itemTitle: event.target.value }))}
+                          placeholder="Product or service"
+                          aria-label="Trade Record product or service"
+                          maxLength={160}
+                          style={{ minHeight: 40, borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 10px", font: "inherit" }}
+                        />
+                        <div style={{ display: "grid", gridTemplateColumns: "0.8fr 1fr 0.65fr", gap: 6 }}>
+                          <input
+                            value={protectedTradeDraft.quantity}
+                            onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, quantity: event.target.value }))}
+                            placeholder="Quantity"
+                            aria-label="Agreed quantity"
+                            style={{ minWidth: 0, minHeight: 40, borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 9px", font: "inherit" }}
+                          />
+                          <input
+                            value={protectedTradeDraft.amount}
+                            onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, amount: event.target.value }))}
+                            placeholder="Amount"
+                            aria-label="Agreed amount"
+                            inputMode="decimal"
+                            style={{ minWidth: 0, minHeight: 40, borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 9px", font: "inherit" }}
+                          />
+                          <input
+                            value={protectedTradeDraft.currency}
+                            onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, currency: event.target.value.toUpperCase() }))}
+                            placeholder="NGN"
+                            aria-label="Currency"
+                            maxLength={8}
+                            style={{ minWidth: 0, minHeight: 40, borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 9px", font: "inherit" }}
+                          />
+                        </div>
+                        <select
+                          value={protectedTradeDraft.paymentTiming}
+                          onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, paymentTiming: event.target.value === "deferred_credit" ? "deferred_credit" : "pay_now" }))}
+                          aria-label="Payment timing"
+                          style={{ minHeight: 40, borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 10px", font: "inherit", background: "#FFFFFF" }}
+                        >
+                          <option value="pay_now">Payment due now</option>
+                          <option value="deferred_credit">Deferred payment / credit</option>
+                        </select>
+                        <textarea
+                          value={protectedTradeDraft.termsSummary}
+                          onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, termsSummary: event.target.value }))}
+                          placeholder="Agreed condition, collection or delivery terms"
+                          aria-label="Trade Record agreed terms"
+                          rows={3}
+                          maxLength={4000}
+                          style={{ minHeight: 70, resize: "vertical", borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "9px 10px", font: "inherit" }}
+                        />
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 7 }}>
+                          <PrimaryButton
+                            type="button"
+                            onClick={() => void issueProtectedTrade()}
+                            busy={creatingProtectedTrade}
+                            busyLabel="Issuing"
+                            debugId={`demand-box.response.${requestId}.protected-trade.submit`}
+                            stableHeight={42}
+                            style={{ borderRadius: 11, fontSize: 11.5 }}
+                          >
+                            Send agreement
+                          </PrimaryButton>
+                          <SecondaryButton
+                            type="button"
+                            onClick={() => setProtectedTradeFormOpen(false)}
+                            disabled={creatingProtectedTrade}
+                            debugId={`demand-box.response.${requestId}.protected-trade.cancel`}
+                            stableHeight={42}
+                            style={{ borderRadius: 11, fontSize: 11.5 }}
+                          >
+                            Cancel
+                          </SecondaryButton>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : !matchedProtectedTrade?.id && isOwner ? (
+                  <div data-gsn-demand-protected-trade="waiting-for-seller" style={{ color: "#587087", fontSize: 11.5, lineHeight: 1.4 }}>
+                    Agree the item, quantity, price, and terms here. The seller then issues the Trade Record agreement in this conversation.
+                  </div>
+                ) : null}
+
+                {matchedProtectedTrade?.id && !isOwner ? (
+                  <div style={{ display: "grid", gap: 7 }}>
+                    {matchedTradeStatus === "awaiting_buyer_acceptance" || matchedTradeStatus === "amendment_requested" ? (
+                      <div style={{ color: "#587087", fontSize: 11.5, lineHeight: 1.4 }}>
+                        {matchedTradeStatus === "amendment_requested"
+                          ? "The buyer requested changes. Agree the amendment in chat, then reissue the agreement."
+                          : "Waiting for the buyer to accept the agreement card."}
+                      </div>
+                    ) : tradeAgreementAccepted && !["claimed", "seller_confirmed_received"].includes(matchedPaymentStatus) ? (
                       <SecondaryButton
                         type="button"
                         onClick={() => void sendSellerPaymentDetails()}
@@ -1304,16 +1749,26 @@ export default function DemandResponsePanel({
                         stableHeight={42}
                         style={{ borderRadius: 12, fontSize: 12 }}
                       >
-                        Send seller bank details + code
+                        Send bank details + payment code
                       </SecondaryButton>
-                    ) : (
-                      <div
-                        data-gsn-demand-account-details="waiting-for-protected-trade"
-                        style={{ color: "#587087", fontSize: 11.5, lineHeight: 1.4 }}
+                    ) : null}
+                    {matchedPaymentStatus === "claimed" ? (
+                      <PrimaryButton
+                        type="button"
+                        onClick={() => void recordProtectedTradeStage(
+                          "payment.received",
+                          "Seller acknowledged receipt of the buyer's payment.",
+                          `Payment received and acknowledged for ${matchedTradeCode}.`
+                        )}
+                        busy={recordingAgreementTradeId === Number(matchedProtectedTrade.id)}
+                        busyLabel="Saving"
+                        debugId={`demand-box.response.${requestId}.payment.received`}
+                        stableHeight={42}
+                        style={{ borderRadius: 12, fontSize: 12 }}
                       >
-                        Bank details can be sent after the requester starts the linked Protected Trade.
-                      </div>
-                    )}
+                        Confirm payment received
+                      </PrimaryButton>
+                    ) : null}
                     {paymentAccountSetupRequired ? (
                       <StableCtaLink
                         to={payoutDetailsPath}
@@ -1324,6 +1779,35 @@ export default function DemandResponsePanel({
                       >
                         Add seller account details
                       </StableCtaLink>
+                    ) : null}
+                  </div>
+                ) : matchedProtectedTrade?.id && isOwner ? (
+                  <div style={{ display: "grid", gap: 7 }}>
+                    {tradeAgreementAccepted && !["claimed", "seller_confirmed_received"].includes(matchedPaymentStatus) ? (
+                      <PrimaryButton
+                        type="button"
+                        onClick={() => void recordProtectedTradeStage(
+                          "payment.claimed",
+                          "Buyer recorded that payment was sent or handed to the seller.",
+                          `Payment sent for ${matchedTradeCode}. Seller confirmation is still required.`
+                        )}
+                        busy={recordingAgreementTradeId === Number(matchedProtectedTrade.id)}
+                        busyLabel="Saving"
+                        debugId={`demand-box.response.${requestId}.payment.claimed`}
+                        stableHeight={42}
+                        style={{ borderRadius: 12, fontSize: 12 }}
+                      >
+                        I have paid
+                      </PrimaryButton>
+                    ) : null}
+                    {matchedPaymentStatus === "claimed" ? (
+                      <div style={{ color: "#587087", fontSize: 11.5, lineHeight: 1.4 }}>
+                        Payment recorded as sent. Waiting for seller acknowledgement.
+                      </div>
+                    ) : matchedPaymentStatus === "seller_confirmed_received" ? (
+                      <div style={{ color: "#17663D", fontSize: 11.5, fontWeight: 900 }}>
+                        Seller acknowledged payment. Merchant Verification can continue with dispatch and tracking.
+                      </div>
                     ) : null}
                   </div>
                 ) : null}
@@ -1340,26 +1824,9 @@ export default function DemandResponsePanel({
                     stableHeight={44}
                     style={{ borderRadius: 12, fontSize: 12 }}
                   >
-                    Open Protected Trade
+                    Open Trade Record
                   </StableCtaLink>
-                ) : isOwner ? (
-                  <StableCtaLink
-                    to={protectedTradeBasePath}
-                    debugId={`demand-box.response.${requestId}.protected-trade.start`}
-                    data-gsn-demand-protected-trade="requester-start"
-                    stableHeight={44}
-                    style={{ borderRadius: 12, fontSize: 12 }}
-                  >
-                    Start Protected Trade
-                  </StableCtaLink>
-                ) : (
-                  <div
-                    data-gsn-demand-protected-trade="waiting-for-requester"
-                    style={{ color: "#587087", fontSize: 11.5, lineHeight: 1.4 }}
-                  >
-                    The requester starts the linked Protected Trade. It will appear here for both sides.
-                  </div>
-                )}
+                ) : null}
 
                 {matchedProtectedTrade?.id ? (
                   <div
@@ -1369,19 +1836,21 @@ export default function DemandResponsePanel({
                       gap: 7,
                     }}
                   >
-                    <StableCtaLink
-                      to={focusedTradePath(
-                        protectedTradeBasePath,
-                        Number(matchedProtectedTrade.id),
-                        "tracking"
-                      )}
-                      debugId={`demand-box.response.${requestId}.trade-tracking`}
-                      data-gsn-demand-trade-stage="tracking-evidence"
-                      stableHeight={42}
-                      style={{ borderRadius: 12, padding: "8px 7px", fontSize: 11.5 }}
-                    >
-                      Tracking update
-                    </StableCtaLink>
+                    {!isOwner ? (
+                      <StableCtaLink
+                        to={merchantVerificationPath}
+                        debugId={`demand-box.response.${requestId}.merchant-verification-tracking`}
+                        data-gsn-demand-trade-stage="merchant-verification-tracking"
+                        stableHeight={42}
+                        style={{ borderRadius: 12, padding: "8px 7px", fontSize: 11.5 }}
+                      >
+                        Merchant Verification & tracking
+                      </StableCtaLink>
+                    ) : (
+                      <div style={{ color: "#587087", fontSize: 11, lineHeight: 1.35, padding: "7px 4px" }}>
+                        Tracking is shared from Merchant Verification after dispatch.
+                      </div>
+                    )}
                     <StableCtaLink
                       to={focusedTradePath(
                         protectedTradeBasePath,

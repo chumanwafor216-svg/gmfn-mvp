@@ -9,6 +9,8 @@ from fastapi import HTTPException
 from sqlalchemy import text
 
 from app.api.routes import marketplace_requests
+from app.core.auth import get_current_user
+from app.main import app
 from app.db.database import SessionLocal, engine
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -790,11 +792,13 @@ def test_demand_supply_trade_handoff_does_not_create_until_start_record(client, 
     assert attention_response.status_code == 200, attention_response.text
     assert _table_count("protected_trade_records") == 0
 
+    app.dependency_overrides[get_current_user] = lambda: Obj(id=2, email="seller@example.com", role="user")
+
     create_response = client.post(
         "/protected-trades",
         json={
             "clan_id": 1,
-            "participant_role": "buyer",
+            "participant_role": "seller",
             "source_demand_id": 60,
             "source_match_product_id": 100,
             "source_match_shop_id": 10,
@@ -825,11 +829,11 @@ def test_demand_supply_trade_handoff_does_not_create_until_start_record(client, 
     assert created["meta"]["not_endorsement"] is True
     assert created["meta"]["not_payment_proof"] is True
     assert _table_count("protected_trade_records") == 1
-    assert _table_count("protected_trade_events") == 1
+    assert _table_count("protected_trade_events") == 2
 
     with SessionLocal() as db:
         rows = db.execute(text("SELECT event_type, meta_json FROM trust_events ORDER BY id ASC")).fetchall()
-    assert [row[0] for row in rows] == ["protected_trade.created"]
+    assert [row[0] for row in rows] == ["protected_trade.created", "protected_trade.terms.issued"]
     assert "demand_supply_match" in (rows[0][1] or "")
 
 
@@ -846,7 +850,7 @@ def test_demand_supply_trade_handoff_rejects_tampered_or_inaccessible_context(cl
         "/protected-trades",
         json={
             "clan_id": 1,
-            "participant_role": "buyer",
+            "participant_role": "seller",
             "source_demand_id": 61,
             "source_match_product_id": 100,
             "source_match_shop_id": 11,
@@ -866,7 +870,7 @@ def test_demand_supply_trade_handoff_rejects_tampered_or_inaccessible_context(cl
         "/protected-trades",
         json={
             "clan_id": 1,
-            "participant_role": "buyer",
+            "participant_role": "seller",
             "source_demand_id": 62,
             "source_match_product_id": 100,
             "source_match_shop_id": 10,
@@ -1014,6 +1018,7 @@ def test_demand_supply_seller_contact_rejects_non_requester_and_tampering(
     assert "+2348012345678" not in tampered.text
 
 def test_demand_supply_handoff_supports_services_and_products_without_mandatory_payment(client, override_current_user_user):
+    app.dependency_overrides[get_current_user] = lambda: Obj(id=2, email="seller@example.com", role="user")
     _seed_base()
     cases = [
         (70, 300, "Need painter for kitchen", "painting painter", "Painter on-site service", "Painting and painter service for homes"),
@@ -1046,7 +1051,7 @@ def test_demand_supply_handoff_supports_services_and_products_without_mandatory_
             "/protected-trades",
             json={
                 "clan_id": 1,
-                "participant_role": "buyer",
+                "participant_role": "seller",
                 "source_demand_id": request_id,
                 "source_match_product_id": product_id,
                 "source_match_shop_id": 10,
@@ -1064,5 +1069,5 @@ def test_demand_supply_handoff_supports_services_and_products_without_mandatory_
         assert created["meta"]["source"] == "demand_supply_match"
 
     assert _table_count("protected_trade_records") == 3
-    assert _table_count("protected_trade_events") == 3
-    assert _table_count("trust_events") == 3
+    assert _table_count("protected_trade_events") == 6
+    assert _table_count("trust_events") == 6

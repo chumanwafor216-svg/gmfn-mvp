@@ -3496,6 +3496,10 @@ export default function DemandBoxPage() {
     const params = new URLSearchParams(location.search);
     return positiveNumber(params.get("demand_id"));
   }, [location.search]);
+  const directDemandFocus = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return safeStr(params.get("focus")).toLowerCase();
+  }, [location.search]);
   const explicitQueueMode = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return safeStr(params.get("queue") || "").toLowerCase();
@@ -3675,6 +3679,11 @@ export default function DemandBoxPage() {
     setShowMoreQueueRows(false);
     setOpenDemandRecordKey(String(directDemandId));
   }, [allOpenRows, directDemandId, myOpenRows, visibleRows]);
+  useEffect(() => {
+    if (!directDemandId || directDemandFocus !== "conversation") return;
+    if (openDemandRecordKey !== String(directDemandId)) return;
+    setFocusedConversationRequestId(directDemandId);
+  }, [directDemandFocus, directDemandId, openDemandRecordKey]);
   useEffect(() => {
     if (loading || demandQueueIntentAppliedRef.current) return;
     if (directDemandId || shouldOpenDemandQueues) return;

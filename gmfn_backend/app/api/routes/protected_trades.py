@@ -37,7 +37,7 @@ def _http_error(exc: Exception) -> HTTPException:
         return HTTPException(status_code=404, detail=str(exc))
     if isinstance(exc, ValueError):
         return HTTPException(status_code=400, detail=str(exc))
-    return HTTPException(status_code=500, detail="Protected trade record failed.")
+    return HTTPException(status_code=500, detail="Trade Record failed.")
 
 
 @router.post("", response_model=ProtectedTradeOut, status_code=201)

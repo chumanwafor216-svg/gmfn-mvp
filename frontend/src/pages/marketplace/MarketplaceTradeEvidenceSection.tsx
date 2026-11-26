@@ -236,7 +236,7 @@ export default function MarketplaceTradeEvidenceSection({
             </span>
             <div style={{ minWidth: 0 }}>
               <div style={sectionLabel()}>
-                {isCompact ? "Trade records" : "Trade Evidence"}
+                {isCompact ? "Trade records" : "Trade Records"}
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
                 {isCompact
@@ -316,7 +316,7 @@ export default function MarketplaceTradeEvidenceSection({
               </span>
               <div style={{ minWidth: 0 }}>
                 <div style={sectionLabel()}>
-                  {isCompact ? "Trade record" : "Trade Evidence Record"}
+                  {isCompact ? "Trade record" : "Trade Record"}
                 </div>
                 <div
                   style={{
@@ -393,7 +393,7 @@ export default function MarketplaceTradeEvidenceSection({
                     ? "Complete the new buyer and seller record below."
                     : "Start one record before goods, services, or money change hands."
                   : routeProtectedTradeFocus === "tracking"
-                    ? "Add the courier, tracking, or delivery reference as an evidence note."
+                    ? "Open Merchant Verification for dispatch and tracking; use this area only for Trade Record remarks."
                     : routeProtectedTradeFocus === "confirmation"
                       ? "Confirm the outcome, then add remarks if more context is needed."
                       : `Confirm what happened with ${
@@ -526,6 +526,7 @@ export default function MarketplaceTradeEvidenceSection({
                     debugId="marketplace.protected-trade.outcome.good"
                     type="button"
                     busy={recordingProtectedTradeOutcome === "good"}
+                    disabled={selectedProtectedTradeOutcomeActions.good.disabled}
                     busyLabel="Recording"
                     onClick={(event) =>
                       void handleConfirmProtectedTradeOutcome(
@@ -536,7 +537,7 @@ export default function MarketplaceTradeEvidenceSection({
                     stableHeight={52}
                     style={marketplaceInlineActionStyle(
                       selectedProtectedTradeOutcomeActions.good.tone,
-                      false,
+                      Boolean(selectedProtectedTradeOutcomeActions.good.disabled),
                       isCompact
                     )}
                   >
@@ -546,6 +547,7 @@ export default function MarketplaceTradeEvidenceSection({
                     debugId="marketplace.protected-trade.outcome.blocked"
                     type="button"
                     busy={recordingProtectedTradeOutcome === "blocked"}
+                    disabled={selectedProtectedTradeOutcomeActions.blocked.disabled}
                     busyLabel="Recording"
                     onClick={(event) =>
                       void handleConfirmProtectedTradeOutcome(
@@ -556,7 +558,7 @@ export default function MarketplaceTradeEvidenceSection({
                     stableHeight={52}
                     style={marketplaceInlineActionStyle(
                       selectedProtectedTradeOutcomeActions.blocked.tone,
-                      false,
+                      Boolean(selectedProtectedTradeOutcomeActions.blocked.disabled),
                       isCompact
                     )}
                   >
@@ -566,6 +568,7 @@ export default function MarketplaceTradeEvidenceSection({
                     debugId="marketplace.protected-trade.outcome.issue"
                     type="button"
                     busy={recordingProtectedTradeOutcome === "issue"}
+                    disabled={selectedProtectedTradeOutcomeActions.issue.disabled}
                     busyLabel="Opening"
                     onClick={(event) =>
                       void handleConfirmProtectedTradeOutcome(
@@ -576,7 +579,7 @@ export default function MarketplaceTradeEvidenceSection({
                     stableHeight={52}
                     style={marketplaceInlineActionStyle(
                       selectedProtectedTradeOutcomeActions.issue.tone,
-                      false,
+                      Boolean(selectedProtectedTradeOutcomeActions.issue.disabled),
                       isCompact
                     )}
                   >
@@ -599,29 +602,18 @@ export default function MarketplaceTradeEvidenceSection({
                 alignItems: "end",
               }}
             >
-              <label style={{ display: "block" }}>
+              <div style={{ display: "block" }}>
                 <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
-                  Your side
+                  Issued by
                 </div>
-                <select
-                  {...marketplaceFieldTouchProps("marketplace.protected-trade.role")}
-                  value={protectedTradeDraft.role}
-                  onChange={(event) =>
-                    setProtectedTradeDraft((prev) => ({
-                      ...prev,
-                      role: event.target.value === "buyer" ? "buyer" : "seller",
-                    }))
-                  }
-                  style={{ ...inputStyle(), marginTop: 6 }}
-                >
-                  <option value="seller">Seller</option>
-                  <option value="buyer">Buyer</option>
-                </select>
-              </label>
+                <div style={{ ...inputStyle(), marginTop: 6, display: "flex", alignItems: "center" }}>
+                  Seller
+                </div>
+              </div>
 
               <label style={{ display: "block" }}>
                 <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
-                  Other side
+                  Buyer
                 </div>
                 <select
                   {...marketplaceFieldTouchProps("marketplace.protected-trade.counterpart")}
@@ -756,7 +748,7 @@ export default function MarketplaceTradeEvidenceSection({
                 stableHeight={52}
                 style={marketplaceInlineActionStyle("primary", false, isCompact)}
               >
-                Start record
+                Issue Trade Record
               </StableButton>
               {!recentProtectedTrades.length ? (
                 <StableButton
@@ -883,7 +875,7 @@ export default function MarketplaceTradeEvidenceSection({
                           overflowWrap: "break-word",
                         }}
                       >
-                        {safeStr(trade.item_title) || "Protected trade record"}
+                        {safeStr(trade.item_title) || "Trade Record"}
                       </div>
                       <div
                         style={{
@@ -981,7 +973,7 @@ export default function MarketplaceTradeEvidenceSection({
                           >
                             {safeStr(trade.item_title) ||
                               safeStr(trade.trade_code) ||
-                              "Protected trade"}
+                              "Trade Record"}
                           </option>
                         ))}
                       </select>
@@ -1032,7 +1024,7 @@ export default function MarketplaceTradeEvidenceSection({
                       style={{ ...textAreaStyle(), marginTop: 6, minHeight: 72 }}
                       placeholder={
                         routeProtectedTradeFocus === "tracking"
-                          ? "Add courier, tracking reference, expected delivery, or delivery remarks. Do not include a full private address."
+                          ? "Tracking belongs inside Merchant Verification. Add only a short Trade Record remark here."
                           : "Write what happened and who can stand by this update."
                       }
                       maxLength={4000}
@@ -1073,7 +1065,7 @@ export default function MarketplaceTradeEvidenceSection({
                       }}
                     >
                       <div style={{ minWidth: 0 }}>
-                        <div style={sectionLabel()}>Evidence paper</div>
+                        <div style={sectionLabel()}>Trade Record paper</div>
                         <div
                           style={{
                             marginTop: 4,
@@ -1082,7 +1074,7 @@ export default function MarketplaceTradeEvidenceSection({
                             lineHeight: 1.35,
                           }}
                         >
-                          Signed-in evidence paper for screenshot review. Private
+                          Signed-in Trade Record paper for screenshot review. Private
                           to the people who can already see this record.
                         </div>
                       </div>
@@ -1176,8 +1168,8 @@ export default function MarketplaceTradeEvidenceSection({
                                 showNotice(
                                   copied ? "success" : "error",
                                   copied
-                                    ? "Protected trade evidence paper copied."
-                                    : "Evidence paper could not be copied."
+                                    ? "Trade Record Trade Record paper copied."
+                                    : "Trade Record paper could not be copied."
                                 );
                               }
                             );
@@ -1199,8 +1191,8 @@ export default function MarketplaceTradeEvidenceSection({
                           lineHeight: 1.35,
                         }}
                       >
-                        Start or choose a protected trade record before copying
-                        the GSN evidence paper.
+                        Start or choose a Trade Record before copying
+                        the GSN Trade Record paper.
                       </div>
                     )}
                   </div>

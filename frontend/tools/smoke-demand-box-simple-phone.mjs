@@ -710,10 +710,9 @@ async function verifyViewport(browser, baseURL, viewport) {
   const tradeSteps = privateConversation.locator('[data-gsn-demand-trade-steps="collapsed"]');
   assert(await tradeSteps.isVisible(), "The protected progression is missing from the compact Trade steps control.");
   await tradeSteps.locator("summary").click();
-  const startProtectedTrade = tradeSteps.getByRole("link", { name: "Start Protected Trade", exact: true });
-  assert(await startProtectedTrade.isVisible(), "The requester cannot start the associated Protected Trade from the conversation.");
-  const startTradeHref = await startProtectedTrade.getAttribute("href");
-  assert(startTradeHref?.includes("source_demand_id=72") && startTradeHref?.includes("source_match_product_id=900") && startTradeHref?.includes("source_match_shop_id=90"), "The Protected Trade handoff lost its demand, product, or shop association.");
+  assert(await tradeSteps.getByText("Agree the item, quantity, price, and terms here.", { exact: false }).isVisible(), "The requester is not told to wait for the seller-issued Trade Record.");
+  assert((await tradeSteps.getByRole("button", { name: "Issue Trade Record", exact: true }).count()) === 0, "The requester was incorrectly allowed to issue the seller's Trade Record.");
+  assert((await tradeSteps.locator('[data-gsn-demand-trade-stage="tracking-evidence"]').count()) === 0, "Standalone tracking returned outside Merchant Verification.");
   assert((await contactResult.getByRole("link", { name: "View shop", exact: true }).count()) === 0, "View shop is duplicated inside Ask Seller.");
   const sellerJourneyOrder = await contactResult.evaluate((container) => {
     const whatsapp = container.querySelector('[data-gsn-demand-contact-channel="whatsapp-alternative"]');

@@ -255,10 +255,14 @@ def resolve_demand_supply_trade_handoff(
     product_id: int,
     shop_id: int,
     current_user_id: int,
+    allow_matched_seller: bool = False,
 ) -> dict[str, Any] | None:
     demand = db.get(MarketplaceRequest, int(demand_id))
+    visibility_user_id = int(current_user_id)
+    if demand and allow_matched_seller:
+        visibility_user_id = int(getattr(demand, "user_id", 0) or 0)
     if not demand or not _is_visible_live_demand(
-        db, demand, current_user_id=int(current_user_id)
+        db, demand, current_user_id=visibility_user_id
     ):
         return None
 
@@ -279,7 +283,7 @@ def resolve_demand_supply_trade_handoff(
     relay_authorized = int(product.clan_id or 0) in _relay_authorized_target_clan_ids_for_demand(
         db,
         demand=demand,
-        current_user_id=int(current_user_id),
+        current_user_id=visibility_user_id,
     )
     match = _build_match_for_supply_clan(
         demand=demand,
@@ -291,13 +295,19 @@ def resolve_demand_supply_trade_handoff(
     if not match:
         return None
 
-    return {
+    handoff = {
         **match.to_dict(),
         "demand_title": _clean_text(getattr(demand, "title", None)) or "DemandBox request",
         "requester_user_id": int(getattr(demand, "user_id", 0) or 0),
         "seller_user_id": int(getattr(product, "seller_user_id", 0) or 0)
         or int(getattr(shop, "owner_user_id", 0) or 0),
     }
+    if allow_matched_seller and int(current_user_id) not in {
+        int(handoff["requester_user_id"]),
+        int(handoff["seller_user_id"]),
+    }:
+        return None
+    return handoff
 
 
 def find_relay_supply_target_candidates(

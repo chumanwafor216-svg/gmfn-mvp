@@ -184,14 +184,15 @@ forbidPattern(responsePanelSource, responsePanelFile, /manage-account-details/, 
   [/data-gsn-demand-composer-row="compact"[\s\S]*?aria-label="Add attachment"[\s\S]*?aria-label="Private message"[\s\S]*?aria-label="Record voice note"[\s\S]*?<GsnMicrophoneIcon size=\{22\} \/>/, "the private composer must keep compact attachment, text, and a true microphone control"],
   [/data-gsn-demand-composer-row="compact"[\s\S]*?<VoiceNoteRecorder[\s\S]*?data-gsn-demand-attachment-options="expanded"[\s\S]*?Recording continues here[\s\S]*?data-gsn-demand-preset-messages="collapsed"[\s\S]*?data-gsn-demand-trade-steps="collapsed"/, "the composer, voice recorder, and attachment controls must appear before Preset messages and Trade steps"],
   [/data-gsn-demand-preset-messages="collapsed"[\s\S]*?Preset messages/, "repeated response helpers must stay behind one compact disclosure"],
-  [/data-gsn-demand-trade-steps="collapsed"[\s\S]*?data-gsn-demand-account-details="seller-direct-reference"[\s\S]*?data-gsn-demand-protected-trade="associated-record"[\s\S]*?data-gsn-demand-trade-stage="tracking-evidence"[\s\S]*?data-gsn-demand-trade-stage="confirmation-remarks"/, "the conversation must keep seller-direct account, protected-trade, tracking, and confirmation handoffs inside one staged control"],
+  [/data-gsn-demand-trade-steps="collapsed"[\s\S]*?data-gsn-demand-protected-trade="seller-issue"[\s\S]*?data-gsn-demand-account-details="seller-direct-reference"[\s\S]*?data-gsn-demand-protected-trade="associated-record"[\s\S]*?data-gsn-demand-trade-stage="merchant-verification-tracking"[\s\S]*?data-gsn-demand-trade-stage="confirmation-remarks"/, "the conversation must keep seller issue, seller-direct payment, Merchant Verification tracking, and confirmation handoffs inside one staged control"],
   [/setPaymentAccountSetupRequired\(false\)[\s\S]*?createProtectedTradePaymentReference[\s\S]*?setPaymentAccountSetupRequired\([\s\S]*?data-gsn-demand-account-setup="missing-details-only"/, "the full account-setup page must appear only after the compact send action reports missing seller details"],
-  [/Send seller bank details \+ code[\s\S]*?Only the compact bank-details card and payment code are sent in chat\. The Finance page is never attached\./, "the seller must see one direct compact-send action and an explicit no-full-page boundary"],
-  [/createProtectedTradePaymentReference[\s\S]*?serializeSellerPaymentMessage[\s\S]*?createMarketplaceRequestResponse/, "seller payment details must receive a Protected Trade code and send only the compact message"],
+  [/Send bank details \+ payment code[\s\S]*?Only the compact bank-details card and payment code are sent in chat\. The Finance page is never attached\./, "the seller must see one direct compact-send action and an explicit no-full-page boundary"],
+  [/createProtectedTradePaymentReference[\s\S]*?serializeSellerPaymentMessage[\s\S]*?createMarketplaceRequestResponse/, "seller payment details must receive a Trade Record code and send only the compact message"],
   [/parseSellerPaymentMessage\(row\.text\)[\s\S]*?<DemandPaymentDetailsCard details=\{sellerPaymentMessage\}/, "compact seller payment messages must render as a dedicated in-chat card"],
   [/Payment goes directly to the seller's saved account[\s\S]*?does not hold or automatically verify the money/, "the payment handoff must state the direct-seller and non-custodial boundary"],
   [/source_demand_id[\s\S]*?source_match_product_id[\s\S]*?source_match_shop_id[\s\S]*?participantIds\.includes\(currentUserId\)/, "reopened trade controls must match the original demand, product, shop, and participant association"],
-  [/The requester starts the linked Protected Trade/, "responders must not be offered a false requester-only trade creation action"],
+  [/data-gsn-demand-protected-trade="waiting-for-seller"[\s\S]*?The seller then issues the Trade Record agreement/, "the buyer must wait for the seller-issued Trade Record"],
+  [/participant_role: "seller"[\s\S]*?source_demand_id: requestId[\s\S]*?source_match_product_id: supplyProductId[\s\S]*?source_match_shop_id: supplyShopId/, "DemandBox Trade Records must be seller-issued and retain the validated demand, product, and Shop association"],
   [/Photo, video, document or link[\s\S]*?application\/pdf[\s\S]*?"document"/, "the private composer must keep photo, video, document, and link support"],
 ].forEach(([pattern, message]) => requirePattern(responsePanelSource, responsePanelFile, pattern, message));
 
@@ -203,14 +204,14 @@ forbidPattern(responsePanelSource, responsePanelFile, /manage-account-details/, 
 
 [
   [/data-gsn-demand-payment-details="seller-direct"[\s\S]*?data-gsn-demand-payment-beneficiary="seller-direct"/, "the in-chat payment card must identify the seller as beneficiary"],
-  [/Payment code:[\s\S]*?does not hold or automatically verify the money/, "the in-chat payment card must show the reference and non-custodial boundary"],
+  [/data-gsn-demand-payment-reference="shared-evidence"[\s\S]*?Shared payment code:[\s\S]*?Copy code[\s\S]*?Buyer and seller see this same code/, "the in-chat payment card must give both parties the same copyable evidence code"],
 ].forEach(([pattern, message]) => requirePattern(paymentCardSource, paymentCardFile, pattern, message));
 
 requirePattern(
   apiSource,
   apiFile,
   /protected-trades\/\$\{encodeURIComponent\(String\(tradeId\)\)\}\/payment-reference[\s\S]*?"POST"/,
-  "the frontend must create the payment reference through the seller-only Protected Trade endpoint"
+  "the frontend must create the payment reference through the seller-only Trade Record endpoint"
 );
 
 [

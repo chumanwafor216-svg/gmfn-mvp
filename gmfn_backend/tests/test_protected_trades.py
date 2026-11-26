@@ -17,7 +17,9 @@ from app.db.models import (
     User,
     UserPayoutDestination,
 )
+from app.schemas.protected_trades import ProtectedTradeEventIn
 from app.services.protected_trade_service import (
+    add_trade_event,
     create_or_get_seller_payment_reference,
     trade_to_dict,
 )
@@ -42,11 +44,11 @@ def test_protected_trade_create_and_lifecycle_logs_trust_events(
             "participant_role": "seller",
             "buyer_user_id": 2,
             "item_title": "Two bags of rice",
-            "terms_summary": "Buyer collects after payment claim is reviewed.",
+            "terms_summary": "Buyer collects after seller acknowledges payment.",
             "amount": "42000.00",
             "currency": "NGN",
             "trust_slip_code": "GSN-TS-TEST",
-            "meta": {"source": "pytest"},
+            "meta": {"source": "pytest", "quantity": "2 bags", "payment_timing": "pay_now"},
         },
     )
     assert create_res.status_code == 201, create_res.text
@@ -54,24 +56,46 @@ def test_protected_trade_create_and_lifecycle_logs_trust_events(
     assert created["trade_code"].startswith("GSN-TRADE-")
     assert created["seller_user_id"] == 1
     assert created["buyer_user_id"] == 2
-    assert created["status"] == "draft"
+    assert created["status"] == "awaiting_buyer_acceptance"
     assert created["payment_status"] == "not_started"
     assert "not escrow" in created["boundary_note"]
-    assert created["events"][0]["event_type"] == "protected_trade.created"
+    assert [event["event_type"] for event in created["events"]] == [
+        "protected_trade.created",
+        "protected_trade.terms.issued",
+    ]
 
     trade_id = created["id"]
+    with SessionLocal() as db:
+        trade = db.get(ProtectedTradeRecord, trade_id)
+        buyer = db.get(User, 2)
+        assert trade is not None
+        assert buyer is not None
+        add_trade_event(
+            db,
+            trade=trade,
+            payload=ProtectedTradeEventIn(
+                event_type="terms.agreed",
+                note="Buyer accepted the seller-issued agreement.",
+            ),
+            current_user=buyer,
+        )
+        add_trade_event(
+            db,
+            trade=trade,
+            payload=ProtectedTradeEventIn(
+                event_type="payment.claimed",
+                expected_payment_id=55,
+                note="Buyer recorded that transfer was sent.",
+                meta={"payment_reference": "GSN-PAY-TEST-1"},
+            ),
+            current_user=buyer,
+        )
 
-    claimed_res = client.post(
+    received_res = client.post(
         f"/protected-trades/{trade_id}/events",
-        json={
-            "event_type": "payment.claimed",
-            "expected_payment_id": 55,
-            "note": "Buyer claims transfer was sent.",
-            "meta": {"payment_reference": "GSN-PAY-TEST-1"},
-        },
+        json={"event_type": "payment.received", "note": "Seller acknowledged payment."},
     )
-    assert claimed_res.status_code == 201, claimed_res.text
-    assert claimed_res.json()["event_type"] == "protected_trade.payment.claimed"
+    assert received_res.status_code == 201, received_res.text
 
     released_res = client.post(
         f"/protected-trades/{trade_id}/events",
@@ -83,16 +107,18 @@ def test_protected_trade_create_and_lifecycle_logs_trust_events(
     assert detail_res.status_code == 200, detail_res.text
     detail = detail_res.json()
     assert detail["status"] == "released"
-    assert detail["payment_status"] == "claimed"
+    assert detail["payment_status"] == "seller_confirmed_received"
     assert detail["release_status"] == "released"
     assert detail["derived_outcome_state"] == "PROVIDER_REPORTED_COMPLETED"
-    assert detail["derived_outcome_label"] == "Provider recorded completion"
     assert detail["has_provider_release_event"] is True
     assert detail["has_requester_receipt_event"] is False
     assert detail["expected_payment_id"] == 55
     assert [event["event_type"] for event in detail["events"]] == [
         "protected_trade.created",
+        "protected_trade.terms.issued",
+        "protected_trade.terms.agreed",
         "protected_trade.payment.claimed",
+        "protected_trade.payment.received",
         "protected_trade.release.recorded",
     ]
 
@@ -106,7 +132,7 @@ def test_protected_trade_create_and_lifecycle_logs_trust_events(
             .order_by(ProtectedTradeEvent.id.asc())
             .all()
         )
-        assert len(trade_events) == 3
+        assert len(trade_events) == 6
         trust_events = (
             db.query(TrustEvent)
             .filter(TrustEvent.event_type.like("protected_trade.%"))
@@ -115,10 +141,13 @@ def test_protected_trade_create_and_lifecycle_logs_trust_events(
         )
         assert [event.event_type for event in trust_events] == [
             "protected_trade.created",
+            "protected_trade.terms.issued",
+            "protected_trade.terms.agreed",
             "protected_trade.payment.claimed",
+            "protected_trade.payment.received",
             "protected_trade.release.recorded",
         ]
-        meta = json.loads(trust_events[1].meta_json or "{}")
+        meta = json.loads(trust_events[3].meta_json or "{}")
         assert meta["trade_id"] == trade_id
         assert meta["expected_payment_id"] == 55
         assert "not automatic payout" in meta["boundary_note"]
@@ -134,8 +163,8 @@ def test_protected_trade_rejects_unsupported_event_type(
         "/protected-trades",
         json={
             "clan_id": 1,
-            "participant_role": "buyer",
-            "seller_user_id": 2,
+            "participant_role": "seller",
+            "buyer_user_id": 2,
             "item_title": "Phone charger",
             "amount": "2500.00",
             "currency": "NGN",
@@ -150,6 +179,139 @@ def test_protected_trade_rejects_unsupported_event_type(
     )
     assert bad_res.status_code == 400, bad_res.text
     assert "Unsupported protected trade event_type" in bad_res.json()["detail"]
+
+
+def test_trade_record_is_seller_issued_and_role_gates_agreement_steps(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+    seed_user2_non_member,
+):
+    buyer_create = client.post(
+        "/protected-trades",
+        json={
+            "clan_id": 1,
+            "participant_role": "buyer",
+            "seller_user_id": 2,
+            "item_title": "Phone charger",
+            "terms_summary": "Buyer tried to issue the agreement.",
+            "amount": "2500.00",
+            "currency": "NGN",
+        },
+    )
+    assert buyer_create.status_code == 403, buyer_create.text
+    assert "issued by the seller" in buyer_create.json()["detail"]
+
+    created = client.post(
+        "/protected-trades",
+        json={
+            "clan_id": 1,
+            "participant_role": "seller",
+            "buyer_user_id": 2,
+            "item_title": "Phone charger",
+            "terms_summary": "One charger; buyer pays before collection.",
+            "amount": "2500.00",
+            "currency": "NGN",
+        },
+    )
+    assert created.status_code == 201, created.text
+    trade_id = int(created.json()["id"])
+
+    seller_cannot_accept = client.post(
+        f"/protected-trades/{trade_id}/events",
+        json={"event_type": "terms.agreed", "note": "Seller cannot accept for buyer."},
+    )
+    assert seller_cannot_accept.status_code == 403, seller_cannot_accept.text
+    assert "Only the buyer" in seller_cannot_accept.json()["detail"]
+
+    with SessionLocal() as db:
+        trade = db.get(ProtectedTradeRecord, trade_id)
+        buyer = db.get(User, 2)
+        assert trade is not None
+        assert buyer is not None
+        with pytest.raises(PermissionError, match="Only the seller"):
+            add_trade_event(
+                db,
+                trade=trade,
+                payload=ProtectedTradeEventIn(
+                    event_type="payment.received",
+                    note="Buyer cannot acknowledge receipt for seller.",
+                ),
+                current_user=buyer,
+            )
+
+
+def test_trade_record_amendment_reissues_same_record(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+    seed_user2_non_member,
+):
+    created = client.post(
+        "/protected-trades",
+        json={
+            "clan_id": 1,
+            "participant_role": "seller",
+            "buyer_user_id": 2,
+            "item_title": "One phone charger",
+            "terms_summary": "One charger; payment before collection.",
+            "amount": "2500.00",
+            "currency": "NGN",
+            "meta": {"quantity": "1", "payment_timing": "pay_now"},
+        },
+    )
+    assert created.status_code == 201, created.text
+    trade_id = int(created.json()["id"])
+
+    with SessionLocal() as db:
+        trade = db.get(ProtectedTradeRecord, trade_id)
+        buyer = db.get(User, 2)
+        assert trade is not None
+        assert buyer is not None
+        add_trade_event(
+            db,
+            trade=trade,
+            payload=ProtectedTradeEventIn(
+                event_type="terms.amendment_requested",
+                note="Buyer asked for two chargers and revised collection terms.",
+            ),
+            current_user=buyer,
+        )
+
+    reissued = client.post(
+        f"/protected-trades/{trade_id}/events",
+        json={
+            "event_type": "terms.reissued",
+            "note": "Seller reissued the corrected Trade Record.",
+            "meta": {
+                "item_title": "Two phone chargers",
+                "quantity": "2",
+                "amount": "4800.00",
+                "currency": "NGN",
+                "terms_summary": "Two chargers; buyer pays before collection tomorrow.",
+                "payment_timing": "pay_now",
+            },
+        },
+    )
+    assert reissued.status_code == 201, reissued.text
+
+    detail = client.get(f"/protected-trades/{trade_id}")
+    assert detail.status_code == 200, detail.text
+    payload = detail.json()
+    assert payload["id"] == trade_id
+    assert payload["status"] == "awaiting_buyer_acceptance"
+    assert payload["item_title"] == "Two phone chargers"
+    assert Decimal(payload["amount"]) == Decimal("4800.00")
+    assert payload["terms_summary"] == "Two chargers; buyer pays before collection tomorrow."
+    assert payload["meta"]["quantity"] == "2"
+    assert payload["meta"]["payment_timing"] == "pay_now"
+    assert [event["event_type"] for event in payload["events"]] == [
+        "protected_trade.created",
+        "protected_trade.terms.issued",
+        "protected_trade.terms.amendment_requested",
+        "protected_trade.terms.reissued",
+    ]
+    assert _protected_trade_count() == 1
 
 
 def test_protected_trade_create_rejects_malformed_integer_controls(
@@ -495,6 +657,20 @@ def test_seller_payment_reference_uses_direct_account_and_is_idempotent(
     )
     assert create_res.status_code == 201, create_res.text
     trade_id = int(create_res.json()["id"])
+    with SessionLocal() as db:
+        trade = db.get(ProtectedTradeRecord, trade_id)
+        buyer = db.get(User, 2)
+        assert trade is not None
+        assert buyer is not None
+        add_trade_event(
+            db,
+            trade=trade,
+            payload=ProtectedTradeEventIn(
+                event_type="terms.agreed",
+                note="Buyer accepted the seller-issued agreement.",
+            ),
+            current_user=buyer,
+        )
 
     first = client.post(f"/protected-trades/{trade_id}/payment-reference")
     assert first.status_code == 201, first.text
@@ -512,6 +688,10 @@ def test_seller_payment_reference_uses_direct_account_and_is_idempotent(
     assert payload["direct_to_seller"] is True
     assert payload["automatic_bank_reconciliation"] is False
     assert "does not hold the money" in payload["boundary_note"]
+    trade_detail = client.get(f"/protected-trades/{trade_id}")
+    assert trade_detail.status_code == 200, trade_detail.text
+    assert trade_detail.json()["meta"]["payment_reference"] == payload["payment_reference"]
+    assert trade_detail.json()["meta"]["payment_reference_scope"] == "seller_direct"
 
     repeated = client.post(f"/protected-trades/{trade_id}/payment-reference")
     assert repeated.status_code == 201, repeated.text

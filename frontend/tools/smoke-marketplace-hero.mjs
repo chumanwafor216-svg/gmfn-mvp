@@ -424,9 +424,9 @@ async function run() {
       const required = [
         "Builders corporation Marketplace",
         "Buy, sell, support and grow together in our community.",
-        "Needs / Demand",
-        "Post or view what the community needs.",
-        "Add need",
+        "Demand Box",
+        "Post a need or find what people need.",
+        "Post a need",
         "Shops & Services",
         "Browse eligible shops and service providers in this community.",
         "Open directory",
@@ -460,7 +460,12 @@ async function run() {
       const requestDetails = document.querySelector(
         '[data-gmfn-debug-id="marketplace.front.need.710.details"]'
       );
-      const overflow = Array.from(document.querySelectorAll("main *"))
+      const demandQueueLinkCount = document.querySelectorAll(
+        '[data-gmfn-debug-id="marketplace.front.needs-queues"] [data-cta-id]'
+      ).length;
+      const compactDemandActionCount = document.querySelectorAll(
+        '[data-gmfn-debug-id^="marketplace.front.need-provider."][data-gmfn-debug-id$=".actions"] [data-cta-id]'
+      ).length;      const overflow = Array.from(document.querySelectorAll("main *"))
         .filter((element) => {
           if (element.closest('[aria-hidden="true"]')) return false;
           const rect = element.getBoundingClientRect();
@@ -504,8 +509,9 @@ async function run() {
         shopEntryCount,
         duplicateShopEntryCount,
         shopPreviewCount,
-        requestDetailsCollapsed:
-          requestDetails instanceof HTMLDetailsElement && !requestDetails.open,
+        demandQueueLinkCount,
+        compactDemandActionCount,
+        requestDetailsHidden: requestDetails === null,
       };
     });
 
@@ -517,39 +523,13 @@ async function run() {
       result.shopEntryCount !== 1 ||
       result.duplicateShopEntryCount !== 0 ||
       result.shopPreviewCount !== 0 ||
-      !result.requestDetailsCollapsed
+      result.demandQueueLinkCount !== 2 ||
+      result.compactDemandActionCount !== 3 ||
+      !result.requestDetailsHidden
     ) {
       console.error("Marketplace hero smoke failed:", result);
       process.exit(1);
     }
-
-    await page
-      .locator('[data-cta-id="marketplace.front.need.710.details-toggle"]')
-      .click();
-    const requestDetailsResult = await page.evaluate(() => {
-      const details = document.querySelector(
-        '[data-gmfn-debug-id="marketplace.front.need.710.details"]'
-      );
-      const text = details?.textContent || "";
-      return {
-        open: details instanceof HTMLDetailsElement && details.open,
-        hasPlainRequester: text.includes("Posted by Community Member"),
-        hasPlainVisibility: text.includes("Visible in this community"),
-        hasRawVisibility: text.includes("community_visible"),
-      };
-    });
-    if (
-      !requestDetailsResult.open ||
-      !requestDetailsResult.hasPlainRequester ||
-      !requestDetailsResult.hasPlainVisibility ||
-      requestDetailsResult.hasRawVisibility
-    ) {
-      console.error("Marketplace request-details disclosure smoke failed:", requestDetailsResult);
-      process.exit(1);
-    }
-    await page
-      .locator('[data-cta-id="marketplace.front.need.710.details-toggle"]')
-      .click();
 
     await page.setViewportSize({ width: 457, height: 915 });
     await page.waitForTimeout(250);
@@ -649,7 +629,7 @@ async function run() {
       chikaResult.heroHeight > 230 ||
       chikaResult.shopEntryCount !== 1 ||
       chikaResult.progressiveColumnCount !== 1 ||
-      !chikaResult.needsActionStacked ||
+      chikaResult.needsActionStacked ||
       !chikaResult.shopsActionStacked ||
       !chikaResult.suggestedActionStacked ||
       chikaResult.overflow.length
