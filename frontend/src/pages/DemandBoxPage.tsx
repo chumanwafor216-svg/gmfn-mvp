@@ -1191,9 +1191,16 @@ export default function DemandBoxPage() {
   const [sellerContactHandoff, setSellerContactHandoff] = useState<DemandSellerHandoffState | null>(null);
   const [openDemandRecordKey, setOpenDemandRecordKey] = useState("");
   const [openDemandDetailTab, setOpenDemandDetailTab] = useState("");
+  const [focusedConversationRequestId, setFocusedConversationRequestId] = useState(0);
   const [showMoreQueueRows, setShowMoreQueueRows] = useState(false);
   const [requestSearch, setRequestSearch] = useState("");
   const [unreadByRequest, setUnreadByRequest] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    setFocusedConversationRequestId(0);
+    setOpenDemandDetailTab("");
+    setSellerContactHandoff(null);
+  }, [openDemandRecordKey]);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -1637,11 +1644,11 @@ export default function DemandBoxPage() {
       <SubtleButton
         onClick={() => void handleCopyDemandPaper(row, scope)}
         debugId={debugId}
-        stableHeight={isCompact ? 82 : 54}
-        style={isCompact ? demandDockButtonStyle() : demandActionStyle(54)}
+        stableHeight={isCompact ? 44 : 54}
+        style={isCompact ? demandActionStyle(44) : demandActionStyle(54)}
       >
         {isCompact
-          ? demandDockIconText("copy", "Copy request")
+          ? demandIconText("copy", "Copy request", 17)
           : demandIconText("copy", "Copy paper", 20)}
       </SubtleButton>
     );
@@ -2194,6 +2201,24 @@ export default function DemandBoxPage() {
     const query = params.toString();
     return `${path}${query ? `?${query}` : ""}#marketplace-trade-evidence`;
   }
+  function demandProductContextTradePath(row: DemandRow): string {
+    const context = row?.product_context;
+    if (!context || !isMineRow(row, me)) return routes.marketplace;
+
+    const [pathAndSearch] = routes.marketplace.split("#", 2);
+    const [path, existingSearch = ""] = pathAndSearch.split("?", 2);
+    const params = new URLSearchParams(existingSearch);
+    const demandId = positiveNumber(row?.id);
+    const productId = positiveNumber(context.product_id);
+    const shopId = positiveNumber(context.shop_id);
+    if (selectedClanId) params.set("community", String(selectedClanId));
+    if (demandId) params.set("source_demand_id", String(demandId));
+    if (productId) params.set("source_match_product_id", String(productId));
+    if (shopId) params.set("source_match_shop_id", String(shopId));
+    params.set("trade_source", "demand_supply_match");
+    const query = params.toString();
+    return `${path}${query ? `?${query}` : ""}#marketplace-trade-evidence`;
+  }
   async function askMatchedSeller(row: DemandRow, match: DemandSupplyMatchItem, shopPath: string) {
     const demandId = positiveNumber(row?.id || match.demand_id);
     const productId = positiveNumber(match.product_id);
@@ -2251,40 +2276,35 @@ export default function DemandBoxPage() {
     }
 
     const shownMatches = uniqueDemandShopMatches(reliableMatches).slice(0, 3);
+    const selectedMatchKey = positiveNumber(sellerContactHandoff?.demand_id) === rowId
+      ? `${positiveNumber(sellerContactHandoff?.product_id)}:${positiveNumber(sellerContactHandoff?.shop_id)}`
+      : "";
+    const visibleMatches = selectedMatchKey
+      ? shownMatches.filter(
+          (match) => `${positiveNumber(match.product_id)}:${positiveNumber(match.shop_id)}` === selectedMatchKey
+        )
+      : shownMatches;
 
     return (
-      <div
+      <details
         data-gsn-demand-supply-intelligence="true"
-        style={{
-          marginTop: 12,
-          ...innerCard("#F8FBFF"),
-          border: "1px solid rgba(13,95,168,0.12)",
-          display: "grid",
-          gap: 8,
-          padding: isCompact ? 10 : undefined,
-        }}
+        open={!isCompact || Boolean(selectedMatchKey) ? true : undefined}
+        style={{ ...detailsShell(), marginTop: 10 }}
       >
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
+        <StableDisclosureSummary
+          style={{ ...detailsSummary(), padding: "10px 12px", fontSize: 14 }}
+          stableHeight={44}
+          debugId={`${debugBase}.possible-matches`}
         >
-          <div style={{ minWidth: 0 }}>
-            <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-              Possible matches: {shownMatches.length}
-            </div>
-            <div style={{ marginTop: 2, ...helperText(), fontSize: 12 }}>
-              Check these listings. Availability and suitability are not confirmed.
-            </div>
+          <span>Possible matches ({shownMatches.length})</span>
+          <span style={{ color: "#64748B", fontSize: 11.5 }}>Availability not confirmed</span>
+        </StableDisclosureSummary>
+        <div style={{ padding: "0 10px 10px", display: "grid", gap: 7 }}>
+          <div style={{ ...helperText(), fontSize: 11.5, lineHeight: 1.35 }}>
+            Check each listing before agreeing.
           </div>
-        </div>
-
         <div data-gsn-demand-match-list="compact" style={{ display: "grid", gap: 6 }}>
-          {shownMatches.map((match) => {
+          {visibleMatches.map((match) => {
             const evidence = demandMatchEvidenceSentence(match);
             const to = demandMatchSupplyPath(row, match);
             const tradeTo = demandMatchTradePath(row, match);
@@ -2458,8 +2478,7 @@ export default function DemandBoxPage() {
                       currentUser={me}
                       isOwner
                       compact
-                      requestTitle={safeStr(row?.title) || "Request"}
-                      requestDetail={`${title} · ${shopName}`}
+                      embedded
                       preferredRecipientUserId={positiveNumber(selectedContact.seller_user_id)}
                       preferredRecipientName={selectedContact.shop_name}
                       supplyProductId={positiveNumber(match.product_id)}
@@ -2505,7 +2524,8 @@ export default function DemandBoxPage() {
         <div style={{ ...helperText(), fontSize: 11.5, lineHeight: 1.3 }}>
           Community connection is context, not professional verification or guaranteed trust.
         </div>
-      </div>
+        </div>
+      </details>
     );
   }
   function renderExpandedSearchPanel(
@@ -2638,6 +2658,8 @@ export default function DemandBoxPage() {
     const unreadCount = rowId ? Number(unreadByRequest[String(rowId)] || 0) : 0;
     const sellerConversationExpanded =
       positiveNumber(sellerContactHandoff?.demand_id) === rowId;
+    const conversationFocused =
+      isCompact && focusedConversationRequestId === rowId;
     const busy = updatingDemandId === rowId;
     const canClose = options.canClose === true;
     const trustPosture = requesterTrustPostureLabel(row);
@@ -2672,10 +2694,10 @@ export default function DemandBoxPage() {
         data-gsn-demand-record={recordOpen ? "open" : "closed"}
         data-gsn-demand-request-preview={!recordOpen && isCompact ? "message-first" : undefined}
         data-gsn-demand-preview-style={!recordOpen && isCompact ? "neon-paper" : undefined}
-        data-gsn-demand-open-presentation={isCompact && recordOpen ? "visual-focus" : "standard"}
+        data-gsn-demand-open-presentation={conversationFocused ? "conversation-focus" : isCompact && recordOpen ? "compact-summary" : "standard"}
         style={{
           ...recordCard(),
-          padding: isCompact && recordOpen ? 0 : isCompact ? 16 : 18,
+          padding: isCompact && recordOpen ? 0 : isCompact ? 12 : 18,
           overflow: isCompact && recordOpen ? "hidden" : undefined,
           ...(isCompact && !recordOpen
             ? {
@@ -2693,7 +2715,7 @@ export default function DemandBoxPage() {
           <div
             data-gsn-demand-request-hero="request"
             style={{
-              minHeight: 184,
+              minHeight: 0,
               position: "relative",
               display: "flex",
               alignItems: "stretch",
@@ -2733,10 +2755,10 @@ export default function DemandBoxPage() {
             <div
               style={{
                 width: "100%",
-                padding: "14px 16px 16px",
+                padding: "10px 12px 12px",
                 display: "grid",
                 alignContent: "start",
-                gap: 9,
+                gap: 6,
                 minWidth: 0,
               }}
             >
@@ -2812,18 +2834,18 @@ export default function DemandBoxPage() {
                 </span>
               </div>
 
-              <DemandSenderIdentity row={row} prominent />
+              <DemandSenderIdentity row={row} />
 
               <div
                 style={{
                   color: "#0B1F33",
-                  fontSize: 27,
+                  fontSize: 21,
                   fontWeight: 950,
                   lineHeight: 1.08,
                   letterSpacing: "-0.02em",
                   display: "-webkit-box",
                   WebkitBoxOrient: "vertical",
-                  WebkitLineClamp: 3,
+                  WebkitLineClamp: 2,
                   overflow: "hidden",
                 }}
               >
@@ -2919,12 +2941,12 @@ export default function DemandBoxPage() {
               style={{
                 color: "#0B1F33",
                 fontWeight: 900,
-                fontSize: isCompact ? 31 : 17,
+                fontSize: isCompact ? 21 : 17,
                 lineHeight: isCompact ? 1.02 : 1.28,
                 letterSpacing: isCompact ? "-0.035em" : undefined,
                 display: "-webkit-box",
                 WebkitBoxOrient: "vertical",
-                WebkitLineClamp: isCompact ? 3 : recordOpen ? 3 : 2,
+                WebkitLineClamp: isCompact ? 2 : recordOpen ? 3 : 2,
                 overflow: "hidden",
               }}
             >
@@ -2932,7 +2954,7 @@ export default function DemandBoxPage() {
             </div>
             <div
               style={{
-                marginTop: isCompact ? 14 : 5,
+                marginTop: isCompact ? 7 : 5,
                 display: isCompact ? "grid" : "flex",
                 gap: isCompact ? 10 : 7,
                 flexWrap: "wrap",
@@ -2980,18 +3002,18 @@ export default function DemandBoxPage() {
                 type="button"
                 onClick={() => setOpenDemandRecordKey(recordOpen ? "" : rowKey)}
                 debugId={debugBase + ".open"}
-                stableHeight={54}
+                stableHeight={44}
                 style={{
-                  ...demandActionStyle(54),
-                  padding: "0 16px",
-                  borderRadius: 18,
-                  fontSize: 18,
+                  ...demandActionStyle(44),
+                  padding: "0 14px",
+                  borderRadius: 14,
+                  fontSize: 14,
                   border: "1px solid #55E8FF",
                   boxShadow:
                     "0 0 9px rgba(0,224,255,0.74), 0 0 16px rgba(221,43,255,0.48), inset 0 1px 0 rgba(255,255,255,0.24)",
                 }}
               >
-                View request →
+                Open request
               </PrimaryButton>
             ) : null}
           </div>
@@ -3000,6 +3022,8 @@ export default function DemandBoxPage() {
 
         {recordOpen ? (
         <>
+          {!conversationFocused && !sellerConversationExpanded ? (
+          <>
           <div
             data-gsn-demand-primary-message="true"
             style={{
@@ -3012,12 +3036,16 @@ export default function DemandBoxPage() {
               fontSize: isCompact ? 15 : 14,
               lineHeight: 1.55,
               whiteSpace: "pre-wrap",
+              display: isCompact && activeDetailTab !== "details" ? "-webkit-box" : "block",
+              WebkitBoxOrient: "vertical",
+              WebkitLineClamp: isCompact && activeDetailTab !== "details" ? 2 : undefined,
+              overflow: isCompact && activeDetailTab !== "details" ? "hidden" : undefined,
             }}
           >
             {safeStr(row?.description) ? (
               <div>{safeStr(row?.description)}</div>
             ) : null}
-            {positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at ? (
+            {(!isCompact || activeDetailTab === "details") && (positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at) ? (
               <div style={{ marginTop: 8 }}>
                 <ProtectedVoiceNotePlayer
                   attachmentId={positiveNumber(row?.audio_attachment_id)}
@@ -3031,7 +3059,7 @@ export default function DemandBoxPage() {
                 />
               </div>
             ) : null}
-            {row?.media_attachments?.length ? (
+            {(!isCompact || activeDetailTab === "details") && row?.media_attachments?.length ? (
               <div
                 data-gsn-demand-request-media="true"
                 style={{ display: "grid", gap: 8, marginTop: 8 }}
@@ -3065,10 +3093,10 @@ export default function DemandBoxPage() {
               >
                 <SubtleButton
                   type="button"
-                  aria-pressed={activeDetailTab === "privacy"}
+                  aria-pressed={activeDetailTab === "details"}
                   onClick={() =>
                     setOpenDemandDetailTab(
-                      activeDetailTab === "privacy" ? "" : `${detailTabPrefix}privacy`
+                      activeDetailTab === "details" ? "" : `${detailTabPrefix}details`
                     )
                   }
                   debugId={debugBase + ".privacy-terms"}
@@ -3076,25 +3104,25 @@ export default function DemandBoxPage() {
                   style={{
                     borderRadius: 14,
                     border: 0,
-                    color: activeDetailTab === "privacy" ? "#FFFFFF" : "#0B1F33",
+                    color: activeDetailTab === "details" ? "#FFFFFF" : "#0B1F33",
                     background:
-                      activeDetailTab === "privacy"
+                      activeDetailTab === "details"
                         ? "linear-gradient(180deg, #116DDA 0%, #0755B5 100%)"
                         : "transparent",
                     boxShadow:
-                      activeDetailTab === "privacy"
+                      activeDetailTab === "details"
                         ? "0 8px 18px rgba(7,85,181,0.22)"
                         : "none",
                     fontSize: 12,
                   }}
                 >
-                  {demandIconText("shield", "Privacy", 19)}
+                  {demandIconText("shield", "Details", 17)}
                 </SubtleButton>
               </div>
 
-              {activeDetailTab === "privacy" ? (
+              {activeDetailTab === "details" ? (
                 <div
-                  data-gsn-demand-detail-panel="privacy"
+                  data-gsn-demand-detail-panel="details"
                   style={{
                     marginTop: 9,
                     padding: 12,
@@ -3209,15 +3237,28 @@ export default function DemandBoxPage() {
           </details>
           </>
           )}
+          </>
+          ) : null}
 
           <div style={{ padding: isCompact ? "0 12px 12px" : undefined }}>
-          {renderDemandMatchPanel(row, matchState, debugBase)}
-          {renderExpandedSearchPanel(row, matchState, debugBase)}
+          {!conversationFocused ? renderDemandMatchPanel(row, matchState, debugBase) : null}
+          {!conversationFocused && !sellerConversationExpanded ? renderExpandedSearchPanel(row, matchState, debugBase) : null}
 
           {rowId && !sellerConversationExpanded ? (
             <details
               data-gsn-demand-conversations="integrated"
-              open={!isCompact || unreadCount > 0 ? true : undefined}
+              open={!isCompact || conversationFocused ? true : undefined}
+              onToggle={(event) => {
+                if (!isCompact) return;
+                const nextOpen = event.currentTarget.open;
+                setFocusedConversationRequestId((current) =>
+                  nextOpen ? rowId : current === rowId ? 0 : current
+                );
+                if (nextOpen) {
+                  setOpenDemandDetailTab("");
+                  setSellerContactHandoff(null);
+                }
+              }}
               style={{ ...detailsShell(), marginTop: 12 }}
             >
               <StableDisclosureSummary
@@ -3241,59 +3282,124 @@ export default function DemandBoxPage() {
                   currentUser={me}
                   isOwner={scope === "owner"}
                   compact={isCompact}
-                  requestTitle={safeStr(row?.title) || "Request"}
-                  requestDetail={safeStr(row?.description)}
-                  requestHasVoice={Boolean(positiveNumber(row?.audio_attachment_id) || row?.audio_deleted_at)}
+                  embedded
                   onUnreadChanged={refreshUnreadSummary}
                 />
+                {conversationFocused && isMineRow(row, me) && row?.product_context ? (
+                  <div
+                    data-gsn-demand-conversation-commerce="after-conversation"
+                    style={{ display: "grid", gap: 7, marginTop: 8 }}
+                  >
+                    <StableCtaLink
+                      to={demandProductContextTradePath(row)}
+                      debugId={`${debugBase}.conversation.protected-trade`}
+                      data-gsn-demand-protected-trade-position="after-conversation"
+                      stableHeight={44}
+                      style={{ borderRadius: 12, fontSize: 12 }}
+                    >
+                      Protected Trade (if agreed)
+                    </StableCtaLink>
+                    <StableCtaLink
+                      to={safeStr(row.product_context.shop_path) || routes.marketplace}
+                      debugId={`${debugBase}.conversation.view-shop`}
+                      stableHeight={42}
+                      style={{ borderRadius: 12, fontSize: 12 }}
+                    >
+                      View shop
+                    </StableCtaLink>
+                  </div>
+                ) : null}
               </div>
             </details>
           ) : null}
 
-          <div
-            data-gsn-demand-action-dock={isCompact ? "compact" : "standard"}
-            style={
-              isCompact
-                ? { ...demandDockStyle(canClose ? 3 : 1), marginTop: 14 }
-                : demandActionRowStyle(false, 54, 156, 12)
-            }
-          >
-          {canClose ? (
-            <>
-              <SecondaryButton
-                onClick={() => handleUpdateDemandStatus(row, "fulfilled")}
-                disabled={busy}
-                busy={busy}
-                busyLabel="Updating..."
-                debugId={`${debugBase}.fulfilled`}
-                stableHeight={isCompact ? 82 : 54}
-                style={isCompact ? demandDockButtonStyle("success") : demandActionStyle(54)}
+          {!conversationFocused && !sellerConversationExpanded ? (
+            isCompact ? (
+              <details
+                data-gsn-demand-request-options="compact"
+                style={{ ...detailsShell(), marginTop: 10 }}
               >
-                {isCompact
-                  ? demandDockIconText("check", "Fulfilled")
-                  : demandIconText("check", "Fulfilled", 20)}
-              </SecondaryButton>
-
-              <SubtleButton
-                onClick={() => handleUpdateDemandStatus(row, "cancelled")}
-                disabled={busy}
-                busy={busy}
-                busyLabel="Updating..."
-                debugId={`${debugBase}.cancelled`}
-                stableHeight={isCompact ? 82 : 54}
-                style={isCompact ? demandDockButtonStyle("danger") : demandActionStyle(54)}
+                <StableDisclosureSummary
+                  style={{ ...detailsSummary(), padding: "10px 12px", fontSize: 13 }}
+                  stableHeight={44}
+                  debugId={`${debugBase}.request-options`}
+                >
+                  <span>Request options</span>
+                  <span style={{ color: "#64748B", fontSize: 11.5 }}>Fulfil, cancel or copy</span>
+                </StableDisclosureSummary>
+                <div
+                  style={{
+                    padding: "0 10px 10px",
+                    display: "grid",
+                    gridTemplateColumns: canClose ? "repeat(3, minmax(0, 1fr))" : "minmax(0, 1fr)",
+                    gap: 7,
+                  }}
+                >
+                  {canClose ? (
+                    <>
+                      <SecondaryButton
+                        onClick={() => handleUpdateDemandStatus(row, "fulfilled")}
+                        disabled={busy}
+                        busy={busy}
+                        busyLabel="Updating..."
+                        debugId={`${debugBase}.fulfilled`}
+                        stableHeight={44}
+                        style={demandActionStyle(44)}
+                      >
+                        {demandIconText("check", "Fulfilled", 16)}
+                      </SecondaryButton>
+                      <SubtleButton
+                        onClick={() => handleUpdateDemandStatus(row, "cancelled")}
+                        disabled={busy}
+                        busy={busy}
+                        busyLabel="Updating..."
+                        debugId={`${debugBase}.cancelled`}
+                        stableHeight={44}
+                        style={demandActionStyle(44)}
+                      >
+                        {demandIconText("lock", "Cancel", 16)}
+                      </SubtleButton>
+                    </>
+                  ) : null}
+                  {demandPaperAction(row, scope, copyDebugId)}
+                </div>
+              </details>
+            ) : (
+              <div
+                data-gsn-demand-action-dock="standard"
+                style={demandActionRowStyle(false, 54, 156, 12)}
               >
-                {isCompact
-                  ? demandDockIconText("lock", "Cancel")
-                  : demandIconText("lock", "Cancel", 20)}
-              </SubtleButton>
-
-            </>
+                {canClose ? (
+                  <>
+                    <SecondaryButton
+                      onClick={() => handleUpdateDemandStatus(row, "fulfilled")}
+                      disabled={busy}
+                      busy={busy}
+                      busyLabel="Updating..."
+                      debugId={`${debugBase}.fulfilled`}
+                      stableHeight={54}
+                      style={demandActionStyle(54)}
+                    >
+                      {demandIconText("check", "Fulfilled", 20)}
+                    </SecondaryButton>
+                    <SubtleButton
+                      onClick={() => handleUpdateDemandStatus(row, "cancelled")}
+                      disabled={busy}
+                      busy={busy}
+                      busyLabel="Updating..."
+                      debugId={`${debugBase}.cancelled`}
+                      stableHeight={54}
+                      style={demandActionStyle(54)}
+                    >
+                      {demandIconText("lock", "Cancel", 20)}
+                    </SubtleButton>
+                  </>
+                ) : null}
+                {demandPaperAction(row, scope, copyDebugId)}
+                {demandContactActions(row, debugBase + ".contact")}
+              </div>
+            )
           ) : null}
-
-          {demandPaperAction(row, scope, copyDebugId)}
-          {!isCompact ? demandContactActions(row, debugBase + ".contact") : null}
-          </div>
           </div>
         </>
         ) : null}

@@ -436,7 +436,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert((await transportCard.getAttribute("data-gsn-demand-preview-style")) === "neon-paper", "The approved neon request-paper preview is missing.");
   assert(await transportCard.getByText("Open request", { exact: true }).isVisible(), "The request status is missing from the closed preview.");
   assert(await transportCard.getByText("Need school transport", { exact: true }).isVisible(), "The request message is missing from the closed preview.");
-  await transportCard.getByRole("button", { name: "View request →", exact: true }).click();
+  await transportCard.getByRole("button", { name: "Open request", exact: true }).click();
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "Opening a request did not expose exactly one card.");
   assert(await transportCard.locator('[data-gsn-demand-request-hero="request"]').isVisible(), "Opened request hero is missing.");
   assert((await transportCard.locator('[data-gsn-demand-product-context]').count()) === 0, "The duplicate Product Enquiry card returned below the request hero.");
@@ -452,14 +452,18 @@ async function verifyViewport(browser, baseURL, viewport) {
   const transportConversationZone = transportConversations.locator('[data-gsn-demand-conversation-zone="primary"]');
   const transportPrivateReplies = transportConversationZone.locator('[data-gsn-demand-private-replies="true"]');
   await transportPrivateReplies.waitFor();
-  const quickReplies = transportPrivateReplies.locator('[data-gsn-demand-seller-quick-replies="editable"]');
+  const quickReplies = transportPrivateReplies.locator('[data-gsn-demand-seller-quick-replies="optional"]');
   assert(await quickReplies.isVisible(), "The optional seller-response helpers are missing for an authorised responder.");
+  await quickReplies.locator("summary").click();
   await quickReplies.getByRole("button", { name: "I can help.", exact: true }).click();
   const responderText = transportPrivateReplies.getByPlaceholder("Message...");
   assert((await responderText.inputValue()) === "I can help.", "A seller helper did not populate ordinary editable text.");
+  await transportConversations.locator("summary").click();
+  await matchPanel.waitFor();
+  await matchPanel.locator("summary").click();
   const matchRows = matchPanel.locator('[data-gsn-demand-reliable-match="true"]');
   assert((await matchRows.count()) === 2, "DemandBox did not collapse repeated products from the same shop into one initial suggestion.");
-  assert(await matchPanel.getByText("Check these listings. Availability and suitability are not confirmed.", { exact: true }).isVisible(), "The truthful match boundary is missing.");
+  assert(await matchPanel.getByText("Check each listing before agreeing.", { exact: true }).isVisible(), "The truthful match boundary is missing.");
   assert((await matchPanel.getByText("School-run transport", { exact: true }).count()) === 0, "A second product from the same shop was rendered as a duplicate shop match.");
   assert(await matchPanel.getByText("Same community, area mentioned; availability not confirmed.", { exact: true }).isVisible(), "The same-community evidence sentence is missing.");
   assert(await matchPanel.getByText("Permitted wider search; availability not confirmed.", { exact: true }).isVisible(), "The governed wider-search evidence sentence is missing.");
@@ -617,7 +621,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   await page.getByRole("button", { name: "View more needs", exact: true }).click();
   assert((await cards.count()) === 2, "View more needs did not reveal the remaining request preview.");
   const freezerCard = cards.filter({ hasText: "Need a freezer repair" });
-  await freezerCard.getByRole("button", { name: "View request →", exact: true }).click();
+  await freezerCard.getByRole("button", { name: "Open request", exact: true }).click();
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "More than one phone request stayed open.");
   assert(!(await page.getByText("A driver is needed on weekday mornings.", { exact: true }).isVisible()), "Opening the next card did not close the first.");
 
@@ -627,6 +631,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await freezerCard.getByText("Need a freezer repair", { exact: true }).isVisible(), "The real request title is missing from the visual hero.");
   const ownerMatchPanel = freezerCard.locator('[data-gsn-demand-supply-intelligence="true"]');
   await ownerMatchPanel.waitFor();
+  await ownerMatchPanel.locator("summary").click();
   assert((await ownerMatchPanel.locator('[data-gsn-demand-reliable-match="true"]').count()) === 1, "The requester match is missing.");
   assert(await ownerMatchPanel.getByRole("button", { name: "Ask seller", exact: true }).isVisible(), "Ask Seller is missing.");
   await ownerMatchPanel.getByRole("button", { name: "Ask seller", exact: true }).click();
@@ -679,23 +684,23 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(!heroBackground.includes("url("), "The category-neutral request hero unexpectedly contains a photo.");
 
   const compactTabs = freezerCard.locator('[data-gsn-demand-detail-tabs="compact"]');
-  assert((await compactTabs.getByRole("button").count()) === 1, "The compact privacy control is missing.");
-  assert((await compactTabs.getByRole("button", { name: "Details", exact: true }).count()) === 0, "Unnecessary request details remain exposed.");
-  assert(await freezerCard.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible(), "The complete request message is not visible immediately.");
+  assert((await compactTabs.getByRole("button").count()) === 1, "The compact Details control is missing.");
+  assert(await compactTabs.getByRole("button", { name: "Details", exact: true }).isVisible(), "Request evidence is not available behind Details.");
+  assert(await freezerCard.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible(), "The compact request summary is missing.");
+  await compactTabs.getByRole("button", { name: "Details", exact: true }).click();
+  const detailsPanel = freezerCard.locator('[data-gsn-demand-detail-panel="details"]');
+  assert(await detailsPanel.isVisible(), "Details did not open.");
+  assert((await detailsPanel.locator('[data-gsn-demand-contact-actions]').count()) === 0, "Details contains communication actions.");
+  assert((await detailsPanel.getByText(/WhatsApp/i).count()) === 0, "Details contains WhatsApp communication state.");
+  await compactTabs.getByRole("button", { name: "Details", exact: true }).click();
   const ownerConversations = freezerCard.locator('[data-gsn-demand-conversations="integrated"]');
+  await ownerConversations.locator("summary").click();
   const ownerConversationZone = ownerConversations.locator('[data-gsn-demand-conversation-zone="primary"]');
   assert(await ownerConversationZone.isVisible(), "The owner conversation zone is not in place.");
   const ownerPrivateReplies = ownerConversationZone.locator('[data-gsn-demand-private-replies="true"]');
   assert((await ownerPrivateReplies.getAttribute("data-gsn-demand-conversation-access")) === "available", "Existing private conversation access was not established.");
-  assert(await ownerPrivateReplies.locator('[data-gsn-demand-conversation-heading="true"]').isVisible(), "The opened request lacks the conversation-first heading.");
+  assert(await ownerPrivateReplies.locator('[data-gsn-demand-privacy-notice="compact"]').isVisible(), "The compact private-conversation boundary is missing.");
   assert(await ownerPrivateReplies.isVisible(), "Existing private replies are not visible immediately.");
-  await compactTabs.getByRole("button", { name: "Privacy", exact: true }).click();
-  const privacyPanel = freezerCard.locator('[data-gsn-demand-detail-panel="privacy"]');
-  assert(await privacyPanel.isVisible(), "Privacy did not open.");
-  assert((await privacyPanel.locator('[data-gsn-demand-contact-actions]').count()) === 0, "Privacy still contains communication actions.");
-  assert((await privacyPanel.getByText(/WhatsApp/i).count()) === 0, "Privacy still contains WhatsApp communication state.");
-  await compactTabs.getByRole("button", { name: "Privacy", exact: true }).click();
-
   assert((await freezerCard.getByRole("button", { name: "Listen & reply", exact: true }).count()) === 0, "The obsolete second listen-and-reply action returned.");
   const threadList = ownerConversationZone.locator('[data-gsn-demand-thread-list="true"]');
   await threadList.waitFor();
@@ -711,10 +716,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert((await conversation.getByText("I can inspect the freezer after 4pm.", { exact: true }).count()) === 0, "The first responder's exchange remained visible after switching conversations.");
   await threadList.getByRole("button", { name: /Conversation with Chidi Member/ }).click();
   await conversation.getByText("I can inspect the freezer after 4pm.", { exact: true }).waitFor();
-  const requestContext = conversation.locator('[data-gsn-demand-conversation-context="request"]');
-  assert(await requestContext.isVisible(), "The selected private thread is missing its request context.");
-  assert(await requestContext.getByText("Need a freezer repair", { exact: true }).isVisible(), "The selected private thread is missing the request title.");
-  assert(await requestContext.getByText("The freezer stopped cooling yesterday.", { exact: true }).isVisible(), "The selected private thread is missing the request detail.");
+  assert((await conversation.locator('[data-gsn-demand-conversation-context="request"]').count()) === 0, "Repeated request context returned inside the conversation.");
   assert(await conversation.locator('[data-gsn-demand-message-direction="incoming"]').isVisible(), "The incoming reply bubble is missing.");
   assert(await conversation.locator('[data-gsn-demand-message-direction="outgoing"]').isVisible(), "The outgoing reply bubble is missing.");
   assert((await conversation.locator('[data-gsn-demand-message-avatar="portrait"]').count()) === 2, "Consented sender portraits are missing from the conversation trail.");
@@ -747,9 +749,11 @@ async function verifyViewport(browser, baseURL, viewport) {
   await threadList.getByRole("button", { name: /Conversation with Chidi Member/ }).click();
   await conversation.getByText("I can inspect the freezer after 4pm.", { exact: true }).waitFor();
   assert(
-    await conversation.getByText("Only the requester and this member can read or play it.", { exact: false }).isVisible(),
+    await ownerConversationZone.getByText("Only the requester and this member can read or play it.", { exact: false }).isVisible(),
     "The private conversation boundary is missing."
   );
+  await ownerConversations.locator("summary").click();
+  await freezerCard.locator('[data-gsn-demand-detail-tabs="compact"]').getByRole("button", { name: "Details", exact: true }).click();
 
   const deleteVoiceButton = freezerCard.getByRole("button", {
     name: "Delete",
@@ -807,16 +811,18 @@ async function verifyViewport(browser, baseURL, viewport) {
   const expandedSearch = freezerCard.locator('[data-gsn-demand-expand-search="true"]');
   assert((await expandedSearch.count()) === 0, "A no-match expansion card competed with a reliable visible match.");
 
-  const actionDock = freezerCard.locator('[data-gsn-demand-action-dock="compact"]');
-  assert((await actionDock.getByRole("button").count()) === 3, "The owner action dock must contain three calm lifecycle actions.");
+  const requestOptions = freezerCard.locator('[data-gsn-demand-request-options="compact"]');
+  assert(await requestOptions.isVisible(), "Compact Request options are missing.");
+  await requestOptions.locator("summary").click();
+  assert((await requestOptions.getByRole("button").count()) === 3, "Request options must contain three lifecycle actions.");
   for (const label of ["Fulfilled", "Cancel", "Copy request"]) {
-    assert(await actionDock.getByRole("button", { name: label, exact: true }).isVisible(), "Missing compact owner action: " + label);
+    assert(await requestOptions.getByRole("button", { name: label, exact: true }).isVisible(), "Missing compact request option: " + label);
   }
 
   const focusGeometry = await freezerCard.evaluate((card) => {
     const hero = card.querySelector('[data-gsn-demand-request-hero="request"]');
-    const dock = card.querySelector('[data-gsn-demand-action-dock="compact"]');
-    const actionRects = dock ? Array.from(dock.children).map((node) => node.getBoundingClientRect()) : [];
+    const options = card.querySelector('[data-gsn-demand-request-options="compact"]');
+    const actionRects = options ? Array.from(options.querySelectorAll("button")).map((node) => node.getBoundingClientRect()) : [];
     return {
       heroHeight: hero ? Math.round(hero.getBoundingClientRect().height) : 0,
       actionCount: actionRects.length,
@@ -825,7 +831,7 @@ async function verifyViewport(browser, baseURL, viewport) {
     };
   });
   assert(
-    focusGeometry.heroHeight >= 180 && focusGeometry.heroHeight <= 280,
+    focusGeometry.heroHeight >= 120 && focusGeometry.heroHeight <= 260,
     "The cohesive request header is outside the sender-identity phone boundary: " + focusGeometry.heroHeight
   );
   assert(focusGeometry.actionCount === 3 && focusGeometry.oneActionRow, "The three owner actions did not remain in one compact row.");

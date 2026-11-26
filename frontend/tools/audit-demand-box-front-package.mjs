@@ -69,7 +69,7 @@ function forbidPattern(input, file, pattern, message) {
   [/return \["open", "queue", "all", "tagged", "for_me", "community", "mine", "ask_community", "ask-community", "urgent", "categories"\]\.includes\(explicitQueueMode\)/, "direct queue links must remain supported"],
   [/data-gsn-demand-record=\{recordOpen \? "open" : "closed"\}/, "request cards must expose their compact open state"],
   [/openDemandRecordKey === rowKey[\s\S]*?setOpenDemandRecordKey\(recordOpen \? "" : rowKey\)/, "phone cards must use a single shared open key"],
-  [/data-gsn-demand-request-preview=\{!recordOpen && isCompact \? "message-first" : undefined\}[\s\S]*?data-gsn-demand-preview-style=\{!recordOpen && isCompact \? "neon-paper" : undefined\}[\s\S]*?WebkitLineClamp: isCompact \? 3[\s\S]*?>\s*View request →\s*</, "closed phone cards must lead with the request message and the approved full-width View request action"],
+  [/data-gsn-demand-request-preview=\{!recordOpen && isCompact \? "message-first" : undefined\}[\s\S]*?data-gsn-demand-preview-style=\{!recordOpen && isCompact \? "neon-paper" : undefined\}[\s\S]*?WebkitLineClamp: isCompact \? 2[\s\S]*?>\s*Open request\s*</, "closed phone cards must lead with the request message and the compact Open request action"],
   [/debugId=\{debugBase \+ "\.request-details"\}[\s\S]*?Request details[\s\S]*?Privacy/, "technical request metadata must remain behind a plain disclosure"],
   [/data-gsn-demand-request-hero="request"[\s\S]*?data-gsn-demand-request-icon="compact"[\s\S]*?demandCategoryChoice\(row\?\.category\)\.icon/, "opened phone requests must keep the bounded subject pictogram compact so the request remains dominant"],
   [/requester_profile_image_url[\s\S]*?data-gsn-demand-sender-identity="true"/, "request cards must keep the optional portrait-or-initials identity row"],
@@ -78,9 +78,9 @@ function forbidPattern(input, file, pattern, message) {
   [/data-gsn-demand-past-requests="true"[\s\S]*?stableHeight=\{44\}[\s\S]*?Past requests[\s\S]*?<DemandHistoryCard/, "closed requests must remain reachable in a compact collapsed history row"],
   [/const \[showSenderPhoto, setShowSenderPhoto\] = useState\(true\)/, "request portraits must begin included when a saved profile photo exists"],
   [/data-gsn-demand-photo-consent="true"[\s\S]*?Include my current profile photo[\s\S]*?Turn this off before posting/, "request portraits must remain visibly disableable before posting"],
-  [/data-gsn-demand-detail-tabs="compact"[\s\S]*?\.privacy-terms[\s\S]*?data-gsn-demand-detail-panel="privacy"/, "phone privacy metadata must stay behind the compact Privacy control"],
+  [/data-gsn-demand-detail-tabs="compact"[\s\S]*?\.privacy-terms[\s\S]*?data-gsn-demand-detail-panel="details"/, "phone privacy metadata and request evidence must stay behind the compact Details control"],
   [/data-gsn-demand-expand-search="true"[\s\S]*?Search one more community[\s\S]*?Stop expanded search[\s\S]*?One community only/, "the phone one-hop card must keep the approved compact search actions and boundary"],
-  [/data-gsn-demand-action-dock=\{isCompact \? "compact" : "standard"\}[\s\S]*?demandDockStyle\(canClose \? 3 : 1\)[\s\S]*?fulfilled[\s\S]*?cancelled[\s\S]*?demandPaperAction\(row, scope, copyDebugId\)/, "opened owner requests must keep the calm three-action lifecycle dock"],
+  [/data-gsn-demand-request-options="compact"[\s\S]*?Request options[\s\S]*?fulfilled[\s\S]*?cancelled[\s\S]*?demandPaperAction\(row, scope, copyDebugId\)/, "opened owner requests must keep fulfil, cancel and copy behind compact Request options"],
   [/debugId=\{`\$\{debugBase\}\.whatsapp`\}/, "DemandBox contact actions must use one WhatsApp entry point rather than separate chat and call buttons"],
   [/showMoreQueueRows \? 12 : 1[\s\S]*?stableHeight=\{44\}[\s\S]*?debugId="demand-box\.queue\.view-more"[\s\S]*?demandActionStyle\(44\)[\s\S]*?View more needs/, "phone queues must start with one request and provide a compact deliberate view-more action"],
   [/directDemandId[\s\S]*?setActiveQueueLane\([\s\S]*?myOpenRows[\s\S]*?"mine"[\s\S]*?"open"[\s\S]*?setOpenDemandRecordKey\(String\(directDemandId\)\)/, "direct demand links must select My requests or All requests and open the requested card"],
@@ -93,7 +93,7 @@ function forbidPattern(input, file, pattern, message) {
   [/data-gsn-demand-ask-seller-card="expanded"[\s\S]*?data-gsn-demand-contact-channel="gsn-primary"[\s\S]*?data-gsn-demand-contact-channel="whatsapp-alternative"[\s\S]*?Continue on WhatsApp \(Alternative\)[\s\S]*?<DemandResponsePanel[\s\S]*?data-gsn-demand-protected-trade-position="after-conversation"[\s\S]*?Protected Trade \(if agreed\)[\s\S]*?View shop/, "Ask Seller must place GSN chat first, WhatsApp as the alternative channel, then Protected Trade immediately after the conversation before Shop access"],
   [/sellerConversationExpanded[\s\S]*?rowId && !sellerConversationExpanded[\s\S]*?data-gsn-demand-conversations="integrated"/, "Ask Seller must not mount a duplicate general conversation and polling controller"],
   [/uniqueDemandShopMatches[\s\S]*?seenShopKeys[\s\S]*?const shownMatches = uniqueDemandShopMatches\(reliableMatches\)\.slice\(0, 3\)/, "only one reliable product per shop and at most three shops may surface immediately"],
-  [/data-gsn-demand-supply-intelligence="true"[\s\S]*?Check these listings\. Availability and suitability are not confirmed\.[\s\S]*?data-gsn-demand-match-list="compact"[\s\S]*?data-gsn-demand-match-row="compact"[\s\S]*?data-gsn-demand-ask-seller="validated"[\s\S]*?Ask seller[\s\S]*?View shop/, "truthful compact supply rows must keep direct validated seller contact and optional Shop access"],
+  [/data-gsn-demand-supply-intelligence="true"[\s\S]*?Check each listing before agreeing\.[\s\S]*?data-gsn-demand-match-row="compact"[\s\S]*?data-gsn-demand-ask-seller="validated"[\s\S]*?Ask seller[\s\S]*?data-gsn-demand-protected-trade-position="after-conversation"[\s\S]*?View shop/, "truthful compact supply rows must keep validated seller contact, protected progression and Shop access"],
   [/demandMatchEvidenceSentence[\s\S]*?availability not confirmed\./, "each compact match must keep one concise availability boundary"],
   [/gridTemplateColumns: isCompact \? "minmax\(0, 1fr\)" : "minmax\(0, 1fr\) auto"[\s\S]*?data-gsn-demand-match-actions="compact"[\s\S]*?minWidth: 0/, "phone match rows must keep full-width text above bounded actions"],
   [/Community connection is context, not professional verification or guaranteed trust\./, "community context must not be presented as professional verification"],
@@ -102,16 +102,16 @@ function forbidPattern(input, file, pattern, message) {
   [/pulseDestination="demand_box"/, "Ask a question must still post into DemandBox"],
 ].forEach(([pattern, message]) => requirePattern(source, pageFile, pattern, message));
 
-const privacyPanelStart = source.indexOf('data-gsn-demand-detail-panel="privacy"');
+const privacyPanelStart = source.indexOf('data-gsn-demand-detail-panel="details"');
 const privacyPanelEnd = source.indexOf("GSN records the request and contact path.", privacyPanelStart);
 const privacyPanelSource =
   privacyPanelStart >= 0 && privacyPanelEnd > privacyPanelStart
     ? source.slice(privacyPanelStart, privacyPanelEnd)
     : "";
 if (!privacyPanelSource) {
-  failures.push(pageFile + ": phone Privacy panel could not be isolated for communication-boundary checks");
+  failures.push(pageFile + ": phone Details panel could not be isolated for communication-boundary checks");
 } else {
-  forbidPattern(privacyPanelSource, pageFile, /WhatsApp|demandContactActions/, "Privacy must not contain WhatsApp state or communication actions");
+  forbidPattern(privacyPanelSource, pageFile, /WhatsApp|demandContactActions/, "Details must not contain WhatsApp state or communication actions");
 }
 forbidPattern(source, pageFile, /WhatsApp available|WhatsApp not ready/, "WhatsApp state must not be presented as Privacy or Request Details metadata");
 forbidPattern(source, pageFile, /data-gsn-demand-product-context=/, "the opened request must not repeat its product and shop details in a second Product Enquiry card");
@@ -156,14 +156,14 @@ forbidPattern(source, pageFile, /data-gsn-demand-product-context=/, "the opened 
 
 [
   [/SELLER_QUICK_REPLIES[\s\S]*?I can help\.[\s\S]*?Unavailable\.[\s\S]*?I need more details\./, "the private composer must keep the three optional seller response helpers"],
-  [/!isOwner[\s\S]*?data-gsn-demand-seller-quick-replies="editable"[\s\S]*?setText\(reply\)[\s\S]*?textareaRef\.current\?\.focus/, "seller helpers must remain responder-only, editable text rather than transaction statuses"],
+  [/!isOwner[\s\S]*?data-gsn-demand-seller-quick-replies="optional"[\s\S]*?setText\(reply\)[\s\S]*?textareaRef\.current\?\.focus/, "seller helpers must remain optional, responder-only editable text rather than transaction statuses"],
   [/onRecordingChange=\{setVoiceRecording\}/, "private replies must receive the recorder''s active state"],
   [/if \(voiceRecording\)[\s\S]*?Tap Stop and wait for Voice note ready before sending/, "private reply submission must reject an unfinished recording"],
   [/aria-label="Send message"[\s\S]*?disabled=\{sending \|\| voiceRecording\}[\s\S]*?>\s*Send\s*</, "private reply sending must stay locked until recorded audio is ready"],
   [/data-gsn-demand-conversation="whatsapp-like"[\s\S]*?data-gsn-demand-message-direction=\{mine \? "outgoing" : "incoming"\}/, "private replies must keep the familiar alternating chat trail"],
   [/data-gsn-demand-message-avatar="portrait"[\s\S]*?data-gsn-demand-message-avatar="initials"/, "every reply must show the consented portrait or the privacy-safe initials fallback"],
   [/const visibleRows = useMemo[\s\S]*?authorId === ownerUserId && recipientId === recipientUserId[\s\S]*?authorId === recipientUserId && recipientId === ownerUserId/, "request owners must see one private participant exchange at a time"],
-  [/Private exchange\. Only the requester and this member can read or play it\./, "the chat trail must retain its private-audience boundary"],
+  [/Private conversation\. Only the requester and this member can read or play it\./, "the chat trail must retain its private-audience boundary"],
   [/data-gsn-demand-thread-list="true"[\s\S]*?data-gsn-demand-thread-row="true"[\s\S]*?Conversation with/, "owners must see compact private responder threads before one selected conversation"],
   [/window\.setInterval\(refresh, 4000\)[\s\S]*?visibilitychange/, "open conversations must refresh without misclassifying hidden tabs"],
   [/markMarketplaceRequestResponsesRead\(requestId, activePeerUserId\)/, "opening a private thread must durably acknowledge only that peer's unread replies"],

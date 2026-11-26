@@ -31,9 +31,7 @@ type DemandResponsePanelProps = {
   currentUser: any;
   isOwner: boolean;
   compact?: boolean;
-  requestTitle?: string;
-  requestDetail?: string;
-  requestHasVoice?: boolean;
+  embedded?: boolean;
   preferredRecipientUserId?: number;
   preferredRecipientName?: string;
   supplyProductId?: number;
@@ -90,9 +88,7 @@ export default function DemandResponsePanel({
   currentUser,
   isOwner,
   compact = false,
-  requestTitle = "",
-  requestDetail = "",
-  requestHasVoice = false,
+  embedded = false,
   preferredRecipientUserId = 0,
   preferredRecipientName = "Seller",
   supplyProductId = 0,
@@ -411,27 +407,30 @@ export default function DemandResponsePanel({
       data-gsn-demand-private-replies="true"
       data-gsn-demand-conversation-access={conversationAccess}
       style={{
-        padding: compact ? 12 : 14,
-        borderRadius: compact ? 22 : 18,
-        border: compact
-          ? "1px solid rgba(13,95,168,0.18)"
-          : "1px solid rgba(13,95,168,0.16)",
-        background: compact
-          ? "linear-gradient(180deg, #F6FBFF 0%, #FFFFFF 100%)"
-          : "#FFFFFF",
-        boxShadow: compact ? "0 10px 24px rgba(15,55,95,0.10)" : undefined,
+        padding: embedded ? 0 : compact ? 12 : 14,
+        borderRadius: embedded ? 0 : compact ? 22 : 18,
+        border: embedded
+          ? "none"
+          : compact
+            ? "1px solid rgba(13,95,168,0.18)"
+            : "1px solid rgba(13,95,168,0.16)",
+        background: embedded
+          ? "transparent"
+          : compact
+            ? "linear-gradient(180deg, #F6FBFF 0%, #FFFFFF 100%)"
+            : "#FFFFFF",
+        boxShadow: embedded ? "none" : compact ? "0 10px 24px rgba(15,55,95,0.10)" : undefined,
         display: "grid",
-        gap: 12,
+        gap: embedded ? 9 : 12,
       }}
     >
       {conversationAccess === "available" && compact ? (
-        <div data-gsn-demand-conversation-heading="true">
-          <div style={{ color: "#0B1F33", fontSize: 16, fontWeight: 950 }}>
-            Private conversation
-          </div>
-          <div style={{ marginTop: 3, color: "#587087", fontSize: 12, lineHeight: 1.45 }}>
-            Only the requester and responder can see these replies.
-          </div>
+        <div
+          data-gsn-demand-privacy-notice="compact"
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#587087", fontSize: 11, fontWeight: 850 }}
+        >
+          <GsnLegacyIcon name="shield" size={14} />
+          Private conversation. Only the requester and this member can read or play it.
         </div>
       ) : null}
       {conversationAccess === "available" && !compact ? <div>
@@ -660,58 +659,17 @@ export default function DemandResponsePanel({
             scrollbarGutter: "stable",
           }}
         >
-          {requestTitle ? (
-            <div
-              data-gsn-demand-conversation-context="request"
-              style={{
-                padding: "8px 10px",
-                borderRadius: 14,
-                border: "1px solid rgba(13,95,168,0.14)",
-                background: "#F8FBFF",
-                display: "grid",
-                gap: 2,
-              }}
-            >
-              <span style={{ color: "#587087", fontSize: 10, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                Request context
-              </span>
-              <strong style={{ color: "#0B1F33", fontSize: 13, lineHeight: 1.25, overflowWrap: "anywhere" }}>
-                {requestTitle}
-              </strong>
-              {requestDetail ? (
-                <span style={{ color: "#536A81", fontSize: 11, lineHeight: 1.35, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-                  {requestDetail}
-                </span>
-              ) : null}
-              {requestHasVoice ? (
-                <span style={{ color: "#0B4FA8", fontSize: 10, fontWeight: 850 }}>
-                  Voice detail attached
-                </span>
-              ) : null}
-            </div>
-          ) : null}
-          <div
-            style={{
-              justifySelf: "center",
-              maxWidth: "92%",
-              padding: "6px 10px",
-              borderRadius: 10,
-              background: "#FFF7D6",
-              color: "#5F4A16",
-              boxShadow: "0 1px 2px rgba(15,23,42,0.08)",
-              fontSize: 10,
-              fontWeight: 800,
-              lineHeight: 1.35,
-              textAlign: "center",
-            }}
-          >
-            Private exchange. Only the requester and this member can read or play it.
-          </div>
           {visibleRows.map((row, index) => {
             const photoUrl = resolveProfileImageUrl(row.author_profile_image_url);
             const mine = Boolean(row.is_mine);
             const day = messageDay(row.created_at);
-            const priorDay = index > 0 ? messageDay(visibleRows[index - 1].created_at) : "";
+            const previousRow = index > 0 ? visibleRows[index - 1] : null;
+            const priorDay = previousRow ? messageDay(previousRow.created_at) : "";
+            const repeatAuthor = Boolean(
+              previousRow &&
+              Number(previousRow.author_user_id) === Number(row.author_user_id) &&
+              day === priorDay
+            );
             return (
               <React.Fragment key={row.id}>
                 {day !== priorDay ? (
@@ -734,6 +692,7 @@ export default function DemandResponsePanel({
                 ) : null}
                 <div
                   data-gsn-demand-message-direction={mine ? "outgoing" : "incoming"}
+                  data-gsn-demand-message-repeat={repeatAuthor ? "true" : undefined}
                   style={{
                     width: "100%",
                     display: "flex",
@@ -742,15 +701,17 @@ export default function DemandResponsePanel({
                     gap: 7,
                   }}
                 >
-                  {photoUrl ? (
+                  {repeatAuthor ? (
+                    <span aria-hidden="true" style={{ width: compact ? 28 : 34, flex: `0 0 ${compact ? 28 : 34}px` }} />
+                  ) : photoUrl ? (
                     <img
                       src={photoUrl}
                       alt={`${row.author_display_name} profile`}
                       data-gsn-demand-message-avatar="portrait"
                       style={{
-                        width: 34,
-                        height: 34,
-                        flex: "0 0 34px",
+                        width: compact ? 28 : 34,
+                        height: compact ? 28 : 34,
+                        flex: `0 0 ${compact ? 28 : 34}px`,
                         borderRadius: 999,
                         objectFit: "cover",
                         border: "2px solid rgba(255,255,255,0.96)",
@@ -762,9 +723,9 @@ export default function DemandResponsePanel({
                       aria-hidden="true"
                       data-gsn-demand-message-avatar="initials"
                       style={{
-                        width: 34,
-                        height: 34,
-                        flex: "0 0 34px",
+                        width: compact ? 28 : 34,
+                        height: compact ? 28 : 34,
+                        flex: `0 0 ${compact ? 28 : 34}px`,
                         borderRadius: 999,
                         display: "grid",
                         placeItems: "center",
@@ -782,7 +743,7 @@ export default function DemandResponsePanel({
                   <div
                     style={{
                       minWidth: 0,
-                      maxWidth: "calc(88% - 41px)",
+                      maxWidth: compact ? "calc(98% - 35px)" : "calc(90% - 41px)",
                       padding: "9px 10px 7px",
                       borderRadius: mine ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
                       background: mine ? "#DDF5E5" : "#FFFFFF",
@@ -794,6 +755,7 @@ export default function DemandResponsePanel({
                       gap: 6,
                     }}
                   >
+                    {!repeatAuthor ? (
                     <div
                       style={{
                         color: mine ? "#17663D" : "#0B4FA8",
@@ -804,6 +766,7 @@ export default function DemandResponsePanel({
                     >
                       {row.author_display_name}
                     </div>
+                    ) : null}
                     {row.text ? (
                       <div
                         style={{
@@ -919,34 +882,29 @@ export default function DemandResponsePanel({
           }}
         >
           {!isOwner ? (
-            <div
-              data-gsn-demand-seller-quick-replies="editable"
-              aria-label="Optional quick replies"
-              style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}
-            >
-              {SELLER_QUICK_REPLIES.map((reply) => (
-                <SecondaryButton
-                  key={reply}
-                  type="button"
-                  aria-pressed={text === reply}
-                  onClick={() => {
-                    setText(reply);
-                    window.requestAnimationFrame(() => textareaRef.current?.focus());
-                  }}
-                  debugId={`demand-box.response.${requestId}.quick.${reply.toLowerCase().replace(/[^a-z]+/g, "-")}`}
-                  stableHeight={38}
-                  style={{
-                    flex: "0 0 auto",
-                    borderRadius: 999,
-                    padding: "7px 10px",
-                    fontSize: 11.5,
-                    fontWeight: 850,
-                  }}
-                >
-                  {reply}
-                </SecondaryButton>
-              ))}
-            </div>
+            <details data-gsn-demand-seller-quick-replies="optional" style={{ minWidth: 0 }}>
+              <summary style={{ color: "#0B4FA8", fontSize: 11.5, fontWeight: 900, cursor: "pointer" }}>
+                Quick replies
+              </summary>
+              <div aria-label="Optional quick replies" style={{ display: "flex", gap: 6, overflowX: "auto", paddingTop: 7, paddingBottom: 2 }}>
+                {SELLER_QUICK_REPLIES.map((reply) => (
+                  <SecondaryButton
+                    key={reply}
+                    type="button"
+                    aria-pressed={text === reply}
+                    onClick={() => {
+                      setText(reply);
+                      window.requestAnimationFrame(() => textareaRef.current?.focus());
+                    }}
+                    debugId={`demand-box.response.${requestId}.quick.${reply.toLowerCase().replace(/[^a-z]+/g, "-")}`}
+                    stableHeight={38}
+                    style={{ flex: "0 0 auto", borderRadius: 999, padding: "7px 10px", fontSize: 11.5, fontWeight: 850 }}
+                  >
+                    {reply}
+                  </SecondaryButton>
+                ))}
+              </div>
+            </details>
           ) : null}
           <div
             data-gsn-demand-composer-row="compact"
