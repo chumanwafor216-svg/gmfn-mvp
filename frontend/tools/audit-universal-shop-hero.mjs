@@ -1,6 +1,6 @@
 /* global console, process */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -20,12 +20,24 @@ const source = Object.fromEntries(
   ])
 );
 const findings = [];
-for (const assetPath of [
-  "public/branding/gsn-shop-entrance-approved.mp4",
-  "public/branding/gsn-shop-entrance-approved-poster.jpg",
+for (const { assetPath, minimumBytes } of [
+  {
+    assetPath: "public/branding/gsn-shop-entrance-approved.mp4",
+    minimumBytes: 1_200_000,
+  },
+  {
+    assetPath: "public/branding/gsn-shop-entrance-approved-poster.jpg",
+    minimumBytes: 100_000,
+  },
 ]) {
-  if (!existsSync(join(frontendRoot, assetPath))) {
+  const absolutePath = join(frontendRoot, assetPath);
+  if (!existsSync(absolutePath)) {
     findings.push({ file: assetPath, message: "The approved shop-entrance asset is missing." });
+  } else if (statSync(absolutePath).size < minimumBytes) {
+    findings.push({
+      file: assetPath,
+      message: "The approved sharp shop-entrance delivery asset has been replaced by an undersized source.",
+    });
   }
 }
 
