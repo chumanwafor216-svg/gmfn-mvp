@@ -15,16 +15,24 @@ function requirePattern(pattern, message) {
 }
 
 requirePattern(
-  /const spotlightProductLinked = Boolean\([\s\S]*?spotlightSourceShopId[\s\S]*?spotlightSourceProductId[\s\S]*?\);/,
-  "Spotlight engagement must require both an exact source Shop and product."
+  /const spotlightProductPreferenceAvailable = Boolean\(spotlightSourceProductId\);[\s\S]*?const spotlightAdvertPreferenceAvailable = Boolean\(spotlightCampaignId\);[\s\S]*?const spotlightEngagementAvailable = Boolean\([\s\S]*?spotlightProductPreferenceAvailable \|\| spotlightAdvertPreferenceAvailable/,
+  "Spotlight engagement must support both exact marketplace products and standalone advert campaigns."
 );
 requirePattern(
-  /\{spotlightProductLinked \? \([\s\S]*?data-spotlight-product-actions="true"[\s\S]*?\) : null\}/,
-  "The product action rail must remain guarded from house and general Spotlight content."
+  /\{spotlightEngagementAvailable \? \([\s\S]*?data-spotlight-product-actions="true"[\s\S]*?\) : null\}/,
+  "The engagement rail must render for product and standalone commercial Spotlight content."
 );
 requirePattern(
   /async function toggleSpotlightProductSave\(\)[\s\S]*?unsaveMarketplaceProduct\([\s\S]*?saveMarketplaceProduct\(/,
   "Spotlight preference must reuse the canonical product save authority."
+);
+requirePattern(
+  /async function toggleSpotlightProductSave\(\)[\s\S]*?unsaveSpotlightAdvert\([\s\S]*?saveSpotlightAdvert\(/,
+  "Standalone adverts must use the private persistent campaign save authority."
+);
+requirePattern(
+  /async function toggleSpotlightProductLike\(\)[\s\S]*?unlikeMarketplaceProduct\([\s\S]*?likeMarketplaceProduct\([\s\S]*?unlikeSpotlightAdvert\([\s\S]*?likeSpotlightAdvert\(/,
+  "The private heart control must route to the correct product or advert authority."
 );
 requirePattern(
   /async function contactSpotlightProductSeller\(\)[\s\S]*?createMarketplaceProductEnquiry\([\s\S]*?product_id: productId[\s\S]*?shop_id: shopId/,
@@ -47,12 +55,12 @@ requirePattern(
   "Private save must preserve explicit false state for unsave/re-save and recover safely from incomplete success payloads."
 );
 requirePattern(
-  /spotlightOwnershipCheckRequired[\s\S]*?spotlightOwnershipResolved[\s\S]*?signedInOwnsSpotlightSourceShop[\s\S]*?spotlightSelfActionsBlocked[\s\S]*?\{!spotlightSelfActionsBlocked \? \([\s\S]*?data-spotlight-product-action="save"[\s\S]*?data-spotlight-product-action="ask-seller"[\s\S]*?shop-gallery\.spotlight-product\.share[\s\S]*?data-spotlight-product-action="follow-shop"/,
-  "Advertised-product owners must not receive self-save, self-contact, or self-follow controls while visitor Share stays available."
+  /spotlightOwnershipCheckRequired[\s\S]*?signedInOwnsSpotlightSourceShop[\s\S]*?signedInOwnsSpotlightAdvert[\s\S]*?spotlightSelfActionsBlocked[\s\S]*?\{!spotlightSelfActionsBlocked \? \([\s\S]*?data-spotlight-product-action="save"[\s\S]*?data-spotlight-product-action="like"[\s\S]*?shop-gallery\.spotlight-product\.share/,
+  "Product owners and advert owners must not receive private self-engagement controls while visitor Share stays available."
 );
 requirePattern(
-  /ariaLabel="Share this product"[\s\S]*?debugId="shop-gallery\.spotlight-product\.share"[\s\S]*?public_shop_spotlight_product_share_/,
-  "Visitor sharing must use Share terminology and analytics while owner Paid Repost remains separate."
+  /ariaLabel=\{`Share this \$\{spotlightPreferenceKind\}`\}[\s\S]*?debugId="shop-gallery\.spotlight-product\.share"[\s\S]*?public_shop_spotlight_\$\{spotlightPreferenceKind\}_share_/,
+  "Visitor sharing must distinguish product and advert terminology while owner Paid Repost remains separate."
 );
 requirePattern(
   /sourceClanName/,

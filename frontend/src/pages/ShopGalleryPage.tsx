@@ -26,6 +26,7 @@ import {
   getMarketplaceShopFollowStatus,
   getMarketplaceShopSpotlightStatus,
   getPublicShopSpotlightOpportunity,
+  getSpotlightAdvertPreferences,
   listMyClans,
   logout,
   getMe,
@@ -36,6 +37,10 @@ import {
   listLikedMarketplaceProducts,
   likeMarketplaceProduct,
   unlikeMarketplaceProduct,
+  saveSpotlightAdvert,
+  unsaveSpotlightAdvert,
+  likeSpotlightAdvert,
+  unlikeSpotlightAdvert,
   getPublicShopDiaryEntries,
   type ShopDiaryEntryRecord,
   getSelectedClanId,
@@ -2116,6 +2121,18 @@ export default function ShopGalleryPage() {
   const [savingProductId, setSavingProductId] = useState<number | null>(null);
   const [likedProductIds, setLikedProductIds] = useState<Record<string, boolean>>({});
   const [likingProductId, setLikingProductId] = useState<number | null>(null);
+  const [savedSpotlightCampaignIds, setSavedSpotlightCampaignIds] = useState<
+    Record<string, boolean>
+  >({});
+  const [likedSpotlightCampaignIds, setLikedSpotlightCampaignIds] = useState<
+    Record<string, boolean>
+  >({});
+  const [savingSpotlightCampaignId, setSavingSpotlightCampaignId] = useState<
+    number | null
+  >(null);
+  const [likingSpotlightCampaignId, setLikingSpotlightCampaignId] = useState<
+    number | null
+  >(null);
   const [spotlightImmersiveOpen, setSpotlightImmersiveOpen] = useState(false);
   const [shopDiaryEntries, setShopDiaryEntries] = useState<ShopDiaryEntryRecord[]>([]);
   const [openProductId, setOpenProductId] = useState<number | null>(null);
@@ -4007,19 +4024,33 @@ export default function ShopGalleryPage() {
     miniSpotlight?.sourceProductId
   );
   const spotlightSourceClanId = positiveNumber(miniSpotlight?.sourceClanId);
+  const spotlightCampaignId = positiveNumber(
+    miniSpotlight?.opportunityCampaignId
+  );
   const spotlightProductLinked = Boolean(
     miniSpotlight &&
       spotlightSourceShopId &&
-      spotlightSourceProductId &&
-      firstMeaningful(miniSpotlight.sourceProductTitle)
+      spotlightSourceProductId
   );
+  const spotlightProductPreferenceAvailable = Boolean(spotlightSourceProductId);
+  const spotlightAdvertPreferenceAvailable = Boolean(spotlightCampaignId);
+  const spotlightEngagementAvailable = Boolean(
+    spotlightProductPreferenceAvailable || spotlightAdvertPreferenceAvailable
+  );
+  const spotlightPreferenceKind = spotlightProductPreferenceAvailable
+    ? "product"
+    : "advert";
   const spotlightProductSaved = Boolean(
-    spotlightSourceProductId &&
-      savedProductState(savedProductIds, spotlightSourceProductId)
+    spotlightProductPreferenceAvailable
+      ? savedProductState(savedProductIds, spotlightSourceProductId)
+      : spotlightCampaignId &&
+          savedProductState(savedSpotlightCampaignIds, spotlightCampaignId)
   );
   const spotlightProductLiked = Boolean(
-    spotlightSourceProductId &&
-      savedProductState(likedProductIds, spotlightSourceProductId)
+    spotlightProductPreferenceAvailable
+      ? savedProductState(likedProductIds, spotlightSourceProductId)
+      : spotlightCampaignId &&
+          savedProductState(likedSpotlightCampaignIds, spotlightCampaignId)
   );
 
   useEffect(() => {
@@ -4051,6 +4082,37 @@ export default function ShopGalleryPage() {
       alive = false;
     };
   }, [spotlightSourceProductId]);
+
+  useEffect(() => {
+    if (!getAccessToken() || !spotlightCampaignId) return;
+    let alive = true;
+
+    void getSpotlightAdvertPreferences()
+      .then((response) => {
+        if (!alive) return;
+        const savedIds: Record<string, boolean> = {};
+        const likedIds: Record<string, boolean> = {};
+        for (const campaignId of Array.isArray(response?.saved_campaign_ids)
+          ? response.saved_campaign_ids
+          : []) {
+          const normalizedId = positiveNumber(campaignId);
+          if (normalizedId) savedIds[String(normalizedId)] = true;
+        }
+        for (const campaignId of Array.isArray(response?.liked_campaign_ids)
+          ? response.liked_campaign_ids
+          : []) {
+          const normalizedId = positiveNumber(campaignId);
+          if (normalizedId) likedIds[String(normalizedId)] = true;
+        }
+        setSavedSpotlightCampaignIds(savedIds);
+        setLikedSpotlightCampaignIds(likedIds);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      alive = false;
+    };
+  }, [spotlightCampaignId]);
 
   useEffect(() => {
     if (!spotlightImmersiveOpen || typeof document === "undefined") return;
@@ -4147,9 +4209,19 @@ export default function ShopGalleryPage() {
       spotlightOwnershipResolved &&
       spotlightShopFollowState.isOwner
   );
+  const signedInOwnsSpotlightAdvert = Boolean(
+    getAccessToken() &&
+      signedInGmfnId &&
+      miniSpotlight?.authorGmfnId &&
+      ownerSurfaceIdentityMatches(
+        signedInGmfnId,
+        miniSpotlight.authorGmfnId
+      )
+  );
   const spotlightSelfActionsBlocked = Boolean(
-    spotlightOwnershipCheckRequired &&
-      (!spotlightOwnershipResolved || signedInOwnsSpotlightSourceShop)
+    signedInOwnsSpotlightAdvert ||
+      (spotlightOwnershipCheckRequired &&
+        (!spotlightOwnershipResolved || signedInOwnsSpotlightSourceShop))
   );
 
   const nextMiniSpotlight = useMemo(() => {
@@ -5805,13 +5877,16 @@ export default function ShopGalleryPage() {
   }
 
   function buildSpotlightProductShareTarget() {
+    const isProductShare = spotlightProductPreferenceAvailable;
     const productTitle = firstMeaningful(
       miniSpotlight?.sourceProductTitle,
-      "this product"
+      miniSpotlightView.title,
+      isProductShare ? "this product" : "this Spotlight advert"
     );
     const shopTitle = firstMeaningful(
       miniSpotlight?.sourceShopName,
-      "this GSN shop"
+      miniSpotlightView.owner,
+      isProductShare ? "this GSN shop" : "GSN Spotlight"
     );
     const ownerGmfnId = firstMeaningful(miniSpotlight?.authorGmfnId);
     const shareUrl =
@@ -5829,9 +5904,13 @@ export default function ShopGalleryPage() {
         : "";
     const priceText = firstMeaningful(miniSpotlightView.priceLabel);
     const message = [
-      productTitle + " in " + shopTitle + ".",
+      isProductShare
+        ? productTitle + " in " + shopTitle + "."
+        : productTitle + " from " + shopTitle + ".",
       priceText ? "Price: " + priceText + "." : "",
-      "Open this product on GSN.",
+      isProductShare
+        ? "Open this product on GSN."
+        : "Open this Spotlight advert on GSN.",
     ]
       .filter(Boolean)
       .join(" ");
@@ -5847,98 +5926,161 @@ export default function ShopGalleryPage() {
 
   async function toggleSpotlightProductSave() {
     const productId = spotlightSourceProductId;
-    if (!productId || savingProductId === productId) return;
+    const campaignId = spotlightCampaignId;
+    if (
+      (!productId && !campaignId) ||
+      (productId && savingProductId === productId) ||
+      (!productId && campaignId && savingSpotlightCampaignId === campaignId)
+    ) {
+      return;
+    }
     if (spotlightSelfActionsBlocked) {
       setNotice({
         tone: "error",
-        text: signedInOwnsSpotlightSourceShop
-          ? "Shop owners cannot save their own advertised products."
-          : "GSN is still checking who owns this advertised product.",
+        text:
+          signedInOwnsSpotlightSourceShop || signedInOwnsSpotlightAdvert
+            ? `Advertisers cannot save their own ${spotlightPreferenceKind}.`
+            : "GSN is still checking who owns this advertised product.",
       });
       return;
     }
     if (!getAccessToken()) {
       setNotice({
         tone: "error",
-        text: "Sign in to save this product privately.",
+        text: `Sign in to save this ${spotlightPreferenceKind} privately.`,
       });
       return;
     }
 
     const intendedSavedState = !spotlightProductSaved;
-    setSavingProductId(productId);
+    if (productId) {
+      setSavingProductId(productId);
+    } else {
+      setSavingSpotlightCampaignId(campaignId);
+    }
     try {
-      const result = spotlightProductSaved
-        ? await unsaveMarketplaceProduct(productId)
-        : await saveMarketplaceProduct(productId);
+      const result = productId
+        ? spotlightProductSaved
+          ? await unsaveMarketplaceProduct(productId)
+          : await saveMarketplaceProduct(productId)
+        : spotlightProductSaved
+        ? await unsaveSpotlightAdvert(campaignId)
+        : await saveSpotlightAdvert(campaignId);
       const saved =
         typeof result?.saved === "boolean"
           ? result.saved
           : intendedSavedState;
-      setSavedProductIds((current) => ({
-        ...current,
-        [String(productId)]: saved,
-      }));
-      void trackMarketplaceAttention(
-        saved ? "product_saved" : "product_unsaved",
-        {
-          shop_id: spotlightSourceShopId,
-          product_id: productId,
-          clan_id: spotlightSourceClanId || undefined,
-          broadcast_id: positiveNumber(miniSpotlight?.id) || undefined,
-          source: "public_shop_spotlight_product_preference",
-        },
-        { allowShopFallback: false }
-      );
+      if (productId) {
+        setSavedProductIds((current) => ({
+          ...current,
+          [String(productId)]: saved,
+        }));
+        void trackMarketplaceAttention(
+          saved ? "product_saved" : "product_unsaved",
+          {
+            shop_id: spotlightSourceShopId,
+            product_id: productId,
+            clan_id: spotlightSourceClanId || undefined,
+            broadcast_id: positiveNumber(miniSpotlight?.id) || undefined,
+            source: "public_shop_spotlight_product_preference",
+          },
+          { allowShopFallback: false }
+        );
+      } else {
+        setSavedSpotlightCampaignIds((current) => ({
+          ...current,
+          [String(campaignId)]: saved,
+        }));
+      }
+      setNotice({
+        tone: "success",
+        text: saved
+          ? `${spotlightPreferenceKind === "product" ? "Product" : "Advert"} saved privately.`
+          : `${spotlightPreferenceKind === "product" ? "Product" : "Advert"} removed from saved items.`,
+      });
     } catch {
       setNotice({
         tone: "error",
-        text: "Could not update this product preference. Please try again.",
+        text: `Could not update this ${spotlightPreferenceKind} preference. Please try again.`,
       });
     } finally {
-      setSavingProductId(null);
+      if (productId) {
+        setSavingProductId(null);
+      } else {
+        setSavingSpotlightCampaignId(null);
+      }
     }
   }
 
   async function toggleSpotlightProductLike() {
     const productId = spotlightSourceProductId;
-    if (!productId || likingProductId === productId) return;
+    const campaignId = spotlightCampaignId;
+    if (
+      (!productId && !campaignId) ||
+      (productId && likingProductId === productId) ||
+      (!productId && campaignId && likingSpotlightCampaignId === campaignId)
+    ) {
+      return;
+    }
     if (spotlightSelfActionsBlocked) {
       setNotice({
         tone: "error",
-        text: signedInOwnsSpotlightSourceShop
-          ? "Shop owners cannot like their own advertised products."
-          : "GSN is still checking who owns this advertised product.",
+        text:
+          signedInOwnsSpotlightSourceShop || signedInOwnsSpotlightAdvert
+            ? `Advertisers cannot like their own ${spotlightPreferenceKind}.`
+            : "GSN is still checking who owns this advertised product.",
       });
       return;
     }
     if (!getAccessToken()) {
-      setNotice({ tone: "error", text: "Sign in to like this product privately." });
+      setNotice({
+        tone: "error",
+        text: `Sign in to like this ${spotlightPreferenceKind} privately.`,
+      });
       return;
     }
 
     const intendedLikedState = !spotlightProductLiked;
-    setLikingProductId(productId);
+    if (productId) {
+      setLikingProductId(productId);
+    } else {
+      setLikingSpotlightCampaignId(campaignId);
+    }
     try {
-      const result = spotlightProductLiked
-        ? await unlikeMarketplaceProduct(productId)
-        : await likeMarketplaceProduct(productId);
+      const result = productId
+        ? spotlightProductLiked
+          ? await unlikeMarketplaceProduct(productId)
+          : await likeMarketplaceProduct(productId)
+        : spotlightProductLiked
+        ? await unlikeSpotlightAdvert(campaignId)
+        : await likeSpotlightAdvert(campaignId);
       const liked =
         typeof result?.liked === "boolean" ? result.liked : intendedLikedState;
-      setLikedProductIds((current) => ({
-        ...current,
-        [String(productId)]: liked,
-      }));
+      if (productId) {
+        setLikedProductIds((current) => ({
+          ...current,
+          [String(productId)]: liked,
+        }));
+      } else {
+        setLikedSpotlightCampaignIds((current) => ({
+          ...current,
+          [String(campaignId)]: liked,
+        }));
+      }
       setNotice({
         tone: "success",
         text: liked
-          ? "Liked privately. No public count or seller notification was created."
+          ? "Liked privately. No public count, ranking signal, or advertiser notification was created."
           : "Private Like removed.",
       });
     } catch {
       setNotice({ tone: "error", text: "Could not update this private Like. Please try again." });
     } finally {
-      setLikingProductId(null);
+      if (productId) {
+        setLikingProductId(null);
+      } else {
+        setLikingSpotlightCampaignId(null);
+      }
     }
   }
 
@@ -8734,9 +8876,9 @@ export default function ShopGalleryPage() {
                 >
                   <span aria-hidden="true">{spotlightImmersiveOpen ? "\u00D7" : "\u26F6"}</span>
                 </SecondaryButton>
-                {spotlightProductLinked ? (
+                {spotlightEngagementAvailable ? (
                   <>
-                    {spotlightProductActionsOpen ? (
+                    {spotlightProductActionsOpen && spotlightProductLinked ? (
                       <div
                         data-spotlight-product-context="true"
                         style={{
@@ -8824,13 +8966,13 @@ export default function ShopGalleryPage() {
                         debugId="shop-gallery.spotlight-product.toggle"
                         aria-label={
                           spotlightProductActionsOpen
-                            ? "Close product actions"
-                            : "Open product actions"
+                            ? "Close Spotlight actions"
+                            : "Open Spotlight actions"
                         }
                         title={
                           spotlightProductActionsOpen
-                            ? "Close product actions"
-                            : "Open product actions"
+                            ? "Close Spotlight actions"
+                            : "Open Spotlight actions"
                         }
                         data-spotlight-product-action="toggle"
                         style={spotlightProductRailButtonStyle(
@@ -8849,22 +8991,25 @@ export default function ShopGalleryPage() {
                               <SecondaryButton
                                 onClick={() => void toggleSpotlightProductSave()}
                                 disabled={
-                                  savingProductId === spotlightSourceProductId
+                                  spotlightProductPreferenceAvailable
+                                    ? savingProductId === spotlightSourceProductId
+                                    : savingSpotlightCampaignId === spotlightCampaignId
                                 }
                                 minWidth={0}
                                 stableHeight={isCompact ? 42 : 46}
                                 debugId="shop-gallery.spotlight-product.save"
                                 aria-label={
                                   spotlightProductSaved
-                                    ? "Remove this product from saved products"
-                                    : "Save this product privately"
+                                    ? `Remove this ${spotlightPreferenceKind} from saved items`
+                                    : `Save this ${spotlightPreferenceKind} privately`
                                 }
                                 title={
                                   spotlightProductSaved
-                                    ? "Remove from saved products"
-                                    : "Save product privately"
+                                    ? "Remove from saved items"
+                                    : `Save ${spotlightPreferenceKind} privately`
                                 }
                                 data-spotlight-product-action="save"
+                                data-spotlight-engagement-kind={spotlightPreferenceKind}
                                 style={spotlightProductRailButtonStyle(
                                   isCompact,
                                   spotlightProductSaved
@@ -8885,13 +9030,18 @@ export default function ShopGalleryPage() {
                               </SecondaryButton>
                               <SecondaryButton
                                 onClick={() => void toggleSpotlightProductLike()}
-                                disabled={likingProductId === spotlightSourceProductId}
+                                disabled={
+                                  spotlightProductPreferenceAvailable
+                                    ? likingProductId === spotlightSourceProductId
+                                    : likingSpotlightCampaignId === spotlightCampaignId
+                                }
                                 minWidth={0}
                                 stableHeight={isCompact ? 42 : 46}
                                 debugId="shop-gallery.spotlight-product.like"
                                 aria-label={spotlightProductLiked ? "\u2665" : "\u2661"}
                                 title={spotlightProductLiked ? "\u2665" : "\u2661"}
                                 data-spotlight-product-action="like"
+                                data-spotlight-engagement-kind={spotlightPreferenceKind}
                                 style={spotlightProductRailButtonStyle(
                                   isCompact,
                                   spotlightProductLiked
@@ -8903,29 +9053,31 @@ export default function ShopGalleryPage() {
                                   {spotlightProductLiked ? "\u2665" : "\u2661"}
                                 </span>
                               </SecondaryButton>
-                              <SecondaryButton
-                                onClick={() =>
-                                  void contactSpotlightProductSeller()
-                                }
-                                minWidth={0}
-                                stableHeight={isCompact ? 42 : 46}
-                                debugId="shop-gallery.spotlight-product.ask-seller"
-                                aria-label="Ask seller about this product"
-                                title="Ask seller"
-                                data-spotlight-product-action="ask-seller"
-                                style={spotlightProductRailButtonStyle(
-                                  isCompact,
-                                  "linear-gradient(180deg, #FFFFFF 0%, #FFF0C7 100%)"
-                                )}
-                              >
-                                <span aria-hidden="true">{"\uD83D\uDCAC"}</span>
-                              </SecondaryButton>
+                              {spotlightProductLinked ? (
+                                <SecondaryButton
+                                  onClick={() =>
+                                    void contactSpotlightProductSeller()
+                                  }
+                                  minWidth={0}
+                                  stableHeight={isCompact ? 42 : 46}
+                                  debugId="shop-gallery.spotlight-product.ask-seller"
+                                  aria-label="Ask seller about this product"
+                                  title="Ask seller"
+                                  data-spotlight-product-action="ask-seller"
+                                  style={spotlightProductRailButtonStyle(
+                                    isCompact,
+                                    "linear-gradient(180deg, #FFFFFF 0%, #FFF0C7 100%)"
+                                  )}
+                                >
+                                  <span aria-hidden="true">{"\uD83D\uDCAC"}</span>
+                                </SecondaryButton>
+                              ) : null}
                             </>
                           ) : null}
                           <SocialTagShareButton
                             target={buildSpotlightProductShareTarget()}
                             buttonLabel=""
-                            ariaLabel="Share this product"
+                            ariaLabel={`Share this ${spotlightPreferenceKind}`}
                             triggerIcon={<span>{"\u2197"}</span>}
                             minWidth={0}
                             stableHeight={isCompact ? 42 : 46}
@@ -8948,7 +9100,7 @@ export default function ShopGalleryPage() {
                                       positiveNumber(miniSpotlight?.id) ||
                                       undefined,
                                     source:
-                                      "public_shop_spotlight_product_share_" +
+                                      `public_shop_spotlight_${spotlightPreferenceKind}_share_` +
                                       firstMeaningful(channel, "share"),
                                   },
                                   { allowShopFallback: false }
@@ -8961,7 +9113,7 @@ export default function ShopGalleryPage() {
                               "linear-gradient(180deg, #FFFFFF 0%, #EAF6FF 100%)"
                             )}
                           />
-                          {!spotlightSelfActionsBlocked ? (
+                          {!spotlightSelfActionsBlocked && spotlightSourceShopId ? (
                             <SecondaryButton
                               onClick={() =>
                                 void toggleSpotlightShopFollow()
@@ -9011,21 +9163,24 @@ export default function ShopGalleryPage() {
                               <span aria-hidden="true">{"\u2316"}</span>
                             </SecondaryButton>
                           ) : null}
-                          <SecondaryButton
-                            onClick={openSpotlightSimilarProducts}
-                            minWidth={0}
-                            stableHeight={isCompact ? 42 : 46}
-                            debugId="shop-gallery.spotlight-product.similar"
-                            aria-label="See similar products"
-                            title="See similar products"
-                            data-spotlight-product-action="similar"
-                            style={spotlightProductRailButtonStyle(
-                              isCompact,
-                              "linear-gradient(180deg, #FFFFFF 0%, #E8F7F1 100%)"
-                            )}
-                          >
-                            <span aria-hidden="true">{"\uD83D\uDD0D"}</span>
-                          </SecondaryButton>
+                          {spotlightProductPreferenceAvailable &&
+                          firstMeaningful(miniSpotlight?.sourceProductTitle) ? (
+                            <SecondaryButton
+                              onClick={openSpotlightSimilarProducts}
+                              minWidth={0}
+                              stableHeight={isCompact ? 42 : 46}
+                              debugId="shop-gallery.spotlight-product.similar"
+                              aria-label="See similar products"
+                              title="See similar products"
+                              data-spotlight-product-action="similar"
+                              style={spotlightProductRailButtonStyle(
+                                isCompact,
+                                "linear-gradient(180deg, #FFFFFF 0%, #E8F7F1 100%)"
+                              )}
+                            >
+                              <span aria-hidden="true">{"\uD83D\uDD0D"}</span>
+                            </SecondaryButton>
+                          ) : null}
                         </>
                       ) : null}
                     </div>

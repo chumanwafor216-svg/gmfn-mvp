@@ -4151,6 +4151,68 @@ class SpotlightCampaign(Base):
         DateTime(timezone=True), nullable=True, index=True
     )
 
+
+class SpotlightCampaignPreference(Base):
+    __tablename__ = "spotlight_campaign_preferences"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "campaign_id",
+            "user_id",
+            name="uq_spotlight_campaign_preferences_campaign_user",
+        ),
+        Index(
+            "ix_spotlight_campaign_preferences_user_saved",
+            "user_id",
+            "saved",
+            "updated_at",
+        ),
+        Index(
+            "ix_spotlight_campaign_preferences_user_liked",
+            "user_id",
+            "liked",
+            "updated_at",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    campaign_id: Mapped[int] = mapped_column(
+        ForeignKey("spotlight_campaigns.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    saved: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
+    liked: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        onupdate=utcnow,
+    )
+
+
 class SpotlightContentVersion(Base):
     __tablename__ = 'spotlight_content_versions'
 

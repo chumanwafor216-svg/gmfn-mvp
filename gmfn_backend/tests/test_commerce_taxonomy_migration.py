@@ -11,7 +11,7 @@ from app.db.database import engine
 
 
 PREVIOUS_REVISION = "20261030_market_dir_scale"
-HEAD_REVISION = "20261125_product_likes"
+HEAD_REVISION = "20261126_spotlight_campaign_preferences"
 
 
 EXPECTED_TABLES = {
@@ -102,6 +102,7 @@ def test_additive_upgrade_and_empty_rollback_preserve_existing_shop_records(tmp_
 
         inspector = inspect(isolated_engine)
         assert EXPECTED_TABLES.issubset(set(inspector.get_table_names()))
+        assert "spotlight_campaign_preferences" in set(inspector.get_table_names())
         with isolated_engine.connect() as conn:
             assert conn.execute(text("SELECT shop_name FROM marketplace_shops WHERE id = 1")).scalar_one() == "Existing Shop"
             assert conn.execute(text("SELECT title FROM marketplace_products WHERE id = 1")).scalar_one() == "Existing offer"
@@ -112,6 +113,7 @@ def test_additive_upgrade_and_empty_rollback_preserve_existing_shop_records(tmp_
 
         inspector = inspect(isolated_engine)
         assert EXPECTED_TABLES.isdisjoint(set(inspector.get_table_names()))
+        assert "spotlight_campaign_preferences" not in set(inspector.get_table_names())
         with isolated_engine.connect() as conn:
             assert conn.execute(text("SELECT shop_name FROM marketplace_shops WHERE id = 1")).scalar_one() == "Existing Shop"
             assert conn.execute(text("SELECT title FROM marketplace_products WHERE id = 1")).scalar_one() == "Existing offer"

@@ -215,6 +215,12 @@ assertContains(
   /listSavedMarketplaceProducts[\s\S]*?normalizeSavedMarketplaceProduct[\s\S]*?visibilityMode === "vault_private"[\s\S]*?data-marketplace-saved-products="true"[\s\S]*?data-marketplace-saved-products-list="true"[\s\S]*?Private to you\.[\s\S]*?savedMarketplaceProductPath\(product\)/,
   "Marketplace Shops and Services must offer compact private saved-product retrieval without exposing Vault products or creating another page."
 );
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /getSpotlightAdvertPreferences[\s\S]*?normalizeSavedSpotlightAdvert[\s\S]*?savedSpotlightAdverts[\s\S]*?Saved Spotlight adverts[\s\S]*?data-marketplace-saved-spotlight-advert-id/,
+  "Marketplace saved items must also retrieve private standalone commercial adverts."
+);
 
 assertContains(
   marketplaceFile,

@@ -40,6 +40,7 @@ from app.db.models import (
     ShopFollower,
     ShopVoiceAttachment,
     SpotlightCampaign,
+    SpotlightCampaignPreference,
     SpotlightCampaignPacingState,
     SpotlightContentVersion,
     SpotlightExposureEvent,
@@ -7945,6 +7946,249 @@ def unlike_marketplace_product(
         db.delete(row)
         db.commit()
     return {"ok": True, "liked": False, "product_id": int(product_id)}
+
+
+def _get_engageable_spotlight_campaign(
+    db: Session,
+    *,
+    campaign_id: int,
+    current_user: User,
+) -> SpotlightCampaign:
+    campaign = db.get(SpotlightCampaign, int(campaign_id))
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Spotlight advert not found")
+    if int(campaign.owner_user_id) == int(current_user.id):
+        raise HTTPException(
+            status_code=403,
+            detail="Advertisers cannot save or like their own Spotlight adverts",
+        )
+    if (
+        _safe_str(getattr(campaign, "status", None)) != SPOTLIGHT_CAMPAIGN_STATUS_ACTIVE
+        or _safe_str(getattr(campaign, "serving_status", None), SPOTLIGHT_SERVING)
+        != SPOTLIGHT_SERVING
+    ):
+        raise HTTPException(status_code=404, detail="Spotlight advert not found")
+    return campaign
+
+
+def _spotlight_campaign_preference(
+    db: Session,
+    *,
+    campaign_id: int,
+    user_id: int,
+) -> Optional[SpotlightCampaignPreference]:
+    return (
+        db.query(SpotlightCampaignPreference)
+        .filter(
+            SpotlightCampaignPreference.campaign_id == int(campaign_id),
+            SpotlightCampaignPreference.user_id == int(user_id),
+        )
+        .first()
+    )
+
+
+def _write_spotlight_campaign_preference(
+    db: Session,
+    *,
+    campaign_id: int,
+    user_id: int,
+    field: Literal["saved", "liked"],
+    enabled: bool,
+) -> SpotlightCampaignPreference | None:
+    row = _spotlight_campaign_preference(
+        db,
+        campaign_id=campaign_id,
+        user_id=user_id,
+    )
+    if row is None and enabled:
+        row = SpotlightCampaignPreference(
+            campaign_id=int(campaign_id),
+            user_id=int(user_id),
+        )
+        db.add(row)
+    if row is None:
+        return None
+    setattr(row, field, bool(enabled))
+    row.updated_at = _now_utc()
+    if not bool(row.saved) and not bool(row.liked):
+        db.delete(row)
+        return None
+    return row
+
+
+def _commit_spotlight_campaign_preference(
+    db: Session,
+    *,
+    campaign_id: int,
+    user_id: int,
+    field: Literal["saved", "liked"],
+    enabled: bool,
+) -> None:
+    _write_spotlight_campaign_preference(
+        db,
+        campaign_id=campaign_id,
+        user_id=user_id,
+        field=field,
+        enabled=enabled,
+    )
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        _write_spotlight_campaign_preference(
+            db,
+            campaign_id=campaign_id,
+            user_id=user_id,
+            field=field,
+            enabled=enabled,
+        )
+        db.commit()
+
+
+@router.get("/spotlight-adverts/preferences")
+def list_spotlight_advert_preferences(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    rows = (
+        db.query(SpotlightCampaignPreference)
+        .filter(SpotlightCampaignPreference.user_id == int(current_user.id))
+        .filter(
+            or_(
+                SpotlightCampaignPreference.saved.is_(True),
+                SpotlightCampaignPreference.liked.is_(True),
+            )
+        )
+        .order_by(
+            SpotlightCampaignPreference.updated_at.desc(),
+            SpotlightCampaignPreference.id.desc(),
+        )
+        .limit(200)
+        .all()
+    )
+    saved_campaign_ids = [int(row.campaign_id) for row in rows if bool(row.saved)]
+    liked_campaign_ids = [int(row.campaign_id) for row in rows if bool(row.liked)]
+    saved_adverts: list[Dict[str, Any]] = []
+    for row in rows:
+        if not bool(row.saved):
+            continue
+        broadcast = (
+            db.query(MarketplaceBroadcast)
+            .filter(MarketplaceBroadcast.spotlight_campaign_id == int(row.campaign_id))
+            .order_by(
+                MarketplaceBroadcast.content_version.desc(),
+                MarketplaceBroadcast.created_at.desc(),
+                MarketplaceBroadcast.id.desc(),
+            )
+            .first()
+        )
+        if broadcast is None:
+            continue
+        advert = _broadcast_out(db, broadcast)
+        advert["saved_at"] = row.updated_at.isoformat() if row.updated_at else None
+        saved_adverts.append(advert)
+    return {
+        "ok": True,
+        "saved_campaign_ids": saved_campaign_ids,
+        "liked_campaign_ids": liked_campaign_ids,
+        "saved_adverts": saved_adverts,
+    }
+
+
+@router.post("/spotlight-adverts/{campaign_id}/save")
+def save_spotlight_advert(
+    campaign_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    campaign = _get_engageable_spotlight_campaign(
+        db,
+        campaign_id=campaign_id,
+        current_user=current_user,
+    )
+    existing = _spotlight_campaign_preference(
+        db,
+        campaign_id=int(campaign.id),
+        user_id=int(current_user.id),
+    )
+    already_saved = bool(existing and existing.saved)
+    _commit_spotlight_campaign_preference(
+        db,
+        campaign_id=int(campaign.id),
+        user_id=int(current_user.id),
+        field="saved",
+        enabled=True,
+    )
+    return {
+        "ok": True,
+        "saved": True,
+        "already_saved": already_saved,
+        "campaign_id": int(campaign.id),
+    }
+
+
+@router.delete("/spotlight-adverts/{campaign_id}/save")
+def unsave_spotlight_advert(
+    campaign_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _commit_spotlight_campaign_preference(
+        db,
+        campaign_id=campaign_id,
+        user_id=int(current_user.id),
+        field="saved",
+        enabled=False,
+    )
+    return {"ok": True, "saved": False, "campaign_id": int(campaign_id)}
+
+
+@router.put("/spotlight-adverts/{campaign_id}/like")
+def like_spotlight_advert(
+    campaign_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    campaign = _get_engageable_spotlight_campaign(
+        db,
+        campaign_id=campaign_id,
+        current_user=current_user,
+    )
+    existing = _spotlight_campaign_preference(
+        db,
+        campaign_id=int(campaign.id),
+        user_id=int(current_user.id),
+    )
+    already_liked = bool(existing and existing.liked)
+    _commit_spotlight_campaign_preference(
+        db,
+        campaign_id=int(campaign.id),
+        user_id=int(current_user.id),
+        field="liked",
+        enabled=True,
+    )
+    return {
+        "ok": True,
+        "liked": True,
+        "already_liked": already_liked,
+        "campaign_id": int(campaign.id),
+    }
+
+
+@router.delete("/spotlight-adverts/{campaign_id}/like")
+def unlike_spotlight_advert(
+    campaign_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _commit_spotlight_campaign_preference(
+        db,
+        campaign_id=campaign_id,
+        user_id=int(current_user.id),
+        field="liked",
+        enabled=False,
+    )
+    return {"ok": True, "liked": False, "campaign_id": int(campaign_id)}
 
 @router.get("/products/{product_id}/repost-targets")
 def recommend_marketplace_repost_targets(

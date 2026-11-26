@@ -7133,6 +7133,51 @@ export async function unlikeMarketplaceProduct(productId: number): Promise<any> 
     { header_clan_id: null }
   );
 }
+
+export async function getSpotlightAdvertPreferences(): Promise<any> {
+  return httpJson(
+    "/marketplace/spotlight-adverts/preferences",
+    "GET",
+    undefined,
+    { header_clan_id: null }
+  );
+}
+
+export async function saveSpotlightAdvert(campaignId: number): Promise<any> {
+  return httpJson(
+    `/marketplace/spotlight-adverts/${encodeURIComponent(String(campaignId))}/save`,
+    "POST",
+    undefined,
+    { header_clan_id: null }
+  );
+}
+
+export async function unsaveSpotlightAdvert(campaignId: number): Promise<any> {
+  return httpJson(
+    `/marketplace/spotlight-adverts/${encodeURIComponent(String(campaignId))}/save`,
+    "DELETE",
+    undefined,
+    { header_clan_id: null }
+  );
+}
+
+export async function likeSpotlightAdvert(campaignId: number): Promise<any> {
+  return httpJson(
+    `/marketplace/spotlight-adverts/${encodeURIComponent(String(campaignId))}/like`,
+    "PUT",
+    undefined,
+    { header_clan_id: null }
+  );
+}
+
+export async function unlikeSpotlightAdvert(campaignId: number): Promise<any> {
+  return httpJson(
+    `/marketplace/spotlight-adverts/${encodeURIComponent(String(campaignId))}/like`,
+    "DELETE",
+    undefined,
+    { header_clan_id: null }
+  );
+}
 export type ShopDiaryEvidenceClass =
   | "owner_update"
   | "system_recorded"

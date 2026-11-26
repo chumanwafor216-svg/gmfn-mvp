@@ -64,6 +64,7 @@ import {
   getLoanGuarantorSuggestions,
   getLoanSummary,
   getMarketplaceProducts,
+  getSpotlightAdvertPreferences,
   listSavedMarketplaceProducts,
   getMarketplaceShopDirectory,
   listMarketplaceListingReviewQueue,
@@ -314,6 +315,14 @@ type SavedMarketplaceProduct = {
   price: string;
   currency: string;
   blockNumber: number;
+};
+
+type SavedSpotlightAdvert = {
+  campaignId: number;
+  title: string;
+  description: string;
+  advertiser: string;
+  community: string;
 };
 
 export type RepostProductOption = {
@@ -1758,6 +1767,36 @@ function savedMarketplaceProductPath(product: SavedMarketplaceProduct): string {
     params.set("block", String(product.blockNumber));
   }
   return `${basePath}?${params.toString()}`;
+}
+
+function normalizeSavedSpotlightAdvert(raw: any): SavedSpotlightAdvert | null {
+  const src = raw?.item || raw?.advert || raw;
+  const campaignId = positiveNumber(
+    firstDefined(src?.spotlight_campaign_id, src?.campaign_id, src?.campaignId)
+  );
+  if (!campaignId) return null;
+  return {
+    campaignId,
+    title: firstTruthy(
+      src?.source_product_title,
+      src?.spotlight_title,
+      src?.message,
+      `Saved Spotlight advert ${campaignId}`
+    ),
+    description: firstTruthy(
+      src?.source_product_description,
+      src?.spotlight_description
+    ),
+    advertiser: firstPublicIdentity(
+      src?.source_shop_name,
+      src?.spotlight_owner,
+      src?.author_name
+    ),
+    community: firstTruthy(
+      src?.source_clan_name,
+      src?.spotlight_community
+    ),
+  };
 }
 
 function normalizeRepostProductOption(raw: any): RepostProductOption | null {
@@ -4460,6 +4499,9 @@ export default function MarketplacePage() {
     useState(false);
   const [savedMarketplaceProductsError, setSavedMarketplaceProductsError] =
     useState("");
+  const [savedSpotlightAdverts, setSavedSpotlightAdverts] = useState<
+    SavedSpotlightAdvert[]
+  >([]);
   const [marketplaceTrust, setMarketplaceTrust] = useState<any>(null);
   const [trustSlip, setTrustSlip] = useState<any>(null);
   const [marketplaceWisdom, setMarketplaceWisdom] = useState<{
@@ -6250,15 +6292,22 @@ export default function MarketplacePage() {
     setSavedMarketplaceProductsLoading(true);
     setSavedMarketplaceProductsError("");
     try {
-      const response = await listSavedMarketplaceProducts();
-      const products = rowsOf<any>(response?.products || response)
+      const [productResponse, advertResponse] = await Promise.all([
+        listSavedMarketplaceProducts(),
+        getSpotlightAdvertPreferences(),
+      ]);
+      const products = rowsOf<any>(productResponse?.products || productResponse)
         .map(normalizeSavedMarketplaceProduct)
         .filter((item): item is SavedMarketplaceProduct => Boolean(item));
+      const adverts = rowsOf<any>(advertResponse?.saved_adverts)
+        .map(normalizeSavedSpotlightAdvert)
+        .filter((item): item is SavedSpotlightAdvert => Boolean(item));
       setSavedMarketplaceProducts(products);
+      setSavedSpotlightAdverts(adverts);
       setSavedMarketplaceProductsLoaded(true);
     } catch {
       setSavedMarketplaceProductsError(
-        "Saved products could not be loaded. Your existing saves were not changed."
+        "Saved items could not be loaded. Your existing saves were not changed."
       );
     } finally {
       setSavedMarketplaceProductsLoading(false);
@@ -9960,7 +10009,7 @@ export default function MarketplacePage() {
                   fontWeight: 950,
                 }}
               >
-                Saved products
+                Saved items
               </StableDisclosureSummary>
               <div
                 data-marketplace-saved-products-list="true"
@@ -9974,12 +10023,12 @@ export default function MarketplacePage() {
                 }}
               >
                 <div style={{ ...marketplaceLiveMetaStyle(isCompact), fontSize: 11.5 }}>
-                  Private to you. Open the original Public Shop to review or remove a save.
+                  Private to you. Products and commercial adverts are never shown as public counts.
                 </div>
                 {savedMarketplaceProductsLoading ? (
                   <div style={marketplaceLiveRowStyle(isCompact)}>
                     <div style={marketplaceLiveMetaStyle(isCompact)}>
-                      Loading your saved products.
+                      Loading your saved items.
                     </div>
                   </div>
                 ) : savedMarketplaceProductsError ? (
@@ -10001,18 +10050,26 @@ export default function MarketplacePage() {
                       Try again
                     </StableButton>
                   </div>
-                ) : savedMarketplaceProductsLoaded && !savedMarketplaceProducts.length ? (
+                ) : savedMarketplaceProductsLoaded &&
+                  !savedMarketplaceProducts.length &&
+                  !savedSpotlightAdverts.length ? (
                   <div style={marketplaceLiveRowStyle(isCompact)}>
                     <div style={marketplaceLiveMetaStyle(isCompact)}>
-                      You have no saved products yet.
+                      You have no saved products or Spotlight adverts yet.
                     </div>
                   </div>
                 ) : (
-                  savedMarketplaceProducts.map((product) => {
-                    const priceText = [product.currency, product.price]
-                      .filter(Boolean)
-                      .join(" ");
-                    return (
+                  <>
+                    {savedMarketplaceProducts.length ? (
+                      <div style={{ ...marketplaceLiveMetaStyle(isCompact), fontWeight: 900 }}>
+                        Saved products
+                      </div>
+                    ) : null}
+                    {savedMarketplaceProducts.map((product) => {
+                      const priceText = [product.currency, product.price]
+                        .filter(Boolean)
+                        .join(" ");
+                      return (
                       <div
                         key={product.id}
                         data-marketplace-saved-product-id={product.id}
@@ -10059,8 +10116,52 @@ export default function MarketplacePage() {
                           </StableCtaLink>
                         </div>
                       </div>
-                    );
-                  })
+                      );
+                    })}
+                    {savedSpotlightAdverts.length ? (
+                      <div style={{ ...marketplaceLiveMetaStyle(isCompact), fontWeight: 900 }}>
+                        Saved Spotlight adverts
+                      </div>
+                    ) : null}
+                    {savedSpotlightAdverts.map((advert) => (
+                      <div
+                        key={advert.campaignId}
+                        data-marketplace-saved-spotlight-advert-id={advert.campaignId}
+                        style={marketplaceLiveRowStyle(isCompact)}
+                      >
+                        <div
+                          style={{
+                            color: "#07172C",
+                            fontSize: isCompact ? 13.5 : 14.5,
+                            fontWeight: 950,
+                            lineHeight: 1.2,
+                            overflowWrap: "break-word",
+                          }}
+                        >
+                          {advert.title}
+                        </div>
+                        <div style={{ marginTop: 3, ...marketplaceLiveMetaStyle(isCompact) }}>
+                          {[advert.advertiser, advert.community]
+                            .filter(Boolean)
+                            .join(" · ") || "Saved commercial advert"}
+                        </div>
+                        {advert.description ? (
+                          <div
+                            style={{
+                              marginTop: 5,
+                              ...marketplaceLiveMetaStyle(isCompact),
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
+                            }}
+                          >
+                            {advert.description}
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </>
                 )}
               </div>
             </details>
