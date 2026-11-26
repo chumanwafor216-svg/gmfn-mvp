@@ -10823,6 +10823,8 @@ export type DemandSupplySellerContactResponse = {
   demand_area?: string | null;
   product_title: string;
   shop_name: string;
+  seller_user_id: number;
+  seller_is_gsn_member?: boolean;
   whatsapp_number?: string | null;
   contact_available: boolean;
   public_shop_path?: string | null;
