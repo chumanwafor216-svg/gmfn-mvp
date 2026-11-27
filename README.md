@@ -8,6 +8,8 @@ for the latest active workstream, exact routes/screens in play, confirmed facts
 from code, and the next recommended step. Older detailed history is linked from
 that file and lives under `docs/archive/`.
 
+For GSN's shared evolving philosophy, feature-level decisions, decision status and implementation-status separation, also read `docs/GSN_PHILOSOPHY_AND_DECISION_REGISTER_CURRENT.md`. It is the current working register and does not supersede the constitutional protocols or turn proposals into approvals.
+
 For route-purpose or architecture work, also read
 `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`.
 It is the current authoritative skeleton for how Community Home, Marketplace,

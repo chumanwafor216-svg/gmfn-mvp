@@ -15,6 +15,8 @@ This product is a community-centered system built around entry flows, communitie
 
 The goal of this document is to give the assistant a stable mental model so it can work with less confusion, fewer repetitive questions, and less risk of damaging the codebase.
 
+The current shared philosophy and decision-status master is `docs/GSN_PHILOSOPHY_AND_DECISION_REGISTER_CURRENT.md`. Use it to distinguish proposed, agreed, superseded and implemented decisions. It supplements but does not silently override the constitutional protocols, frozen contracts or explicit implementation/release authority.
+
 ### 1.1 Mandatory architecture reference
 Before doing route-purpose work, navigation restructuring, marketplace/community
 ownership changes, or page-responsibility changes, also read:

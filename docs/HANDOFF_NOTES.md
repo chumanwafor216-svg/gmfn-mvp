@@ -1,4 +1,13 @@
 # Active Handoff Notes
+## Shop authentication and seller-notification correction - 2026-11-27
+
+- Preserved base `a43fda11df4e7b2c54aa05064bde697d9006131c`; local Shop successor is `45a34b4e0a03a6613aa901ae833dac83710a8a59` on `codex/demand-box-complete-journey-20261126`. No push, merge, migration, production write or deployment occurred.
+- Login now preserves existing safe `/app` returns plus one exact single-segment Public Shop path with seller/product context. External, protocol-relative, malformed, backslash and nested Shop returns are rejected. Authentication still never confirms a purchase.
+- Product purchase-intention seller notifications alone include `focus=conversation`. Ordinary Demand Box and product-enquiry destinations remain unchanged; replay still produces one request, one initial private thread and one seller notification.
+- Passed: executable return-target cases, entry/auth, route-fallthrough, Community Domain continuation, Public Shop action inventory, all 24 marketplace-request tests, `git diff --check`, and the TypeScript/Vite production build (`340 modules`).
+- The broad protected-button freeze remains red on the same recorded VoiceNoteRecorder, Demand Box smooth-scroll/no-jump, Marketplace overscroll and Shop Control video-selection baseline signatures; three visual sub-audits were also blocked by sandbox `spawn EPERM`. None of the flagged product files changed in this correction.
+- Physical-phone acceptance was not run. A fresh signed-out buyer with no Shop must still verify exact product return without buyer-Shop creation and immediate visible conversation after opening the real seller notification.
+- The canonical working philosophy/decision master is now `docs/GSN_PHILOSOPHY_AND_DECISION_REGISTER_CURRENT.md` version 0.31. Its imported source tail contained unrelated sensitive web-session data; that tail was excluded from the repository.
 
 ## Public Shop Sales-First Batch 1 local candidate - 2026-11-27
 
