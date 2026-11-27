@@ -1317,6 +1317,26 @@ Rules:
   The expanded `Ask seller` conversation does not repeat it. Existing Shop
   destination, source context, attention tracking, seller contact, Protected
   Trade, permissions and matching authority remain unchanged.
+- Founder-approved 2026-11-27 community Demand Box sales-first correction:
+  when the requester opens a reliable existing Shop-product match, a priced
+  active product leads with `Request to buy` and an unpriced active product
+  leads with `Request quote`; `Ask seller` remains a secondary enquiry and
+  writes no purchase intention. The primary action opens one compact,
+  write-free check for the exact product, quantity and Collection, Delivery or
+  `To be agreed`, separating request, agreement, payment report and bank
+  verification. Explicit confirmation revalidates the live demand, match,
+  product, Shop, ownership and requester before atomically attaching the saved
+  product and terms to the existing community request, adding one buyer message
+  to its existing private participant thread and sending one actionable seller
+  notification focused on that conversation. Retry uses the same client key;
+  replay creates no additional request, message or notification, and changed
+  unsaved selections do not amend persisted terms. Both participants reopen the
+  exact product/Shop context and continue through the existing seller-issued
+  Trade Record, direct-seller payment reporting and Merchant Verification
+  fulfilment. This uses existing request activity storage and introduces no new
+  request, commerce engine, schema or migration. A general responder with no
+  validated Shop product remains private conversation only; GSN must not invent
+  a product, Shop, availability, price, agreement or transaction context.
 - Match copy must say `Relevant listings to check` and must label each item as a
   listed offering whose availability and suitability are not confirmed.
   Community relationship is context only; it is not professional verification,

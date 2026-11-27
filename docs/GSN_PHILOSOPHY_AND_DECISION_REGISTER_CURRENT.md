@@ -1,5 +1,5 @@
 GSN Philosophy and Decision Register
-Version: 0.31 — Working register
+Version: 0.32 — Working register
 Date: 27 November 2026
 Status: Discussion record; not a ratified constitutional policy or implementation authorisation
 Purpose: Preserve philosophical insights, feature-specific applications, disagreements, evidence requirements, and decisions as GSN evolves. This document separates founder-stated commitments from proposals requiring debate.
@@ -9,7 +9,7 @@ Start here
 1. Read the status above and section 1 for foundational purpose.
 2. Use section 3 to identify the responsibility of the feature being changed.
 3. Consult sections 6–7 for proposed review questions and the distinction between philosophy, authorised work and evidence. The proposed questions are a design aid, not a newly approved checklist blocking every small correction.
-4. Read the latest relevant evidence and task scope. For the current Shop correction, use section 37, with sections 33–35 as necessary history. For Market Wisdom and optional writing assistance, use sections 30, 32, 34 and 36, together with any later explicit founder instruction.
+4. Read the latest relevant evidence and task scope. For the current community Demand Box correction, use section 40 and the preserved Shop foundation in sections 37 and 39. Market Wisdom Part A remains preserved, while further AI and writing-assistance work is suspended by the founder.
 How to apply it
 - Apply the intentions explicitly recorded as founder-established or approved within the currently authorised scope. Where an entry mixes founder direction and proposed implementation, preserve that distinction.
 - Contribute to the discussion: identify what the code supports, what contradicts an assumption, and what alternative better serves the intended outcome. Record the contributor, date, evidence and proposal without inventing agreement.
@@ -2463,3 +2463,32 @@ This work does not change the established meanings of GSN, trust, TrustSlip or M
 The supplied attachment contained the clean register followed by unrelated captured web-session/authentication data. Only the register through section 38 was imported. The unrelated tail was not copied into this repository master, quoted in product documentation or used as implementation evidence. Because captured session material should be treated as sensitive even when its current validity is unknown, the source attachment should be deleted and the affected external session should be signed out/revoked by its owner.
 
 - [S67] Repository inspection and focused validation on `codex/demand-box-complete-journey-20261126`, 27 November 2026. Local commits a43fda11 and 45a34b4e; 24 marketplace-request tests, focused frontend contracts and production build observed by Codex.
+40. Community Demand Box matched-product sales-first correction — GSN-E-017
+Recorded: 27 November 2026.
+Contributor: Codex, applying the founder-selected community Demand Box priority.
+Decision status: Founder authorised the community Demand Box as the next commerce correction and suspended further AI work for now.
+Implementation status: Local candidate implemented and under acceptance. Production release remains held.
+Preserved base: `0a42bffc5a3a7e868f9bb66988239b13f2a1430a`.
+
+40.1 Finding and challenge
+The existing Demand Box already discovered permission-scoped active Shop products and allowed a private buyer/seller conversation. However, the exact matched product and Shop were transient on the first contact action. When the seller reopened the community request, the transaction context was absent, so the existing Trade Record lifecycle could not reliably continue from that conversation.
+
+The necessary correction is not to turn every community response into a sale. Only a currently validated Shop-product match can support a product-specific purchase request. A responder with no validated product remains an enquiry participant; inventing a product, Shop, availability or price would undermine truth and trust.
+
+40.2 Applied behaviour
+- A priced reliable match offers `Request to buy`; an unpriced reliable match offers `Request quote`. `Ask seller` remains a separate enquiry.
+- Opening the compact check writes nothing. Explicit confirmation revalidates the open demand, exact product, active Shop, seller ownership and requester before saving anything.
+- The confirmed intention remains on the existing community request. It stores the exact source, product, Shop, quantity, fulfilment and price mode in existing activity metadata, opens the existing private participant conversation, and sends one focused seller notification.
+- Exact replay is idempotent. New unsaved choices do not silently amend persisted terms.
+- Buyer and seller can restore the same transaction context and continue through the existing seller-reviewed Trade Record, buyer acceptance, direct-seller payment reporting and fulfilment controls.
+- The implementation adds no new request type, commerce engine, schema, migration, escrow claim or payment-verification claim.
+
+40.3 Definition impact
+GSN continues to help a member move from a stated need toward an organised, truthful next step without taking away judgment. Trust still means transparent evidence and bounded claims, not GSN endorsement. Marketplace and Demand Box remain opportunity and discovery surfaces; a validated Shop-product match may enter the existing private transaction journey only after explicit confirmation. A purchase request is not availability, agreement, payment, bank verification or a completed order.
+
+40.4 Evidence and limits
+Focused automated tests cover requester and seller permissions, exact product/Shop ownership, one request/thread/notification, replay, conflict handling, restored attribution, private conversation access and existing Trade Record continuation. Frontend acceptance checks cover the compact confirmation, truthful wording and responsive phone layout. Physical buyer/seller phone acceptance is still outstanding, so automated evidence must not be described as actual notification delivery on two phones.
+
+No push, merge, database migration, production-data use, infrastructure expansion, live provider call or deployment is authorised or reported. Market Wisdom Part A is preserved; further AI and writing-assistance work remains suspended.
+
+- [S68] Founder priority instruction and repository inspection on `codex/demand-box-complete-journey-20261126`, 27 November 2026. Local community Demand Box candidate and focused evidence recorded by Codex.

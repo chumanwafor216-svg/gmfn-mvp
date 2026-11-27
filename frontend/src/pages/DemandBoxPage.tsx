@@ -21,6 +21,7 @@ import {
 } from "../lib/institutionalSurface";
 import {
   createDemandMediaAttachment,
+  createDemandSupplyPurchaseIntention,
   createMarketplaceRequest,
   createMarketplaceVoiceRequest,
   createMarketplaceRequestRelayRun,
@@ -152,6 +153,15 @@ type DemandMatchState = {
 };
 type DemandSellerHandoffState = DemandSupplySellerContactResponse & {
   shopPath: string;
+};
+type DemandMatchPurchaseDraft = {
+  demandId: number;
+  productId: number;
+  shopId: number;
+  intentType: "buy_now" | "request_quote";
+  quantity: number;
+  fulfilmentMethod: "collection" | "delivery" | "on_request";
+  clientRequestId: string;
 };
 
 type DemandPaperScope = "owner" | "community";
@@ -1230,6 +1240,8 @@ export default function DemandBoxPage() {
   const [activeQueueLane, setActiveQueueLane] = useState<DemandQueueLane>("open");
   const [demandMatchesById, setDemandMatchesById] = useState<Record<string, DemandMatchState>>({});
   const [preparingSellerContactKey, setPreparingSellerContactKey] = useState("");
+  const [matchedPurchaseDraft, setMatchedPurchaseDraft] = useState<DemandMatchPurchaseDraft | null>(null);
+  const [matchedPurchaseBusy, setMatchedPurchaseBusy] = useState(false);
   const [sellerContactHandoff, setSellerContactHandoff] = useState<DemandSellerHandoffState | null>(null);
   const [focusedProductContact, setFocusedProductContact] = useState<DemandSupplySellerContactResponse | null>(null);
   const [openDemandRecordKey, setOpenDemandRecordKey] = useState("");
@@ -1244,6 +1256,7 @@ export default function DemandBoxPage() {
     setFocusedConversationRequestId(0);
     setFocusedTradeRequestId(0);
     setFocusedMatchRequestId(0);
+    setMatchedPurchaseDraft(null);
     setSellerContactHandoff(null);
     setFocusedProductContact(null);
   }, [openDemandRecordKey]);
@@ -2225,6 +2238,88 @@ export default function DemandBoxPage() {
   }
 
 
+  function openMatchedPurchase(row: DemandRow, match: DemandSupplyMatchItem) {
+    const demandId = positiveNumber(row?.id || match.demand_id);
+    const productId = positiveNumber(match.product_id);
+    const shopId = positiveNumber(match.shop_id);
+    if (!demandId || !productId || !shopId || !isMineRow(row, me)) {
+      showNotice("error", "Only the requester can confirm this matched Shop product.");
+      return;
+    }
+    const intentType = safeStr(match.listed_price) ? "buy_now" : "request_quote";
+    setMatchedPurchaseDraft((current) =>
+      current &&
+      current.demandId === demandId &&
+      current.productId === productId &&
+      current.shopId === shopId &&
+      current.intentType === intentType
+        ? current
+        : {
+            demandId,
+            productId,
+            shopId,
+            intentType,
+            quantity: 1,
+            fulfilmentMethod: intentType === "request_quote" ? "on_request" : "collection",
+            clientRequestId: demandClientKey(`demand-match-purchase-${demandId}`),
+          }
+    );
+    setSellerContactHandoff(null);
+  }
+
+  function updateMatchedPurchaseDraft(
+    update: Partial<Pick<DemandMatchPurchaseDraft, "quantity" | "fulfilmentMethod">>
+  ) {
+    setMatchedPurchaseDraft((current) => (current ? { ...current, ...update } : current));
+  }
+
+  async function submitMatchedPurchase(row: DemandRow, match: DemandSupplyMatchItem) {
+    const draft = matchedPurchaseDraft;
+    const demandId = positiveNumber(row?.id || match.demand_id);
+    const productId = positiveNumber(match.product_id);
+    const shopId = positiveNumber(match.shop_id);
+    if (
+      !draft ||
+      matchedPurchaseBusy ||
+      !isMineRow(row, me) ||
+      draft.demandId !== demandId ||
+      draft.productId !== productId ||
+      draft.shopId !== shopId
+    ) {
+      showNotice("error", "GSN could not revalidate this match. Close the check and open it again.");
+      return;
+    }
+
+    setMatchedPurchaseBusy(true);
+    try {
+      const created = await createDemandSupplyPurchaseIntention(demandId, productId, {
+        shop_id: shopId,
+        client_request_id: draft.clientRequestId,
+        intent_type: draft.intentType,
+        quantity: draft.quantity,
+        fulfilment_method: draft.fulfilmentMethod,
+      });
+      setMatchedPurchaseDraft(null);
+      setFocusedProductContact(null);
+      setSellerContactHandoff(null);
+      await loadPage(selectedClanId);
+      setFocusedMatchRequestId(0);
+      focusProductConversation(demandId, false);
+      showNotice(
+        "success",
+        created.purchase_continuation?.reused_existing
+          ? "Your saved purchase request is open. New selections did not replace its terms."
+          : "Purchase request recorded. Continue privately with the seller."
+      );
+    } catch (error: any) {
+      showNotice(
+        "error",
+        `${safeStr(error?.message) || "GSN could not record this purchase request right now."} Your choices are still here; try again.`
+      );
+    } finally {
+      setMatchedPurchaseBusy(false);
+    }
+  }
   async function askMatchedSeller(row: DemandRow, match: DemandSupplyMatchItem, shopPath: string) {
     const demandId = positiveNumber(row?.id || match.demand_id);
     const productId = positiveNumber(match.product_id);
@@ -2245,6 +2340,7 @@ export default function DemandBoxPage() {
       return;
     }
 
+    setMatchedPurchaseDraft(null);
     setPreparingSellerContactKey(contactKey);
     try {
       const contact = await getDemandSupplySellerContact(demandId, productId, {
@@ -2298,6 +2394,7 @@ export default function DemandBoxPage() {
 
     const contactKey = `${demandId}:${productId}:${shopId}`;
     if (preparingSellerContactKey) return;
+    setMatchedPurchaseDraft(null);
     setPreparingSellerContactKey(contactKey);
     try {
       const contact = await getDemandSupplySellerContact(demandId, productId, {
@@ -2376,6 +2473,18 @@ export default function DemandBoxPage() {
             const canAskSeller = isMineRow(row, me);
             const contactKey = `${rowId}:${positiveNumber(match.product_id)}:${positiveNumber(match.shop_id)}`;
             const preparingContact = preparingSellerContactKey === contactKey;
+            const linkedPurchase = Boolean(
+              row?.commercial_intent &&
+              positiveNumber(row?.product_context?.product_id) === positiveNumber(match.product_id) &&
+              positiveNumber(row?.product_context?.shop_id) === positiveNumber(match.shop_id)
+            );
+            const selectedPurchase =
+              matchedPurchaseDraft?.demandId === rowId &&
+              matchedPurchaseDraft?.productId === positiveNumber(match.product_id) &&
+              matchedPurchaseDraft?.shopId === positiveNumber(match.shop_id)
+                ? matchedPurchaseDraft
+                : null;
+            const purchaseLabel = safeStr(match.listed_price) ? "Request to buy" : "Request quote";
             const selectedContact =
               sellerContactHandoff?.demand_id === rowId &&
               sellerContactHandoff?.product_id === positiveNumber(match.product_id) &&
@@ -2424,6 +2533,15 @@ export default function DemandBoxPage() {
                   >
                     Shop: {shopName}
                   </div>
+                  {safeStr(match.listed_price) ? (
+                    <div style={{ color: "#0757BC", fontSize: 12.5, fontWeight: 900 }}>
+                      {[safeStr(match.currency), safeStr(match.listed_price)].filter(Boolean).join(" ")}
+                    </div>
+                  ) : (
+                    <div style={{ color: "#64748B", fontSize: 12, fontWeight: 800 }}>
+                      Price to be agreed
+                    </div>
+                  )}
                   <StableCtaLink
                     to={to}
                     onClick={() => trackDemandMatchAttention("supply_opened", match, rowId)}
@@ -2447,35 +2565,149 @@ export default function DemandBoxPage() {
                 <div
                   data-gsn-demand-match-actions="compact"
                   style={{
-                    display: "flex",
-                    gap: 5,
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    justifyContent: "flex-end",
-                    minWidth: 0,
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr)",
+                    gap: 6,
+                    minWidth: isCompact ? 0 : 152,
                   }}
                 >
                   <PrimaryButton
                     type="button"
-                    onClick={() => void askMatchedSeller(row, match, to)}
-                    disabled={Boolean(preparingSellerContactKey) && !preparingContact}
-                    busy={preparingContact}
-                    busyLabel="Opening..."
-                    debugId={`${debugBase}.ask-seller.${match.product_id}`}
-                    data-gsn-demand-ask-seller="validated"
+                    onClick={() => {
+                      if (linkedPurchase) {
+                        focusProductConversation(rowId, false);
+                      } else {
+                        openMatchedPurchase(row, match);
+                      }
+                    }}
+                    debugId={`${debugBase}.purchase.${match.product_id}`}
+                    data-gsn-demand-match-purchase="validated"
                     stableHeight={44}
-                    minWidth={82}
+                    minWidth={0}
+                    fullWidth
+                    style={{ borderRadius: 12, padding: "8px 9px", fontSize: 12 }}
+                  >
+                    {linkedPurchase ? "Open purchase conversation" : purchaseLabel}
+                  </PrimaryButton>
+                  {!linkedPurchase ? (
+                    <SubtleButton
+                      type="button"
+                      onClick={() => void askMatchedSeller(row, match, to)}
+                      disabled={Boolean(preparingSellerContactKey) && !preparingContact}
+                      busy={preparingContact}
+                      busyLabel="Opening..."
+                      debugId={`${debugBase}.ask-seller.${match.product_id}`}
+                      data-gsn-demand-ask-seller="validated"
+                      stableHeight={42}
+                      minWidth={0}
+                      fullWidth
+                      style={{ borderRadius: 12, padding: "7px 9px", fontSize: 12 }}
+                    >
+                      Ask seller
+                    </SubtleButton>
+                  ) : null}
+                </div>
+                ) : null}
+                {selectedPurchase ? (
+                  <div
+                    data-gsn-demand-match-purchase-card="true"
                     style={{
-                      borderRadius: 12,
-                      padding: "8px 7px",
-                      fontSize: 12,
-                      fontWeight: 900,
-                      whiteSpace: "nowrap",
+                      gridColumn: "1 / -1",
+                      padding: 11,
+                      borderRadius: 14,
+                      border: "1px solid rgba(11,108,227,0.20)",
+                      background: "#F6FAFF",
+                      display: "grid",
+                      gap: 9,
                     }}
                   >
-                    Ask seller
-                  </PrimaryButton>
-                </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                      <div style={{ display: "grid", gap: 2 }}>
+                        <strong>{purchaseLabel}</strong>
+                        <span style={{ color: "#52677C", fontSize: 11.5, fontWeight: 760 }}>
+                          Check this matched Shop product before sending one private request.
+                        </span>
+                      </div>
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => setMatchedPurchaseDraft(null)}
+                        minWidth={0}
+                        stableHeight={38}
+                        debugId={`${debugBase}.purchase.close.${match.product_id}`}
+                        aria-label="Close purchase request check"
+                        style={{ width: 38, minHeight: 38, borderRadius: 999, padding: 0 }}
+                      >
+                        {"\u00D7"}
+                      </SecondaryButton>
+                    </div>
+                    <div style={{ display: "grid", gap: 2 }}>
+                      <strong>{title}</strong>
+                      <span style={{ color: "#0757BC", fontSize: 13, fontWeight: 900 }}>
+                        {safeStr(match.listed_price)
+                          ? [safeStr(match.currency), safeStr(match.listed_price)].filter(Boolean).join(" ")
+                          : "Price to be agreed"}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+                        gap: 8,
+                      }}
+                    >
+                      <label style={{ display: "grid", gap: 4, fontSize: 12, fontWeight: 850 }}>
+                        Quantity
+                        <input
+                          type="number"
+                          min={1}
+                          max={99}
+                          value={selectedPurchase.quantity}
+                          onChange={(event) =>
+                            updateMatchedPurchaseDraft({
+                              quantity: Math.min(99, Math.max(1, positiveNumber(event.target.value) || 1)),
+                            })
+                          }
+                          data-gsn-demand-match-purchase-field="quantity"
+                          style={{ minWidth: 0, minHeight: 42, borderRadius: 12, padding: "8px 10px" }}
+                        />
+                      </label>
+                      <label style={{ display: "grid", gap: 4, fontSize: 12, fontWeight: 850 }}>
+                        Fulfilment
+                        <select
+                          value={selectedPurchase.fulfilmentMethod}
+                          onChange={(event) =>
+                            updateMatchedPurchaseDraft({
+                              fulfilmentMethod: event.target.value as DemandMatchPurchaseDraft["fulfilmentMethod"],
+                            })
+                          }
+                          data-gsn-demand-match-purchase-field="fulfilment"
+                          style={{ minWidth: 0, minHeight: 42, borderRadius: 12, padding: "8px 10px" }}
+                        >
+                          <option value="collection">Collection</option>
+                          <option value="delivery">Delivery</option>
+                          <option value="on_request">To be agreed</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div style={{ color: "#52677C", fontSize: 11.5, lineHeight: 1.4 }}>
+                      Sending this request is not an agreement. Any later agreement is not payment,
+                      and a payment report is not bank verification.
+                    </div>
+                    <PrimaryButton
+                      type="button"
+                      onClick={() => void submitMatchedPurchase(row, match)}
+                      disabled={matchedPurchaseBusy}
+                      busy={matchedPurchaseBusy}
+                      busyLabel="Recording..."
+                      debugId={`${debugBase}.purchase.confirm.${match.product_id}`}
+                      stableHeight={46}
+                      minWidth={0}
+                      fullWidth
+                      style={{ borderRadius: 12 }}
+                    >
+                      Confirm request
+                    </PrimaryButton>
+                  </div>
                 ) : null}
                 {selectedContact ? (
                   <div

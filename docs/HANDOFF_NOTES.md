@@ -1,4 +1,14 @@
 # Active Handoff Notes
+## Community Demand Box matched-product sales-first local candidate - 2026-11-27
+
+- Preserved base `0a42bffc5a3a7e868f9bb66988239b13f2a1430a` on `codex/demand-box-complete-journey-20261126`. AI and writing-assistance work are suspended. No push, merge, migration, production write or deployment is authorised by this batch.
+- A reliable active Shop-product match now leads with `Request to buy` when priced or `Request quote` when unpriced. `Ask seller` remains a secondary enquiry and does not create a purchase intention.
+- The compact confirmation is write-free until `Confirm request`. Confirmation revalidates the open demand, exact product, Shop, ownership and requester, then saves quantity, fulfilment, price mode and source on the existing community request, opens its existing private participant conversation and creates one focused seller notification.
+- Stable retry identity makes exact replay idempotent. Changed terms conflict instead of silently overwriting the saved request. The seller later restores the same product/Shop terms and can continue the existing Trade Record, payment-reporting and fulfilment lifecycle.
+- A general responder without a validated Shop product remains conversation-only. GSN does not invent a product, Shop, availability, price, agreement, payment verification or transaction context.
+- Passed: all 35 focused backend tests; Demand Box front-package and expanded-search audits; TypeScript and Vite production build (`340 modules`); and the focused phone smoke at `360x780`, `390x844` and `430x932`. The broader Marketplace lane audit remains red on an unchanged baseline `MarketplacePage` rule.
+- The broad protected-button freeze remains red on the same base-state `VoiceNoteRecorder` raw buttons, Demand Box smooth-scroll/no-jump rules, Marketplace overscroll and Shop Control video-selection expectation, with one dashboard browser timeout. The two flagged Demand Box scroll calls are present at `0a42bffc` and absent from this diff; all other flagged product files are unchanged.
+- Physical two-account phone acceptance remains required and must not be inferred from automated browser evidence.
 ## Shop authentication and seller-notification correction - 2026-11-27
 
 - Preserved base `a43fda11df4e7b2c54aa05064bde697d9006131c`; local Shop successor is `45a34b4e0a03a6613aa901ae833dac83710a8a59` on `codex/demand-box-complete-journey-20261126`. No push, merge, migration, production write or deployment occurred.

@@ -972,6 +972,158 @@ def test_requester_can_start_validated_private_chat_with_matched_seller(
     assert wrong_seller.status_code == 403, wrong_seller.text
 
 
+def test_matched_product_purchase_uses_existing_demand_and_restores_seller_context(
+    client,
+    override_current_user_user,
+):
+    _seed_base()
+    _seed_request(request_id=68, category="Repairs")
+
+    payload = {
+        "shop_id": 10,
+        "client_request_id": "demand-match-purchase-68-a",
+        "intent_type": "buy_now",
+        "quantity": 2,
+        "fulfilment_method": "delivery",
+    }
+    created = client.post(
+        "/marketplace/requests/68/supply-matches/100/purchase-intention",
+        json=payload,
+    )
+
+    assert created.status_code == 200, created.text
+    body = created.json()
+    assert body["id"] == 68
+    assert body["category"] == "Repairs"
+    assert body["product_context"] == {
+        "product_id": 100,
+        "shop_id": 10,
+        "product_title": "Emergency Plumbing Repair",
+        "shop_name": "Blessed Plumbing Shop",
+        "listed_price": "12000",
+        "currency": "NGN",
+        "shop_path": "/shop/GSN-U-SELLER?product_id=100&clan_id=1&gsn_source=demand_box_match_purchase",
+    }
+    assert body["commercial_intent"] == {
+        "intent_type": "buy_now",
+        "quantity": 2,
+        "fulfilment_method": "delivery",
+        "origin_source": "demand_box",
+        "status": "purchase_requested",
+        "unit_price": "12000",
+        "currency": "NGN",
+    }
+    assert body["purchase_continuation"] == {
+        "reused_existing": False,
+        "current_stage": "purchase_requested",
+    }
+    assert _table_count("marketplace_requests") == 1
+    assert _table_count("marketplace_request_responses") == 1
+    assert _table_count("notifications") == 1
+
+    replay = client.post(
+        "/marketplace/requests/68/supply-matches/100/purchase-intention",
+        json=payload,
+    )
+    assert replay.status_code == 200, replay.text
+    assert replay.json()["purchase_continuation"]["reused_existing"] is True
+    assert _table_count("marketplace_requests") == 1
+    assert _table_count("marketplace_request_responses") == 1
+    assert _table_count("notifications") == 1
+
+    changed_terms = client.post(
+        "/marketplace/requests/68/supply-matches/100/purchase-intention",
+        json={**payload, "client_request_id": "demand-match-purchase-68-b", "quantity": 3},
+    )
+    assert changed_terms.status_code == 409, changed_terms.text
+    assert "saved purchase terms" in changed_terms.json()["detail"]
+    assert _table_count("marketplace_request_responses") == 1
+    assert _table_count("notifications") == 1
+
+    with SessionLocal() as db:
+        notification = db.execute(
+            text("SELECT action_url FROM notifications WHERE user_id = 2 ORDER BY id DESC LIMIT 1")
+        ).scalar_one()
+    assert notification == "/app/demand-box?clan_id=1&queue=tagged&demand_id=68&focus=conversation"
+
+    app.dependency_overrides[get_current_user] = lambda: Obj(
+        id=2,
+        email="seller@example.com",
+        role="user",
+    )
+    seller_rows = client.get(
+        "/marketplace/requests?clan_id=1&status=open&limit=50"
+    )
+    assert seller_rows.status_code == 200, seller_rows.text
+    seller_row = next(row for row in seller_rows.json() if row["id"] == 68)
+    assert seller_row["product_context"]["product_id"] == 100
+    assert seller_row["product_context"]["shop_id"] == 10
+    assert seller_row["commercial_intent"]["quantity"] == 2
+    assert seller_row["commercial_intent"]["fulfilment_method"] == "delivery"
+
+    seller_thread = client.get("/demand-box/requests/68/responses")
+    assert seller_thread.status_code == 200, seller_thread.text
+    assert len(seller_thread.json()) == 1
+    assert seller_thread.json()[0]["author_user_id"] == 1
+    assert seller_thread.json()[0]["recipient_user_id"] == 2
+    assert "No agreement or payment has been made yet" in seller_thread.json()[0]["text"]
+
+    trade = client.post(
+        "/protected-trades",
+        json={
+            "clan_id": 1,
+            "participant_role": "seller",
+            "source_demand_id": 68,
+            "source_match_product_id": 100,
+            "source_match_shop_id": 10,
+            "item_title": "Emergency Plumbing Repair",
+            "quantity": "2",
+            "amount": "24000",
+            "currency": "NGN",
+            "terms_summary": "Delivery after the buyer accepts the final terms.",
+        },
+    )
+    assert trade.status_code == 201, trade.text
+    assert trade.json()["buyer_user_id"] == 1
+    assert trade.json()["seller_user_id"] == 2
+    assert trade.json()["meta"]["source_demand_id"] == 68
+    assert trade.json()["meta"]["source_match_product_id"] == 100
+    assert trade.json()["meta"]["source_match_shop_id"] == 10
+
+
+def test_matched_product_purchase_revalidates_price_mode_and_shop(
+    client,
+    override_current_user_user,
+):
+    _seed_base()
+    _seed_request(request_id=69, category="Repairs")
+
+    wrong_shop = client.post(
+        "/marketplace/requests/69/supply-matches/100/purchase-intention",
+        json={
+            "shop_id": 11,
+            "client_request_id": "demand-match-purchase-69-a",
+            "intent_type": "buy_now",
+            "quantity": 1,
+            "fulfilment_method": "collection",
+        },
+    )
+    assert wrong_shop.status_code == 404, wrong_shop.text
+
+    wrong_mode = client.post(
+        "/marketplace/requests/69/supply-matches/100/purchase-intention",
+        json={
+            "shop_id": 10,
+            "client_request_id": "demand-match-purchase-69-b",
+            "intent_type": "request_quote",
+            "quantity": 1,
+            "fulfilment_method": "on_request",
+        },
+    )
+    assert wrong_mode.status_code == 409, wrong_mode.text
+    assert _table_count("marketplace_request_responses") == 0
+    assert _table_count("notifications") == 0
+
 def test_demand_supply_seller_contact_fails_closed_when_contact_is_unavailable(
     client,
     override_current_user_user,

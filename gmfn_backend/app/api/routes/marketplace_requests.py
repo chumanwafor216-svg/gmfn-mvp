@@ -62,6 +62,7 @@ from app.services.marketplace_shop_privacy_service import (
 from app.schemas.marketplace_requests import (
     DemandSupplyMatchesOut,
     DemandSupplyMatchOut,
+    DemandSupplyPurchaseIntentionCreate,
     DemandSupplySellerContactOut,
     DemandSupplyTradeHandoffOut,
     MarketplaceCommercialIntentOut,
@@ -432,8 +433,6 @@ def _product_enquiry_context(
     db: Session,
     row: MarketplaceRequest,
 ) -> MarketplaceProductContextOut | None:
-    if _safe_text(getattr(row, "category", None)).lower() != "buying":
-        return None
     activity = (
         db.query(MarketplaceRequestActivity)
         .filter(
@@ -450,6 +449,7 @@ def _product_enquiry_context(
     )
     detail = _safe_text(getattr(activity, "detail", None)) if activity else ""
     prefixes = (
+        ("demand_purchase:v1:", "demand_box_match_purchase"),
         ("purchase_intention:v1:", "spotlight_purchase_intention"),
         ("product_enquiry:v1:", "demand_box_product_enquiry"),
     )
@@ -511,8 +511,9 @@ def _commercial_intent_context(
         .first()
     )
     detail = _safe_text(getattr(activity, "detail", None)) if activity else ""
-    prefix = "purchase_intention:v1:"
-    if not detail.startswith(prefix):
+    prefixes = ("demand_purchase:v1:", "purchase_intention:v1:")
+    prefix = next((value for value in prefixes if detail.startswith(value)), "")
+    if not prefix:
         return None
     try:
         payload = json.loads(detail[len(prefix):])
@@ -782,6 +783,8 @@ def _demand_supply_match_out(db: Session, match: dict) -> DemandSupplyMatchOut:
         demand_area=_safe_text(match.get("demand_area")) or None,
         product_title=_safe_text(match.get("product_title")) or "Marketplace item",
         shop_name=_safe_text(match.get("shop_name")) or "Marketplace shop",
+        listed_price=_safe_text(match.get("listed_price")) or None,
+        currency=_safe_text(match.get("currency")) or None,
         reason_codes=[_safe_text(code) for code in match.get("reason_codes", []) if _safe_text(code)],
         public_shop_path=_public_shop_path_for_match(db, match),
     )
@@ -824,15 +827,17 @@ def _ensure_product_transaction_private_thread(
     notification_message: str,
     notification_action_label: str,
     notify_seller: bool = True,
+    client_response_id: str | None = None,
+    notification_action_url: str | None = None,
 ) -> MarketplaceRequestResponse:
     from app.services.notification_service import create_notification
 
-    client_response_id = f"shop-enquiry-open-{int(demand.id)}"
+    response_key = client_response_id or f"shop-enquiry-open-{int(demand.id)}"
     existing = (
         db.query(MarketplaceRequestResponse)
         .filter(
             MarketplaceRequestResponse.author_user_id == int(buyer.id),
-            MarketplaceRequestResponse.client_response_id == client_response_id,
+            MarketplaceRequestResponse.client_response_id == response_key,
         )
         .first()
     )
@@ -851,7 +856,7 @@ def _ensure_product_transaction_private_thread(
         marketplace_request_id=int(demand.id),
         author_user_id=int(buyer.id),
         recipient_user_id=int(seller.id),
-        client_response_id=client_response_id,
+        client_response_id=response_key,
         text=initial_text[:1500],
         show_sender_photo=False,
     )
@@ -871,7 +876,10 @@ def _ensure_product_transaction_private_thread(
             kind="demand_response",
             title=notification_title,
             message=notification_message,
-            action_url=_request_action_url(demand, queue="tagged"),
+            action_url=(
+                notification_action_url
+                or _request_action_url(demand, queue="tagged")
+            ),
             action_label=notification_action_label,
         )
     db.flush()
@@ -1688,6 +1696,159 @@ def get_marketplace_request_supply_matches(
         request_id=int(row.id),
         count=len(items),
         matches=items,
+    )
+
+@router.post(
+    "/{request_id}/supply-matches/{product_id}/purchase-intention",
+    response_model=MarketplaceRequestOut,
+)
+def create_demand_supply_purchase_intention(
+    payload: DemandSupplyPurchaseIntentionCreate,
+    request_id: int = Path(..., ge=1),
+    product_id: int = Path(..., ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    handoff = resolve_demand_supply_trade_handoff(
+        db,
+        demand_id=int(request_id),
+        product_id=int(product_id),
+        shop_id=int(payload.shop_id),
+        current_user_id=int(current_user.id),
+    )
+    if not handoff or int(handoff.get("requester_user_id") or 0) != int(current_user.id):
+        raise HTTPException(status_code=404, detail="DemandBox match purchase context not found")
+
+    demand = db.get(MarketplaceRequest, int(request_id))
+    product = db.get(MarketplaceProduct, int(product_id))
+    shop = db.get(MarketplaceShop, int(payload.shop_id))
+    seller = db.get(User, int(handoff.get("seller_user_id") or 0))
+    if (
+        not demand
+        or str(getattr(demand, "status", "")).lower() != "open"
+        or not product
+        or not bool(getattr(product, "is_active", False))
+        or not shop
+        or not bool(getattr(shop, "is_active", False))
+        or not seller
+        or int(getattr(product, "shop_id", 0) or 0) != int(shop.id)
+        or int(getattr(shop, "owner_user_id", 0) or 0) != int(seller.id)
+    ):
+        raise HTTPException(status_code=404, detail="DemandBox match purchase context not found")
+    if int(seller.id) == int(current_user.id):
+        raise HTTPException(status_code=400, detail="You cannot request your own Shop product")
+
+    listed_price = getattr(product, "price", None)
+    expected_intent = "buy_now" if listed_price is not None else "request_quote"
+    if payload.intent_type != expected_intent:
+        raise HTTPException(
+            status_code=409,
+            detail="This Shop product changed. Reopen the match and check it again.",
+        )
+
+    existing_context = _product_enquiry_context(db, demand)
+    existing_intent = _commercial_intent_context(db, demand)
+    if existing_context or existing_intent:
+        if (
+            existing_context
+            and existing_intent
+            and existing_context.product_id == int(product.id)
+            and existing_context.shop_id == int(shop.id)
+            and existing_intent.intent_type == payload.intent_type
+            and existing_intent.quantity == int(payload.quantity)
+            and existing_intent.fulfilment_method == payload.fulfilment_method
+        ):
+            return _to_out(
+                db,
+                demand,
+                current_user,
+                current_user_id=int(current_user.id),
+                purchase_reused_existing=True,
+            )
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "This community request already has saved purchase terms. "
+                "Open its conversation to continue or create a new community request."
+            ),
+        )
+
+    response_key = payload.client_request_id.strip()
+    existing_response = (
+        db.query(MarketplaceRequestResponse)
+        .filter(
+            MarketplaceRequestResponse.author_user_id == int(current_user.id),
+            MarketplaceRequestResponse.client_response_id == response_key,
+        )
+        .first()
+    )
+    if existing_response:
+        raise HTTPException(status_code=409, detail="This purchase request key is already in use")
+
+    product_title = (
+        _safe_text(getattr(product, "title", None) or getattr(product, "name", None))
+        or "Marketplace item"
+    )
+    unit_price = _safe_text(listed_price) or None
+    currency = _safe_text(getattr(product, "currency", None)) or None
+    activity_detail = "demand_purchase:v1:" + json.dumps(
+        {
+            "product_id": int(product.id),
+            "shop_id": int(shop.id),
+            "intent_type": payload.intent_type,
+            "quantity": int(payload.quantity),
+            "fulfilment_method": payload.fulfilment_method,
+            "origin_source": "demand_box",
+            "status": "purchase_requested",
+            "unit_price": unit_price,
+            "currency": currency,
+        },
+        separators=(",", ":"),
+    )
+    if len(activity_detail) > 240:
+        raise HTTPException(status_code=500, detail="Purchase context could not be recorded safely")
+
+    db.add(
+        MarketplaceRequestActivity(
+            marketplace_request_id=int(demand.id),
+            actor_user_id=int(current_user.id),
+            event_type="purchase_intention_created",
+            detail=activity_detail,
+        )
+    )
+    _ensure_product_transaction_private_thread(
+        db,
+        demand=demand,
+        buyer=current_user,
+        seller=seller,
+        initial_text=_purchase_transaction_message(
+            product_title=product_title,
+            quantity=int(payload.quantity),
+            fulfilment_method=payload.fulfilment_method,
+            note="",
+        ),
+        activity_detail="Buyer confirmed the matched Shop product purchase request.",
+        notification_title="New purchase request",
+        notification_message=(
+            f"{_public_requester_display_name(current_user)} submitted a purchase request "
+            f"for '{product_title}'."
+        ),
+        notification_action_label="Review request",
+        client_response_id=response_key,
+        notification_action_url=_request_action_url(
+            demand,
+            queue="tagged",
+            focus_conversation=True,
+        ),
+    )
+    db.commit()
+    db.refresh(demand)
+    return _to_out(
+        db,
+        demand,
+        current_user,
+        current_user_id=int(current_user.id),
+        purchase_reused_existing=False,
     )
 
 @router.get(

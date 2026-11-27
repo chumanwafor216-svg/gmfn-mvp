@@ -123,6 +123,8 @@ async function installApiMocks(page, apiCalls) {
               product_id: 900,
               product_title: "Freezer repair visit",
               shop_name: "Onitsha Cooling Repairs",
+              listed_price: "15000",
+              currency: "NGN",
               public_shop_path: "/shop/GSN-U-900?product_id=900&clan_id=8",
               reason_codes: ["SAME_COMMUNITY", "LISTED_OFFERING", "AVAILABILITY_UNCONFIRMED", "AREA_COMPATIBLE", "PRODUCT_TITLE_MATCH", "RELEVANCE_RELIABLE"],
             },
@@ -701,6 +703,17 @@ async function verifyViewport(browser, baseURL, viewport) {
   const requesterDescriptionCard = ownerMatchPanel.locator('[data-gsn-demand-match-description-card="true"]');
   const requesterViewShop = requesterDescriptionCard.getByRole("link", { name: /View Shop:/ });
   assert(await requesterViewShop.isVisible(), "View shop is missing from the requester product description card.");
+  const matchedPurchaseButton = ownerMatchPanel.getByRole("button", { name: "Request to buy", exact: true });
+  assert(await matchedPurchaseButton.isVisible(), "The priced matched product is missing Request to buy.");
+  await matchedPurchaseButton.click();
+  const matchedPurchaseCard = ownerMatchPanel.locator('[data-gsn-demand-match-purchase-card="true"]');
+  await matchedPurchaseCard.waitFor();
+  assert(await matchedPurchaseCard.getByLabel("Quantity").isVisible(), "The matched purchase quantity is missing.");
+  assert(await matchedPurchaseCard.getByLabel("Fulfilment").isVisible(), "The matched purchase fulfilment choice is missing.");
+  assert(await matchedPurchaseCard.getByText("Sending this request is not an agreement.", { exact: false }).isVisible(), "The matched purchase boundary is missing.");
+  assert(await matchedPurchaseCard.getByRole("button", { name: "Confirm request", exact: true }).isVisible(), "The explicit matched purchase confirmation is missing.");
+  await matchedPurchaseCard.getByRole("button", { name: "Close purchase request check", exact: true }).click();
+  assert(!(await matchedPurchaseCard.isVisible().catch(() => false)), "Closing the write-free purchase check did not restore the match row.");
   assert(await ownerMatchPanel.getByRole("button", { name: "Ask seller", exact: true }).isVisible(), "Ask Seller is missing.");
   await ownerMatchPanel.getByRole("button", { name: "Ask seller", exact: true }).click();
   assert(apiCalls.sellerContactGets === 1, "Ask seller did not use the authenticated validated handoff endpoint exactly once.");

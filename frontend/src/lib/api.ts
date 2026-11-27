@@ -10851,6 +10851,8 @@ export type DemandSupplyMatchItem = {
   demand_area?: string | null;
   product_title: string;
   shop_name: string;
+  listed_price?: string | null;
+  currency?: string | null;
   seller_user_id: number;
   seller_is_gsn_member?: boolean;
   reason_codes?: string[] | null;
@@ -10897,6 +10899,8 @@ export type DemandSupplySellerContactResponse = {
   demand_area?: string | null;
   product_title: string;
   shop_name: string;
+  listed_price?: string | null;
+  currency?: string | null;
   seller_user_id: number;
   seller_is_gsn_member?: boolean;
   whatsapp_number?: string | null;
@@ -10930,6 +10934,25 @@ export async function getDemandSupplyTradeHandoff(
     })}`,
     "GET"
   );
+}
+export async function createDemandSupplyPurchaseIntention(
+  requestId: number,
+  productId: number,
+  payload: {
+    shop_id: number;
+    client_request_id: string;
+    intent_type: "buy_now" | "request_quote";
+    quantity: number;
+    fulfilment_method: "collection" | "delivery" | "on_request";
+  }
+): Promise<MarketplaceRequestItem> {
+  const created = await httpJson(
+    `/marketplace/requests/${encodeURIComponent(String(requestId))}/supply-matches/${encodeURIComponent(String(productId))}/purchase-intention`,
+    "POST",
+    payload
+  );
+  clearStartupSectionCacheByLabel("listMarketplaceRequests");
+  return created;
 }
 export async function getDemandSupplyMatches(
   requestId: number,

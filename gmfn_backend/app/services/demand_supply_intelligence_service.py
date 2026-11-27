@@ -96,6 +96,8 @@ class DemandSupplyMatch:
     demand_area: str | None
     product_title: str
     shop_name: str
+    listed_price: str | None
+    currency: str | None
     reason_codes: tuple[str, ...]
     ranking_score: int = 0
     semantic_score: int = 0
@@ -111,6 +113,8 @@ class DemandSupplyMatch:
             "demand_area": self.demand_area,
             "product_title": self.product_title,
             "shop_name": self.shop_name,
+            "listed_price": self.listed_price,
+            "currency": self.currency,
             "reason_codes": list(self.reason_codes),
         }
 
@@ -475,6 +479,12 @@ def _build_match_for_supply_clan(
         demand_area=_clean_text(getattr(demand, "area", None)) or None,
         product_title=_clean_text(getattr(product, "name", None)) or "Marketplace item",
         shop_name=_clean_text(getattr(shop, "name", None)) or "Marketplace shop",
+        listed_price=(
+            str(getattr(product, "price", None))
+            if getattr(product, "price", None) is not None
+            else None
+        ),
+        currency=_clean_text(getattr(product, "currency", None)) or None,
         reason_codes=tuple(reason_codes),
         ranking_score=(
             int(relevance.semantic_score)

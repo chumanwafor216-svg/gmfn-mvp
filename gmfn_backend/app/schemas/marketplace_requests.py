@@ -367,8 +367,34 @@ class DemandSupplyMatchOut(BaseModel):
     demand_area: Optional[str] = None
     product_title: str
     shop_name: str
+    listed_price: Optional[str] = None
+    currency: Optional[str] = None
     reason_codes: list[str] = Field(default_factory=list)
     public_shop_path: Optional[str] = None
+
+
+class DemandSupplyPurchaseIntentionCreate(BaseModel):
+    shop_id: int = Field(..., ge=1)
+    client_request_id: str = Field(..., min_length=8, max_length=80)
+    intent_type: str = Field(
+        default="buy_now",
+        pattern="^(buy_now|request_quote)$",
+    )
+    quantity: int = Field(default=1, ge=1, le=99)
+    fulfilment_method: str = Field(
+        default="collection",
+        pattern="^(collection|delivery|on_request)$",
+    )
+
+    @field_validator("shop_id", "quantity", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_integer(value, info.field_name)
+
+    @field_validator("client_request_id", "intent_type", "fulfilment_method", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class DemandSupplyTradeHandoffOut(BaseModel):
