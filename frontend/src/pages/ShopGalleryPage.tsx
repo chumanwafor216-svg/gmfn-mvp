@@ -243,6 +243,16 @@ type SpotlightCommercialIntentType =
 
 type SpotlightFulfilmentMethod = "collection" | "delivery" | "on_request";
 
+type ShopPurchaseDraft = {
+  productId: number;
+  shopId: number;
+  clanId: number;
+  intentType: "buy_now" | "request_quote";
+  quantity: number;
+  fulfilmentMethod: SpotlightFulfilmentMethod;
+  clientRequestId: string;
+};
+
 type SpotlightTransitionState = {
   phase: 'holding' | 'neutral' | 'handoff';
   sourceOccurrenceId: string;
@@ -268,6 +278,78 @@ const publicShopSpotlightSelectionCycles = new Map<
   string,
   PublicShopSpotlightSelectionCycle
 >();
+const PUBLIC_SHOP_PURCHASE_DRAFT_KEY = "gsn.public-shop.purchase-draft.v1";
+
+function newPurchaseRequestId(productId: number): string {
+  const randomPart =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : Date.now() + "-" + Math.random().toString(36).slice(2, 12);
+  return ("shop-purchase-" + productId + "-" + randomPart).slice(0, 80);
+}
+
+function readShopPurchaseDraft(): ShopPurchaseDraft | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const parsed = JSON.parse(
+      window.sessionStorage.getItem(PUBLIC_SHOP_PURCHASE_DRAFT_KEY) || "null"
+    );
+    const productId = positiveNumber(parsed?.productId);
+    const shopId = positiveNumber(parsed?.shopId);
+    const quantity = positiveNumber(parsed?.quantity);
+    const intentType =
+      parsed?.intentType === "request_quote" ? "request_quote" : "buy_now";
+    const fulfilmentMethod = ["collection", "delivery", "on_request"].includes(
+      parsed?.fulfilmentMethod
+    )
+      ? parsed.fulfilmentMethod
+      : intentType === "request_quote"
+      ? "on_request"
+      : "collection";
+    const clientRequestId = safeStr(parsed?.clientRequestId);
+    if (!productId || !shopId || !quantity || clientRequestId.length < 8) {
+      return null;
+    }
+    return {
+      productId,
+      shopId,
+      clanId: positiveNumber(parsed?.clanId),
+      intentType,
+      quantity: Math.min(quantity, 99),
+      fulfilmentMethod,
+      clientRequestId,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeShopPurchaseDraft(draft: ShopPurchaseDraft | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (!draft) {
+      window.sessionStorage.removeItem(PUBLIC_SHOP_PURCHASE_DRAFT_KEY);
+      return;
+    }
+    window.sessionStorage.setItem(
+      PUBLIC_SHOP_PURCHASE_DRAFT_KEY,
+      JSON.stringify(draft)
+    );
+  } catch {
+  }
+}
+
+function shopProductCommercialAction(product: ShopProduct): {
+  intentType: "buy_now" | "request_quote";
+  label: "Request to buy" | "Request quote";
+} {
+  const hasListedPrice =
+    Boolean(firstMeaningful(product.priceText)) &&
+    product.priceText.toLowerCase() !== "price on request";
+  return hasListedPrice
+    ? { intentType: "buy_now", label: "Request to buy" }
+    : { intentType: "request_quote", label: "Request quote" };
+}
 
 type LegacyShopIconName =
   | "alert"
@@ -2049,6 +2131,10 @@ export default function ShopGalleryPage() {
     const query = new URLSearchParams(location.search);
     return positiveNumber(query.get("diary_entry_id") || query.get("update_id"));
   }, [location.search]);
+  const routeShopPurchaseRequested = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return query.get("purchase") === "1";
+  }, [location.search]);
   const ownerSpotlightPreviewRequested = useMemo(() => {
     const query = new URLSearchParams(location.search);
     return query.get("owner_spotlight_preview") === "1";
@@ -2072,6 +2158,7 @@ export default function ShopGalleryPage() {
     return path || "/app/marketplace";
   }, [location.hash, location.pathname, location.search]);
   const expiredSessionRecoveryStartedRef = useRef(false);
+  const shopPurchaseReturnHandledRef = useRef("");
   const recoverExpiredPublicShopSession = useCallback(() => {
     if (expiredSessionRecoveryStartedRef.current) return;
     expiredSessionRecoveryStartedRef.current = true;
@@ -2214,6 +2301,9 @@ export default function ShopGalleryPage() {
   const [spotlightPurchaseFulfilment, setSpotlightPurchaseFulfilment] =
     useState<SpotlightFulfilmentMethod>("collection");
   const [spotlightPurchaseBusy, setSpotlightPurchaseBusy] = useState(false);
+  const [shopPurchaseDraft, setShopPurchaseDraft] =
+    useState<ShopPurchaseDraft | null>(null);
+  const [shopPurchaseBusy, setShopPurchaseBusy] = useState(false);
   const [spotlightProductActionsOpen, setSpotlightProductActionsOpen] =
     useState(true);
   const [error, setError] = useState<string>("");
@@ -5669,6 +5759,58 @@ export default function ShopGalleryPage() {
   const loginReconnectPath = `/login?next=${encodeURIComponent(
     publicShopReturnPath
   )}`;
+  function shopProductReturnPath(
+    product: ShopProduct,
+    purchaseRequested: boolean
+  ): string {
+    const params = new URLSearchParams(location.search);
+    const productId = positiveNumber(product.id);
+    const clanId = positiveNumber(product.originClanId || effectiveShop?.clanId);
+    if (productId) params.set("product_id", String(productId));
+    if (clanId) params.set("clan_id", String(clanId));
+    if (purchaseRequested) {
+      params.set("purchase", "1");
+      params.set("gsn_source", "shop_purchase_action");
+    } else {
+      params.delete("purchase");
+    }
+    const query = params.toString();
+    return `${location.pathname}${query ? `?${query}` : ""}`;
+  }
+
+  useEffect(() => {
+    if (
+      !routeShopPurchaseRequested ||
+      loading ||
+      error ||
+      !getAccessToken() ||
+      signedInOwnsShop ||
+      routeProductId <= 0
+    ) {
+      return;
+    }
+    const product = products.find(
+      (candidate) =>
+        positiveNumber(candidate.id) === routeProductId && candidate.isActive
+    );
+    const returnKey = [
+      location.pathname,
+      routeProductId,
+      positiveNumber(effectiveShop?.id),
+    ].join(":");
+    if (!product || shopPurchaseReturnHandledRef.current === returnKey) return;
+    shopPurchaseReturnHandledRef.current = returnKey;
+    openShopProductPurchase(product);
+  }, [
+    effectiveShop?.id,
+    error,
+    loading,
+    location.pathname,
+    products,
+    routeProductId,
+    routeShopPurchaseRequested,
+    signedInOwnsShop,
+  ]);
   const shopNameText = safeStr(effectiveShop?.shopName || "Shop");
   const shopCategoryText = publicShopCategory();
   const shopDescriptionText = safeStr(
@@ -6104,6 +6246,271 @@ export default function ShopGalleryPage() {
       setSavingProductId(null);
     }
   }
+
+  function openShopProductPurchase(product: ShopProduct) {
+    const productId = positiveNumber(product.id);
+    const shopId = positiveNumber(effectiveShop?.id);
+    const clanId = positiveNumber(product.originClanId || effectiveShop?.clanId);
+    if (!productId || !shopId || !product.isActive || signedInOwnsShop) {
+      setNotice({
+        tone: "error",
+        text: signedInOwnsShop
+          ? "Shop owners cannot submit a purchase request to their own shop."
+          : "This product is not ready for a purchase request.",
+      });
+      return;
+    }
+
+    const action = shopProductCommercialAction(product);
+    const savedDraft = readShopPurchaseDraft();
+    const draft: ShopPurchaseDraft =
+      savedDraft &&
+      savedDraft.productId === productId &&
+      savedDraft.shopId === shopId &&
+      savedDraft.intentType === action.intentType
+        ? savedDraft
+        : {
+            productId,
+            shopId,
+            clanId,
+            intentType: action.intentType,
+            quantity: 1,
+            fulfilmentMethod:
+              action.intentType === "request_quote" ? "on_request" : "collection",
+            clientRequestId: newPurchaseRequestId(productId),
+          };
+    writeShopPurchaseDraft(draft);
+    setShopPurchaseDraft(draft);
+    setOpenProductId(product.id ?? product.slotNumber);
+
+    if (!getAccessToken()) {
+      const returnPath = shopProductReturnPath(product, true);
+      navigate(`/login?next=${encodeURIComponent(returnPath)}`);
+    }
+  }
+
+  function updateShopPurchaseDraft(
+    update: Partial<Pick<ShopPurchaseDraft, "quantity" | "fulfilmentMethod">>
+  ) {
+    setShopPurchaseDraft((current) => {
+      if (!current) return current;
+      const next = { ...current, ...update };
+      writeShopPurchaseDraft(next);
+      return next;
+    });
+  }
+
+  async function submitShopProductPurchase(product: ShopProduct) {
+    const productId = positiveNumber(product.id);
+    const shopId = positiveNumber(effectiveShop?.id);
+    const draft = shopPurchaseDraft;
+    if (
+      !draft ||
+      shopPurchaseBusy ||
+      !getAccessToken() ||
+      !productId ||
+      !shopId ||
+      !product.isActive ||
+      draft.productId !== productId ||
+      draft.shopId !== shopId
+    ) {
+      setNotice({
+        tone: "error",
+        text: "GSN could not revalidate this product. Close the check and open the product again.",
+      });
+      return;
+    }
+
+    setShopPurchaseBusy(true);
+    try {
+      const created = await createMarketplacePurchaseIntention({
+        product_id: productId,
+        shop_id: shopId,
+        clan_id: draft.clanId || null,
+        client_request_id: draft.clientRequestId,
+        intent_type: draft.intentType,
+        quantity: draft.quantity,
+        fulfilment_method: draft.fulfilmentMethod,
+        origin_source: "shop",
+      });
+      const continuation = created.purchase_continuation;
+      const savedIntent = created.commercial_intent;
+      writeShopPurchaseDraft(null);
+      setShopPurchaseDraft(null);
+      navigate(
+        `/app/demand-box?demand_id=${created.id}&queue=mine&focus=conversation`,
+        {
+          state: {
+            originPath: shopProductReturnPath(product, false),
+            purchaseContinuation:
+              continuation?.reused_existing && savedIntent
+                ? {
+                    productTitle: firstMeaningful(
+                      created.product_context?.product_title,
+                      productDisplayTitle(product)
+                    ),
+                    quantity: savedIntent.quantity,
+                    fulfilmentMethod: savedIntent.fulfilment_method,
+                    currentStage: continuation.current_stage,
+                    originSource: savedIntent.origin_source,
+                  }
+                : null,
+          },
+        }
+      );
+    } catch (error: any) {
+      setNotice({
+        tone: "error",
+        text:
+          (safeStr(error?.message) ||
+            "GSN could not record this purchase request right now.") +
+          " Your choices are still here. Try again; GSN will not divert this request outside the private transaction path.",
+      });
+    } finally {
+      setShopPurchaseBusy(false);
+    }
+  }
+
+  function renderShopPurchaseConfirmation(product: ShopProduct) {
+    const productId = positiveNumber(product.id);
+    if (!shopPurchaseDraft || shopPurchaseDraft.productId !== productId) {
+      return null;
+    }
+    const action = shopProductCommercialAction(product);
+    return (
+      <div
+        data-shop-purchase-card-shell="true"
+        role="presentation"
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 20,
+          display: "grid",
+          alignItems: "end",
+          padding: isCompact ? 10 : 16,
+          background: "rgba(2,12,27,0.64)",
+        }}
+      >
+        <div
+          data-shop-purchase-card="true"
+          role="dialog"
+          aria-modal="true"
+          aria-label={action.label}
+          style={{
+            width: "100%",
+            maxWidth: 520,
+            maxHeight: "calc(100% - 12px)",
+            margin: "0 auto",
+            overflowY: "auto",
+            boxSizing: "border-box",
+            padding: isCompact ? 14 : 18,
+            border: "1px solid rgba(85,232,255,0.58)",
+            borderRadius: isCompact ? 18 : 22,
+            color: "#0B1F33",
+            background: "rgba(255,255,255,0.99)",
+            boxShadow: "0 18px 44px rgba(2,12,27,0.48)",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+            <div style={{ display: "grid", gap: 3 }}>
+              <strong style={{ fontSize: isCompact ? 18 : 21 }}>{action.label}</strong>
+              <span style={{ color: "#52677C", fontSize: 12, fontWeight: 760 }}>
+                Check the saved product before sending one private request.
+              </span>
+            </div>
+            <SecondaryButton
+              onClick={() => setShopPurchaseDraft(null)}
+              minWidth={0}
+              stableHeight={40}
+              debugId="shop-gallery.product.purchase.close"
+              aria-label="Close purchase request check"
+              style={{ width: 40, minHeight: 40, borderRadius: 999, padding: 0 }}
+            >
+              {"\u00D7"}
+            </SecondaryButton>
+          </div>
+          <div style={{ marginTop: 10, display: "grid", gap: 3 }}>
+            <strong>{productDisplayTitle(product)}</strong>
+            <span style={{ color: "#0757BC", fontSize: 15, fontWeight: 900 }}>
+              {product.priceText}
+            </span>
+          </div>
+          <div
+            style={{
+              marginTop: 12,
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+              gap: 10,
+            }}
+          >
+            <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 850 }}>
+              Quantity
+              <input
+                type="number"
+                min={1}
+                max={99}
+                value={shopPurchaseDraft.quantity}
+                onChange={(event) =>
+                  updateShopPurchaseDraft({
+                    quantity: Math.min(
+                      99,
+                      Math.max(1, positiveNumber(event.target.value) || 1)
+                    ),
+                  })
+                }
+                data-shop-purchase-field="quantity"
+                style={{ minWidth: 0, minHeight: 44, borderRadius: 12, padding: "8px 10px" }}
+              />
+            </label>
+            <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 850 }}>
+              Fulfilment
+              <select
+                value={shopPurchaseDraft.fulfilmentMethod}
+                onChange={(event) =>
+                  updateShopPurchaseDraft({
+                    fulfilmentMethod: event.target.value as SpotlightFulfilmentMethod,
+                  })
+                }
+                data-shop-purchase-field="fulfilment"
+                style={{ minWidth: 0, minHeight: 44, borderRadius: 12, padding: "8px 10px" }}
+              >
+                <option value="collection">Collection</option>
+                <option value="delivery">Delivery</option>
+                <option value="on_request">To be agreed</option>
+              </select>
+            </label>
+          </div>
+          <div style={{ marginTop: 10, color: "#52677C", fontSize: 11.5, lineHeight: 1.4 }}>
+            Sending this request is not an agreement. Any later agreement is not
+            payment, and a payment report is not bank verification.
+          </div>
+          <PrimaryButton
+            onClick={() => void submitShopProductPurchase(product)}
+            disabled={shopPurchaseBusy}
+            minWidth={0}
+            fullWidth
+            stableHeight={48}
+            debugId="shop-gallery.product.purchase.confirm"
+            style={{ ...primaryBtn(false), marginTop: 12, width: "100%", borderRadius: 14 }}
+          >
+            {shopPurchaseBusy ? "Recording..." : "Confirm request"}
+          </PrimaryButton>
+          <SubtleButton
+            onClick={() => void contactOwnerAboutProduct(product)}
+            minWidth={0}
+            fullWidth
+            stableHeight={42}
+            debugId="shop-gallery.product.purchase.ask-seller"
+            style={{ width: "100%", marginTop: 6, borderRadius: 12 }}
+          >
+            Need more information? Ask seller
+          </SubtleButton>
+        </div>
+      </div>
+    );
+  }
+
   async function contactOwnerAboutProduct(product: ShopProduct) {
     trackMarketplaceAttention("contact_tap", {
       source: "public_shop_product_contact",
@@ -10169,6 +10576,11 @@ export default function ShopGalleryPage() {
                 );
                 const productOpenId = product.id ?? product.slotNumber;
                 const isProductOpen = openProductId === productOpenId;
+                const productCommercialAction =
+                  shopProductCommercialAction(product);
+                const productPurchaseCardOpen =
+                  isProductOpen &&
+                  shopPurchaseDraft?.productId === positiveNumber(product.id);
                 const productMediaKey = [
                   productOpenId,
                   isProductOpen ? "open" : "closed",
@@ -10218,7 +10630,6 @@ export default function ShopGalleryPage() {
                   hasActiveProductVoice && showBlockPlacementAction;
                 const openVisitorActionCount =
                   (canSaveProduct ? 1 : 0) +
-                  (showProductContactAction ? 1 : 0) +
                   (showPublicProductShareAction ? 1 : 0) +
                   (showSimilarProductsAction ? 1 : 0) +
                   (showVisitorProductVoiceAction ? 1 : 0);
@@ -10259,13 +10670,19 @@ export default function ShopGalleryPage() {
                 const visitorOpenProductInfoHeight = Math.round(
                   existingOpenProductHeight * 0.2
                 );
+                const visitorPurchaseActionHeight = isCompact ? 44 : 48;
+                const visitorPurchaseActionGap = isCompact ? 7 : 9;
+                const visitorOpenDockHeight =
+                  visitorOpenProductInfoHeight +
+                  visitorPurchaseActionHeight +
+                  visitorPurchaseActionGap;
                 const visitorOpenProductHeight =
-                  existingOpenProductHeight + visitorOpenProductInfoHeight;
+                  existingOpenProductHeight + visitorOpenDockHeight;
                 const diaryOpenDockHeight = showBlockPlacementAction
                   ? isCompact
                     ? 132
                     : 144
-                  : visitorOpenProductInfoHeight;
+                  : visitorOpenDockHeight;
 
                 return (
                   <article
@@ -10436,6 +10853,9 @@ export default function ShopGalleryPage() {
                         </div>
                       )}
                     </div>
+                    {productPurchaseCardOpen
+                      ? renderShopPurchaseConfirmation(product)
+                      : null}
                     {showOwnerProductVoiceAction ? (
                       <div
                         style={{
@@ -10492,7 +10912,7 @@ export default function ShopGalleryPage() {
                         gridTemplateRows: isProductOpen
                           ? showBlockPlacementAction
                             ? "auto auto auto auto"
-                            : "auto auto auto"
+                            : "auto auto auto auto"
                           : "minmax(0, 1fr) minmax(0, 1fr)",
                         gap: isProductOpen ? (isCompact ? 3 : 4) : "2px 7px",
                         alignContent: "end",
@@ -10696,10 +11116,40 @@ export default function ShopGalleryPage() {
                       >
                         {product.priceText}
                       </span>
+                      {isProductOpen && showProductContactAction ? (
+                        <PrimaryButton
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openShopProductPurchase(product);
+                          }}
+                          minWidth={0}
+                          fullWidth
+                          stableHeight={visitorPurchaseActionHeight}
+                          debugId={`shop-gallery.product.${productOpenId}.purchase`}
+                          data-product-purchase-action="true"
+                          style={{
+                            ...primaryBtn(false),
+                            gridColumn: "1 / -1",
+                            gridRow: "4",
+                            width: "100%",
+                            minWidth: 0,
+                            minHeight: visitorPurchaseActionHeight,
+                            borderRadius: 14,
+                            fontSize: isCompact ? 13 : 14,
+                          }}
+                        >
+                          {productCommercialAction.label}
+                        </PrimaryButton>
+                      ) : null}
                       <div
                         style={{
                           gridColumn: isProductOpen && !showBlockPlacementAction ? "1" : "2",
-                          gridRow: isProductOpen ? "4" : "1 / span 2",
+                          gridRow:
+                            isProductOpen && !showBlockPlacementAction
+                              ? "1"
+                              : isProductOpen
+                              ? "4"
+                              : "1 / span 2",
                           display: "grid",
                           gridTemplateColumns: isProductOpen
                             ? productOpenActionColumns
@@ -10832,41 +11282,6 @@ export default function ShopGalleryPage() {
                             <span aria-hidden="true">
                               {isProductSaved ? "\u2713" : "\uD83D\uDD16"}
                             </span>
-                          </SecondaryButton>
-                        ) : null}
-                        {isProductOpen && showProductContactAction ? (
-                          <SecondaryButton
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              void contactOwnerAboutProduct(product);
-                            }}
-                            minWidth={0}
-                            stableHeight={diaryActionHeight}
-                            debugId={`shop-gallery.product.${productOpenId}.ask-seller`}
-                            aria-label={`Ask whether ${displayTitle} is available`}
-                            title="Ask availability"
-                            data-product-contact-action="true"
-                            style={{
-                              ...secondaryBtn(false),
-                              width: diaryActionWidth,
-                              maxWidth: diaryActionWidth,
-                              minWidth: 0,
-                              minHeight: diaryActionHeight,
-                              padding: 0,
-                              borderRadius: 999,
-                              fontSize: isCompact ? 18 : 20,
-                              lineHeight: 1,
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              color: "#9A3412",
-                              border: "1px solid rgba(217,160,58,0.58)",
-                              background:
-                                "linear-gradient(180deg, #FFFDF4 0%, #FFEFC2 100%)",
-                              boxShadow:
-                                "0 8px 18px rgba(217,160,58,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
-                            }}
-                          >
-                            <span aria-hidden="true">{"\uD83D\uDCAC"}</span>
                           </SecondaryButton>
                         ) : null}
                         {showBlockPlacementAction ? (

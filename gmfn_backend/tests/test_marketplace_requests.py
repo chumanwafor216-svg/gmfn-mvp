@@ -1453,13 +1453,11 @@ def test_purchase_intention_is_private_structured_idempotent_and_allows_repeat_p
                 product_id=41,
                 shop_id=31,
                 clan_id=1,
-                client_request_id="spotlight-buy-41-1002",
+                client_request_id="shop-buy-41-1002",
                 intent_type="buy_now",
                 quantity=1,
                 fulfilment_method="collection",
-                origin_source="spotlight",
-                origin_campaign_id=51,
-                origin_broadcast_id=61,
+                origin_source="shop",
             ),
             db=db,
             current_user=_fake_current_user(),
@@ -1546,6 +1544,19 @@ def test_purchase_intention_is_private_structured_idempotent_and_allows_repeat_p
     assert first.id == duplicate.id
     assert reopened_active.id == first.id
     assert repeat_purchase.id != first.id
+    assert first.purchase_continuation.model_dump() == {
+        "reused_existing": False,
+        "current_stage": "purchase_requested",
+    }
+    assert duplicate.purchase_continuation.model_dump() == {
+        "reused_existing": True,
+        "current_stage": "purchase_requested",
+    }
+    assert reopened_active.purchase_continuation.model_dump() == {
+        "reused_existing": True,
+        "current_stage": "purchase_requested",
+    }
+    assert reopened_active.commercial_intent.model_dump() == first.commercial_intent.model_dump()
     assert first_data["visibility_scope"] == "protected_target"
     assert first_data["routing_status"] == "protected_member_targeted"
     assert first_data["product_context"] == {
@@ -1836,6 +1847,35 @@ def test_spotlight_purchase_two_user_acceptance_recovers_same_transaction_after_
         assert completed_payload["release_status"] == "released"
         assert completed_payload["receipt_status"] == "received"
         assert completed_payload["derived_outcome_state"] == "MUTUALLY_CONFIRMED"
+
+        reopened_from_shop = client.post(
+            "/marketplace/requests/product-purchase-intentions",
+            json={
+                **purchase_payload,
+                "client_request_id": "shop-two-user-reopen-141",
+                "quantity": 2,
+                "fulfilment_method": "collection",
+                "origin_source": "shop",
+                "origin_campaign_id": None,
+                "origin_broadcast_id": None,
+            },
+        )
+        assert reopened_from_shop.status_code == 200, reopened_from_shop.text
+        reopened_payload = reopened_from_shop.json()
+        assert int(reopened_payload["id"]) == request_id
+        assert reopened_payload["purchase_continuation"] == {
+            "reused_existing": True,
+            "current_stage": "received",
+        }
+        assert reopened_payload["commercial_intent"] == {
+            "intent_type": "buy_now",
+            "quantity": 1,
+            "fulfilment_method": "delivery",
+            "origin_source": "spotlight",
+            "status": "purchase_requested",
+            "unit_price": "15",
+            "currency": "GBP",
+        }
 
         with SessionLocal() as db:
             counts = {

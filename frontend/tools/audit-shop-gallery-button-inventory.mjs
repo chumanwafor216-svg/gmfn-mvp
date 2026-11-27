@@ -30,13 +30,13 @@ const shopDiaryVisualSmokeSource = readFileSync(
 const findings = [];
 
 const expectedPageSourceActions = {
-  PrimaryButton: 8,
+  PrimaryButton: 10,
   SecondaryButton: 26,
   StableCtaLink: 8,
-  total: 42,
+  total: 44,
 };
 const expectedExistingWorkflowPlusShortcuts = 4;
-const expectedNativeFieldCount = 1;
+const expectedNativeFieldCount = 3;
 const expectedSignedInShortcutCount = 8;
 const expectedInstallPromptActions = 0;
 const expectedMediaFrameInvocations = 3;
@@ -223,9 +223,9 @@ const expectedActionOrder = [
   "shop-gallery.sign-in-reconnect-shop",
   "shop-gallery.open-marketplace-refresh",
   "shop-gallery.open-product.follow-shop",
+  "shop-gallery.product.${productOpenId}.purchase",
   "shop-gallery.product.${productOpenId}.toggle",
   "shop-gallery.product.${productOpenId}.save",
-  "shop-gallery.product.${productOpenId}.ask-seller",
   "shop-gallery.product.${productOpenId}.owner-share",
   "shop-gallery.product.${productOpenId}.share",
   "shop-gallery.product.${productOpenId}.similar-products",
@@ -559,8 +559,18 @@ assertContains(
 );
 
 assertContains(
-  /debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.save`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.ask-seller`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.similar-products`\}/,
-  "Opened visitor products must keep the vertical action order Close, Like, Ask availability, Share, See similar products, then the product voice note when one exists."
+  /debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.purchase`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.save`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.similar-products`\}/,
+  "Opened visitor products must lead with Request to buy or Request quote, then keep the compact Close, Like, Share, See similar products and optional voice rail."
+);
+
+assertContains(
+  /PUBLIC_SHOP_PURCHASE_DRAFT_KEY[\s\S]*?params\.set\("purchase", "1"\)[\s\S]*?writeShopPurchaseDraft\(draft\)[\s\S]*?createMarketplacePurchaseIntention\([\s\S]*?origin_source: "shop"[\s\S]*?created\.purchase_continuation[\s\S]*?focus=conversation/,
+  "Public Shop purchase requests must preserve one retry identity, return to the exact product after sign-in, revalidate through the purchase-intention API, and open the private conversation."
+);
+
+assertContains(
+  /data-shop-purchase-card="true"[\s\S]*?Sending this request is not an agreement[\s\S]*?payment report is not bank verification[\s\S]*?debugId="shop-gallery\.product\.purchase\.confirm"[\s\S]*?Need more information\? Ask seller/,
+  "Opening the Shop purchase card must be write-free, separate request from agreement and payment, and preserve seller enquiry as secondary."
 );
 
 assertContains(
@@ -579,7 +589,7 @@ assertContains(
 );
 
 assertContains(
-  /const productOpenActionRailWidth = showBlockPlacementAction[\s\S]*?diaryActionWidth \* 4[\s\S]*?const productOpenActionColumns = showBlockPlacementAction[\s\S]*?repeat\(4,[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.ask-seller`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?label=\{`Manage media for \$\{displayTitle\}`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-manage`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
+  /const productOpenActionRailWidth = showBlockPlacementAction[\s\S]*?diaryActionWidth \* 4[\s\S]*?const productOpenActionColumns = showBlockPlacementAction[\s\S]*?repeat\(4,[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?label=\{`Manage media for \$\{displayTitle\}`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-manage`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
   "Expanded owner product cards must keep four fixed actions in order: close, Share, Repost, and the owner-only manage-media plus."
 );
 
@@ -698,7 +708,7 @@ assertNotContains(
 );
 
 assertContains(
-  /debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.ask-seller`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
+  /debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
   "Public Shop product action dock must keep one always-available open/close control and reveal owner Share and Paid Repost only inside the opened product card."
 );
 
@@ -708,8 +718,8 @@ assertContains(
 );
 
 assertContains(
-  /const existingOpenProductHeight = isCompact \? 430 : 380;[\s\S]*?const visitorOpenProductInfoHeight = Math\.round\([\s\S]*?existingOpenProductHeight \* 0\.2[\s\S]*?\);[\s\S]*?const visitorOpenProductHeight =[\s\S]*?existingOpenProductHeight \+ visitorOpenProductInfoHeight;[\s\S]*?minHeight: isProductOpen[\s\S]*?\? showBlockPlacementAction[\s\S]*?\? existingOpenProductHeight[\s\S]*?: visitorOpenProductHeight[\s\S]*?bottom:[\s\S]*?isProductOpen && !showBlockPlacementAction[\s\S]*?\? diaryOpenDockHeight[\s\S]*?: 0/,
-  "Public Shop opened visitor products must reserve the complete former opened height for media and add an exact 20% compact information strip without changing owner geometry."
+  /const existingOpenProductHeight = isCompact \? 430 : 380;[\s\S]*?const visitorOpenProductInfoHeight = Math\.round\([\s\S]*?existingOpenProductHeight \* 0\.2[\s\S]*?\);[\s\S]*?const visitorOpenDockHeight =[\s\S]*?visitorOpenProductInfoHeight \+[\s\S]*?visitorPurchaseActionHeight[\s\S]*?const visitorOpenProductHeight =[\s\S]*?existingOpenProductHeight \+ visitorOpenDockHeight;[\s\S]*?minHeight: isProductOpen[\s\S]*?\? showBlockPlacementAction[\s\S]*?\? existingOpenProductHeight[\s\S]*?: visitorOpenProductHeight[\s\S]*?bottom:[\s\S]*?isProductOpen && !showBlockPlacementAction[\s\S]*?\? diaryOpenDockHeight[\s\S]*?: 0/,
+  "Public Shop opened visitor products must preserve the complete former media height, keep the compact information strip, and add one stable primary purchase row without changing owner geometry."
 );
 assertContains(
   /visibleProducts\.map\(\(product, index\) => \{[\s\S]*?<SpotlightMediaFrame[\s\S]*?mediaStyle=\{\{[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"[\s\S]*?\}\}[\s\S]*?productImageUrl \? \([\s\S]*?<img[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,

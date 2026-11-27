@@ -175,3 +175,12 @@ After completion, they return to Existing Member Sign In.
 - Buyer-reported payment is not labelled as received until the seller acknowledges it, and neither state claims independent bank verification.
 - Share and print/save actions exclude private chat and seller bank details and state the non-escrow, no-warranty, no-automatic-delivery-proof boundary.
 - Marketplace remains a read-only archive or pointer, not a second transaction editor.
+
+## Public Shop Sales-First Test
+
+- A priced product says `Request to buy`; an unpriced product says `Request quote`; `Ask seller` remains a separate enquiry.
+- Opening the compact confirmation writes nothing. Signing in returns to the exact product but never confirms automatically.
+- The confirmation separates request, agreement, payment report, and bank verification and keeps `To be agreed` available.
+- One explicit confirmation opens the exact existing private Demand Box conversation without duplicate request, thread, or seller notification.
+- An uncertain result preserves the draft and retry identity and does not divert the primary purchase action outside GSN.
+- Reused requests show persisted terms and current stage, explain that unsaved Shop choices did not amend them, and preserve original attribution.

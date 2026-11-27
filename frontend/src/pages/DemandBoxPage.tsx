@@ -346,6 +346,36 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
   };
 }
 
+function purchaseContinuationStageLabel(value: unknown): string {
+  const labels: Record<string, string> = {
+    purchase_requested: "Purchase request open",
+    draft: "Seller preparing terms",
+    awaiting_buyer_acceptance: "Waiting for buyer acceptance",
+    amendment_requested: "Changes requested",
+    agreed: "Terms agreed; payment not yet confirmed",
+    payment_instructed: "Seller payment instructions available",
+    payment_claimed: "Buyer reported payment",
+    payment_under_review: "Payment report under seller review",
+    payment_received: "Seller acknowledged receipt",
+    release_pending: "Fulfilment release requested",
+    released: "Seller recorded fulfilment release",
+    received: "Buyer confirmed receipt",
+    not_received: "Buyer reported not received",
+    disputed: "Dispute open",
+    closed: "Transaction closed",
+    cancelled: "Transaction cancelled",
+  };
+  const key = safeStr(value).toLowerCase();
+  return labels[key] || "Existing transaction open";
+}
+
+function purchaseContinuationFulfilmentLabel(value: unknown): string {
+  const key = safeStr(value).toLowerCase();
+  if (key === "collection") return "Collection";
+  if (key === "delivery") return "Delivery";
+  return "To be agreed";
+}
+
 function demandBrandShell(): React.CSSProperties {
   return {
     borderRadius: 26,
@@ -1135,6 +1165,21 @@ function appendRouteQueryParam(to: string, key: string, value: string): string {
 
 export default function DemandBoxPage() {
   const location = useLocation();
+  const purchaseContinuation = useMemo(() => {
+    if (!location.state || typeof location.state !== "object") return null;
+    const raw = (location.state as any).purchaseContinuation;
+    const quantity = positiveNumber(raw?.quantity);
+    if (!raw || !quantity) return null;
+    return {
+      productTitle: safeStr(raw.productTitle) || "Shop product",
+      quantity,
+      fulfilmentMethod: purchaseContinuationFulfilmentLabel(
+        raw.fulfilmentMethod
+      ),
+      currentStage: purchaseContinuationStageLabel(raw.currentStage),
+      originSource: safeStr(raw.originSource).toLowerCase(),
+    };
+  }, [location.state]);
   const routeSelectedClanId = useMemo(() => {
     const query = new URLSearchParams(location.search);
     return positiveNumber(
@@ -4126,6 +4171,30 @@ export default function DemandBoxPage() {
       ) : null}
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
+      {purchaseContinuation ? (
+        <div
+          data-demand-box-purchase-continuation="reused"
+          style={{
+            ...noticeCard("success"),
+            display: "grid",
+            gap: 5,
+          }}
+        >
+          <strong>Existing private request reopened</strong>
+          <span>
+            Saved terms: {purchaseContinuation.productTitle}, quantity{" "}
+            {purchaseContinuation.quantity}, {purchaseContinuation.fulfilmentMethod}.
+          </span>
+          <span>Current stage: {purchaseContinuation.currentStage}.</span>
+          <span>
+            New selections made in the Shop did not amend these saved terms.
+            Continue in this conversation to agree any change.
+          </span>
+          {purchaseContinuation.originSource === "spotlight" ? (
+            <span>The original Spotlight source remains attached.</span>
+          ) : null}
+        </div>
+      ) : null}
 
       {marketNeedPulseOpen ? (
         <Suspense fallback={null}>

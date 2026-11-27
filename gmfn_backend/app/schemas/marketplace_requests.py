@@ -118,6 +118,11 @@ class MarketplaceCommercialIntentOut(BaseModel):
     currency: Optional[str] = None
 
 
+class MarketplacePurchaseContinuationOut(BaseModel):
+    reused_existing: bool
+    current_stage: str
+
+
 class MarketplaceRequestOut(BaseModel):
     id: int
     clan_id: Optional[int] = None
@@ -170,6 +175,7 @@ class MarketplaceRequestOut(BaseModel):
     media_attachments: list[MarketplaceRequestAttachmentOut] = Field(default_factory=list)
     product_context: Optional[MarketplaceProductContextOut] = None
     commercial_intent: Optional[MarketplaceCommercialIntentOut] = None
+    purchase_continuation: Optional[MarketplacePurchaseContinuationOut] = None
 
 
 class MarketplaceProductEnquiryCreate(BaseModel):

@@ -23,6 +23,7 @@ from app.db.models import (
     MarketplaceRequestActivity,
     MarketplaceRequestResponse,
     MarketplaceShop,
+    ProtectedTradeRecord,
     SpotlightCampaign,
     User,
     UserSettings,
@@ -68,6 +69,7 @@ from app.schemas.marketplace_requests import (
     MarketplaceProductContextOut,
     MarketplaceProductEnquiryCreate,
     MarketplacePurchaseIntentionCreate,
+    MarketplacePurchaseContinuationOut,
     MarketplaceRequestCreate,
     MarketplaceRequestOut,
     MarketplaceRequestUpdateStatus,
@@ -523,11 +525,40 @@ def _commercial_intent_context(
     )
 
 
+def _purchase_continuation_context(
+    db: Session,
+    row: MarketplaceRequest,
+    *,
+    reused_existing: bool,
+) -> MarketplacePurchaseContinuationOut:
+    current_stage = "purchase_requested"
+    trade_rows = (
+        db.query(ProtectedTradeRecord)
+        .filter(ProtectedTradeRecord.buyer_user_id == int(row.user_id))
+        .order_by(
+            ProtectedTradeRecord.updated_at.desc(),
+            ProtectedTradeRecord.id.desc(),
+        )
+        .all()
+    )
+    for trade in trade_rows:
+        meta = trade.meta if isinstance(trade.meta, dict) else {}
+        if int(meta.get("source_demand_id") or 0) != int(row.id):
+            continue
+        current_stage = _safe_text(getattr(trade, "status", None)) or current_stage
+        break
+    return MarketplacePurchaseContinuationOut(
+        reused_existing=reused_existing,
+        current_stage=current_stage,
+    )
+
+
 def _to_out(
     db: Session,
     row: MarketplaceRequest,
     user: User | None = None,
     current_user_id: int | None = None,
+    purchase_reused_existing: bool | None = None,
 ) -> MarketplaceRequestOut:
     owner = row.user or db.get(User, int(row.user_id)) or user
     is_mine = current_user_id is not None and int(row.user_id) == int(current_user_id)
@@ -619,6 +650,15 @@ def _to_out(
         audio_deleted_at=audio.deleted_at if audio else None,
         product_context=_product_enquiry_context(db, row),
         commercial_intent=_commercial_intent_context(db, row),
+        purchase_continuation=(
+            _purchase_continuation_context(
+                db,
+                row,
+                reused_existing=purchase_reused_existing,
+            )
+            if purchase_reused_existing is not None
+            else None
+        ),
         media_attachments=[
             MarketplaceRequestAttachmentOut(
                 id=int(media.id),
@@ -1181,7 +1221,13 @@ def create_marketplace_purchase_intention(
             notify_seller=False,
         )
         db.commit()
-        return _to_out(db, existing, current_user, current_user_id=int(current_user.id))
+        return _to_out(
+            db,
+            existing,
+            current_user,
+            current_user_id=int(current_user.id),
+            purchase_reused_existing=True,
+        )
 
     if not payload.start_new_transaction:
         active_intentions = (
@@ -1226,6 +1272,7 @@ def create_marketplace_purchase_intention(
                     active,
                     current_user,
                     current_user_id=int(current_user.id),
+                    purchase_reused_existing=True,
                 )
 
     shop_name = _safe_text(getattr(shop, "name", None)) or "Marketplace shop"
@@ -1321,7 +1368,13 @@ def create_marketplace_purchase_intention(
     )
     db.commit()
     db.refresh(row)
-    return _to_out(db, row, current_user, current_user_id=int(current_user.id))
+    return _to_out(
+        db,
+        row,
+        current_user,
+        current_user_id=int(current_user.id),
+        purchase_reused_existing=False,
+    )
 
 
 @router.post("", response_model=MarketplaceRequestOut)

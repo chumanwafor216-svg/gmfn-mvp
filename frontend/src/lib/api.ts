@@ -10424,6 +10424,10 @@ export type MarketplaceRequestItem = {
     unit_price?: string | null;
     currency?: string | null;
   } | null;
+  purchase_continuation?: {
+    reused_existing: boolean;
+    current_stage: string;
+  } | null;
 };
 
 export async function listMarketplaceRequests(params?: {

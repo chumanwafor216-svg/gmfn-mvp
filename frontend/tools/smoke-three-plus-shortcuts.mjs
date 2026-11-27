@@ -146,6 +146,20 @@ const purchaseRequest = {
   },
   created_at: '2026-11-27T09:00:00Z',
 };
+const shopPurchaseRequest = {
+  ...purchaseRequest,
+  commercial_intent: {
+    ...purchaseRequest.commercial_intent,
+    quantity: 1,
+    fulfilment_method: 'collection',
+    origin_source: 'spotlight',
+    status: 'purchase_requested',
+  },
+  purchase_continuation: {
+    reused_existing: true,
+    current_stage: 'agreed',
+  },
+};
 const vaultProduct = {
   id: 701,
   shop_id: 101,
@@ -468,10 +482,14 @@ async function installMocks(page, scenario) {
     }
     if (path === '/marketplace/requests/product-purchase-intentions' && method === 'POST') {
       scenario.purchaseConfirmations = Number(scenario.purchaseConfirmations || 0) + 1;
-      return route.fulfill(json(purchaseRequest));
+      return route.fulfill(json(
+        scenario.shopPurchaseConversation ? shopPurchaseRequest : purchaseRequest
+      ));
     }
     if (path === '/marketplace/requests' && method === 'GET') {
-      const items = scenario.purchaseConversation ? [purchaseRequest] : [];
+      const items = scenario.purchaseConversation || scenario.shopPurchaseConversation
+        ? [purchaseRequest]
+        : [];
       return route.fulfill(json({ items, total: items.length }));
     }
     if (path === '/marketplace/requests/75/supply-matches' && method === 'GET') {
@@ -2121,6 +2139,71 @@ async function testSpotlightPurchaseConversation(browser, baseUrl) {
   }
 }
 
+async function testShopPurchaseConversation(browser, baseUrl) {
+  const scenario = {
+    identity: visitorId,
+    ownerSpotlightState: 'none',
+    demandPolicyOff: false,
+    memberOfCommunity: true,
+    shopPurchaseConversation: true,
+    purchaseConfirmations: 0,
+    mutations: [],
+  };
+  const { context, page } = await newPhonePage(browser, scenario);
+  try {
+    await page.goto(
+      `${baseUrl}/shop/${ownerId}?clan_id=8&product_id=${product.id}`,
+      { waitUntil: 'domcontentloaded', timeout: 60_000 }
+    );
+    const purchaseButton = page.locator('[data-product-purchase-action="true"]');
+    await purchaseButton.waitFor({ state: 'visible', timeout: 20_000 });
+    if ((await purchaseButton.innerText()).trim() !== 'Request to buy') {
+      throw new Error(`Priced Shop product exposed the wrong action: ${await purchaseButton.innerText()}`);
+    }
+    await purchaseButton.click();
+    const purchaseCard = page.locator('[data-shop-purchase-card="true"]');
+    await purchaseCard.waitFor({ state: 'visible', timeout: 20_000 });
+    if (businessWrites(scenario.mutations).length !== 0) {
+      throw new Error('Opening the Shop purchase check issued a business write.');
+    }
+    await purchaseCard.locator('[data-shop-purchase-field="quantity"]').fill('2');
+    await purchaseCard.locator('[data-shop-purchase-field="fulfilment"]').selectOption('on_request');
+    await purchaseCard.getByRole('button', { name: 'Confirm request', exact: true }).click();
+    await page.waitForURL(
+      /\/app\/demand-box\?demand_id=75&queue=mine&focus=conversation$/,
+      { timeout: 20_000 }
+    );
+    const continuation = page.locator('[data-demand-box-purchase-continuation="reused"]');
+    await continuation.waitFor({ state: 'visible', timeout: 20_000 });
+    const continuationText = (await continuation.innerText()).replace(/\s+/g, ' ');
+    for (const expected of [
+      'Existing private request reopened',
+      'quantity 1, Collection',
+      'Current stage: Terms agreed; payment not yet confirmed',
+      'New selections made in the Shop did not amend these saved terms',
+      'The original Spotlight source remains attached',
+    ]) {
+      if (!continuationText.includes(expected)) {
+        throw new Error(`Shop continuation omitted ${expected}: ${continuationText}`);
+      }
+    }
+    const conversation = page.locator('[data-gsn-demand-conversations="integrated"]');
+    await conversation.waitFor({ state: 'visible', timeout: 20_000 });
+    await conversation.locator(
+      '[data-gsn-demand-private-replies="true"][data-gsn-demand-conversation-access="available"]'
+    ).waitFor({ state: 'visible', timeout: 20_000 });
+    if (scenario.purchaseConfirmations !== 1) {
+      throw new Error(`Shop confirmation issued ${scenario.purchaseConfirmations} requests instead of one.`);
+    }
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    if (overflow > 1) {
+      throw new Error(`Shop purchase continuation overflowed horizontally by ${overflow}px.`);
+    }
+  } finally {
+    await context.close();
+  }
+}
+
 async function completeSpotlightProductCreation(page, scenario) {
   const editor = page.locator('#shop-assets-product-editor');
   try {
@@ -2340,12 +2423,15 @@ const progressiveOnly = process.env.GSN_SMOKE_PROGRESSIVE_ONLY === '1';
 const shopItemJourneyOnly = process.env.GSN_SMOKE_SHOP_ITEM_JOURNEY_ONLY === '1';
 const spotlightPlusOnly = process.env.GSN_SMOKE_SPOTLIGHT_PLUS_ONLY === '1';
 const spotlightPurchaseOnly = process.env.GSN_SMOKE_SPOTLIGHT_PURCHASE_ONLY === '1';
+const shopPurchaseOnly = process.env.GSN_SMOKE_SHOP_PURCHASE_ONLY === '1';
 const spotlightDraftOnly = process.env.GSN_SMOKE_SPOTLIGHT_DRAFT_ONLY === '1';
 const spotlightVideoRecoveryOnly = process.env.GSN_SMOKE_SPOTLIGHT_VIDEO_RECOVERY_ONLY === '1';
 
 try {
   if (spotlightVideoRecoveryOnly) {
     await testSpotlightVideoPreparationRetry(browser, baseUrl);
+  } else if (shopPurchaseOnly) {
+    await testShopPurchaseConversation(browser, baseUrl);
   } else if (spotlightPurchaseOnly) {
     await testSpotlightPurchaseConversation(browser, baseUrl);
   } else if (spotlightDraftOnly) {
@@ -2373,7 +2459,11 @@ try {
   console.log(JSON.stringify({
     ok: true,
     environment: 'local Vite + mocked synthetic API at 390x844',
-    checks: spotlightVideoRecoveryOnly ? [
+    checks: shopPurchaseOnly ? [
+      'priced Public Shop product opens a write-free Request to buy check',
+      'one explicit confirmation opens the exact existing private conversation',
+      'reused requests show persisted terms and stage while preserving Spotlight attribution',
+    ] : spotlightVideoRecoveryOnly ? [
       'browser metadata uncertainty defers to authenticated server preparation instead of permanent rejection',
       'an interrupted preparation keeps the draft and selected video available for retry',
       'successful retry yields a preview and exactly one campaign publication',
