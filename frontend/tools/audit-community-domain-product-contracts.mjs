@@ -4641,8 +4641,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/LoginPage.tsx",
-  /function safeAppReturnTarget\(value: unknown\): string \{[\s\S]*target === "\/app" \|\| target\.startsWith\("\/app\/"\)[\s\S]*const nextTarget = safeAppReturnTarget\(searchParams\.get\("next"\)\);[\s\S]*if \(nextTarget\) return nextTarget;[\s\S]*nav\(publishRecoveryTarget\(\) \|\| redirectTarget/,
-  "Login must preserve authenticated /app continuations such as the Community Domain selector after sign-in.",
+  /import \{ safeAuthenticatedReturnTarget \} from "\.\.\/lib\/nav";[\s\S]*const nextTarget = safeAuthenticatedReturnTarget\(searchParams\.get\("next"\)\);[\s\S]*if \(nextTarget\) return nextTarget;[\s\S]*nav\(publishRecoveryTarget\(\) \|\| redirectTarget/,
+  "Login must preserve authenticated /app continuations and exact Public Shop product returns after sign-in.",
   { frontend: true }
 );
 

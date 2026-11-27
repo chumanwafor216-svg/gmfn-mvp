@@ -22,6 +22,27 @@ export function isSafeInternalPath(value: string): boolean {
   return raw.startsWith("/") && !raw.startsWith("//") && !/^[a-z][a-z0-9+.-]*:/i.test(raw);
 }
 
+const AUTHENTICATED_RETURN_ORIGIN = "https://gsn.local";
+
+export function safeAuthenticatedReturnTarget(value: unknown): string {
+  const target = String(value || "").trim();
+  if (!isSafeInternalPath(target) || target.includes("\\")) return "";
+
+  try {
+    const parsed = new URL(target, AUTHENTICATED_RETURN_ORIGIN);
+    if (parsed.origin !== AUTHENTICATED_RETURN_ORIGIN) return "";
+
+    const pathname = parsed.pathname;
+    const isAppTarget = pathname === "/app" || pathname.startsWith("/app/");
+    const isPublicShopTarget = /^\/shop\/[A-Za-z0-9_-]+\/?$/.test(pathname);
+    if (!isAppTarget && !isPublicShopTarget) return "";
+
+    return `${pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return "";
+  }
+}
+
 export function originState(
   location: Pick<Location, "pathname" | "search" | "hash">
 ): OriginState {

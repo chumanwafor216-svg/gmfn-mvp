@@ -32,6 +32,7 @@ import {
 } from "../lib/gsnSupportContacts";
 import { APP_ROUTES, DEFAULT_AUTHENTICATED_ROUTE } from "../lib/appRoutes";
 import { structuredErrorDetail } from "../lib/structuredErrors";
+import { safeAuthenticatedReturnTarget } from "../lib/nav";
 
 const LOGIN_SESSION_NOTICE_MS = 12_000;
 const BACKGROUND_SESSION_NOTICE =
@@ -513,11 +514,6 @@ function joinRedirectFromLoginSearch(searchParams: URLSearchParams): string {
   return finalQuery ? `/join?${finalQuery}` : "/join";
 }
 
-function safeAppReturnTarget(value: unknown): string {
-  const target = safeStr(value);
-  if (target === "/app" || target.startsWith("/app/")) return target;
-  return "";
-}
 
 export default function LoginPage() {
   const nav = useNavigate();
@@ -564,7 +560,7 @@ export default function LoginPage() {
     const inviteTarget = joinRedirectFromLoginSearch(searchParams);
     if (inviteTarget) return inviteTarget;
     if (publishRecoveryReturnTarget) return publishRecoveryReturnTarget;
-    const nextTarget = safeAppReturnTarget(searchParams.get("next"));
+    const nextTarget = safeAuthenticatedReturnTarget(searchParams.get("next"));
     if (nextTarget) return nextTarget;
     if (routeState.from?.pathname && routeState.from.pathname !== "/login") {
       return `${routeState.from.pathname}${routeState.from.search || ""}${

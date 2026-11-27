@@ -402,7 +402,12 @@ def _request_routing_hint(
     return "Visible through the community queue."
 
 
-def _request_action_url(row: MarketplaceRequest, queue: str | None = None) -> str:
+def _request_action_url(
+    row: MarketplaceRequest,
+    queue: str | None = None,
+    *,
+    focus_conversation: bool = False,
+) -> str:
     clan_id = getattr(row, "clan_id", None)
     request_id = int(getattr(row, "id", 0) or 0)
     queue_key = queue or (
@@ -418,6 +423,8 @@ def _request_action_url(row: MarketplaceRequest, queue: str | None = None) -> st
     query_parts.append(f"queue={queue_key}")
     if request_id > 0:
         query_parts.append(f"demand_id={request_id}")
+    if focus_conversation:
+        query_parts.append("focus=conversation")
     return f"/app/demand-box?{'&'.join(query_parts)}"
 
 
@@ -1306,7 +1313,7 @@ def create_marketplace_purchase_intention(
     if note:
         description_lines.append(f"Buyer note: {note}")
 
-    created = create_marketplace_request(
+    created = _create_marketplace_request(
         MarketplaceRequestCreate(
             clan_id=product_clan_id,
             title=f"{intent_labels[payload.intent_type]}: {product_title}"[:180],
@@ -1320,6 +1327,7 @@ def create_marketplace_purchase_intention(
         ),
         db=db,
         current_user=current_user,
+        notification_focus_conversation=True,
     )
     row = db.get(MarketplaceRequest, int(created.id))
     if not row:
@@ -1382,6 +1390,16 @@ def create_marketplace_request(
     payload: MarketplaceRequestCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+):
+    return _create_marketplace_request(payload, db, current_user)
+
+
+def _create_marketplace_request(
+    payload: MarketplaceRequestCreate,
+    db: Session,
+    current_user: User,
+    *,
+    notification_focus_conversation: bool = False,
 ):
     from app.services.notification_service import create_notification
 
@@ -1501,6 +1519,9 @@ def create_marketplace_request(
             action_url=_request_action_url(
                 row,
                 "tagged" if tagged_for_recipient else None,
+                focus_conversation=(
+                    notification_focus_conversation and tagged_for_recipient
+                ),
             ),
             action_label="View request",
         )

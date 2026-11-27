@@ -21,6 +21,7 @@
     "audit:link-contracts": "node tools/audit-link-contracts.mjs",
     "audit:pwa-boot-recovery": "node tools/audit-pwa-boot-recovery.mjs",
     "audit:entry-auth": "node tools/audit-entry-auth-contracts.mjs",
+    "test:authenticated-return-target": "node tools/test-authenticated-return-target.mjs",
     "audit:route-fallthrough": "node tools/audit-route-fallthrough.mjs",
     "audit:surface-ownership": "node tools/audit-surface-ownership-contract.mjs",
     "audit:authenticated-mobile-tab-rail": "node tools/audit-authenticated-mobile-tab-rail.mjs",

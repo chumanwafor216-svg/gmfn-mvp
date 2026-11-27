@@ -554,21 +554,15 @@ assertContains(
 );
 
 assertContains(
-  "src/App.tsx",
-  /import \{[\s\S]*?peekPublishRecoveryTarget,[\s\S]*?publishRecoveryTarget,[\s\S]*?\} from "\.\/lib\/publishRecovery";[\s\S]*?const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";[\s\S]*?function currentRoutePath[\s\S]*?#marketplace-owned-links[\s\S]*?#marketplace-rosca[\s\S]*?#marketplace-loans-support[\s\S]*?#marketplace-paid-network-placement[\s\S]*?safeHash[\s\S]*?function RememberAuthenticatedAppRoute\(\)[\s\S]*?rememberAuthenticatedAppPath\(currentRoutePath\(location\)\)[\s\S]*?function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const token = getAccessToken\(\);[\s\S]*?const publishTarget = token[\s\S]*?\? publishRecoveryTarget\(\)[\s\S]*?: peekPublishRecoveryTarget\(\);[\s\S]*?if \(token\)[\s\S]*?<Navigate[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| DEFAULT_AUTHENTICATED_ROUTE\}[\s\S]*?if \(publishTarget\)[\s\S]*?next\.set\("next", publishTarget\);[\s\S]*?to=\{`\/login\?\$\{next\.toString\(\)\}`\}[\s\S]*?from: routeStateFromTarget\(publishTarget\)[\s\S]*?<RememberAuthenticatedAppRoute \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<CoverPage \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<WelcomePage \/>/,
-  "Authenticated sessions that reach Cover/Welcome must recover to the app route, while temporary Marketplace section hashes are stripped from remembered app destinations."
-);
-
-assertContains(
-  "src/lib/publishRecovery.ts",
-  /const PUBLISH_RECOVERY_TTL_MS = 30 \* 60 \* 1000;[\s\S]*?const PUBLISH_RECOVERY_WINDOW_NAME_PREFIX = "gmfn_publish_recovery:";[\s\S]*?function storageAreas\(\): Storage\[\][\s\S]*?window\.sessionStorage[\s\S]*?window\.localStorage[\s\S]*?export function rememberPublishRecovery[\s\S]*?window\.name = `\$\{PUBLISH_RECOVERY_WINDOW_NAME_PREFIX\}\$\{payload\}`;[\s\S]*?export function peekPublishRecoveryTarget\(\)[\s\S]*?readPublishRecoveryTarget\(false\)[\s\S]*?readWindowNameMarker\(\)/,
-  "Publish recovery must survive phone reloads by using a 30-minute marker, session/local storage, a window.name fallback, and a non-consuming peek."
-);
-
-assertContains(
   "src/pages/LoginPage.tsx",
-  /import \{[\s\S]*?peekPublishRecoveryTarget,[\s\S]*?publishRecoveryTarget,[\s\S]*?\} from "\.\.\/lib\/publishRecovery";[\s\S]*?function safeAppReturnTarget\(value: unknown\): string \{[\s\S]*?target === "\/app" \|\| target\.startsWith\("\/app\/"\)[\s\S]*?const publishRecoveryReturnTarget = useMemo\([\s\S]*?peekPublishRecoveryTarget\(\)[\s\S]*?if \(publishRecoveryReturnTarget\) return publishRecoveryReturnTarget;[\s\S]*?const nextTarget = safeAppReturnTarget\(searchParams\.get\("next"\)\);[\s\S]*?nav\(publishRecoveryTarget\(\) \|\| redirectTarget, \{ replace: true \}\)/,
-  "Login must accept only safe /app publish return targets and consume publish recovery after successful sign-in."
+  /import \{ safeAuthenticatedReturnTarget \} from "\.\.\/lib\/nav";[\s\S]*?const publishRecoveryReturnTarget = useMemo\([\s\S]*?peekPublishRecoveryTarget\(\)[\s\S]*?if \(publishRecoveryReturnTarget\) return publishRecoveryReturnTarget;[\s\S]*?const nextTarget = safeAuthenticatedReturnTarget\(searchParams\.get\("next"\)\);[\s\S]*?nav\(publishRecoveryTarget\(\) \|\| redirectTarget, \{ replace: true \}\)/,
+  "Login must preserve safe app or exact Public Shop return targets and consume publish recovery after successful sign-in."
+);
+
+assertContains(
+  "src/lib/nav.ts",
+  /safeAuthenticatedReturnTarget[\s\S]*?isSafeInternalPath\(target\)[\s\S]*?target\.includes\("\\\\"\)[\s\S]*?pathname === "\/app"[\s\S]*?pathname\.startsWith\("\/app\/"\)[\s\S]*?isPublicShopTarget[\s\S]*?return `\$\{pathname\}\$\{parsed\.search\}\$\{parsed\.hash\}`/,
+  "Authenticated return targets must allow existing app routes and one exact Public Shop while rejecting external, malformed, or nested Shop paths."
 );
 
 assertContains(

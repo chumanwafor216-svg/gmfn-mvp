@@ -1598,6 +1598,10 @@ def test_purchase_intention_is_private_structured_idempotent_and_allows_repeat_p
         if item["title"] == "Private request for you"
     ]
     assert len(purchase_notifications) == 2
+    assert all(
+        item["action_url"].endswith("&focus=conversation")
+        for item in purchase_notifications
+    )
     assert not [
         item
         for item in seller_notifications["items"]
@@ -1728,6 +1732,9 @@ def test_spotlight_purchase_two_user_acceptance_recovers_same_transaction_after_
             and f"demand_id={request_id}" in item["action_url"]
         ]
         assert len(purchase_notifications) == 1
+        assert purchase_notifications[0]["action_url"].endswith(
+            "&focus=conversation"
+        )
 
         seller_thread = client.get(f"/demand-box/requests/{request_id}/responses")
         assert seller_thread.status_code == 200, seller_thread.text
