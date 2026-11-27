@@ -2524,10 +2524,15 @@ Rules:
   community-visible Shop products. The blank choice remains a general Shop
   promotion and creates no product or purchase path. `Add a new Shop item`
   opens the existing guided numbered-space product process; it preserves the
-  current Spotlight draft and returns only after a real product save, with that
-  product selected. Review and publish must carry the selected product id to
-  backend Shop/owner/community validation. A linked product creates no request
-  until the buyer explicitly confirms on Public Shop.
+  current Spotlight draft, opens the validated empty space directly in the
+  existing guided creator, and returns only after a real product save, with
+  that product selected. Ordinary in-app return must retain the live local
+  picture/video selection. If the owner hard-refreshes, restore serialisable
+  words, links and settings but state plainly that a lost local file must be
+  reselected; never silently replace it with the new product picture. Review
+  and publish must carry the selected product id to backend Shop/owner/community
+  validation. A linked product creates no request until the buyer explicitly
+  confirms on Public Shop.
 - Owner-approved 2026-10-26 phone correction: Shop Control Free Spotlight uses
   member language: `Promote your shop`, `What are you selling?`, `Add a picture
   or short video`, and `How should customers contact you?`. It must not show a

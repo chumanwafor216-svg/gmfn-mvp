@@ -2,6 +2,7 @@
 
 import { chromium } from "@playwright/test";
 import { createServer } from "vite";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -11,37 +12,21 @@ const visitorGsnId = "GSN-U-SPOTVISITOR";
 const activatedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 const authorizedExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 const syntheticSpotlightImagePath = '/synthetic-spotlight.svg';
-const syntheticSpotlightAudioPrefix = '/synthetic-spotlight-audio-';
+const syntheticSpotlightVideoPrefix = '/synthetic-spotlight-video-';
 const syntheticSpotlightImage =
   `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'><rect width='1200' height='800' fill='#1f5fb7'/></svg>`;
-
-function syntheticSpotlightAudio(durationSeconds = 12) {
-  const sampleRate = 8_000;
-  const safeDurationSeconds = Math.max(Number(durationSeconds || 0), 0.25);
-  const sampleCount = Math.round(sampleRate * safeDurationSeconds);
-  const dataLength = sampleCount * 2;
-  const audio = Buffer.alloc(44 + dataLength);
-  audio.write('RIFF', 0, 'ascii');
-  audio.writeUInt32LE(36 + dataLength, 4);
-  audio.write('WAVE', 8, 'ascii');
-  audio.write('fmt ', 12, 'ascii');
-  audio.writeUInt32LE(16, 16);
-  audio.writeUInt16LE(1, 20);
-  audio.writeUInt16LE(1, 22);
-  audio.writeUInt32LE(sampleRate, 24);
-  audio.writeUInt32LE(sampleRate * 2, 28);
-  audio.writeUInt16LE(2, 32);
-  audio.writeUInt16LE(16, 34);
-  audio.write('data', 36, 'ascii');
-  audio.writeUInt32LE(dataLength, 40);
-  for (let index = 0; index < sampleCount; index += 1) {
-    const sample = Math.round(
-      Math.sin((2 * Math.PI * 220 * index) / sampleRate) * 900
-    );
-    audio.writeInt16LE(sample, 44 + index * 2);
-  }
-  return audio;
-}
+const syntheticSpotlightVideos = new Map(
+  [7, 9, 12].map((durationSeconds) => [
+    durationSeconds,
+    Buffer.from(
+      readFileSync(
+        new URL(`./fixtures/spotlight-video-${durationSeconds}.mp4.b64`, import.meta.url),
+        'utf8'
+      ).trim(),
+      'base64'
+    ),
+  ])
+);
 const shop = {
   id: 101,
   shop_id: 101,
@@ -229,9 +214,9 @@ function genericPayload(path, identity) {
   return { items: [], results: [], records: [], total: 0, status: "ok" };
 }
 
-async function newPage(browser, identity = "") {
+async function newPage(browser, identity = "", viewport = { width: 390, height: 844 }) {
   const context = await browser.newContext({
-    viewport: { width: 390, height: 844 },
+    viewport,
     deviceScaleFactor: 2,
     isMobile: true,
     hasTouch: true,
@@ -267,11 +252,14 @@ async function observeActiveSpotlight(page, durationMs) {
   while (Date.now() < deadline) {
     const snapshot = await page.locator('#public-shop-spotlight').evaluate((rail) => ({
       type: rail.getAttribute('data-spotlight-presentation-type') || '',
-      title:
-        rail.querySelector('[data-spotlight-information-title=true]')?.textContent?.trim() || '',
+      campaignId: rail.getAttribute('data-spotlight-campaign-id') || '',
     }));
     const previous = observations[observations.length - 1];
-    if (!previous || previous.type !== snapshot.type || previous.title !== snapshot.title) {
+    if (
+      !previous ||
+      previous.type !== snapshot.type ||
+      previous.campaignId !== snapshot.campaignId
+    ) {
       observations.push(snapshot);
     }
     await page.waitForTimeout(120);
@@ -283,24 +271,26 @@ async function installMocks(page, scenario) {
   await page.route("**/*", async (route) => {
     const requestPath = new URL(route.request().url()).pathname;
     if (
-      requestPath.startsWith(syntheticSpotlightAudioPrefix) &&
-      requestPath.endsWith('.wav')
+      requestPath.startsWith(syntheticSpotlightVideoPrefix) &&
+      requestPath.endsWith('.mp4')
     ) {
       const streamIndex = Number(
-        requestPath.slice(syntheticSpotlightAudioPrefix.length).replace(/\.wav$/, '')
+        requestPath.slice(syntheticSpotlightVideoPrefix.length).replace(/\.mp4$/, '')
       );
+      const requestedDuration = Number(
+        Array.isArray(scenario.videoDurations)
+          ? scenario.videoDurations[streamIndex - 1]
+          : 12
+      );
+      const video = syntheticSpotlightVideos.get(requestedDuration) || syntheticSpotlightVideos.get(12);
       const delayMs = Number(scenario.videoResponseDelayMs || 0);
       if (delayMs > 0) {
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
       return route.fulfill({
         status: 200,
-        contentType: 'audio/wav',
-        body: syntheticSpotlightAudio(
-          Array.isArray(scenario.videoDurations)
-            ? scenario.videoDurations[streamIndex - 1]
-            : 12
-        ),
+        contentType: 'video/mp4',
+        body: video,
       });
     }
     if (requestPath === syntheticSpotlightImagePath) {
@@ -312,6 +302,9 @@ async function installMocks(page, scenario) {
     }
     if (!isApi(route.request().url())) return route.continue();
     const path = apiPath(route.request().url());
+    if (path === '/auth/me') {
+      return route.fulfill(json(member(scenario.identity)));
+    }
     if (path === `/marketplace/public/shop/${ownerGsnId}`) {
       return route.fulfill(
         json({
@@ -386,6 +379,19 @@ async function installMocks(page, scenario) {
           );
         }
         if (scenario.replayAfterStream) {
+          if (Number(scenario.replayCycleResetResponses || 0) <= 0) {
+            scenario.replayCycleResetResponses = 1;
+            return route.fulfill(
+              json({
+                serving_contract_version: 2,
+                item: null,
+                items: [],
+                presentation: null,
+                canonical_visibility: { rotation_cycle_complete: true },
+                rejection_code: "no_delivery_opportunity",
+              })
+            );
+          }
           scenario.replayResponses = Number(scenario.replayResponses || 0) + 1;
           const items = Array.from(
             { length: scenario.streamLimit },
@@ -435,7 +441,7 @@ async function installMocks(page, scenario) {
             : (Array.isArray(scenario.videoMediaPattern)
                 ? scenario.videoMediaPattern[streamIndex - 1] === 'video'
                 : scenario.videoMedia)
-            ? `${syntheticSpotlightAudioPrefix}${streamIndex}.wav`
+            ? `${syntheticSpotlightVideoPrefix}${streamIndex}.mp4`
             : null,
         presentationExpiresInMs: scenario.presentationExpiresInMs || 25_000,
       });
@@ -562,137 +568,57 @@ async function testOwnerReopenPreviewBackAndResume(browser, baseUrl) {
   await openOwnerSpotlight(page);
   const spotlightRail = page.locator("#public-shop-spotlight");
   await spotlightRail.scrollIntoViewIfNeeded();
-  const spotlightWhatsApp = spotlightRail.getByRole("button", {
-    name: /WhatsApp/i,
-  });
-  if ((await spotlightWhatsApp.count()) === 0) {
+  const spotlightShare = spotlightRail.locator(
+    '[data-cta-id="shop-gallery.spotlight.owner-share"]'
+  );
+  if ((await spotlightShare.count()) === 0) {
     throw new Error(
-      'Owner Spotlight lost its WhatsApp action after reveal: ' +
+      'Owner Spotlight lost its truthful Share action after reveal: ' +
         (await spotlightRail.innerText())
     );
   }
-  await spotlightWhatsApp.waitFor({ state: "visible", timeout: 15_000 });
+  await spotlightShare.waitFor({ state: "visible", timeout: 15_000 });
   const spotlightScreen = spotlightRail.locator('[data-spotlight-screen="true"]');
-  const spotlightInformation = spotlightRail.locator(
-    '[data-spotlight-information-overlay="true"]'
-  );
   const spotlightActionRow = spotlightRail.locator(
     '[data-spotlight-action-row="true"]'
   );
-  const spotlightDisclosure = spotlightRail.locator(
-    '[data-spotlight-information-disclosure="true"]'
-  );
-  const spotlightDetails = spotlightRail.locator(
-    '[data-spotlight-information-details="true"]'
-  );
-  const spotlightDetailsToggle = spotlightDisclosure.locator('summary');
-  const [railBounds, screenBounds, informationBounds, actionRowBounds, whatsappBounds] =
-    await Promise.all([
-      spotlightRail.boundingBox(),
-      spotlightScreen.boundingBox(),
-      spotlightInformation.boundingBox(),
-      spotlightActionRow.boundingBox(),
-      spotlightWhatsApp.boundingBox(),
-    ]);
+  const [railBounds, screenBounds, actionRowBounds, shareBounds] = await Promise.all([
+    spotlightRail.boundingBox(),
+    spotlightScreen.boundingBox(),
+    spotlightActionRow.boundingBox(),
+    spotlightShare.boundingBox(),
+  ]);
   if ((await spotlightRail.getAttribute("data-spotlight-layout")) !== "unified-spotlight-stage") {
     throw new Error("Public Shop Spotlight lost the approved unified-stage layout marker.");
   }
-  if ((await spotlightDisclosure.getAttribute("open")) !== null) {
-    throw new Error("Compact Spotlight information should start collapsed on phone.");
-  }
-  if (await spotlightDetails.isVisible()) {
-    throw new Error("Compact Spotlight secondary facts were visible before the user opened them.");
-  }
-  const collapsedInformationText = await spotlightInformation.innerText();
-  for (const expectedSummary of [
-    "Owner Visibility Shop",
-    "Owner Visibility Community",
-    "Owner saved Spotlight",
-  ]) {
-    if (!collapsedInformationText.includes(expectedSummary)) {
-      throw new Error(
-        `Collapsed Spotlight summary did not show ${expectedSummary}: ${collapsedInformationText}`
-      );
-    }
-  }
-  if (
-    collapsedInformationText.includes("NGN 2500") ||
-    collapsedInformationText.includes("Food and catering")
-  ) {
-    throw new Error(
-      `Collapsed Spotlight leaked secondary facts: ${collapsedInformationText}`
-    );
+  if (await spotlightRail.getByRole('button', { name: /WhatsApp/i }).count()) {
+    throw new Error('Owner self-preview incorrectly offered the owner a self-contact action.');
   }
   if (
     !railBounds ||
     !screenBounds ||
-    !informationBounds ||
     !actionRowBounds ||
-    !whatsappBounds ||
+    !shareBounds ||
     screenBounds.height < 510 ||
     screenBounds.height > 621 ||
-    informationBounds.y < screenBounds.y - 1 ||
-    informationBounds.y + informationBounds.height > screenBounds.y + screenBounds.height + 1 ||
     screenBounds.x < railBounds.x - 1 ||
     screenBounds.x + screenBounds.width > railBounds.x + railBounds.width + 1 ||
-    informationBounds.x < screenBounds.x - 1 ||
-    informationBounds.x + informationBounds.width > screenBounds.x + screenBounds.width + 1 ||
     Math.abs(actionRowBounds.y - (screenBounds.y + screenBounds.height)) > 1 ||
     actionRowBounds.x < railBounds.x - 1 ||
     actionRowBounds.x + actionRowBounds.width > railBounds.x + railBounds.width + 1 ||
-    whatsappBounds.x < actionRowBounds.x - 1 ||
-    whatsappBounds.x + whatsappBounds.width > actionRowBounds.x + actionRowBounds.width + 1
+    shareBounds.x < actionRowBounds.x - 1 ||
+    shareBounds.x + shareBounds.width > actionRowBounds.x + actionRowBounds.width + 1
   ) {
     throw new Error(
-      `Compact Spotlight collapsed geometry is invalid: ${JSON.stringify({
+      `Compact owner Spotlight geometry is invalid: ${JSON.stringify({
         railBounds,
         screenBounds,
-        informationBounds,
         actionRowBounds,
-        whatsappBounds,
+        shareBounds,
       })}`
     );
   }
-  await spotlightDetailsToggle.click();
-  await spotlightDetails.waitFor({ state: "visible", timeout: 5_000 });
-  const expandedInformationText = await spotlightInformation.innerText();
-  for (const expectedInformation of [
-    "Prepared offer with clear information for community members.",
-    "NGN 2500",
-    "Available now",
-    "Food and catering",
-  ]) {
-    if (!expandedInformationText.includes(expectedInformation)) {
-      throw new Error(
-        `Expanded Spotlight information did not show ${expectedInformation}: ${expandedInformationText}`
-      );
-    }
-  }
-  const [expandedScreenBounds, expandedInformationBounds] = await Promise.all([
-    spotlightScreen.boundingBox(),
-    spotlightInformation.boundingBox(),
-  ]);
-  if (
-    !expandedScreenBounds ||
-    !expandedInformationBounds ||
-    Math.abs(expandedScreenBounds.y - screenBounds.y) > 1 ||
-    Math.abs(expandedScreenBounds.height - screenBounds.height) > 1 ||
-    expandedInformationBounds.y < expandedScreenBounds.y - 1 ||
-    expandedInformationBounds.y + expandedInformationBounds.height >
-      expandedScreenBounds.y + expandedScreenBounds.height + 1
-  ) {
-    throw new Error(
-      `Opening Spotlight information moved the media or escaped its overlay bounds: ${JSON.stringify({
-        screenBounds,
-        expandedScreenBounds,
-        expandedInformationBounds,
-      })}`
-    );
-  }
-  await spotlightDetailsToggle.click();
-  await spotlightDetails.waitFor({ state: "hidden", timeout: 5_000 });
-  await spotlightWhatsApp.waitFor({ state: "visible", timeout: 5_000 });
-  if (process.env.GSN_SPOTLIGHT_SCREENSHOT_PATH) {
+  await spotlightShare.waitFor({ state: "visible", timeout: 5_000 });  if (process.env.GSN_SPOTLIGHT_SCREENSHOT_PATH) {
     await spotlightRail.screenshot({
       path: process.env.GSN_SPOTLIGHT_SCREENSHOT_PATH,
     });
@@ -841,10 +767,13 @@ async function testDelayedOwnerAuthentication(browser, baseUrl) {
     waitUntil: "domcontentloaded",
     timeout: 60_000,
   });
-  await page.locator('[data-public-shop-more="secondary"] > summary').waitFor({
-    state: "visible",
+  await page.locator('#public-shop-spotlight').waitFor({
+    state: "attached",
     timeout: 15_000,
   });
+  if (scenario.ownerStatusCalls !== 0) {
+    throw new Error('Public Shop requested owner-only Spotlight status before delayed authentication completed.');
+  }
 
   await page.evaluate((identity) => {
     localStorage.setItem("access_token", "synthetic-delayed-owner-token");
@@ -899,7 +828,7 @@ async function testOwnerInspectionDoesNotReenterAfterRefresh(browser, baseUrl) {
         JSON.stringify(observations)
     );
   }
-  if (!observations.some((entry) => entry.title === 'Community Spotlight 2')) {
+  if (!observations.some((entry) => entry.campaignId === '703')) {
     throw new Error(
       'Owner rotation did not continue to the next community placement after refresh: ' +
         JSON.stringify(observations)
@@ -1127,7 +1056,7 @@ async function testSpotlightSoundPersistsAcrossRotation(browser, baseUrl) {
   await page.getByText('Community Spotlight 2', { exact: true }).waitFor({
     state: 'visible',
     // The sound tap intentionally pauses rotation for eight seconds before
-    // the ten-second governed video dwell resumes.
+    // the governed video dwell resumes.
     timeout: 25_000,
   });
   await page.getByText('Community Spotlight 3', { exact: true }).waitFor({
@@ -1137,7 +1066,7 @@ async function testSpotlightSoundPersistsAcrossRotation(browser, baseUrl) {
   await spotlightRail
     .getByRole('button', { name: 'Turn video sound off' })
     .waitFor({ state: 'visible', timeout: 10_000 });
-  const rotatedVideoState = await spotlightRail.locator('video').evaluate((video) => ({
+  const rotatedVideoState = await spotlightRail.locator('video').first().evaluate((video) => ({
     muted: video.muted,
     volume: video.volume,
     source: video.getAttribute('src'),
@@ -1228,8 +1157,8 @@ async function testVideoPosterDoesNotStartDwellBeforeVideoReady(browser, baseUrl
   if (scenario.qualifyCalls !== 0 || scenario.impressionCalls !== 0) {
     throw new Error('Delayed video qualified while only its poster was available.');
   }
-  await waitForSpotlightDiagnostic(page, 'video', 10_000);
-  await page.waitForTimeout(1_100);
+  await waitForSpotlightDiagnostic(page, 'video', 12_000);
+  await page.waitForTimeout(2_500);
   if (scenario.qualifyCalls !== 1 || scenario.impressionCalls !== 1) {
     throw new Error(
       `Ready delayed video did not qualify exactly once: ${JSON.stringify(scenario)}`
@@ -1280,9 +1209,9 @@ async function testMediaAwareSpotlightDwell(browser, baseUrl) {
     qualifyCalls: 0,
     impressionCalls: 0,
     diaryCalls: 0,
-    streamLimit: 5,
-    videoMediaPattern: ['image', 'video', 'video', 'video', 'image'],
-    videoDurations: [null, 7, 9, 12, null],
+    streamLimit: 6,
+    videoMediaPattern: ['image', 'image', 'video', 'video', 'video', 'image'],
+    videoDurations: [null, null, 7, 9, 12, null],
     presentationExpiresInMs: 45_000,
   };
   const { context, page } = await newPage(browser, visitorGsnId);
@@ -1294,23 +1223,42 @@ async function testMediaAwareSpotlightDwell(browser, baseUrl) {
   await revealSpotlightSurface(page);
 
   const cases = [
-    { label: 'Visitor eligible Spotlight', next: 'Community Spotlight 2', kind: 'image', dwell: 5_000 },
-    { label: 'Community Spotlight 2', next: 'Community Spotlight 3', kind: 'video', dwell: 8_000 },
-    { label: 'Community Spotlight 3', next: 'Community Spotlight 4', kind: 'video', dwell: 9_000 },
-    { label: 'Community Spotlight 4', next: 'Community Spotlight 5', kind: 'video', dwell: 10_000 },
+    { label: 'Visitor eligible Spotlight', next: 'Community Spotlight 2', campaignId: 702, nextCampaignId: 703, kind: 'image', dwell: 5_000 },
+    { label: 'Community Spotlight 2', next: 'Community Spotlight 3', campaignId: 703, nextCampaignId: 704, kind: 'image', dwell: 5_000 },
+    { label: 'Community Spotlight 3', next: 'Community Spotlight 4', campaignId: 704, nextCampaignId: 705, kind: 'video', dwell: 8_000 },
+    { label: 'Community Spotlight 4', next: 'Community Spotlight 5', campaignId: 705, nextCampaignId: 706, kind: 'video', dwell: 9_000 },
+    { label: 'Community Spotlight 5', next: 'Community Spotlight 6', campaignId: 706, nextCampaignId: 707, kind: 'video', dwell: 12_000 },
   ];
   for (const dwellCase of cases) {
-    await page.getByText(dwellCase.label, { exact: true }).waitFor({
-      state: 'visible',
-      timeout: 15_000,
-    });
-    await waitForSpotlightDiagnostic(page, dwellCase.kind, dwellCase.dwell);
+    await page.waitForFunction(
+      (campaignId) =>
+        document.querySelector('#public-shop-spotlight')?.getAttribute('data-spotlight-campaign-id') === String(campaignId),
+      dwellCase.campaignId,
+      { timeout: 15_000 }
+    );
+    try {
+      await waitForSpotlightDiagnostic(page, dwellCase.kind, dwellCase.dwell);
+    } catch (error) {
+      const diagnostic = await page.locator('#public-shop-spotlight').evaluate((element) => ({
+        label: element.querySelector('[data-spotlight-information-title=true]')?.textContent?.trim() || '',
+        mediaKind: element.getAttribute('data-spotlight-media-kind'),
+        dwellMs: element.getAttribute('data-spotlight-dwell-ms'),
+        media: [...element.querySelectorAll('video')].map((video) => ({
+          src: video.getAttribute('src'),
+          duration: video.duration,
+          readyState: video.readyState,
+        })),
+      }));
+      throw new Error(`Spotlight media diagnostic did not settle for ${dwellCase.label}: ${JSON.stringify({ dwellCase, diagnostic, cause: String(error) })}`);
+    }
     const startedAt = Date.now();
     try {
-      await page.getByText(dwellCase.next, { exact: true }).waitFor({
-        state: 'visible',
-        timeout: dwellCase.dwell + 5_000,
-      });
+      await page.waitForFunction(
+        (campaignId) =>
+          document.querySelector('#public-shop-spotlight')?.getAttribute('data-spotlight-campaign-id') === String(campaignId),
+        dwellCase.nextCampaignId,
+        { timeout: dwellCase.dwell + 5_000 }
+      );
     } catch (error) {
       const diagnostic = await page
         .locator('#public-shop-spotlight')
@@ -1357,6 +1305,168 @@ async function testMediaAwareSpotlightDwell(browser, baseUrl) {
   return scenario;
 }
 
+async function testSpotlightFullscreenAndContain(browser, baseUrl) {
+  const scenario = {
+    identity: visitorGsnId,
+    ownerState: 'live',
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    impressionCalls: 0,
+    diaryCalls: 0,
+    streamLimit: 1,
+  };
+  const { context, page } = await newPage(browser, visitorGsnId);
+  await installMocks(page, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await revealSpotlightSurface(page);
+  const rail = page.locator('#public-shop-spotlight');
+  await page.getByText('Visitor eligible Spotlight', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 15_000,
+  });
+  const image = rail.locator('[data-spotlight-screen="true"] img').first();
+  if ((await image.evaluate((element) => getComputedStyle(element).objectFit)) !== 'contain') {
+    throw new Error('Spotlight cropped the complete owner-supplied image instead of containing it.');
+  }
+  const compactBounds = await rail.locator('[data-spotlight-screen="true"]').boundingBox();
+  await rail.getByRole('button', { name: 'Open full-screen Spotlight' }).tap();
+  await page.waitForFunction(() =>
+    document.querySelector('#public-shop-spotlight')?.getAttribute('data-spotlight-immersive') === 'true'
+  );
+  const immersiveBounds = await rail.locator('[data-spotlight-screen="true"]').boundingBox();
+  if (!compactBounds || !immersiveBounds || immersiveBounds.height <= compactBounds.height) {
+    throw new Error(
+      `Spotlight full-screen action did not expand the media stage: ${JSON.stringify({ compactBounds, immersiveBounds })}`
+    );
+  }
+  await rail.getByRole('button', { name: 'Close full-screen Spotlight' }).tap();
+  await page.waitForFunction(() =>
+    document.querySelector('#public-shop-spotlight')?.getAttribute('data-spotlight-immersive') === 'false'
+  );
+  await context.close();
+  return scenario;
+}
+
+async function testSpotlightPrivacyOnBackground(browser, baseUrl) {
+  const scenario = {
+    identity: visitorGsnId,
+    ownerState: 'live',
+    ownerStatusCalls: 0,
+    canonicalCalls: 0,
+    legacyBroadcastCalls: 0,
+    qualifyCalls: 0,
+    impressionCalls: 0,
+    diaryCalls: 0,
+    streamLimit: 2,
+  };
+  const { context, page } = await newPage(browser, visitorGsnId);
+  await installMocks(page, scenario);
+  await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await revealSpotlightSurface(page);
+  await page.waitForFunction(
+    () =>
+      document.querySelector('#public-shop-spotlight')?.getAttribute('data-spotlight-campaign-id') === '702',
+    undefined,
+    { timeout: 15_000 }
+  );
+  const beforeBackground = {
+    qualifyCalls: scenario.qualifyCalls,
+    impressionCalls: scenario.impressionCalls,
+  };
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.locator('[data-gsn-background-session-cover="active"]').waitFor({
+    state: 'visible',
+    timeout: 5_000,
+  });
+  await page.waitForTimeout(1_200);
+  if (
+    scenario.qualifyCalls !== beforeBackground.qualifyCalls ||
+    scenario.impressionCalls !== beforeBackground.impressionCalls
+  ) {
+    throw new Error('Spotlight counted hidden exposure after the privacy guard closed the session.');
+  }
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => false });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.waitForURL(/\/login\?session=closed$/, { timeout: 10_000 });
+  await page.getByText('Sign in to GSN', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 10_000,
+  });
+  if (
+    scenario.qualifyCalls !== beforeBackground.qualifyCalls ||
+    scenario.impressionCalls !== beforeBackground.impressionCalls
+  ) {
+    throw new Error('Spotlight counted exposure while returning through the privacy sign-in gate.');
+  }
+  await context.close();
+  return scenario;
+}
+async function testSpotlightPhoneWidths(browser, baseUrl) {
+  const widths = [360, 390, 430];
+  const results = [];
+  for (const width of widths) {
+    const scenario = {
+      identity: visitorGsnId,
+      ownerState: 'live',
+      ownerStatusCalls: 0,
+      canonicalCalls: 0,
+      legacyBroadcastCalls: 0,
+      qualifyCalls: 0,
+      impressionCalls: 0,
+      diaryCalls: 0,
+      streamLimit: 1,
+    };
+    const { context, page } = await newPage(
+      browser,
+      visitorGsnId,
+      { width, height: width === 360 ? 780 : width === 390 ? 844 : 932 }
+    );
+    await installMocks(page, scenario);
+    await page.goto(`${baseUrl}/shop/${ownerGsnId}`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 60_000,
+    });
+    await revealSpotlightSurface(page);
+    await page.getByText('Visitor eligible Spotlight', { exact: true }).waitFor({
+      state: 'visible',
+      timeout: 15_000,
+    });
+    const geometry = await page.locator('#public-shop-spotlight').evaluate((rail) => {
+      const image = rail.querySelector('[data-spotlight-screen="true"] img');
+      return {
+        railWidth: rail.getBoundingClientRect().width,
+        viewportWidth: window.innerWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        objectFit: image ? getComputedStyle(image).objectFit : '',
+      };
+    });
+    if (
+      geometry.railWidth > geometry.viewportWidth + 1 ||
+      geometry.documentWidth > geometry.viewportWidth + 1 ||
+      geometry.objectFit !== 'contain'
+    ) {
+      throw new Error(`Spotlight phone-width geometry failed at ${width}px: ${JSON.stringify(geometry)}`);
+    }
+    results.push({ width, ...geometry });
+    await context.close();
+  }
+  return { widths: results };
+}
 async function testProductMediaRequiresVisibleDwell(browser, baseUrl) {
   const scenario = {
     identity: visitorGsnId,
@@ -1435,9 +1545,9 @@ async function testExpiredOwnerContentFailsClosed(browser, baseUrl) {
   }
   const expiredRail = page.locator("#public-shop-spotlight");
   if (
-    (await expiredRail.getByRole("button", { name: /WhatsApp/i }).count()) !== 0
+    (await expiredRail.locator('[data-cta-id="shop-gallery.spotlight.primary-commercial-action"]').count()) !== 0
   ) {
-    throw new Error("Expired Spotlight kept an actionable WhatsApp contact.");
+    throw new Error("Expired Spotlight kept an actionable commercial destination.");
   }
   if ((await expiredRail.locator('img[alt="Owner Visibility Shop"]').count()) !== 0) {
     throw new Error("Expired Spotlight reused the shop hero as if it were live campaign media.");
@@ -1471,11 +1581,32 @@ async function testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting(
   });
   await revealSpotlightSurface(page);
 
-  const waitForSpotlightLabel = async (label) => {
-    await page.getByText(label, { exact: true }).waitFor({
-      state: "visible",
-      timeout: 15_000,
-    });
+  const waitForSpotlight = async (campaignId, presentationType) => {
+    try {
+      await page.waitForFunction(
+        ({ expectedCampaignId, expectedPresentationType }) => {
+          const rail = document.querySelector('#public-shop-spotlight');
+          return (
+            rail?.getAttribute('data-spotlight-campaign-id') === expectedCampaignId &&
+            rail?.getAttribute('data-spotlight-presentation-type') === expectedPresentationType
+          );
+        },
+        {
+          expectedCampaignId: String(campaignId),
+          expectedPresentationType: presentationType,
+        },
+        { timeout: 20_000 }
+      );
+    } catch (error) {
+      const diagnostic = await page.locator('#public-shop-spotlight').evaluate((rail) => ({
+        campaignId: rail.getAttribute('data-spotlight-campaign-id'),
+        presentationType: rail.getAttribute('data-spotlight-presentation-type'),
+        transition: rail.getAttribute('data-spotlight-transition'),
+        queueSize: rail.getAttribute('data-spotlight-queue-size'),
+        text: rail.textContent,
+      }));
+      throw new Error(`Replay did not reach campaign ${campaignId}/${presentationType}: ${JSON.stringify({ diagnostic, scenario, cause: String(error) })}`);
+    }
     return Date.now();
   };
   const assertReadableDwell = (fromLabel, fromTime, toLabel, toTime) => {
@@ -1493,15 +1624,12 @@ async function testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting(
     }
   };
 
-  const firstVisibleAt = await waitForSpotlightLabel("Visitor eligible Spotlight");
+  const firstVisibleAt = await waitForSpotlight(702, "fresh");
   await page.evaluate(() => {
     window.open = () => null;
   });
-  await page
-    .locator("#public-shop-spotlight")
-    .getByRole("button", { name: /WhatsApp/i })
-    .tap();
-  const secondVisibleAt = await waitForSpotlightLabel("Community Spotlight 2");
+  await page.locator("#public-shop-spotlight").dispatchEvent('pointerdown');
+  const secondVisibleAt = await waitForSpotlight(703, "fresh");
   assertReadableDwell(
     "Visitor eligible Spotlight",
     firstVisibleAt,
@@ -1510,17 +1638,17 @@ async function testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting(
   );
   if (secondVisibleAt - firstVisibleAt > 14_000) {
     throw new Error(
-      "Touch-focused Spotlight contact paused rotation beyond the bounded interaction window."
+      "Touch-focused Spotlight interaction paused rotation beyond the bounded interaction window."
     );
   }
-  const thirdVisibleAt = await waitForSpotlightLabel("Community Spotlight 3");
+  const thirdVisibleAt = await waitForSpotlight(704, "fresh");
   assertReadableDwell(
     "Community Spotlight 2",
     secondVisibleAt,
     "Community Spotlight 3",
     thirdVisibleAt
   );
-  const firstReplayAt = await waitForSpotlightLabel("Visitor eligible Spotlight");
+  const firstReplayAt = await waitForSpotlight(702, "replay");
   assertReadableDwell(
     "Community Spotlight 3",
     thirdVisibleAt,
@@ -1530,7 +1658,7 @@ async function testCanonicalReplayKeepsCommunityRotationWithoutDoubleCounting(
 
   const qualifiedBeforeReplayRotation = scenario.qualifyCalls;
   const impressionsBeforeReplayRotation = scenario.impressionCalls;
-  const secondReplayAt = await waitForSpotlightLabel("Community Spotlight 2");
+  const secondReplayAt = await waitForSpotlight(703, "replay");
   assertReadableDwell(
     "Visitor eligible Spotlight",
     firstReplayAt,
@@ -1647,17 +1775,24 @@ async function testCanonicalRefreshFailureClearsConsumedSpotlight(browser, baseU
     state: 'visible',
     timeout: 15_000,
   });
-  await page.getByText(/Community Spotlight could not refresh/).waitFor({
-    state: 'attached',
-    timeout: 15_000,
-  });
   await page.waitForTimeout(13_000);
-  if (
-    await page.getByText('Visitor eligible Spotlight', { exact: true }).count()
-  ) {
-    throw new Error('A transient refresh outage kept a consumed Spotlight painted.');
+  const retainedCampaignId = await page
+    .locator('#public-shop-spotlight')
+    .getAttribute('data-spotlight-campaign-id');
+  if (retainedCampaignId !== '702') {
+    throw new Error(`A transient refresh outage erased a still-current presentation (campaign=${retainedCampaignId}).`);
   }
-  if (scenario.canonicalCalls !== 5 || scenario.canonicalFailuresRemaining !== 0) {
+  await page.waitForFunction(
+    () =>
+      document.querySelector('#public-shop-spotlight')?.getAttribute('data-spotlight-campaign-id') !== '702',
+    undefined,
+    { timeout: 20_000 }
+  );
+  await page.getByText('No other Spotlight is ready', { exact: true }).waitFor({
+    state: 'visible',
+    timeout: 5_000,
+  });
+  if (scenario.canonicalCalls !== 6 || scenario.canonicalFailuresRemaining !== 0) {
     throw new Error(
       `Canonical refresh retry was not bounded: calls=${scenario.canonicalCalls}, remaining=${scenario.canonicalFailuresRemaining}`
     );
@@ -1696,9 +1831,13 @@ async function testDuplicateCanonicalRefillUsesCooldown(browser, baseUrl) {
     timeout: 15_000,
   });
   await page.waitForTimeout(8_000);
-  if (await page.getByText('Visitor eligible Spotlight', { exact: true }).count()) {
+  const cooldownState = await page.locator('#public-shop-spotlight').evaluate((rail) => ({
+    campaignId: rail.getAttribute('data-spotlight-campaign-id'),
+    transition: rail.getAttribute('data-spotlight-transition'),
+  }));
+  if (cooldownState.campaignId !== '702' || cooldownState.transition !== 'holding') {
     throw new Error(
-      'A consumed Spotlight remained painted during duplicate-refill cooldown.'
+      `Duplicate-refill cooldown did not retain the still-authorised frame without replay: ${JSON.stringify(cooldownState)}`
     );
   }
   if (scenario.canonicalCalls !== 2) {
@@ -1746,10 +1885,10 @@ async function testPresentationExpiryRemovesContact(browser, baseUrl) {
   if (
     await page
       .locator("#public-shop-spotlight")
-      .getByRole("button", { name: /WhatsApp/i })
+      .locator('[data-cta-id="shop-gallery.spotlight.primary-commercial-action"]')
       .count()
   ) {
-    throw new Error("Expired canonical presentation retained its WhatsApp action.");
+    throw new Error("Expired canonical presentation retained a commercial action.");
   }
   await context.close();
   return scenario;
@@ -1776,6 +1915,9 @@ try {
     delayedVideoReadiness: testVideoPosterDoesNotStartDwellBeforeVideoReady,
     failedVideoFallback: testFailedVideoUsesFiveSecondImageFallback,
     mediaAwareDwell: testMediaAwareSpotlightDwell,
+    fullscreenContain: testSpotlightFullscreenAndContain,
+    backgroundForeground: testSpotlightPrivacyOnBackground,
+    phoneWidths: testSpotlightPhoneWidths,
     soundPersistence: testSpotlightSoundPersistsAcrossRotation,
     productVisibleDwell: testProductMediaRequiresVisibleDwell,
     expiredOwnerContent: testExpiredOwnerContentFailsClosed,

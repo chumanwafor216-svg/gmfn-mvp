@@ -27,7 +27,7 @@ requirePattern(galleryFile, /preserveNaturalColor=\{true\}/, "expanded Public Sh
 requirePattern(galleryFile, /imageLoading="eager"[\s\S]*?imageFetchPriority="high"[\s\S]*?imageSizes="\(max-width: 720px\) 100vw, 720px"/, "active Spotlight image must receive high-priority mobile sizing");
 requirePattern(galleryFile, /imageFetchPriority="low"[\s\S]*?preloadVideo='auto'/, "the next governed medium must preload without competing at high priority");
 requirePattern(galleryFile, /data-spotlight-screen="true"[\s\S]*?background: "#020C1B"/, "expanded Spotlight must retain one continuous premium dark presentation");
-requirePattern(galleryFile, /data-spotlight-screen="true"[\s\S]*?objectFit: "cover"[\s\S]*?objectFit: 'cover'/, "active and preloaded Spotlight media must fill the approved edge-to-edge stage");
+requirePattern(galleryFile, /data-spotlight-screen="true"[\s\S]*?objectFit: "contain"[\s\S]*?objectFit: 'contain'/, "active and preloaded Spotlight media must preserve the complete approved medium without cropping");
 requirePattern(galleryFile, /loopVideo=\{[\s\S]*?preloadVideo='auto'/, "existing smooth bounded video loop and preload behavior must remain");
 
 if (findings.length > 0) {

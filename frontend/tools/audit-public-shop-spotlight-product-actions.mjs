@@ -16,6 +16,10 @@ const spotlightWorkflowSource = readFileSync(
   join(repoRoot, "frontend/src/pages/shopControl/ShopControlSpotlightWorkflow.tsx"),
   "utf8"
 );
+const shopAssetsSource = readFileSync(
+  join(repoRoot, "frontend/src/pages/ShopAssetsPage.tsx"),
+  "utf8"
+);
 const findings = [];
 
 function requirePattern(pattern, message) {
@@ -123,6 +127,20 @@ if (
   )
 ) {
   findings.push("The composer must offer explicit product selection without silently creating a product.");
+}
+if (
+  !/hadLocalImage: Boolean\(spotlightImageFile\)[\s\S]*?hadLocalVideo: Boolean\(spotlightVideoFile\)[\s\S]*?cannot recover the local \$\{missingMediaLabel\} after a refresh[\s\S]*?!localImageNeedsReselection/.test(
+    shopControlSource
+  )
+) {
+  findings.push("The creator handoff must preserve ordinary local media and explicitly block silent media substitution after a refresh.");
+}
+if (
+  !/ownerProductManageRequest\.source === "spotlight-product"[\s\S]*?!publicGallerySlots\[matchedSlotIndex\][\s\S]*?openAddForPublicSlot\(matchedSlot\)/.test(
+    shopAssetsSource
+  )
+) {
+  findings.push("Spotlight must open the existing guided product creator directly at the validated empty Shop space.");
 }
 requirePattern(
   /\{ allowShopFallback: false \}/,

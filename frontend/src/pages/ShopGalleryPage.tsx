@@ -9186,7 +9186,7 @@ export default function ShopGalleryPage() {
                     mediaStyle={{
                       width: "100%",
                       height: "100%",
-                      objectFit: "cover",
+                      objectFit: "contain",
                       objectPosition: "center",
                     }}
                   />
@@ -9245,7 +9245,7 @@ export default function ShopGalleryPage() {
                       mediaStyle={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover',
+                        objectFit: 'contain',
                         objectPosition: 'center',
                       }}
                     />
@@ -9301,7 +9301,7 @@ export default function ShopGalleryPage() {
                       padding: isCompact ? "70px 18px 18px" : 24,
                       color: "#E8F2FF",
                       background:
-                        "radial-gradient(circle at 50% 42%, rgba(21,82,138,0.58), rgba(2,12,27,0.96) 62%)",
+                        "rgba(2,12,27,0.96)",
                       textAlign: "center",
                       pointerEvents: "auto",
                     }}
@@ -9317,10 +9317,10 @@ export default function ShopGalleryPage() {
                       }}
                     >
                       <strong style={{ color: "#FFFFFF", fontSize: "1.15em" }}>
-                        Preparing the next Spotlight
+                        No other Spotlight is ready
                       </strong>
                       <span>
-                        GSN is checking the next eligible advert. No blank showing is counted.
+                        Browse this shop while GSN checks again. No blank showing is counted.
                       </span>
                     </span>
                   </div>

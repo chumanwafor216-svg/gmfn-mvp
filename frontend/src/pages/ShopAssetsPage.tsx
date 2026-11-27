@@ -1768,6 +1768,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
 
     const matchedSlot = matchedSlotIndex + 1;
     ownerProductManageAppliedRef.current = true;
+    if (
+      ownerProductManageRequest.source === "spotlight-product" &&
+      !publicGallerySlots[matchedSlotIndex]
+    ) {
+      openAddForPublicSlot(matchedSlot);
+      return;
+    }
     setSelectedPublicSlot(matchedSlot);
     setGalleryActionNotice({
       tone: "info",
@@ -1792,6 +1799,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     loading,
     ownerProductManageRequest.blockNumber,
     ownerProductManageRequest.productId,
+    ownerProductManageRequest.source,
     publicGallerySlots,
   ]);
 

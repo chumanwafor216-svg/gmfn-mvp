@@ -1,5 +1,18 @@
 # Active Handoff Notes
 
+## Spotlight combined correction and acceptance candidate - 2026-11-27
+
+- Candidate `2d84654bbd0dc90f8d9dcb9ee7e8015a972b2399` was investigated before correction on `codex/demand-box-complete-journey-20261126`. This batch remains local: no push, merge, migration, Render trigger, production write or infrastructure change occurred.
+- Public Shop now preserves the complete owner-supplied Spotlight picture/video with `contain`, and stable exhausted inventory states that no other Spotlight is ready instead of promising an indefinite preparation state.
+- The explicit Spotlight product handoff opens the existing guided creator directly at the validated empty numbered space. Merely opening or previewing the creator writes nothing; only `Post item` creates the product and returns its exact saved identity.
+- Ordinary in-app return preserves a live local Spotlight file. A hard refresh can restore only serialisable words, URLs and settings, so the owner receives an explicit reselection warning and the saved product picture is never silently substituted for the lost local Spotlight picture.
+- Focused browser acceptance passed real 7/9/12-second MP4 readiness, delayed readiness, failed-video fallback, image/image, image/video, video/video and video/image transitions, sound continuity, fullscreen open/close, `contain`, 360/390/430 geometry, replay, retry, expiry and the existing background privacy sign-in gate. The complete Spotlight owner-visibility smoke passed in `255.3s`.
+- Focused commerce evidence passed: four backend tests prove deterministic private request/thread reuse, one seller notification, exact advertisement attribution, owned public-product validation, invalid Shop/community/product rejection and canonical GSN House routing. The three-plus Spotlight draft, purchase and ordinary product journeys also passed.
+- Additional green gates: Public Shop product-action, premium-media, presentation, controls, Shop Control inventory and Public Shop inventory audits; JavaScript syntax checks; `git diff --check`; and the frontend production build (`338 modules`).
+- Broad protected-button failures are not regressions from this batch: raw `VoiceNoteRecorder` buttons plus DemandBox smooth-scroll/no-jump and Marketplace overscroll rules exactly match the recorded pre-batch baseline. Three visual sub-audits were blocked by sandbox `spawn EPERM`. The broad three-plus audit also retains an unchanged Marketplace DemandBox-shortcut baseline failure; the focused Spotlight modes are green.
+- Physical two-user/device acceptance remains unverified and is not claimed: this workstation has no `adb` installation and no authorised buyer/seller test-account references. A real-device pass must still confirm publication, buyer confirmation, immediate conversation access, exactly one seller notification, Trade Record, payment continuation and fulfilment.
+- Security-contract truth: backgrounding the authenticated app intentionally closes the session through `BackgroundSessionGuard`; this batch proves no hidden qualification/impression and return through sign-in. It does not falsely claim playback resumes after backgrounding.
+
 ## Spotlight sales-first correction implemented locally - 2026-11-27
 
 - Founder-authorised local batch implemented on `codex/demand-box-complete-journey-20261126`; no push, merge, migration, Render trigger or production deployment was performed.

@@ -4635,6 +4635,8 @@ export default function ShopControlPage() {
           videoUrl: spotlightVideoUrl,
           priorityMode: spotlightPriorityMode,
           mediaChoice: spotlightMediaChoice,
+          hadLocalImage: Boolean(spotlightImageFile),
+          hadLocalVideo: Boolean(spotlightVideoFile),
           naturalFinishEnabled: spotlightNaturalFinishEnabled,
           naturalFinishSeconds: spotlightNaturalFinishSeconds,
           savedAt: new Date().toISOString(),
@@ -4665,15 +4667,27 @@ export default function ShopControlPage() {
     });
     if (ownerProductManageRequest.source !== "spotlight-product") return;
 
+    let localImageNeedsReselection = false;
+    let localVideoNeedsReselection = false;
     try {
       const raw = window.sessionStorage.getItem(
         SPOTLIGHT_PRODUCT_HANDOFF_STORAGE_KEY
       );
       const draft = raw ? JSON.parse(raw) : null;
       if (draft && typeof draft === "object") {
+        const restoredImageUrl = firstTruthy(draft.imageUrl);
+        const restoredVideoUrl = firstTruthy(draft.videoUrl);
+        localImageNeedsReselection = Boolean(
+          draft.hadLocalImage && !spotlightImageFile && !restoredImageUrl
+        );
+        localVideoNeedsReselection = Boolean(
+          draft.hadLocalVideo && !spotlightVideoFile && !restoredVideoUrl
+        );
         setSpotlightMessage(firstTruthy(draft.message));
-        setSpotlightImageUrl(firstTruthy(draft.imageUrl));
-        setSpotlightVideoUrl(firstTruthy(draft.videoUrl));
+        setSpotlightImageUrl(restoredImageUrl);
+        setSpotlightVideoUrl(restoredVideoUrl);
+        setSpotlightImagePreviewUrl(restoredImageUrl);
+        setSpotlightVideoPreviewUrl(restoredVideoUrl);
         setSpotlightPriorityMode(draft.priorityMode === "paid" ? "paid" : "free");
         setSpotlightMediaChoice(
           ["image", "video", "both"].includes(draft.mediaChoice)
@@ -4682,6 +4696,17 @@ export default function ShopControlPage() {
         );
         setSpotlightNaturalFinishEnabled(draft.naturalFinishEnabled !== false);
         setSpotlightNaturalFinishSeconds(draft.naturalFinishSeconds === 5 ? 5 : 10);
+        if (localImageNeedsReselection || localVideoNeedsReselection) {
+          const missingMediaLabel = localImageNeedsReselection && localVideoNeedsReselection
+            ? "picture and video"
+            : localVideoNeedsReselection
+              ? "video"
+              : "picture";
+          setSpotlightMediaFeedback({
+            tone: "info",
+            text: `Your Spotlight words and settings were restored, but this browser cannot recover the local ${missingMediaLabel} after a refresh. Choose it again before publishing.`,
+          });
+        }
       }
       window.sessionStorage.removeItem(SPOTLIGHT_PRODUCT_HANDOFF_STORAGE_KEY);
     } catch {
@@ -4695,7 +4720,12 @@ export default function ShopControlPage() {
         .filter(Boolean)
         .join(" ")
     );
-    if (!spotlightImageFile && !spotlightImageUrl && product.image_url) {
+    if (
+      !localImageNeedsReselection &&
+      !spotlightImageFile &&
+      !spotlightImageUrl &&
+      product.image_url
+    ) {
       setSpotlightImageUrl(firstTruthy(product.image_url));
       setSpotlightImagePreviewUrl(firstTruthy(product.image_url));
     }

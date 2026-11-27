@@ -266,6 +266,8 @@ async function installMocks(page, scenario) {
     if (path === `/marketplace/public/shop/${ownerId}`) {
       const publicProducts = Array.isArray(scenario.publicProducts)
         ? scenario.publicProducts
+        : scenario.savedProduct
+        ? [scenario.savedProduct]
         : scenario.emptyShop
         ? []
         : [product];
@@ -344,6 +346,8 @@ async function installMocks(page, scenario) {
     if (path.startsWith('/marketplace/shops/me') || path.startsWith('/marketplace/shops/mine')) {
       const ownerProducts = Array.isArray(scenario.publicProducts)
         ? scenario.publicProducts
+        : scenario.savedProduct
+        ? [scenario.savedProduct]
         : scenario.emptyShop
         ? []
         : [product];
@@ -366,16 +370,15 @@ async function installMocks(page, scenario) {
       return route.fulfill(json({ items: [scenarioShop], shops: [scenarioShop] }));
     }
     if (path === '/marketplace/products' && method === 'POST') {
-      return route.fulfill(json({
-        item: {
-          ...product,
-          id: 602,
-          name: 'Phone smoke item',
-          description: '[BLOCK:1] Phone smoke item.',
-          price: '2500',
-          public_block_number: 1,
-        },
-      }));
+      scenario.savedProduct = {
+        ...product,
+        id: 602,
+        name: 'Phone smoke item',
+        description: '[BLOCK:1] Phone smoke item.',
+        price: '2500',
+        public_block_number: 1,
+      };
+      return route.fulfill(json({ item: scenario.savedProduct }));
     }
     if (path === '/marketplace/shops/101/vault-access-links') {
       return route.fulfill(json({ items: [] }));
@@ -402,9 +405,11 @@ async function installMocks(page, scenario) {
         ? []
         : scenario.vaultStage === 'offer-ready'
           ? [vaultProduct]
-          : scenario.emptyShop
-            ? []
-            : [product];
+          : scenario.savedProduct
+            ? [scenario.savedProduct]
+            : scenario.emptyShop
+              ? []
+              : [product];
       return route.fulfill(json({ items, products: items }));
     }
     if (path.startsWith('/marketplace/broadcasts')) {
@@ -2067,6 +2072,146 @@ async function testSpotlightPurchaseConversation(browser, baseUrl) {
   }
 }
 
+async function completeSpotlightProductCreation(page, scenario) {
+  const editor = page.locator('#shop-assets-product-editor');
+  try {
+    await editor.waitFor({ state: 'visible', timeout: 20_000 });
+  } catch (error) {
+    throw new Error(`Spotlight product editor did not open: ${JSON.stringify({ url: page.url(), body: (await page.locator('body').innerText()).slice(0, 1000), cause: String(error) })}`);
+  }
+  await editor
+    .locator('[data-product-journey-progress="true"]')
+    .waitFor({ state: 'visible', timeout: 20_000 });
+  await editor.getByText('More media options', { exact: true }).click();
+  await editor.locator('input[placeholder="Paste item image URL"]').fill(
+    'data:image/gif;base64,R0lGODlhAQABAAAAACw='
+  );
+  if (businessWrites(scenario.mutations).length !== 0) {
+    throw new Error('Spotlight product creator wrote data before explicit Post item confirmation.');
+  }
+  await editor.getByRole('button', { name: 'Continue', exact: true }).click();
+  await page.locator('#shop-assets-product-editor[data-product-journey-step="2"]').waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  await editor.locator('input[placeholder="Item name"]').fill('Phone smoke item');
+  await editor.locator('input[placeholder="Price"]').fill('2500');
+  await page.waitForTimeout(150);
+  await editor.getByRole('button', { name: 'Preview item', exact: true }).click();
+  await page.locator('#shop-assets-product-editor[data-product-journey-step="3"]').waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  if (businessWrites(scenario.mutations).length !== 0) {
+    throw new Error('Spotlight product preview wrote data before explicit Post item confirmation.');
+  }
+  await editor.getByRole('button', { name: 'Post item', exact: true }).click();
+  await page.waitForURL(/\/app\/shop-control.*#shop-control-spotlight$/, {
+    timeout: 30_000,
+  });
+  await page.locator('#shop-control-spotlight').waitFor({ state: 'visible', timeout: 30_000 });
+  const writes = businessWrites(scenario.mutations);
+  if (writes.length !== 1 || writes[0] !== 'POST /marketplace/products') {
+    throw new Error(`Spotlight product handoff issued unexpected writes: ${JSON.stringify(writes)}`);
+  }
+  const selectedProduct = page.locator('#shop-control-spotlight select').first();
+  if ((await selectedProduct.inputValue()) !== '602') {
+    throw new Error('Spotlight did not validate and select the exact newly saved Shop product.');
+  }
+}
+
+async function prepareSpotlightDraftForProductCreation(page) {
+  await page.locator('#shop-control-spotlight-item').fill('Draft cassava basket');
+  await page.locator('#shop-control-spotlight-price').fill('NGN 4500');
+  await page.locator('#shop-control-spotlight-customer-message').fill(
+    'Ask me about today\'s collection point.'
+  );
+  await page.locator('#shop-control-spotlight-image-file').first().setInputFiles(
+    join(frontendRoot, 'src', 'assets', 'gsn-icons', 'icon-shopping-cart-3d.webp')
+  );
+  await page.getByRole('button', { name: /Picture ready/ }).first().waitFor({
+    state: 'visible',
+    timeout: 20_000,
+  });
+  await page.locator('[data-cta-id="shop-control.spotlight.add-product"]').first().click();
+  await page.waitForURL(/source=spotlight-product.*manage_block=1/, { timeout: 20_000 });
+}
+
+async function testSpotlightProductDraftReturn(browser, baseUrl) {
+  const ordinaryScenario = {
+    identity: ownerId,
+    ownerSpotlightState: 'none',
+    demandPolicyOff: false,
+    memberOfCommunity: true,
+    emptyShop: true,
+    mutations: [],
+  };
+  const ordinary = await newPhonePage(browser, ordinaryScenario);
+  await ordinary.page.goto(`${baseUrl}/app/shop-control?community=8#shop-control-spotlight`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await ordinary.page.locator('#shop-control-spotlight').waitFor({
+    state: 'visible',
+    timeout: 30_000,
+  });
+  await prepareSpotlightDraftForProductCreation(ordinary.page);
+  await completeSpotlightProductCreation(ordinary.page, ordinaryScenario);
+  if (
+    (await ordinary.page.locator('#shop-control-spotlight-customer-message').inputValue()) !==
+    'Ask me about today\'s collection point.'
+  ) {
+    throw new Error('Ordinary product-creator return lost the Spotlight customer message.');
+  }
+  await ordinary.page.getByRole('button', { name: /Picture ready/ }).first().waitFor({
+    state: 'visible',
+    timeout: 10_000,
+  });
+  if (await ordinary.page.getByText(/cannot recover the local picture after a refresh/).count()) {
+    throw new Error('Ordinary in-app product-creator return falsely reported local media loss.');
+  }
+  await ordinary.context.close();
+
+  const refreshScenario = {
+    identity: ownerId,
+    ownerSpotlightState: 'none',
+    demandPolicyOff: false,
+    memberOfCommunity: true,
+    emptyShop: true,
+    mutations: [],
+  };
+  const refreshed = await newPhonePage(browser, refreshScenario);
+  await refreshed.page.goto(`${baseUrl}/app/shop-control?community=8#shop-control-spotlight`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60_000,
+  });
+  await refreshed.page.locator('#shop-control-spotlight').waitFor({
+    state: 'visible',
+    timeout: 30_000,
+  });
+  await prepareSpotlightDraftForProductCreation(refreshed.page);
+  await refreshed.page.reload({ waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await completeSpotlightProductCreation(refreshed.page, refreshScenario);
+  if (
+    (await refreshed.page.locator('#shop-control-spotlight-customer-message').inputValue()) !==
+    'Ask me about today\'s collection point.'
+  ) {
+    throw new Error('Hard-refresh product-creator return lost the serialisable Spotlight draft.');
+  }
+  await refreshed.page.getByText(
+    'Your Spotlight words and settings were restored, but this browser cannot recover the local picture after a refresh. Choose it again before publishing.',
+    { exact: true }
+  ).waitFor({ state: 'visible', timeout: 10_000 });
+  await refreshed.page.getByRole('button', { name: /Add picture/ }).first().waitFor({
+    state: 'visible',
+    timeout: 10_000,
+  });
+  if (await refreshed.page.getByRole('button', { name: /Picture ready/ }).count()) {
+    throw new Error('Hard-refresh return silently substituted another picture for the lost Spotlight media.');
+  }
+  await refreshed.context.close();
+  return { ordinaryScenario, refreshScenario };
+}
 const server = await createServer({
   root: frontendRoot,
   logLevel: 'silent',
@@ -2079,10 +2224,13 @@ const progressiveOnly = process.env.GSN_SMOKE_PROGRESSIVE_ONLY === '1';
 const shopItemJourneyOnly = process.env.GSN_SMOKE_SHOP_ITEM_JOURNEY_ONLY === '1';
 const spotlightPlusOnly = process.env.GSN_SMOKE_SPOTLIGHT_PLUS_ONLY === '1';
 const spotlightPurchaseOnly = process.env.GSN_SMOKE_SPOTLIGHT_PURCHASE_ONLY === '1';
+const spotlightDraftOnly = process.env.GSN_SMOKE_SPOTLIGHT_DRAFT_ONLY === '1';
 
 try {
   if (spotlightPurchaseOnly) {
     await testSpotlightPurchaseConversation(browser, baseUrl);
+  } else if (spotlightDraftOnly) {
+    await testSpotlightProductDraftReturn(browser, baseUrl);
   } else if (spotlightPlusOnly) {
     await testOwnerShopShortcuts(browser, baseUrl, 'none', { skipShopHeroCheck: true });
   } else if (shopItemJourneyOnly) {
@@ -2106,7 +2254,11 @@ try {
   console.log(JSON.stringify({
     ok: true,
     environment: 'local Vite + mocked synthetic API at 390x844',
-    checks: spotlightPurchaseOnly ? [
+    checks: spotlightDraftOnly ? [
+      'ordinary creator return preserves the live Spotlight draft and local File object',
+      'hard refresh restores serialisable draft fields and requires explicit local-media reselection',
+      'opening and previewing product creation remain write-free until Post item',
+    ] : spotlightPurchaseOnly ? [
       'Spotlight purchase confirmation opens the exact private DemandBox conversation once',
       'opening the confirmation card is write-free and browser replay does not duplicate the request',
       'phone conversation remains keyboard-visible, overflow-free, and back/forward safe',
