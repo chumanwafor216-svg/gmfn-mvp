@@ -59,7 +59,7 @@ assertContains(
 );
 assertContains(
   'shop',
-  /const signedInOwnsShop = Boolean\([\s\S]*?signedInRouteIsOwner[\s\S]*?ownerSurfaceIdentityMatches[\s\S]*?shopFollowState\.isOwner[\s\S]*?signedInOwnsShop \? \([\s\S]*?label='Add Spotlight'[\s\S]*?shortcut='spotlight'/,
+  /const signedInOwnsShop = Boolean\([\s\S]*?signedInRouteIsOwner[\s\S]*?ownerSurfaceIdentityMatches[\s\S]*?shopFollowState\.isOwner[\s\S]*?signedInOwnsShop \? \([\s\S]*?label=["']Add Spotlight["'][\s\S]*?shortcut=["']spotlight["']/,
   'Spotlight shortcut must accept the authenticated owner route, matching signed-in identity, or backend owner result for the exact shop.'
 );
 assertContains(
@@ -71,6 +71,16 @@ assertContains(
   'shop',
   /ownerSpotlightShortcutPath = routeWithCommunity\([\s\S]*?APP_ROUTES\.FREE_SPOTLIGHT[\s\S]*?signedInOwnsShop \? \([\s\S]*?to=\{ownerSpotlightShortcutPath\}/,
   'Spotlight shortcut must use the existing Shop Control Spotlight route with community context.'
+);
+assertContains(
+  'shop',
+  /\{miniSpotlight \? \(spotlightSelfActionsBlocked[\s\S]*?\)\) : null\}\s*\{signedInOwnsShop \? \(\s*<ExistingWorkflowPlusLink[\s\S]*?label="Add Spotlight"[\s\S]*?shortcut="spotlight"/,
+  'The exact shop owner Spotlight plus must remain outside the rotating advert ownership gate.'
+);
+assertContains(
+  'shop',
+  /display: miniSpotlight \|\| signedInOwnsShop \? "grid" : "none"[\s\S]*?gridTemplateColumns: !miniSpotlight[\s\S]*?\? "48px"/,
+  'The empty owner Spotlight screen must reserve one visible 48px create-plus slot.'
 );
 assertContains(
   'shop',

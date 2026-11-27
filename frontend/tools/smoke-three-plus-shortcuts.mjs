@@ -162,7 +162,6 @@ async function installMocks(page, scenario) {
           }
         : {}),
     };
-
     if (path === '/auth/me' || path === '/users/me') {
       return route.fulfill(json(member(scenario.identity)));
     }
@@ -422,10 +421,11 @@ async function assertTouchTarget(locator, label) {
   }
 }
 
-async function testOwnerShopShortcuts(browser, baseUrl, ownerState) {
-  const scenario = { identity: ownerId, ownerSpotlightState: ownerState, demandPolicyOff: false, memberOfCommunity: true, mutations: [] };
+async function testOwnerShopShortcuts(browser, baseUrl, ownerState, options = {}) {
+  const scenario = { identity: ownerId, ownerSpotlightState: ownerState, demandPolicyOff: false, memberOfCommunity: true, mutations: [], ...options };
   const { context, page } = await newPhonePage(browser, scenario);
   await page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  if (!options.skipShopHeroCheck) {
   await page.locator('[data-universal-shop-hero="true"][data-shop-hero-source="product"]').waitFor({
     state: 'visible',
     timeout: 20_000,
@@ -447,8 +447,12 @@ async function testOwnerShopShortcuts(browser, baseUrl, ownerState) {
   if (!editShopHref.includes('/app/shop-control') || !editShopHref.includes('#shop-control-details')) {
     throw new Error(`Public Shop owner edit changed route: ${editShopHref}`);
   }
+  }
   const moreDetails = page.locator('[data-public-shop-more="secondary"]');
   const summary = moreDetails.locator('summary');
+  if (options.skipShopHeroCheck) {
+    await moreDetails.evaluate((node) => { node.open = true; });
+  } else {
   await summary.waitFor({ state: 'visible', timeout: 20_000 });
   await summary.getByText(/Your Spotlight/).waitFor({
     state: 'visible',
@@ -456,6 +460,7 @@ async function testOwnerShopShortcuts(browser, baseUrl, ownerState) {
   });
   await page.waitForTimeout(1_000);
   if (!(await moreDetails.evaluate((node) => node.open))) await summary.click();
+  }
 
   const spotlightPlus = page.getByRole('link', { name: 'Add Spotlight' });
   const diaryPlus = page.getByRole('link', { name: 'Add diary entry' });
@@ -467,6 +472,32 @@ async function testOwnerShopShortcuts(browser, baseUrl, ownerState) {
       (await page.locator('body').innerText()).replace(/\s+/g, ' ').trim().slice(0, 1200),
       { cause: error },
     );
+  }
+  if (options.skipShopHeroCheck) {
+    await assertTouchTarget(spotlightPlus, 'Spotlight plus');
+    await page.waitForFunction(
+      () => document.querySelector('[data-spotlight-action-row="true"]')?.getAttribute('data-spotlight-action-count') === '1',
+      null,
+      { timeout: 20_000 },
+    );
+    const actionCount = await page.locator('[data-spotlight-action-row="true"]').getAttribute('data-spotlight-action-count');
+    if (actionCount !== '1') {
+      throw new Error(`Empty Spotlight owner action count was ${actionCount}, expected 1.`);
+    }
+    const mode = await spotlightPlus.getAttribute('data-spotlight-shortcut-mode');
+    const expectedMode = ownerState === 'none' ? 'create' : 'manage';
+    if (mode !== expectedMode) throw new Error(`Empty Spotlight shortcut mode was ${mode}, expected ${expectedMode}.`);
+    await spotlightPlus.click();
+    await page.waitForTimeout(750);
+    if (!/\/app\/shop-control.*community=8.*#shop-control-spotlight/.test(page.url())) {
+      throw new Error(`Spotlight shortcut navigated to ${page.url()}, expected Shop Control Spotlight with community=8.`);
+    }
+    const origin = await page.evaluate(() => window.history.state?.usr?.originPath || '');
+    if (!origin.includes(`/shop/${ownerId}`)) throw new Error('Spotlight shortcut lost its public-shop return path.');
+    const writes = businessWrites(scenario.mutations);
+    if (writes.length !== 0) throw new Error(`Owner shortcut navigation issued business write request(s): ${writes.join(', ')}.`);
+    await context.close();
+    return;
   }
   await diaryPlus.waitFor({ state: 'visible', timeout: 20_000 });
   const followOnSpaces = page.locator('[data-owner-empty-shop-space]');
@@ -1843,9 +1874,12 @@ const baseUrl = server.resolvedUrls.local[0].replace(/\/+$/, '');
 const browser = await chromium.launch({ headless: true });
 const progressiveOnly = process.env.GSN_SMOKE_PROGRESSIVE_ONLY === '1';
 const shopItemJourneyOnly = process.env.GSN_SMOKE_SHOP_ITEM_JOURNEY_ONLY === '1';
+const spotlightPlusOnly = process.env.GSN_SMOKE_SPOTLIGHT_PLUS_ONLY === '1';
 
 try {
-  if (shopItemJourneyOnly) {
+  if (spotlightPlusOnly) {
+    await testOwnerShopShortcuts(browser, baseUrl, 'none', { skipShopHeroCheck: true });
+  } else if (shopItemJourneyOnly) {
     await testOrdinaryGalleryTaskSeparation(browser, baseUrl);
   } else {
   await testOwnerEmptyShopSpaces(browser, baseUrl);
@@ -1866,7 +1900,9 @@ try {
   console.log(JSON.stringify({
     ok: true,
     environment: 'local Vite + mocked synthetic API at 390x844',
-    checks: shopItemJourneyOnly ? [
+    checks: spotlightPlusOnly ? [
+      'owner empty Spotlight keeps the create plus visible and write-free',
+    ] : shopItemJourneyOnly ? [
       'ordinary phone Shop items leads with Add item and keeps secondary shop tasks closed',
       'new phone shop items follow Picture/video, Details, and Review without writing before Post item or losing entered details',
       'successful Post item reopens and focuses the exact numbered space with its Public Shop continuation',

@@ -8758,19 +8758,25 @@ export default function ShopGalleryPage() {
                   className="public-shop-spotlight-action-row"
                   data-spotlight-action-row="true"
                   data-spotlight-action-count={
-                    spotlightSelfActionsBlocked
-                      ? 1 + Number(signedInOwnsShop)
-                      : 1 + Number(Boolean(spotlightSourceShopId))
+                    miniSpotlight
+                      ? spotlightSelfActionsBlocked
+                        ? 1 + Number(signedInOwnsShop)
+                        : 1 + Number(Boolean(spotlightSourceShopId)) + Number(signedInOwnsShop)
+                      : Number(signedInOwnsShop)
                   }
                   style={{
                     width: "100%",
                     maxWidth: "100%",
-                    display: miniSpotlight ? "grid" : "none",
-                    gridTemplateColumns: spotlightSelfActionsBlocked
+                    display: miniSpotlight || signedInOwnsShop ? "grid" : "none",
+                    gridTemplateColumns: !miniSpotlight
+                      ? "48px"
+                      : spotlightSelfActionsBlocked
                       ? signedInOwnsShop
                         ? "minmax(0, 1fr) 48px"
                         : "minmax(0, 1fr)"
-                      : spotlightSourceShopId
+                      : signedInOwnsShop
+                        ? (spotlightSourceShopId ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)") + " 48px"
+                        : spotlightSourceShopId
                       ? "repeat(2, minmax(0, 1fr))"
                       : "minmax(0, 1fr)",
                     justifyContent: "stretch",
@@ -8787,7 +8793,7 @@ export default function ShopGalleryPage() {
                     gridRow: "2",
                   }}
                 >
-                  {spotlightSelfActionsBlocked ? (
+                  {miniSpotlight ? (spotlightSelfActionsBlocked ? (
                     <>
                       <SocialTagShareButton
                         target={buildSpotlightProductShareTarget()}
@@ -8829,17 +8835,6 @@ export default function ShopGalleryPage() {
                           fontSize: isCompact ? 12 : 14,
                         }}
                       />
-                      {signedInOwnsShop ? (
-                        <ExistingWorkflowPlusLink
-                          to={ownerSpotlightShortcutPath}
-                          label="Add Spotlight"
-                          debugId="shop-gallery.spotlight.owner-shortcut"
-                          shortcut="spotlight"
-                          data-public-shop-neon-action="true"
-                          data-spotlight-shortcut-mode={ownerSpotlightShortcutMode}
-                          style={{ gridColumn: "2", justifySelf: "center" }}
-                        />
-                      ) : null}
                     </>
                   ) : (
                     <>
@@ -8909,7 +8904,18 @@ export default function ShopGalleryPage() {
                       </span>
                     </PrimaryButton>
                     </>
-                  )}
+                  )) : null}
+                  {signedInOwnsShop ? (
+                    <ExistingWorkflowPlusLink
+                      to={ownerSpotlightShortcutPath}
+                      label="Add Spotlight"
+                      debugId="shop-gallery.spotlight.owner-shortcut"
+                      shortcut="spotlight"
+                      data-public-shop-neon-action="true"
+                      data-spotlight-shortcut-mode={ownerSpotlightShortcutMode}
+                      style={{ gridColumn: "-2 / -1", justifySelf: "center" }}
+                    />
+                  ) : null}
                 </div>
               </div>
               <div

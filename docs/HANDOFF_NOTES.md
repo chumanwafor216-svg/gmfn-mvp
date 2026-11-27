@@ -1,15 +1,24 @@
 # Active Handoff Notes
 
-## Outstanding frontend batch release readiness - 2026-11-27
+## Spotlight empty-state owner plus restored - 2026-11-27
 
-- Render frontend and API are both still live on `08cb1e8c782c002178dc81ae20cf306c66d0417f`. No deploy was triggered during this review.
+- Root cause: the approved owner-only `Add Spotlight` plus still existed, but the complete Spotlight action row used `display: none` whenever no Spotlight record was saved. The create shortcut was therefore unreachable in the exact empty state where the owner needed it.
+- `ShopGalleryPage` now keeps a single 48px owner plus visible when Spotlight is empty, hides visitor/commercial actions until a real Spotlight exists, and keeps the existing create-versus-manage route, community context, origin/back state, and no-write-on-open contract.
+- The shortcut remains outside advert self-action gating, so its visibility belongs to exact shop ownership rather than the currently rendered advert action state.
+- Verification passed: focused 390x844 owner-empty Spotlight browser proof, TypeScript/Vite production build (`338 modules`), JavaScript syntax checks, and `git diff --check`.
+- Known baseline debt remains: the broad three-plus, Public Shop inventory, and Spotlight presentation audits still contain stale Marketplace and retired contact-action expectations from before the deployed purchase-intention controls. They were not weakened or represented as green.
+- This fix is local-only until it joins a successful batch and receives explicit deployment approval. Do not deploy it alone.
+
+## Frontend batch deployed - 2026-11-27
+
+- Render frontend is live on `b4caf88c5e87717c568d270395f41a55d2fbd6f3`; the API remains intentionally unchanged on `08cb1e8c782c002178dc81ae20cf306c66d0417f`.
 - The outstanding production difference is frontend/workflow/docs only; there is no `gmfn_backend` or `render.yaml` change, so the API must not be redeployed with this batch.
 - Release review found and corrected a preferred-recipient state loop in `DemandResponsePanel`: after a requester manually closes the preselected seller thread, participant refresh no longer forces it open again. A later explicit seller focus still reopens it.
 - Exact live-SHA comparison found two additional regressions introduced by the pending read-only Trade Records archive: the lazy parent still passed 23 removed live-trade props, and the touch audit still expected the removed `next-step` surface. Dead wiring is removed and the audited surface is now `archive-guidance`.
 - The DemandBox phone smoke now preserves non-owner action privacy, tests buyer-only `Buy now` and `Chat` on an owned request, follows the current `focus=conversation` route contract, uses stable disclosure locators, respects the shared 360ms repeat-tap guard, and accepts the intentional 96px compact Shop action.
 - Passing release-relevant gates: production TypeScript/Vite build, DemandBox front package, Marketplace front package, Marketplace touch blockers, Marketplace lazy-data boundaries, PWA boot recovery, and the complete DemandBox phone journey at 360x780, 390x844, and 430x932.
 - The broad protected-button freeze remains red from separately documented existing debt: raw `VoiceNoteRecorder` buttons, DemandBox smooth-scroll rules, and unrelated visual sub-audits. Exact audits against live SHA `08cb1e8c` confirm the broad Marketplace button inventory and trusted-trade lane were already red before this batch; they are not represented as green or fixed here.
-- Next release action is one frontend-only manual deployment of the final exact `main` SHA after this correction is committed, promoted, and explicitly approved by the product owner. Do not deploy the API and do not dispatch both Render API and hook paths.
+- Deployment evidence: GitHub Actions run `45956679357` succeeded; Render frontend deploy `dep-dc4iq1rl550s739g1cbg` reached `live` on the exact approved SHA; public build-marker and no-store checks passed; every API deployment step was skipped.
 
 ## Batch-first deployment is now mandatory - 2026-11-27
 
