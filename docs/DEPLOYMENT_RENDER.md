@@ -145,13 +145,13 @@ the product owner confirmed the Render service was changed to `main`. Keep the
 workflow on read-only contents permission unless a future deployment recovery
 explicitly requires a branch write.
 
-If `RENDER_FRONTEND_DEPLOY_HOOK_URL` is not set, the workflow falls back to the
-Render API when `RENDER_API_KEY` is configured. If neither credential is set,
-the workflow will warn and the deployment depends on Render's own auto-deploy
-setting for `main`, or on a manual deploy in the Render dashboard. Do not claim
-a direct Render deploy was triggered unless the workflow shows the deploy hook
-or Render API deploy request was accepted, or Render auto-deploy is confirmed in
-the Render dashboard.
+When `RENDER_API_KEY` and `RENDER_FRONTEND_SERVICE_ID` are configured, the
+workflow uses only the exact-commit Render API path. It first reuses an existing
+active or live deploy for the same commit so a repeated workflow dispatch does
+not spend another frontend build. The deploy hook is a fallback only when the
+API path is unavailable; the two frontend trigger paths must never run in the
+same workflow execution. If neither credential path is available, the workflow
+warns and does not claim a direct Render deployment.
 
 Backend-impacting deploys also run a live API identity-contract check against
 `https://gmfn-api.onrender.com/openapi.json` and a public community verification

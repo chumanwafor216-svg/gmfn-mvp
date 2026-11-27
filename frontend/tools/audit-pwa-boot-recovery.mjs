@@ -102,6 +102,30 @@ requireMatch(
   "the active Render static site must receive and live-verify a no-store shell policy on every deploy."
 );
 
+requireMatch(
+  ".github/workflows/render-deploy.yml",
+  renderDeployWorkflow,
+  /Trigger frontend deploy hook fallback[\s\S]*?if: \$\{\{ env\.RENDER_FRONTEND_DEPLOY_HOOK_URL != '' && \(env\.RENDER_API_KEY == '' \|\| env\.RENDER_FRONTEND_SERVICE_ID == ''\) \}\}[\s\S]*?Reuse or trigger exact frontend deploy through Render API/,
+  "the deploy hook must remain a fallback and must not run alongside the exact Render API deployment path."
+);
+requireMatch(
+  ".github/workflows/render-deploy.yml",
+  renderDeployWorkflow,
+  /reusableStatuses = new Set\(\["created", "queued", "build_in_progress", "pre_deploy_in_progress", "update_in_progress", "live"\]\)[\s\S]*?deploy\.commit\?\.id === process\.env\.GITHUB_SHA[\s\S]*?Reusing existing gmfn-frontend Render deploy/,
+  "repeat workflow dispatches must reuse an active or live exact-commit frontend deploy instead of spending another build."
+);
+requireMatch(
+  ".github/workflows/render-deploy.yml",
+  renderDeployWorkflow,
+  /^on:\r?\n\s+workflow_dispatch:/m,
+  "the active pilot deploy workflow must remain manual-only."
+);
+forbidMatch(
+  ".github/workflows/render-deploy.yml",
+  renderDeployWorkflow,
+  /^\s+push:\s*$/m,
+  "the active pilot deploy workflow must not regain automatic push deployment."
+);
 if (!process.exitCode) {
   console.log("PWA boot recovery audit passed.");
 }

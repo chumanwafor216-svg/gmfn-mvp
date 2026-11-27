@@ -95,8 +95,8 @@ jobs:
             });
           '
 
-      - name: Trigger frontend deploy hook
-        if: ${{ env.RENDER_FRONTEND_DEPLOY_HOOK_URL != '' }}
+      - name: Trigger frontend deploy hook fallback
+        if: ${{ env.RENDER_FRONTEND_DEPLOY_HOOK_URL != '' && (env.RENDER_API_KEY == '' || env.RENDER_FRONTEND_SERVICE_ID == '') }}
         run: |
           echo "Triggering Render deploy hook for gmfn-frontend at ${GITHUB_SHA}."
           frontend_deploy_hook_url="$(printf '%s' "$RENDER_FRONTEND_DEPLOY_HOOK_URL" | tr -d '[:space:]')"
@@ -111,23 +111,51 @@ jobs:
           curl -fsS -X POST "${frontend_deploy_hook_url}${separator}ref=${GITHUB_SHA}"
           echo "gmfn-frontend deploy hook accepted the exact commit request."
 
-      - name: Trigger exact frontend deploy through Render API
+      - name: Reuse or trigger exact frontend deploy through Render API
         if: ${{ env.RENDER_API_KEY != '' && env.RENDER_FRONTEND_SERVICE_ID != '' }}
         run: |
           set -euo pipefail
-          echo "Triggering exact Render API deploy for gmfn-frontend service ${RENDER_FRONTEND_SERVICE_ID} at ${GITHUB_SHA}."
-          deploy_json="$(curl -fsS -X POST "https://api.render.com/v1/services/${RENDER_FRONTEND_SERVICE_ID}/deploys" \
+          deploy_id=""
+          if recent_deploys_json="$(curl -fsS "https://api.render.com/v1/services/${RENDER_FRONTEND_SERVICE_ID}/deploys?limit=10" \
             -H "accept: application/json" \
-            -H "authorization: Bearer ${RENDER_API_KEY}" \
-            -H "content-type: application/json" \
-            --data "{\"commitId\":\"${GITHUB_SHA}\"}")"
-          deploy_id="$(printf '%s' "$deploy_json" | node -e 'let input=""; process.stdin.on("data", c => input += c); process.stdin.on("end", () => { try { const row = JSON.parse(input || "{}"); process.stdout.write(row?.deploy?.id || row?.id || ""); } catch { process.stdout.write(""); } });')"
-          if [ -z "$deploy_id" ]; then
-            echo "::warning::Render API response did not include a deploy id. Looking up recent gmfn-frontend deploys."
-            deploys_json="$(curl -fsS "https://api.render.com/v1/services/${RENDER_FRONTEND_SERVICE_ID}/deploys?limit=10" \
+            -H "authorization: Bearer ${RENDER_API_KEY}")"; then
+            deploy_id="$(printf '%s' "$recent_deploys_json" | GITHUB_SHA="$GITHUB_SHA" node -e '
+              let input = "";
+              process.stdin.on("data", chunk => input += chunk);
+              process.stdin.on("end", () => {
+                try {
+                  const rows = JSON.parse(input || "[]");
+                  const reusableStatuses = new Set(["created", "queued", "build_in_progress", "pre_deploy_in_progress", "update_in_progress", "live"]);
+                  const match = rows
+                    .map(row => row?.deploy || row || {})
+                    .find(deploy => deploy.commit?.id === process.env.GITHUB_SHA && reusableStatuses.has(deploy.status));
+                  process.stdout.write(match?.id || "");
+                } catch {
+                  process.stdout.write("");
+                }
+              });
+            ')"
+          else
+            echo "::warning::Could not inspect recent gmfn-frontend deploys before triggering the requested commit."
+          fi
+
+          if [ -n "$deploy_id" ]; then
+            echo "Reusing existing gmfn-frontend Render deploy ${deploy_id} for exact commit ${GITHUB_SHA}."
+          else
+            echo "Triggering exact Render API deploy for gmfn-frontend service ${RENDER_FRONTEND_SERVICE_ID} at ${GITHUB_SHA}."
+            deploy_json="$(curl -fsS -X POST "https://api.render.com/v1/services/${RENDER_FRONTEND_SERVICE_ID}/deploys" \
               -H "accept: application/json" \
-              -H "authorization: Bearer ${RENDER_API_KEY}")"
-            deploy_id="$(printf '%s' "$deploys_json" | GITHUB_SHA="$GITHUB_SHA" node -e 'let input=""; process.stdin.on("data", c => input += c); process.stdin.on("end", () => { try { const rows = JSON.parse(input || "[]"); const match = rows.find((row) => ((row?.deploy || row)?.commit?.id || "").startsWith(process.env.GITHUB_SHA)); const fallback = rows[0]?.deploy || rows[0] || {}; process.stdout.write((match?.deploy || match || fallback)?.id || ""); } catch { process.stdout.write(""); } });')"
+              -H "authorization: Bearer ${RENDER_API_KEY}" \
+              -H "content-type: application/json" \
+              --data "{\"commitId\":\"${GITHUB_SHA}\"}")"
+            deploy_id="$(printf '%s' "$deploy_json" | node -e 'let input=""; process.stdin.on("data", c => input += c); process.stdin.on("end", () => { try { const row = JSON.parse(input || "{}"); process.stdout.write(row?.deploy?.id || row?.id || ""); } catch { process.stdout.write(""); } });')"
+            if [ -z "$deploy_id" ]; then
+              echo "::warning::Render API response did not include a deploy id. Looking up the requested gmfn-frontend commit."
+              deploys_json="$(curl -fsS "https://api.render.com/v1/services/${RENDER_FRONTEND_SERVICE_ID}/deploys?limit=10" \
+                -H "accept: application/json" \
+                -H "authorization: Bearer ${RENDER_API_KEY}")"
+              deploy_id="$(printf '%s' "$deploys_json" | GITHUB_SHA="$GITHUB_SHA" node -e 'let input=""; process.stdin.on("data", c => input += c); process.stdin.on("end", () => { try { const rows = JSON.parse(input || "[]"); const match = rows.map(row => row?.deploy || row || {}).find(deploy => deploy.commit?.id === process.env.GITHUB_SHA); process.stdout.write(match?.id || ""); } catch { process.stdout.write(""); } });')"
+            fi
           fi
           if [ -z "$deploy_id" ]; then
             echo "::error::Could not resolve a gmfn-frontend Render deploy id. The workflow cannot verify live deployment."

@@ -1,5 +1,18 @@
 # Active Handoff Notes
 
+## Render frontend duplicate-trigger fault repaired - 2026-11-27
+
+- The manual `Trigger Render Deploy` workflow previously ran both the frontend
+  deploy hook and exact Render API trigger whenever both credentials existed.
+  One workflow dispatch therefore created two frontend builds for the same SHA.
+- The exact-commit Render API path is now primary. The deploy hook runs only as
+  a fallback when the API path is unavailable.
+- A repeated manual dispatch now reuses an existing active or live frontend
+  deploy for the exact commit instead of starting another build. Failed or
+  deactivated deploys are not reused, so a legitimate retry remains possible.
+- The workflow remains `workflow_dispatch`-only and Render frontend Auto-Deploy
+  remains off. No Render deploy, billing change, environment change or service
+  restart is part of this workflow correction.
 ## Spotlight Phase A functionality candidate - 2026-11-25
 
 - Work remains uncommitted in the preserved isolated worktree on `codex/spotlight-unified-frame-review-20261125` at pre-change HEAD `756f94076889b11cfba4de2be60e009b695c4daf`. No push, merge, deployment, dependency installation, new worktree or production write occurred.
