@@ -1,6 +1,6 @@
 /* global console, document, localStorage, URL, window */
 
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
@@ -9,6 +9,10 @@ import { createServer } from 'vite';
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const screenshotDir = join(frontendRoot, 'screenshots');
 mkdirSync(screenshotDir, { recursive: true });
+const preparedSpotlightVideo = Buffer.from(
+  readFileSync(join(frontendRoot, 'tools/fixtures/spotlight-video-7.mp4.b64'), 'utf8').trim(),
+  'base64',
+);
 
 const ownerId = 'GSN-U-PLUSOWNER';
 const visitorId = 'GSN-U-PLUSVISITOR';
@@ -198,6 +202,14 @@ function member(identity) {
 
 async function installMocks(page, scenario) {
   await page.route('**/*', async (route) => {
+    const requestUrl = new URL(route.request().url());
+    if (requestUrl.pathname === '/synthetic-prepared-spotlight.mp4') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'video/mp4',
+        body: preparedSpotlightVideo,
+      });
+    }
     if (!isApi(route.request().url())) return route.continue();
     const url = new URL(route.request().url());
     const path = apiPath(route.request().url());
@@ -312,7 +324,13 @@ async function installMocks(page, scenario) {
           },
         }));
       }
-      const state = scenario.ownerSpotlightState;
+      const state = scenario.publishedSpotlight ? 'live' : scenario.ownerSpotlightState;
+      const statusSpotlight = scenario.publishedSpotlight
+        ? {
+            ...spotlight,
+            video_url: scenario.preparedVideoUrl || '/synthetic-prepared-spotlight.mp4',
+          }
+        : scenarioSpotlight;
       return route.fulfill(json({
         owner_spotlight_inspection: {
           state,
@@ -323,7 +341,7 @@ async function installMocks(page, scenario) {
             activated_at: spotlight.activated_at,
             authorized_expires_at: spotlight.authorized_expires_at,
           },
-          item: state === 'none' ? null : scenarioSpotlight,
+          item: state === 'none' ? null : statusSpotlight,
           counts_as_delivery: false,
           counts_as_exposure: false,
         },
@@ -380,6 +398,27 @@ async function installMocks(page, scenario) {
       };
       return route.fulfill(json({ item: scenario.savedProduct }));
     }
+    if (path === '/marketplace/media/video' && method === 'POST') {
+      scenario.videoUploadAttempts = Number(scenario.videoUploadAttempts || 0) + 1;
+      if (Number(scenario.videoUploadFailuresRemaining || 0) > 0) {
+        scenario.videoUploadFailuresRemaining -= 1;
+        return route.abort('connectionreset');
+      }
+      scenario.preparedVideoUrl = '/synthetic-prepared-spotlight.mp4';
+      return route.fulfill(json({
+        ok: true,
+        quality_verified: true,
+        delivery_profile: 'spotlight',
+        duration_seconds: 7,
+        url: scenario.preparedVideoUrl,
+        sound: {
+          added: false,
+          mode: null,
+          output_has_audio: false,
+          rights_confirmed: false,
+        },
+      }));
+    }
     if (path === '/marketplace/shops/101/vault-access-links') {
       return route.fulfill(json({ items: [] }));
     }
@@ -411,6 +450,16 @@ async function installMocks(page, scenario) {
               ? []
               : [product];
       return route.fulfill(json({ items, products: items }));
+    }
+    if (path.startsWith('/marketplace/broadcasts') && method === 'POST') {
+      scenario.publicationCount = Number(scenario.publicationCount || 0) + 1;
+      scenario.publishedSpotlight = true;
+      return route.fulfill(json({
+        item: {
+          ...spotlight,
+          video_url: scenario.preparedVideoUrl || '/synthetic-prepared-spotlight.mp4',
+        },
+      }));
     }
     if (path.startsWith('/marketplace/broadcasts')) {
       return route.fulfill(json({
@@ -2212,6 +2261,73 @@ async function testSpotlightProductDraftReturn(browser, baseUrl) {
   await refreshed.context.close();
   return { ordinaryScenario, refreshScenario };
 }
+
+async function testSpotlightVideoPreparationRetry(browser, baseUrl) {
+  const scenario = {
+    identity: ownerId,
+    ownerSpotlightState: 'none',
+    demandPolicyOff: false,
+    memberOfCommunity: true,
+    videoUploadFailuresRemaining: 1,
+    videoUploadAttempts: 0,
+    publicationCount: 0,
+    mutations: [],
+  };
+  const { context, page } = await newPhonePage(browser, scenario);
+  try {
+    await page.goto(`${baseUrl}/app/shop-control?community=8#shop-control-spotlight`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 60_000,
+    });
+    await page.locator('#shop-control-spotlight').waitFor({ state: 'visible', timeout: 30_000 });
+    await page.locator('#shop-control-spotlight-customer-message').fill('Recovered video publication test.');
+    const videoInput = page.locator('#shop-control-spotlight-video-file');
+    const rejectedBrowserFile = {
+      name: 'founder-equivalent-unreadable-metadata.mp4',
+      mimeType: 'video/mp4',
+      buffer: Buffer.from('browser metadata unavailable; server fixture accepts equivalent source'),
+    };
+    await videoInput.setInputFiles(rejectedBrowserFile);
+    await page.locator('[data-spotlight-media-feedback="error"]')
+      .getByText(/Your video and Spotlight words are still here/, { exact: false })
+      .waitFor({ state: 'visible', timeout: 20_000 });
+    if ((await page.locator('#shop-control-spotlight-customer-message').inputValue()) !== 'Recovered video publication test.') {
+      throw new Error('Interrupted server preparation lost the Spotlight words.');
+    }
+    await page.getByRole('button', { name: /Video ready/ }).first().waitFor({ state: 'visible', timeout: 10_000 });
+    await videoInput.setInputFiles([]);
+    await videoInput.setInputFiles(rejectedBrowserFile);
+    await page.locator('[data-spotlight-media-feedback="success"]')
+      .getByText(/securely verified and prepared this video/, { exact: false })
+      .waitFor({ state: 'visible', timeout: 20_000 });
+    await page.locator('details[data-spotlight-video-options] summary').click();
+    const improveVideo = page.getByLabel('Improve my video automatically');
+    if (await improveVideo.isChecked()) await improveVideo.uncheck();
+    await page.locator('[data-cta-id="shop-control.spotlight.upload.preview"]').click();
+    const preparedPreview = page.locator('video[src*="synthetic-prepared-spotlight.mp4"]').first();
+    try {
+      await preparedPreview.waitFor({ state: 'attached', timeout: 20_000 });
+    } catch (error) {
+      const diagnostics = await page.locator('video').evaluateAll((videos) =>
+        videos.map((video) => ({ src: video.getAttribute('src'), outer: video.outerHTML.slice(0, 300) }))
+      );
+      throw new Error(`Prepared server video did not reach the review preview: ${JSON.stringify({ url: page.url(), diagnostics })}`, { cause: error });
+    }
+    await page.locator('[data-cta-id="shop-control.spotlight.preview.publish"]').click();
+    await page.getByText(/Free spotlight published/, { exact: false }).first()
+      .waitFor({ state: 'visible', timeout: 20_000 });
+    if (scenario.videoUploadAttempts !== 2) {
+      throw new Error(`Video preparation attempts were ${scenario.videoUploadAttempts}, expected interrupted attempt plus one retry.`);
+    }
+    if (scenario.publicationCount !== 1) {
+      throw new Error(`Interrupted preparation created ${scenario.publicationCount} publications instead of one.`);
+    }
+  } finally {
+    await context.close();
+  }
+  return scenario;
+}
+
 const server = await createServer({
   root: frontendRoot,
   logLevel: 'silent',
@@ -2225,9 +2341,12 @@ const shopItemJourneyOnly = process.env.GSN_SMOKE_SHOP_ITEM_JOURNEY_ONLY === '1'
 const spotlightPlusOnly = process.env.GSN_SMOKE_SPOTLIGHT_PLUS_ONLY === '1';
 const spotlightPurchaseOnly = process.env.GSN_SMOKE_SPOTLIGHT_PURCHASE_ONLY === '1';
 const spotlightDraftOnly = process.env.GSN_SMOKE_SPOTLIGHT_DRAFT_ONLY === '1';
+const spotlightVideoRecoveryOnly = process.env.GSN_SMOKE_SPOTLIGHT_VIDEO_RECOVERY_ONLY === '1';
 
 try {
-  if (spotlightPurchaseOnly) {
+  if (spotlightVideoRecoveryOnly) {
+    await testSpotlightVideoPreparationRetry(browser, baseUrl);
+  } else if (spotlightPurchaseOnly) {
     await testSpotlightPurchaseConversation(browser, baseUrl);
   } else if (spotlightDraftOnly) {
     await testSpotlightProductDraftReturn(browser, baseUrl);
@@ -2254,7 +2373,11 @@ try {
   console.log(JSON.stringify({
     ok: true,
     environment: 'local Vite + mocked synthetic API at 390x844',
-    checks: spotlightDraftOnly ? [
+    checks: spotlightVideoRecoveryOnly ? [
+      'browser metadata uncertainty defers to authenticated server preparation instead of permanent rejection',
+      'an interrupted preparation keeps the draft and selected video available for retry',
+      'successful retry yields a preview and exactly one campaign publication',
+    ] : spotlightDraftOnly ? [
       'ordinary creator return preserves the live Spotlight draft and local File object',
       'hard refresh restores serialisable draft fields and requires explicit local-media reselection',
       'opening and previewing product creation remain write-free until Post item',

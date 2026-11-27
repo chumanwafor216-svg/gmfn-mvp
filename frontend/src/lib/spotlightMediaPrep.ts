@@ -2,11 +2,22 @@ export type PreparedSpotlightMedia = {
   file: File;
   message: string | null;
   durationSeconds?: number | null;
+  requiresServerPreparation?: boolean;
 };
 
 const DEFAULT_MIN_VIDEO_SHORT_EDGE = 360;
 const DEFAULT_MAX_VIDEO_ASPECT_RATIO = 2.4;
 const DEFAULT_MIN_VIDEO_DURATION_SECONDS = 1;
+
+class SpotlightVideoInspectionError extends Error {
+  readonly allowServerPreparation: boolean;
+
+  constructor(message: string, allowServerPreparation = false) {
+    super(message);
+    this.name = "SpotlightVideoInspectionError";
+    this.allowServerPreparation = allowServerPreparation;
+  }
+}
 
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
@@ -168,7 +179,12 @@ function waitForVideoMetadata(src: string): Promise<HTMLVideoElement> {
     video.playsInline = true;
     video.onloadedmetadata = () => resolve(video);
     video.onerror = () =>
-      reject(new Error("Video could not be prepared right now."));
+      reject(
+        new SpotlightVideoInspectionError(
+          "This phone could not finish reading the video's details.",
+          true
+        )
+      );
     video.src = src;
   });
 }
@@ -185,8 +201,9 @@ function validateVideoQuality(
   const durationSeconds = Math.max(0, Number(video.duration || 0));
 
   if (width <= 0 || height <= 0 || durationSeconds <= 0) {
-    throw new Error(
-      "GSN could not verify this video. Use a playable MP4, WebM, or MOV file."
+    throw new SpotlightVideoInspectionError(
+      "This phone could not finish reading the video's details.",
+      true
     );
   }
   if (durationSeconds < DEFAULT_MIN_VIDEO_DURATION_SECONDS) {
@@ -422,6 +439,7 @@ export async function prepareSpotlightVideoFile(
 
   const objectUrl = URL.createObjectURL(file);
   let durationSeconds = 0;
+  let browserInspectionNeedsServer = false;
 
   try {
     const video = await waitForVideoMetadata(objectUrl);
@@ -441,8 +459,35 @@ export async function prepareSpotlightVideoFile(
         durationSeconds,
       };
     }
+  } catch (error) {
+    if (
+      error instanceof SpotlightVideoInspectionError &&
+      error.allowServerPreparation
+    ) {
+      browserInspectionNeedsServer = true;
+    } else {
+      throw error;
+    }
   } finally {
     URL.revokeObjectURL(objectUrl);
+  }
+
+  if (browserInspectionNeedsServer) {
+    if (Number(file.size || 0) > maxSourceBytes) {
+      throw new Error(
+        `This phone could not finish checking the video, and the source is over ${formatFileSize(
+          maxSourceBytes
+        )}. Choose a shorter recording or export a smaller copy before trying again.`
+      );
+    }
+    return {
+      file,
+      durationSeconds: null,
+      requiresServerPreparation: true,
+      message: `This phone could not finish checking the video details. Your selection is preserved; GSN will securely verify and prepare up to the opening ${Math.round(
+        maxDurationSeconds
+      )} seconds before publication. This is not a published or delivered advert yet.`,
+    };
   }
 
   try {
@@ -466,9 +511,10 @@ export async function prepareSpotlightVideoFile(
     return {
       file,
       durationSeconds,
+      requiresServerPreparation: true,
       message: `Your phone could not make the smaller clip locally, so GSN will securely prepare the opening ${Math.round(
         maxDurationSeconds
-      )} seconds during upload.`,
+      )} seconds during upload. This is not a published or delivered advert yet.`,
     };
   }
 }

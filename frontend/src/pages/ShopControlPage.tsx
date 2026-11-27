@@ -4064,6 +4064,10 @@ export default function ShopControlPage() {
   }, [spotlightImageFile]);
 
   useEffect(() => {
+    if (safeStr(spotlightVideoUrl)) {
+      setSpotlightVideoPreviewUrl(safeStr(spotlightVideoUrl));
+      return;
+    }
     if (!spotlightVideoFile) {
       setSpotlightVideoPreviewUrl("");
       return;
@@ -4072,7 +4076,7 @@ export default function ShopControlPage() {
     const objectUrl = URL.createObjectURL(spotlightVideoFile);
     setSpotlightVideoPreviewUrl(objectUrl);
     return () => URL.revokeObjectURL(objectUrl);
-  }, [spotlightVideoFile]);
+  }, [spotlightVideoFile, spotlightVideoUrl]);
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
@@ -6948,6 +6952,8 @@ export default function ShopControlPage() {
       return;
     }
 
+    setSpotlightVideoUrl("");
+    setSpotlightVideoPreviewUrl("");
     clearPreparedShopReel();
 
     if (isSpotlightImageFile(file)) {
@@ -6994,6 +7000,55 @@ export default function ShopControlPage() {
       setSpotlightVideoFile(prepared.file);
       setSpotlightVideoDurationSeconds(prepared.durationSeconds ?? null);
       setSpotlightPublishFeedback(null);
+      if (prepared.requiresServerPreparation) {
+        setSpotlightMediaFeedback({
+          tone: 'info',
+          text: prepared.message || 'GSN is securely checking and preparing this video before publication.',
+        });
+        try {
+          const uploadRes = await uploadMarketplaceVideoFile(
+            prepared.file,
+            prepared.durationSeconds ?? null,
+            Number(selectedClanId || effectiveShopClanId || 0) || null,
+            null,
+            null,
+            'spotlight'
+          );
+          if (spotlightVideoPrepJobRef.current !== prepJob) return;
+          const preparedUrl = firstTruthy(
+            uploadRes?.video_url,
+            uploadRes?.url,
+            uploadRes?.file_url,
+            uploadRes?.path,
+            uploadRes?.item?.video_url,
+            uploadRes?.data?.video_url
+          );
+          if (!preparedUrl) {
+            throw new Error('GSN prepared the video but did not return a preview link.');
+          }
+          const preparedDuration = Number(uploadRes?.duration_seconds || 0);
+          setSpotlightVideoUrl(preparedUrl);
+          setSpotlightVideoPreviewUrl(preparedUrl);
+          setSpotlightVideoDurationSeconds(
+            Number.isFinite(preparedDuration) && preparedDuration > 0
+              ? preparedDuration
+              : null
+          );
+          const readyMessage =
+            'GSN securely verified and prepared this video. Review the preview before publishing; no advert or exposure has been created yet.';
+          setSpotlightMediaFeedback({ tone: 'success', text: readyMessage });
+          showNotice('success', readyMessage);
+        } catch (uploadError: any) {
+          if (spotlightVideoPrepJobRef.current !== prepJob) return;
+          const obstacle =
+            shopControlRequestErrorMessage(uploadError) ||
+            'GSN could not finish preparing this video right now.';
+          const retryMessage = `${obstacle} Your video and Spotlight words are still here. Check the connection, then tap Video ready and choose the same file again.`;
+          setSpotlightMediaFeedback({ tone: 'error', text: retryMessage });
+          showNotice('error', retryMessage);
+        }
+        return;
+      }
       if (prepared.message) {
         showNotice("info", prepared.message);
       } else {
@@ -7350,7 +7405,10 @@ export default function ShopControlPage() {
 
       if (spotlightFinishedVideoUrl) {
         videoUrl = spotlightFinishedVideoUrl;
-      } else if (spotlightVideoFile) {
+      } else if (
+        spotlightVideoFile &&
+        (!manualVideoUrl || Boolean(spotlightVideoSound))
+      ) {
         const uploadRes = await uploadMarketplaceVideoFile(
           spotlightVideoFile,
           spotlightVideoDurationSeconds != null &&

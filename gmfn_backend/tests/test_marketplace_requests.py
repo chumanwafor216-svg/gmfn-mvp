@@ -12,7 +12,10 @@ from app.api.routes import (
     marketplace_requests,
     pool,
 )
+from app.core.auth import get_current_user
 from app.db.database import SessionLocal, engine
+from app.db.models import UserPayoutDestination
+from app.main import app
 from app.schemas.marketplace_requests import (
     MarketplaceProductEnquiryCreate,
     MarketplacePurchaseIntentionCreate,
@@ -1591,3 +1594,273 @@ def test_purchase_intention_is_private_structured_idempotent_and_allows_repeat_p
     ]
     assert invalid_attribution_error.value.status_code == 400
     assert self_purchase_error.value.status_code == 400
+
+
+def test_spotlight_purchase_two_user_acceptance_recovers_same_transaction_after_reauthentication(
+    client,
+):
+    _seed_primary_clan()
+    _add_second_member_to_primary_clan()
+    _add_third_member_to_primary_clan()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, is_active, created_at
+                ) VALUES (131, 1, 2, 'Acceptance Seller Shop', 1, CURRENT_TIMESTAMP)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_products (
+                    id, clan_id, shop_id, seller_user_id, title, description,
+                    price, currency, visibility_mode, is_active, created_at
+                ) VALUES (
+                    141, 1, 131, 2, 'Acceptance leather shoes', 'Isolated test product',
+                    '15', 'GBP', 'community_visible', 1, CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO spotlight_campaigns (
+                    id, owner_user_id, shop_id, origin_clan_id, source_product_id,
+                    content_kind, content_fingerprint, status, source_kind,
+                    commercial_mode, distribution_scope, created_at, activated_at
+                ) VALUES (
+                    151, 2, 131, 1, 141, 'broadcast_snapshot', :fingerprint,
+                    'active', 'direct_broadcast', 'free', 'direct_communities',
+                    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {"fingerprint": "b" * 64},
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_broadcasts (
+                    id, spotlight_campaign_id, clan_id, author_user_id, shop_id,
+                    message, image_url, priority_mode, visibility_scope, created_at
+                ) VALUES (
+                    161, 151, 1, 2, 131, 'Acceptance leather shoes',
+                    'https://acceptance.invalid/shoes.jpg', 'free',
+                    'direct_communities', CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+
+    with SessionLocal() as db:
+        db.add(
+            UserPayoutDestination(
+                user_id=2,
+                destination_name="Acceptance Seller",
+                bank_name="GSN Test Bank",
+                account_number="00000000",
+                country="GB",
+                currency="GBP",
+                note="UK Sort code: 00-00-00",
+                verification_status="recorded",
+            )
+        )
+        db.commit()
+
+    selected_user = {"value": _fake_current_user()}
+    app.dependency_overrides[get_current_user] = lambda: selected_user["value"]
+    purchase_payload = {
+        "product_id": 141,
+        "shop_id": 131,
+        "clan_id": 1,
+        "client_request_id": "spotlight-two-user-acceptance-141",
+        "intent_type": "buy_now",
+        "quantity": 1,
+        "fulfilment_method": "delivery",
+        "origin_source": "spotlight",
+        "origin_campaign_id": 151,
+        "origin_broadcast_id": 161,
+    }
+
+    try:
+        created = client.post(
+            "/marketplace/requests/product-purchase-intentions",
+            json=purchase_payload,
+        )
+        assert created.status_code == 200, created.text
+        request_id = int(created.json()["id"])
+
+        replay = client.post(
+            "/marketplace/requests/product-purchase-intentions",
+            json=purchase_payload,
+        )
+        assert replay.status_code == 200, replay.text
+        assert int(replay.json()["id"]) == request_id
+
+        buyer_thread = client.get(f"/demand-box/requests/{request_id}/responses")
+        assert buyer_thread.status_code == 200, buyer_thread.text
+        assert len(buyer_thread.json()) == 1
+        initial_response_id = int(buyer_thread.json()[0]["id"])
+
+        selected_user["value"] = _fake_second_user()
+        seller_notifications = client.get("/notifications/me?limit=20")
+        assert seller_notifications.status_code == 200, seller_notifications.text
+        purchase_notifications = [
+            item
+            for item in seller_notifications.json()["items"]
+            if item["title"] == "Private request for you"
+            and f"demand_id={request_id}" in item["action_url"]
+        ]
+        assert len(purchase_notifications) == 1
+
+        seller_thread = client.get(f"/demand-box/requests/{request_id}/responses")
+        assert seller_thread.status_code == 200, seller_thread.text
+        assert [int(item["id"]) for item in seller_thread.json()] == [initial_response_id]
+
+        trade_created = client.post(
+            "/protected-trades",
+            json={
+                "clan_id": 1,
+                "participant_role": "seller",
+                "source_demand_id": request_id,
+                "source_match_product_id": 141,
+                "source_match_shop_id": 131,
+                "item_title": "Acceptance leather shoes",
+                "terms_summary": "One pair; buyer reports payment before delivery.",
+                "amount": "15.00",
+                "currency": "GBP",
+                "meta": {
+                    "source": "isolated_two_user_acceptance",
+                    "quantity": "1",
+                    "payment_timing": "pay_now",
+                },
+            },
+        )
+        assert trade_created.status_code == 201, trade_created.text
+        trade_id = int(trade_created.json()["id"])
+        assert int(trade_created.json()["buyer_user_id"]) == 1
+        assert int(trade_created.json()["seller_user_id"]) == 2
+        assert int(trade_created.json()["meta"]["source_demand_id"]) == request_id
+
+        selected_user["value"] = _fake_third_user()
+        unrelated_thread = client.get(f"/demand-box/requests/{request_id}/responses")
+        assert unrelated_thread.status_code == 404
+        unrelated_trade = client.get(f"/protected-trades/{trade_id}")
+        assert unrelated_trade.status_code == 403
+
+        selected_user["value"] = _fake_current_user()
+        accepted = client.post(
+            f"/protected-trades/{trade_id}/events",
+            json={
+                "event_type": "terms.agreed",
+                "note": "Buyer accepted the isolated seller-issued terms.",
+            },
+        )
+        assert accepted.status_code == 201, accepted.text
+
+        selected_user["value"] = _fake_second_user()
+        payment_reference = client.post(
+            f"/protected-trades/{trade_id}/payment-reference"
+        )
+        assert payment_reference.status_code == 201, payment_reference.text
+        payment_payload = payment_reference.json()
+        assert payment_payload["direct_to_seller"] is True
+        assert payment_payload["automatic_bank_reconciliation"] is False
+
+        app.dependency_overrides.pop(get_current_user, None)
+        signed_out = client.get(f"/protected-trades/{trade_id}")
+        assert signed_out.status_code in {401, 403}
+
+        app.dependency_overrides[get_current_user] = lambda: selected_user["value"]
+        selected_user["value"] = _fake_current_user()
+        recovered = client.get(f"/protected-trades/{trade_id}")
+        assert recovered.status_code == 200, recovered.text
+        recovered_payload = recovered.json()
+        assert int(recovered_payload["id"]) == trade_id
+        assert recovered_payload["status"] == "payment_instructed"
+        assert int(recovered_payload["expected_payment_id"]) == int(
+            payment_payload["expected_payment_id"]
+        )
+        assert [event["event_type"] for event in recovered_payload["events"]][-2:] == [
+            "protected_trade.terms.agreed",
+            "protected_trade.payment.instruction_added",
+        ]
+
+        payment_reported = client.post(
+            f"/protected-trades/{trade_id}/events",
+            json={
+                "event_type": "payment.claimed",
+                "expected_payment_id": payment_payload["expected_payment_id"],
+                "note": "Buyer reported a simulated external transfer; no bank confirmation.",
+            },
+        )
+        assert payment_reported.status_code == 201, payment_reported.text
+
+        selected_user["value"] = _fake_second_user()
+        payment_received = client.post(
+            f"/protected-trades/{trade_id}/events",
+            json={
+                "event_type": "payment.received",
+                "note": "Seller acknowledged the simulated payment report.",
+            },
+        )
+        assert payment_received.status_code == 201, payment_received.text
+        released = client.post(
+            f"/protected-trades/{trade_id}/events",
+            json={
+                "event_type": "release.recorded",
+                "note": "Seller recorded fulfilment in the isolated acceptance run.",
+            },
+        )
+        assert released.status_code == 201, released.text
+
+        selected_user["value"] = _fake_current_user()
+        receipt = client.post(
+            f"/protected-trades/{trade_id}/events",
+            json={
+                "event_type": "receipt.confirmed",
+                "note": "Buyer confirmed receipt in the isolated acceptance run.",
+            },
+        )
+        assert receipt.status_code == 201, receipt.text
+        completed = client.get(f"/protected-trades/{trade_id}")
+        assert completed.status_code == 200, completed.text
+        completed_payload = completed.json()
+        assert completed_payload["status"] == "received"
+        assert completed_payload["payment_status"] == "seller_confirmed_received"
+        assert completed_payload["release_status"] == "released"
+        assert completed_payload["receipt_status"] == "received"
+        assert completed_payload["derived_outcome_state"] == "MUTUALLY_CONFIRMED"
+
+        with SessionLocal() as db:
+            counts = {
+                "requests": db.execute(
+                    text(
+                        "SELECT COUNT(*) FROM marketplace_requests "
+                        "WHERE client_request_id = :client_request_id"
+                    ),
+                    {"client_request_id": purchase_payload["client_request_id"]},
+                ).scalar_one(),
+                "threads": db.execute(
+                    text(
+                        "SELECT COUNT(*) FROM marketplace_request_responses "
+                        "WHERE marketplace_request_id = :request_id"
+                    ),
+                    {"request_id": request_id},
+                ).scalar_one(),
+                "trades": db.execute(
+                    text(
+                        "SELECT COUNT(*) FROM protected_trade_records "
+                        "WHERE id = :trade_id"
+                    ),
+                    {"trade_id": trade_id},
+                ).scalar_one(),
+            }
+        assert counts == {"requests": 1, "threads": 1, "trades": 1}
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
