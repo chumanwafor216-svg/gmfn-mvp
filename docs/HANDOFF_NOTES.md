@@ -1,5 +1,15 @@
 # Active Handoff Notes
 
+## DemandBox GSN-prepared Trade Record documents - 2026-11-27
+
+- Founder-approved local correction replaces the seller's blank Trade Record form and false quantity-one/NGN defaults with `Make this agreement official`. The existing authenticated demand/product/Shop handoff remains the authority; GSN pre-fills the structured product, quantity, fulfilment, listed price, currency, calculated total and practical fulfilment note. Opening the review writes nothing.
+- The seller confirms only truthful final terms. Quantity remains correctable behind one secondary disclosure; final total, currency, payment timing and terms remain explicit. `Confirm and send terms` creates the existing seller-issued server record, while buyer acceptance/amendment, same-record reissue, direct-seller payment code, buyer payment report, seller acknowledgement and Merchant Verification fulfilment remain unchanged.
+- Every persisted Trade Record now exposes one collapsed private `GSN transaction document` in the same conversation. It reuses the existing GSN headed-paper component and shows timestamp, code, participants, Shop, item, quantity, final total, fulfilment, terms and a truthful stage title. Buyer payment reporting is not called payment receipt; seller acknowledgement explicitly says GSN did not independently verify the transfer.
+- `Print or save PDF` isolates the record for browser printing. `Share record copy` uses the native share sheet with copy fallback. Both omit the private conversation and seller bank details and preserve the non-escrow, no-bank-verification, no-warranty and no-automatic-delivery-proof boundary.
+- Marketplace was deliberately not removed: its frozen Trade Records surface is already a read-only historical archive/pointer. It does not create, edit or progress transactions, so removing it would damage retrieval without reducing transaction complexity.
+- Changed scope is frontend and documentation only: `DemandResponsePanel`, `DemandBoxPage`, new `GsnTradeRecordDocument`, focused DemandBox audit/smoke, frozen spec and acceptance documentation. No backend route, permission, schema, migration, payment rail, production data, push, merge or deployment changed.
+- Verification passed: focused DemandBox front-package audit, TypeScript/Vite production build (`339 modules`), all eight protected-trade backend lifecycle tests, JavaScript syntax/diff integrity, and the DemandBox phone smoke at `360x780`, `390x844`, and `430x932`. Physical buyer/seller confirmation of the new prepared form, printable document and native phone share sheet remains pending and is not claimed.
+
 ## Spotlight video rejection correction and final local acceptance - 2026-11-27
 
 - Comparison baseline `8debf98f609fccbca28dac27036993564d169c2d` remains preserved on `codex/demand-box-complete-journey-20261126`. The correction is a local successor only; no push, merge, migration, infrastructure change, Render trigger, production write or deployment occurred.

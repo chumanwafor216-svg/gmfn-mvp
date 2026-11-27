@@ -11,7 +11,7 @@ import {
 import { GsnLegacyIcon } from "../../components/GsnLegacyIcon";
 import { navigateWithOrigin } from "../../lib/nav";
 import { buildPublicShareText, shareTargetForChannel } from "../../lib/share";
-import { publicApiOrigin } from "../../lib/publicLinks";
+import { isPrivateFrontendHost, publicApiOrigin } from "../../lib/publicLinks";
 import type { ShopControlSpotlightBroadcast, ShopControlSpotlightWorkflowProps } from "./ShopControlSpotlightWorkflowTypes";
 
 function safeSpotlightText(value: unknown): string {
@@ -46,8 +46,17 @@ function resolveSpotlightMediaSrc(value: unknown): string {
   }
 
   const path = raw.startsWith("/") ? raw : `/${raw.replace(/^\/+/, "")}`;
+  if (typeof window !== "undefined") {
+    const hostname = safeSpotlightText(window.location?.hostname).toLowerCase();
+    const currentOrigin = safeSpotlightText(window.location?.origin).replace(/\/+$/, "");
+    if (currentOrigin && isPrivateFrontendHost(hostname)) {
+      return `${currentOrigin}${path}`;
+    }
+  }
   return `${publicApiOrigin()}${path}`;
 }
+
+type SpotlightPreviewMediaState = "idle" | "pending" | "ready" | "unavailable";
 
 function liveSpotlightStatus(item: ShopControlSpotlightBroadcast | null) {
   const servingStatus = safeSpotlightText(
@@ -210,6 +219,19 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     handleTakeDownCurrentSpotlight,
     shopActionsLocked,
   } = props;
+  const resolvedPreviewImageUrl = resolveSpotlightMediaSrc(spotlightImagePreviewUrl);
+  const resolvedPreviewVideoUrl = resolveSpotlightMediaSrc(spotlightVideoPreviewUrl);
+  const previewHasMedia = Boolean(resolvedPreviewImageUrl || resolvedPreviewVideoUrl);
+  const [previewMediaState, setPreviewMediaState] = React.useState<SpotlightPreviewMediaState>("idle");
+
+  React.useEffect(() => {
+    if (spotlightFlowStep !== "preview" || !previewHasMedia) {
+      setPreviewMediaState("idle");
+      return;
+    }
+    setPreviewMediaState("pending");
+  }, [previewHasMedia, resolvedPreviewImageUrl, resolvedPreviewVideoUrl, spotlightFlowStep]);
+
   const currentLiveSpotlightIsPaid =
     firstTruthy(currentActiveSpotlight?.priority_mode, "free").toLowerCase() === "paid";
   const lifecycleActionsEnabled =
@@ -1261,11 +1283,11 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
             <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}>
               <div style={sectionLabel()}>{labelWithIcon("eye", "Check before publishing")}</div>
               <div style={{ marginTop: 10 }}>
-                {spotlightImagePreviewUrl || spotlightVideoPreviewUrl ? (
+                {previewHasMedia ? (
                   <SpotlightMediaFrame
-                    imageUrl={resolveSpotlightMediaSrc(spotlightImagePreviewUrl)}
-                    videoUrl={resolveSpotlightMediaSrc(spotlightVideoPreviewUrl)}
-                    videoPoster={resolveSpotlightMediaSrc(spotlightImagePreviewUrl)}
+                    imageUrl={resolvedPreviewImageUrl}
+                    videoUrl={resolvedPreviewVideoUrl}
+                    videoPoster={resolvedPreviewImageUrl}
                     alt="Draft spotlight preview"
                     frameStyle={{
                       minHeight: isCompact ? 240 : 280,
@@ -1276,12 +1298,43 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                       width: "100%",
                       height: "100%",
                     }}
-                    autoPlayVideo={Boolean(spotlightVideoPreviewUrl)}
-                    mutedVideo={Boolean(spotlightVideoPreviewUrl)}
-                    loopVideo={Boolean(spotlightVideoPreviewUrl)}
-                    showAudioUnlock={Boolean(spotlightVideoPreviewUrl)}
+                    autoPlayVideo={Boolean(resolvedPreviewVideoUrl)}
+                    mutedVideo={Boolean(resolvedPreviewVideoUrl)}
+                    loopVideo={Boolean(resolvedPreviewVideoUrl)}
+                    showAudioUnlock={Boolean(resolvedPreviewVideoUrl)}
                     audioUnlockLabel="Sound on"
                     maxVideoSeconds={spotlightPilotMaxVideoSeconds}
+                    onMediaReady={() => setPreviewMediaState("ready")}
+                    onMediaUnavailable={() => {
+                      setPreviewMediaState("unavailable");
+                      showNotice(
+                        "error",
+                        "This picture or video could not play in the preview. Change the media and check it again before publishing."
+                      );
+                    }}
+                    fallback={(
+                      <div
+                        data-spotlight-preview-media="unavailable"
+                        style={{
+                          minHeight: isCompact ? 240 : 280,
+                          width: "100%",
+                          borderRadius: 18,
+                          border: "1px solid rgba(176,65,36,0.28)",
+                          background: "linear-gradient(180deg, #FFF8F3 0%, #FFFDFB 100%)",
+                          color: "#8A351F",
+                          display: "grid",
+                          placeItems: "center",
+                          textAlign: "center",
+                          padding: 18,
+                          boxSizing: "border-box",
+                          fontSize: 13,
+                          fontWeight: 850,
+                          lineHeight: 1.45,
+                        }}
+                      >
+                        Preview unavailable. Choose Change details, select the media again, and publish only after it visibly plays here.
+                      </div>
+                    )}
                   />
                 ) : (
                   <div
@@ -1307,6 +1360,22 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                   </div>
                 )}
               </div>
+              {previewHasMedia && previewMediaState !== "unavailable" ? (
+                <div
+                  data-spotlight-preview-media={previewMediaState}
+                  style={{
+                    marginTop: 8,
+                    color: previewMediaState === "ready" ? "#17663D" : "#52677C",
+                    fontSize: 12,
+                    fontWeight: 850,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {previewMediaState === "ready"
+                    ? "Preview ready. Check picture, movement and sound before publishing."
+                    : "Checking that the selected media can play on this device..."}
+                </div>
+              ) : null}
               <div style={{ marginTop: 12, color: "#0B1F33", fontWeight: 900, fontSize: 16 }}>
                 {spotlightPreviewMessage || "Media-only spotlight"}
               </div>
@@ -1330,7 +1399,11 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
               <PrimaryButton
                 type="button"
                 onClick={() => handleCreateSpotlight()}
-                disabled={creatingSpotlight || !spotlightCanContinueToPreview}
+                disabled={
+                  creatingSpotlight ||
+                  !spotlightCanContinueToPreview ||
+                  previewMediaState !== "ready"
+                }
                 busy={creatingSpotlight}
                 busyLabel="Publishing..."
                 fullWidth
@@ -1340,6 +1413,10 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                   ? "Publish after identity review"
                   : creatingSpotlight
                   ? "Publishing..."
+                  : previewMediaState === "unavailable"
+                  ? "Change media before publishing"
+                  : previewMediaState !== "ready"
+                  ? "Checking preview..."
                   : "Publish now"}
               </PrimaryButton>
               <SecondaryButton

@@ -720,7 +720,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   const waitingForSellerTrade = tradeSteps.locator('[data-gsn-demand-protected-trade="waiting-for-seller"]');
   await waitingForSellerTrade.waitFor();
   assert(await waitingForSellerTrade.getByText("Agree the item, quantity, price, and terms here.", { exact: false }).isVisible(), "The requester is not told to wait for the seller-issued Trade Record.");
-  assert((await tradeSteps.getByRole("button", { name: "Issue Trade Record", exact: true }).count()) === 0, "The requester was incorrectly allowed to issue the seller's Trade Record.");
+  assert((await tradeSteps.locator('[data-gsn-demand-protected-trade="seller-issue"]').count()) === 0, "The requester was incorrectly allowed to confirm the seller's prepared Trade Record.");
   assert((await tradeSteps.locator('[data-gsn-demand-trade-stage="tracking-evidence"]').count()) === 0, "Standalone tracking returned outside Merchant Verification.");
   assert((await contactResult.getByRole("link", { name: "View shop", exact: true }).count()) === 0, "View shop is duplicated inside Ask Seller.");
   const sellerJourneyOrder = await contactResult.evaluate((container) => {

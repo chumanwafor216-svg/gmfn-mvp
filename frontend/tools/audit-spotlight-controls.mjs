@@ -76,6 +76,11 @@ assertContains(
   /<PrimaryButton[\s\S]*?type="button"[\s\S]*?onClick=\{\(\) => handleCreateSpotlight\(\)\}[\s\S]*?debugId="shop-control\.spotlight\.preview\.publish"/,
   "The Free Spotlight publish control must be an explicit button action, not a submit/navigation fallthrough."
 );
+assertContains(
+  "src/pages/shopControl/ShopControlSpotlightWorkflow.tsx",
+  /window\.location\?\.origin[\s\S]*?isPrivateFrontendHost\(hostname\)[\s\S]*?onMediaReady=\{\(\) => setPreviewMediaState\("ready"\)\}[\s\S]*?onMediaUnavailable[\s\S]*?data-spotlight-preview-media="unavailable"[\s\S]*?previewMediaState !== "ready"[\s\S]*?Checking preview/,
+  "Free Spotlight review must load relative media from the isolated private frontend, show a truthful unavailable state, and block publication until the media visibly renders."
+);
 
 assertContains(
   "src/pages/shopControl/ShopControlSpotlightWorkflow.tsx",
@@ -223,7 +228,7 @@ assertContains(
 
 assertContains(
   'src/pages/shopControl/ShopControlSpotlightWorkflow.tsx',
-  /data-spotlight-media-feedback[\s\S]*?disabled=\{creatingSpotlight \|\| !spotlightCanContinueToPreview\}/,
+  /data-spotlight-media-feedback[\s\S]*?disabled=\{[\s\S]*?creatingSpotlight[\s\S]*?!spotlightCanContinueToPreview[\s\S]*?previewMediaState !== "ready"[\s\S]*?\}/,
   'Free Spotlight must keep media preparation feedback inline and lock Publish until the ready-media gate passes.'
 );
 

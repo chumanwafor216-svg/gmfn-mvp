@@ -164,3 +164,14 @@ New members must choose:
 - Join Request Membership
 
 After completion, they return to Existing Member Sign In.
+
+## Private Trade Record Test
+
+- Opening the prepared record writes nothing and preserves the private conversation.
+- Product, quantity, fulfilment, price, currency, and calculated total come from the validated structured request when available; no false quantity-one or NGN fallback appears.
+- The seller explicitly confirms or corrects the prepared facts, and the buyer separately accepts or requests changes.
+- Reissue updates the same record; retry does not create another record or conversation.
+- The private GSN document shows timestamp, record code, parties, item, quantity, total, fulfilment, terms, and current lifecycle state.
+- Buyer-reported payment is not labelled as received until the seller acknowledges it, and neither state claims independent bank verification.
+- Share and print/save actions exclude private chat and seller bank details and state the non-escrow, no-warranty, no-automatic-delivery-proof boundary.
+- Marketplace remains a read-only archive or pointer, not a second transaction editor.

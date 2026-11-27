@@ -10,6 +10,7 @@ const apiFile = "src/lib/api.ts";
 const protectedVoiceFile = "src/components/ProtectedVoiceNotePlayer.tsx";
 const recorderFile = "src/components/VoiceNoteRecorder.tsx";
 const responsePanelFile = "src/components/DemandResponsePanel.tsx";
+const tradeDocumentFile = "src/components/GsnTradeRecordDocument.tsx";
 const paymentMessageFile = "src/lib/protectedTradePaymentMessage.ts";
 const paymentCardFile = "src/components/DemandPaymentDetailsCard.tsx";
 const appLayoutFile = "src/layout/AppLayout.tsx";
@@ -22,6 +23,7 @@ const protectedVoiceSource = readFileSync(
 );
 const recorderSource = readFileSync(join(frontendRoot, recorderFile), "utf8");
 const responsePanelSource = readFileSync(join(frontendRoot, responsePanelFile), "utf8");
+const tradeDocumentSource = readFileSync(join(frontendRoot, tradeDocumentFile), "utf8");
 const paymentMessageSource = readFileSync(join(frontendRoot, paymentMessageFile), "utf8");
 const paymentCardSource = readFileSync(join(frontendRoot, paymentCardFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
@@ -183,10 +185,27 @@ forbidPattern(responsePanelSource, responsePanelFile, /manage-account-details/, 
   [/parseSellerPaymentMessage\(row\.text\)[\s\S]*?<DemandPaymentDetailsCard details=\{sellerPaymentMessage\}/, "compact seller payment messages must render as a dedicated in-chat card"],
   [/Payment goes directly to the seller's saved account[\s\S]*?does not hold or automatically verify the money/, "the payment handoff must state the direct-seller and non-custodial boundary"],
   [/source_demand_id[\s\S]*?source_match_product_id[\s\S]*?source_match_shop_id[\s\S]*?participantIds\.includes\(currentUserId\)/, "reopened trade controls must match the original demand, product, shop, and participant association"],
-  [/data-gsn-demand-protected-trade="waiting-for-seller"[\s\S]*?The seller then issues the Trade Record agreement/, "the buyer must wait for the seller-issued Trade Record"],
+  [/data-gsn-demand-protected-trade="waiting-for-seller"[\s\S]*?The seller reviews the GSN-prepared facts and sends them for your confirmation/, "the buyer must wait for the seller-confirmed prepared record"],
+  [/transactionContext\?:[\s\S]*?quantity\?: number[\s\S]*?fulfilmentMethod[\s\S]*?unitPrice[\s\S]*?currency[\s\S]*?preparedTradeAmount\(transactionContext\?\.unitPrice, quantity\)/, "structured product, quantity, fulfilment, price, and currency must prepare the seller confirmation"],
+  [/data-gsn-demand-protected-trade-form="prepared-confirmation"[\s\S]*?Check what GSN prepared[\s\S]*?data-gsn-demand-prepared-trade-facts="request-source"[\s\S]*?Final total[\s\S]*?Correct prepared quantity[\s\S]*?Confirm and send terms/, "the seller must confirm an auto-prepared record rather than complete a blank form"],
+  [/Nothing is created until you confirm\.[\s\S]*?The buyer must still accept these terms/, "opening the prepared record must remain write-free and buyer acceptance must remain explicit"],
+  [/!requestId \|\| !supplyProductId \|\| !supplyShopId[\s\S]*?setProtectedTradeFormOpen\(false\)[\s\S]*?validated request, product, and Shop link[\s\S]*?catch \(err: any\)[\s\S]*?setProtectedTradeFormOpen\(false\)/, "missing or failed validated handoff must not expose a blank confirmation form"],
+  [/data-gsn-demand-transaction-document="private"[\s\S]*?<GsnTradeRecordDocument[\s\S]*?trade=\{matchedProtectedTrade\}/, "the same conversation must expose one private official transaction document"],
   [/participant_role: "seller"[\s\S]*?source_demand_id: requestId[\s\S]*?source_match_product_id: supplyProductId[\s\S]*?source_match_shop_id: supplyShopId/, "DemandBox Trade Records must be seller-issued and retain the validated demand, product, and Shop association"],
   [/Photo, video, document or link[\s\S]*?application\/pdf[\s\S]*?"document"/, "the private composer must keep photo, video, document, and link support"],
 ].forEach(([pattern, message]) => requirePattern(responsePanelSource, responsePanelFile, pattern, message));
+
+forbidPattern(responsePanelSource, responsePanelFile, /quantity: "1"[\s\S]*?currency: "NGN"/, "structured Trade Records must not fall back to one item and NGN");
+forbidPattern(responsePanelSource, responsePanelFile, />\s*Issue Trade Record\s*</, "ordinary sellers must not receive the old blank-form action");
+
+[
+  [/data-gsn-trade-document="private-official-record"[\s\S]*?<GsnSnapshotPaperCard/, "the private record must use the established GSN headed-paper presentation"],
+  [/GSN Proposed Trade Agreement[\s\S]*?GSN Payment Report[\s\S]*?GSN Payment Acknowledgement[\s\S]*?GSN Fulfilment Record/, "the document title must follow the truthful transaction stage"],
+  [/Buyer reported payment; seller acknowledgement remains required[\s\S]*?Seller acknowledged receipt; GSN did not independently verify the bank transfer/, "payment reporting and seller acknowledgement must remain distinct"],
+  [/The private conversation and seller bank details are not included[\s\S]*?not escrow, independent bank verification, a product warranty, or automatic proof of delivery/, "share copies must exclude private chat and preserve the non-custodial boundary"],
+  [/data-gsn-trade-document-actions="true"[\s\S]*?Print or save PDF[\s\S]*?Share record copy/, "the private record must provide deliberate print/save and share actions"],
+  [/navigator\.share[\s\S]*?safeCopy\(recordText\)/, "sharing must use the native sheet with a copy fallback"],
+].forEach(([pattern, message]) => requirePattern(tradeDocumentSource, tradeDocumentFile, pattern, message));
 
 [
   [/GSN seller payment details[\s\S]*?Item:[\s\S]*?Amount:[\s\S]*?Account name:[\s\S]*?Account number:[\s\S]*?Bank \/ wallet:[\s\S]*?Payment code:/, "the seller payment message must contain only the compact trade and bank fields"],

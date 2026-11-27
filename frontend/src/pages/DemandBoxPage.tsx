@@ -2485,6 +2485,21 @@ export default function DemandBoxPage() {
                       preferredRecipientName={selectedContact.shop_name}
                       supplyProductId={positiveNumber(match.product_id)}
                       supplyShopId={positiveNumber(match.shop_id)}
+                      transactionContext={{
+                        productTitle: row?.product_context?.product_title || match.product_title,
+                        shopName: row?.product_context?.shop_name || selectedContact.shop_name,
+                        buyerName: safeStr(
+                          row?.requester_display_name ||
+                          row?.requester_name ||
+                          row?.requester_nickname ||
+                          "Requesting buyer"
+                        ),
+                        sellerName: selectedContact.shop_name,
+                        quantity: positiveNumber(row?.commercial_intent?.quantity),
+                        fulfilmentMethod: row?.commercial_intent?.fulfilment_method,
+                        unitPrice: row?.commercial_intent?.unit_price || row?.product_context?.listed_price,
+                        currency: row?.commercial_intent?.currency || row?.product_context?.currency,
+                      }}
                       onUnreadChanged={refreshUnreadSummary}
                     />
 
@@ -3356,6 +3371,21 @@ export default function DemandBoxPage() {
                   preferredRecipientName={focusedContact?.shop_name || row?.product_context?.shop_name || "Seller"}
                   supplyProductId={positiveNumber(row?.product_context?.product_id)}
                   supplyShopId={positiveNumber(row?.product_context?.shop_id)}
+                  transactionContext={{
+                    productTitle: row?.product_context?.product_title,
+                    shopName: row?.product_context?.shop_name,
+                    buyerName: safeStr(
+                      row?.requester_display_name ||
+                      row?.requester_name ||
+                      row?.requester_nickname ||
+                      "Requesting buyer"
+                    ),
+                    sellerName: focusedContact?.shop_name || row?.product_context?.shop_name,
+                    quantity: positiveNumber(row?.commercial_intent?.quantity),
+                    fulfilmentMethod: row?.commercial_intent?.fulfilment_method,
+                    unitPrice: row?.commercial_intent?.unit_price || row?.product_context?.listed_price,
+                    currency: row?.commercial_intent?.currency || row?.product_context?.currency,
+                  }}
                   openTradeRecords={focusedTradeRequestId === rowId}
                   onUnreadChanged={refreshUnreadSummary}
                 />

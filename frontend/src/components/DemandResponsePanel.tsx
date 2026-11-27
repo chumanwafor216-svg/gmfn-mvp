@@ -25,6 +25,7 @@ import {
   serializeSellerPaymentMessage,
 } from "../lib/protectedTradePaymentMessage";
 import DemandPaymentDetailsCard from "./DemandPaymentDetailsCard";
+import GsnTradeRecordDocument from "./GsnTradeRecordDocument";
 import GsnMicrophoneIcon from "./GsnMicrophoneIcon";
 import { GsnLegacyIcon } from "./GsnLegacyIcon";
 import ProtectedVoiceNotePlayer from "./ProtectedVoiceNotePlayer";
@@ -57,9 +58,43 @@ type DemandResponsePanelProps = {
   preferredRecipientName?: string;
   supplyProductId?: number;
   supplyShopId?: number;
+  transactionContext?: {
+    productTitle?: string;
+    shopName?: string;
+    buyerName?: string;
+    sellerName?: string;
+    quantity?: number;
+    fulfilmentMethod?: "collection" | "delivery" | "on_request";
+    unitPrice?: string | null;
+    currency?: string | null;
+  };
   openTradeRecords?: boolean;
   onUnreadChanged?: () => void;
 };
+
+function preparedTradeAmount(unitPrice: unknown, quantity: unknown): string {
+  const numericPrice = Number(String(unitPrice ?? "").replace(/,/g, "").trim());
+  const numericQuantity = Number(quantity || 0);
+  if (!Number.isFinite(numericPrice) || numericPrice <= 0) return "";
+  const multiplier = Number.isFinite(numericQuantity) && numericQuantity > 0 ? numericQuantity : 1;
+  return (numericPrice * multiplier).toFixed(2);
+}
+
+function fulfilmentLabel(value: unknown): string {
+  if (value === "delivery") return "Delivery";
+  if (value === "collection") return "Collection";
+  return "To be agreed";
+}
+
+function preparedTerms(value: unknown): string {
+  if (value === "delivery") {
+    return "Delivery requested. Confirm the delivery time and any delivery charge in this conversation.";
+  }
+  if (value === "collection") {
+    return "Collection requested. Confirm the collection place and time in this conversation.";
+  }
+  return "Confirm the fulfilment method, timing, and any related charge in this conversation.";
+}
 
 function clientKey(prefix: string): string {
   const random =
@@ -116,6 +151,7 @@ export default function DemandResponsePanel({
   preferredRecipientName = "Seller",
   supplyProductId = 0,
   supplyShopId = 0,
+  transactionContext,
   openTradeRecords = false,
   onUnreadChanged,
 }: DemandResponsePanelProps) {
@@ -144,9 +180,9 @@ export default function DemandResponsePanel({
   const [recordingAgreementTradeId, setRecordingAgreementTradeId] = useState(0);
   const [protectedTradeDraft, setProtectedTradeDraft] = useState({
     itemTitle: "",
-    quantity: "1",
+    quantity: "",
     amount: "",
-    currency: "NGN",
+    currency: "",
     termsSummary: "",
     paymentTiming: "pay_now" as "pay_now" | "deferred_credit",
   });
@@ -291,6 +327,15 @@ export default function DemandResponsePanel({
     () => participants.find((participant) => participant.id === recipientUserId) || null,
     [participants, recipientUserId]
   );
+  const currentUserDisplayName = String(
+    currentUser?.display_name || currentUser?.name || currentUser?.nickname || ""
+  ).trim();
+  const documentBuyerName = isOwner
+    ? currentUserDisplayName || transactionContext?.buyerName
+    : transactionContext?.buyerName;
+  const documentSellerName = isOwner
+    ? selectedParticipant?.name || transactionContext?.sellerName || transactionContext?.shopName
+    : currentUserDisplayName || transactionContext?.sellerName || transactionContext?.shopName;
 
   const participantThreads = useMemo(() => {
     if (!isOwner) return [];
@@ -501,31 +546,48 @@ export default function DemandResponsePanel({
   }
 
   async function openProtectedTradeForm() {
-    setProtectedTradeFormOpen(true);
     setError("");
     if (matchedTradeStatus === "amendment_requested" && matchedProtectedTrade?.id) {
+      setProtectedTradeFormOpen(true);
       const meta = matchedProtectedTrade.meta || {};
       setProtectedTradeDraft({
         itemTitle: String(matchedProtectedTrade.item_title || ""),
-        quantity: String(meta.quantity || "1"),
+        quantity: String(meta.quantity || ""),
         amount: String(matchedProtectedTrade.amount || ""),
-        currency: String(matchedProtectedTrade.currency || "NGN").toUpperCase(),
+        currency: String(matchedProtectedTrade.currency || "").toUpperCase(),
         termsSummary: String(matchedProtectedTrade.terms_summary || ""),
         paymentTiming: meta.payment_timing === "deferred_credit" ? "deferred_credit" : "pay_now",
       });
       return;
     }
-    if (protectedTradeDraft.itemTitle || !requestId || !supplyProductId || !supplyShopId) return;
+    if (protectedTradeDraft.itemTitle) {
+      setProtectedTradeFormOpen(true);
+      return;
+    }
+    if (!requestId || !supplyProductId || !supplyShopId) {
+      setProtectedTradeFormOpen(false);
+      setError("The validated request, product, and Shop link is required before GSN can prepare this record.");
+      return;
+    }
     try {
       const handoff = await getDemandSupplyTradeHandoff(requestId, supplyProductId, {
         shop_id: supplyShopId,
       });
-      setProtectedTradeDraft((current) => ({
-        ...current,
-        itemTitle: String(handoff.item_title || handoff.product_title || "").trim(),
-      }));
+      const quantity = Number(transactionContext?.quantity || 0);
+      setProtectedTradeDraft({
+        itemTitle: String(
+          handoff.item_title || handoff.product_title || transactionContext?.productTitle || ""
+        ).trim(),
+        quantity: quantity > 0 ? String(quantity) : "",
+        amount: preparedTradeAmount(transactionContext?.unitPrice, quantity),
+        currency: String(transactionContext?.currency || "").trim().toUpperCase(),
+        termsSummary: preparedTerms(transactionContext?.fulfilmentMethod),
+        paymentTiming: "pay_now",
+      });
+      setProtectedTradeFormOpen(true);
     } catch (err: any) {
-      setError(String(err?.message || "The matched product could not be loaded for Trade Record."));
+      setProtectedTradeFormOpen(false);
+      setError(String(err?.message || "GSN could not prepare the matched product record. Check the request and Shop link, then try again."));
     }
   }
 
@@ -537,7 +599,7 @@ export default function DemandResponsePanel({
     const currency = protectedTradeDraft.currency.trim().toUpperCase();
     const termsSummary = protectedTradeDraft.termsSummary.trim();
     if (!itemTitle || !quantity || !amount || !currency || !termsSummary) {
-      setError("Add the item, quantity, amount, currency, and agreed terms before issuing Trade Record.");
+      setError("Check the prepared quantity, final total, currency, and terms before confirming this record.");
       return;
     }
     setCreatingProtectedTrade(true);
@@ -556,6 +618,8 @@ export default function DemandResponsePanel({
             currency,
             terms_summary: termsSummary,
             payment_timing: protectedTradeDraft.paymentTiming,
+            fulfilment_method: transactionContext?.fulfilmentMethod || "on_request",
+            listed_unit_price: transactionContext?.unitPrice || null,
             request_id: requestId,
           },
         });
@@ -571,6 +635,8 @@ export default function DemandResponsePanel({
             quantity,
             payment_timing: protectedTradeDraft.paymentTiming,
             deferred_credit: protectedTradeDraft.paymentTiming === "deferred_credit",
+            fulfilment_method: transactionContext?.fulfilmentMethod || "on_request",
+            listed_unit_price: transactionContext?.unitPrice || null,
           },
         };
       } else {
@@ -590,6 +656,9 @@ export default function DemandResponsePanel({
             payment_timing: protectedTradeDraft.paymentTiming,
             deferred_credit: protectedTradeDraft.paymentTiming === "deferred_credit",
             merchant_verification_relevant: protectedTradeDraft.paymentTiming === "deferred_credit",
+            fulfilment_method: transactionContext?.fulfilmentMethod || "on_request",
+            listed_unit_price: transactionContext?.unitPrice || null,
+            prepared_from_request: true,
             conversation_request_id: requestId,
             not_escrow: true,
             not_money_custody: true,
@@ -620,9 +689,9 @@ export default function DemandResponsePanel({
       setProtectedTradeFormOpen(false);
       setProtectedTradeDraft({
         itemTitle: "",
-        quantity: "1",
+        quantity: "",
         amount: "",
-        currency,
+        currency: "",
         termsSummary: "",
         paymentTiming: "pay_now",
       });
@@ -1678,75 +1747,121 @@ export default function DemandResponsePanel({
                       stableHeight={44}
                       style={{ borderRadius: 12, fontSize: 12 }}
                     >
-                      {matchedTradeStatus === "amendment_requested" ? "Reissue Trade Record" : "Issue Trade Record"}
+                      {matchedTradeStatus === "amendment_requested"
+                        ? "Review amended record"
+                        : "Make this agreement official"}
                     </PrimaryButton>
                     {protectedTradeFormOpen ? (
                       <div
-                        data-gsn-demand-protected-trade-form="inline-conversation"
-                        style={{ display: "grid", gap: 7, padding: 9, borderRadius: 13, border: "1px solid rgba(214,170,69,0.28)", background: "#FFFDF7" }}
+                        data-gsn-demand-protected-trade-form="prepared-confirmation"
+                        style={{ display: "grid", gap: 9, padding: 10, borderRadius: 14, border: "1px solid rgba(214,170,69,0.28)", background: "#FFFDF7" }}
                       >
-                        <input
-                          value={protectedTradeDraft.itemTitle}
-                          onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, itemTitle: event.target.value }))}
-                          placeholder="Product or service"
-                          aria-label="Trade Record product or service"
-                          maxLength={160}
-                          style={{ minHeight: 40, borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 10px", font: "inherit" }}
-                        />
-                        <div style={{ display: "grid", gridTemplateColumns: "0.8fr 1fr 0.65fr", gap: 6 }}>
-                          <input
-                            value={protectedTradeDraft.quantity}
-                            onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, quantity: event.target.value }))}
-                            placeholder="Quantity"
-                            aria-label="Agreed quantity"
-                            style={{ minWidth: 0, minHeight: 40, borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 9px", font: "inherit" }}
-                          />
-                          <input
-                            value={protectedTradeDraft.amount}
-                            onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, amount: event.target.value }))}
-                            placeholder="Amount"
-                            aria-label="Agreed amount"
-                            inputMode="decimal"
-                            style={{ minWidth: 0, minHeight: 40, borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 9px", font: "inherit" }}
-                          />
-                          <input
-                            value={protectedTradeDraft.currency}
-                            onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, currency: event.target.value.toUpperCase() }))}
-                            placeholder="NGN"
-                            aria-label="Currency"
-                            maxLength={8}
-                            style={{ minWidth: 0, minHeight: 40, borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 9px", font: "inherit" }}
-                          />
+                        <div>
+                          <div style={{ color: "#0B1F33", fontSize: 13, fontWeight: 950 }}>
+                            Check what GSN prepared
+                          </div>
+                          <div style={{ marginTop: 3, color: "#587087", fontSize: 11, lineHeight: 1.4 }}>
+                            GSN filled the known request facts. Confirm only what is true and correct anything that changed.
+                          </div>
                         </div>
-                        <select
-                          value={protectedTradeDraft.paymentTiming}
-                          onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, paymentTiming: event.target.value === "deferred_credit" ? "deferred_credit" : "pay_now" }))}
-                          aria-label="Payment timing"
-                          style={{ minHeight: 40, borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 10px", font: "inherit", background: "#FFFFFF" }}
+                        <div
+                          data-gsn-demand-prepared-trade-facts="request-source"
+                          style={{ display: "grid", gap: 7, padding: 9, borderRadius: 12, background: "#FFFFFF", border: "1px solid rgba(13,95,168,0.12)" }}
                         >
-                          <option value="pay_now">Payment due now</option>
-                          <option value="deferred_credit">Deferred payment / credit</option>
-                        </select>
-                        <textarea
-                          value={protectedTradeDraft.termsSummary}
-                          onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, termsSummary: event.target.value }))}
-                          placeholder="Agreed condition, collection or delivery terms"
-                          aria-label="Trade Record agreed terms"
-                          rows={3}
-                          maxLength={4000}
-                          style={{ minHeight: 70, resize: "vertical", borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "9px 10px", font: "inherit" }}
-                        />
+                          <div style={{ color: "#0B1F33", fontSize: 13, fontWeight: 950 }}>
+                            {protectedTradeDraft.itemTitle || transactionContext?.productTitle || "Loading matched item..."}
+                          </div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                            <span style={{ padding: "5px 8px", borderRadius: 999, background: "#EAF3FF", color: "#0B4FA8", fontSize: 10.5, fontWeight: 900 }}>
+                              Quantity {protectedTradeDraft.quantity || transactionContext?.quantity || "not set"}
+                            </span>
+                            <span style={{ padding: "5px 8px", borderRadius: 999, background: "#F4F6F8", color: "#41556B", fontSize: 10.5, fontWeight: 900 }}>
+                              {fulfilmentLabel(transactionContext?.fulfilmentMethod)}
+                            </span>
+                            {transactionContext?.unitPrice && transactionContext?.currency ? (
+                              <span style={{ padding: "5px 8px", borderRadius: 999, background: "#FFF3D5", color: "#805A0F", fontSize: 10.5, fontWeight: 900 }}>
+                                Listed {String(transactionContext.currency).toUpperCase()} {transactionContext.unitPrice} each
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                        <label style={{ display: "grid", gap: 5, color: "#17324A", fontSize: 11.5, fontWeight: 900 }}>
+                          Final total
+                          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 0.65fr", gap: 6 }}>
+                            <input
+                              value={protectedTradeDraft.amount}
+                              onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, amount: event.target.value }))}
+                              placeholder="Total amount"
+                              aria-label="Confirmed final total"
+                              inputMode="decimal"
+                              style={{ minWidth: 0, minHeight: 40, borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 9px", font: "inherit", background: "#FFFFFF" }}
+                            />
+                            <input
+                              value={protectedTradeDraft.currency}
+                              onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, currency: event.target.value.toUpperCase() }))}
+                              placeholder="Currency"
+                              aria-label="Confirmed currency"
+                              maxLength={8}
+                              style={{ minWidth: 0, minHeight: 40, borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 9px", font: "inherit", background: "#FFFFFF" }}
+                            />
+                          </div>
+                        </label>
+                        <details data-gsn-demand-correct-prepared-facts="collapsed">
+                          <StableDisclosureSummary
+                            debugId={`demand-box.response.${requestId}.protected-trade.correct-facts`}
+                            stableHeight={38}
+                            style={{ width: "100%", minHeight: 38, padding: "7px 9px", borderRadius: 11, border: "1px solid rgba(13,95,168,0.14)", background: "#FFFFFF", color: "#0B4FA8", fontSize: 11, fontWeight: 900, justifyContent: "space-between" }}
+                          >
+                            <span>Correct prepared quantity</span>
+                            <span aria-hidden="true">+</span>
+                          </StableDisclosureSummary>
+                          <label style={{ display: "grid", gap: 5, paddingTop: 7, color: "#17324A", fontSize: 11.5, fontWeight: 900 }}>
+                            Quantity agreed in this conversation
+                            <input
+                              value={protectedTradeDraft.quantity}
+                              onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, quantity: event.target.value }))}
+                              placeholder="Quantity"
+                              aria-label="Confirmed quantity"
+                              inputMode="decimal"
+                              style={{ minHeight: 40, borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 9px", font: "inherit", background: "#FFFFFF" }}
+                            />
+                          </label>
+                        </details>
+                        <label style={{ display: "grid", gap: 5, color: "#17324A", fontSize: 11.5, fontWeight: 900 }}>
+                          Payment timing
+                          <select
+                            value={protectedTradeDraft.paymentTiming}
+                            onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, paymentTiming: event.target.value === "deferred_credit" ? "deferred_credit" : "pay_now" }))}
+                            aria-label="Payment timing"
+                            style={{ minHeight: 40, borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "8px 10px", font: "inherit", background: "#FFFFFF" }}
+                          >
+                            <option value="pay_now">Payment due now</option>
+                            <option value="deferred_credit">Deferred payment / credit</option>
+                          </select>
+                        </label>
+                        <label style={{ display: "grid", gap: 5, color: "#17324A", fontSize: 11.5, fontWeight: 900 }}>
+                          Terms to confirm
+                          <textarea
+                            value={protectedTradeDraft.termsSummary}
+                            onChange={(event) => setProtectedTradeDraft((current) => ({ ...current, termsSummary: event.target.value }))}
+                            placeholder="Confirm collection, delivery, condition, timing, or another agreed term"
+                            aria-label="Terms to confirm"
+                            rows={3}
+                            maxLength={4000}
+                            style={{ minHeight: 74, resize: "vertical", borderRadius: 11, border: "1px solid rgba(13,95,168,0.18)", padding: "9px 10px", font: "inherit", background: "#FFFFFF" }}
+                          />
+                        </label>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 7 }}>
                           <PrimaryButton
                             type="button"
                             onClick={() => void issueProtectedTrade()}
                             busy={creatingProtectedTrade}
-                            busyLabel="Issuing"
+                            busyLabel="Saving"
                             debugId={`demand-box.response.${requestId}.protected-trade.submit`}
                             stableHeight={42}
                             style={{ borderRadius: 11, fontSize: 11.5 }}
                           >
-                            Send agreement
+                            Confirm and send terms
                           </PrimaryButton>
                           <SecondaryButton
                             type="button"
@@ -1756,18 +1871,20 @@ export default function DemandResponsePanel({
                             stableHeight={42}
                             style={{ borderRadius: 11, fontSize: 11.5 }}
                           >
-                            Cancel
+                            Not now
                           </SecondaryButton>
+                        </div>
+                        <div style={{ color: "#64748B", fontSize: 10.5, lineHeight: 1.4 }}>
+                          Nothing is created until you confirm. The buyer must still accept these terms before payment or fulfilment continues.
                         </div>
                       </div>
                     ) : null}
                   </div>
                 ) : !matchedProtectedTrade?.id && isOwner ? (
                   <div data-gsn-demand-protected-trade="waiting-for-seller" style={{ color: "#587087", fontSize: 11.5, lineHeight: 1.4 }}>
-                    Agree the item, quantity, price, and terms here. The seller then issues the Trade Record agreement in this conversation.
+                    Agree the item, quantity, price, and terms here. The seller reviews the GSN-prepared facts and sends them for your confirmation.
                   </div>
                 ) : null}
-
                 {matchedProtectedTrade?.id ? (
                   <div
                     data-gsn-demand-trade-sequence="agreement-payment-dispatch"
@@ -1779,6 +1896,28 @@ export default function DemandResponsePanel({
                     </span>
                     <span style={{ padding: "6px 5px", borderRadius: 9, background: dispatchUnlocked ? "#FFF3D5" : "#F3F5F7", color: dispatchUnlocked ? "#805A0F" : "#64748B", fontSize: 10, fontWeight: 950, textAlign: "center" }}>3 Dispatch</span>
                   </div>
+                ) : null}
+
+                {matchedProtectedTrade?.id ? (
+                  <details data-gsn-demand-transaction-document="private" style={{ minWidth: 0 }}>
+                    <StableDisclosureSummary
+                      debugId={`demand-box.response.${requestId}.transaction-document`}
+                      stableHeight={42}
+                      style={{ width: "100%", minHeight: 42, padding: "8px 10px", borderRadius: 12, border: "1px solid rgba(214,170,69,0.28)", background: "#FFFDF7", color: "#17324A", fontSize: 11.5, fontWeight: 950, justifyContent: "space-between" }}
+                    >
+                      <span>GSN transaction document</span>
+                      <span style={{ color: "#64748B", fontSize: 10.5 }}>Private · {matchedTradeCode}</span>
+                    </StableDisclosureSummary>
+                    <div style={{ paddingTop: 8 }}>
+                      <GsnTradeRecordDocument
+                        trade={matchedProtectedTrade}
+                        buyerName={documentBuyerName}
+                        sellerName={documentSellerName}
+                        shopName={transactionContext?.shopName}
+                        fulfilmentMethod={transactionContext?.fulfilmentMethod}
+                      />
+                    </div>
+                  </details>
                 ) : null}
 
                 {matchedProtectedTrade?.id && !isOwner ? (
