@@ -6629,7 +6629,9 @@ export default function ShopGalleryPage() {
         origin_broadcast_id: positiveNumber(miniSpotlight?.id) || null,
       });
       setSpotlightPurchaseOpen(false);
-      navigate(`/app/demand-box?demand_id=${created.id}&queue=mine`);
+      navigate(
+        `/app/demand-box?demand_id=${created.id}&queue=mine&focus=conversation`
+      );
     } catch (error: any) {
       setNotice({
         tone: "error",

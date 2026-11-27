@@ -89,6 +89,59 @@ const product = {
   public_block_number: 2,
   is_active: true,
 };
+const purchaseSpotlight = {
+  ...spotlight,
+  source_product_id: product.id,
+  source_product_title: product.name,
+  source_product_price: product.price,
+  source_product_currency: product.currency,
+  source_product_block: product.public_block_number,
+  source_product_is_active: true,
+  source_product_availability: null,
+  source_product_image_url: product.image_url,
+  is_canonical_opportunity: true,
+  opportunity_campaign_id: 701,
+  opportunity_presentation_id: 'spotlight-purchase-presentation-1',
+  opportunity_presentation_token: 'spotlight-purchase-presentation-token-123456789',
+  opportunity_presentation_expires_at: new Date(Date.now() + 120_000).toISOString(),
+  opportunity_presentation_surface: 'public_shop_spotlight_rail',
+};
+const purchaseRequest = {
+  id: 75,
+  user_id: 317,
+  title: 'Purchase request for Jollof tray',
+  description: 'Please confirm collection or delivery arrangements.',
+  category: 'Purchase request',
+  urgency: 'normal',
+  status: 'open',
+  is_mine: true,
+  queue_keys: ['mine'],
+  visibility_scope: 'protected_target',
+  routing_status: 'protected_member_targeted',
+  requester_display_name: 'Shortcut Visitor',
+  requester_gmfn_id: visitorId,
+  clan_id: 8,
+  clan_name: clan.name,
+  product_context: {
+    product_id: product.id,
+    shop_id: shop.id,
+    product_title: product.name,
+    shop_name: shop.name,
+    listed_price: product.price,
+    currency: product.currency,
+    shop_path: `/shop/${ownerId}?product_id=${product.id}&clan_id=8&gsn_source=spotlight_purchase_intention`,
+  },
+  commercial_intent: {
+    intent_type: 'buy_now',
+    quantity: 1,
+    fulfilment_method: 'collection',
+    origin_source: 'spotlight',
+    status: 'purchase_requested',
+    unit_price: product.price,
+    currency: product.currency,
+  },
+  created_at: '2026-11-27T09:00:00Z',
+};
 const vaultProduct = {
   id: 701,
   shop_id: 101,
@@ -113,7 +166,7 @@ function isApi(urlText) {
   const url = new URL(urlText);
   return url.port === '8000' || [
     '/api/', '/auth/', '/clans/', '/community-domains', '/marketplace',
-    '/shop-diaries', '/shop-voice', '/trust', '/dashboard', '/notifications', '/attention-spine',
+    '/shop-diaries', '/shop-voice', '/trust', '/dashboard', '/notifications', '/attention-spine', '/demand-box',
     '/loans', '/pool', '/protected-trades', '/payment-instructions',
   ].some((prefix) => url.pathname.startsWith(prefix));
 }
@@ -162,6 +215,7 @@ async function installMocks(page, scenario) {
           }
         : {}),
     };
+    const scenarioSpotlight = scenario.purchaseConversation ? purchaseSpotlight : spotlight;
     if (path === '/auth/me' || path === '/users/me') {
       return route.fulfill(json(member(scenario.identity)));
     }
@@ -220,8 +274,8 @@ async function installMocks(page, scenario) {
         item: scenarioShop,
         shop: scenarioShop,
         products: publicProducts,
-        broadcasts: [spotlight],
-        primary_broadcast: spotlight,
+        broadcasts: [scenarioSpotlight],
+        primary_broadcast: scenarioSpotlight,
         clan_id: 8,
       }));
     }
@@ -267,14 +321,25 @@ async function installMocks(page, scenario) {
             activated_at: spotlight.activated_at,
             authorized_expires_at: spotlight.authorized_expires_at,
           },
-          item: state === 'none' ? null : spotlight,
+          item: state === 'none' ? null : scenarioSpotlight,
           counts_as_delivery: false,
           counts_as_exposure: false,
         },
       }));
     }
     if (path.endsWith('/spotlight-opportunity')) {
-      return route.fulfill(json({ serving_contract_version: 2, items: [] }));
+      scenario.opportunityCalls = Number(scenario.opportunityCalls || 0) + 1;
+      const item = scenario.purchaseConversation ? purchaseSpotlight : null;
+      return route.fulfill(json({
+        serving_contract_version: 2,
+        item,
+        items: item ? [item] : [],
+        presentation: item ? {
+          presentation_id: item.opportunity_presentation_id,
+          presentation_token: item.opportunity_presentation_token,
+          presentation_expires_at: item.opportunity_presentation_expires_at,
+        } : null,
+      }));
     }
     if (path.startsWith('/marketplace/shops/me') || path.startsWith('/marketplace/shops/mine')) {
       const ownerProducts = Array.isArray(scenario.publicProducts)
@@ -344,8 +409,43 @@ async function installMocks(page, scenario) {
     }
     if (path.startsWith('/marketplace/broadcasts')) {
       return route.fulfill(json({
-        items: scenario.paidPromotionStage === 'live' ? [paidSpotlight] : [spotlight],
+        items: scenario.paidPromotionStage === 'live' ? [paidSpotlight] : [scenarioSpotlight],
       }));
+    }
+    if (path === '/marketplace/requests/product-purchase-intentions' && method === 'POST') {
+      scenario.purchaseConfirmations = Number(scenario.purchaseConfirmations || 0) + 1;
+      return route.fulfill(json(purchaseRequest));
+    }
+    if (path === '/marketplace/requests' && method === 'GET') {
+      const items = scenario.purchaseConversation ? [purchaseRequest] : [];
+      return route.fulfill(json({ items, total: items.length }));
+    }
+    if (path === '/marketplace/requests/75/supply-matches' && method === 'GET') {
+      return route.fulfill(json({ count: 0, matches: [] }));
+    }
+    if (path === '/demand-box/responses/unread-summary' && method === 'GET') {
+      return route.fulfill(json({ total_unread: 0, requests: [] }));
+    }
+    if (path === '/demand-box/requests/75/responses/read' && method === 'POST') {
+      return route.fulfill(json({ marketplace_request_id: 75, peer_user_id: 216, marked_read: 0 }));
+    }
+    if (path === '/demand-box/requests/75/responses' && method === 'GET') {
+      return route.fulfill(json([{
+        id: 7501,
+        marketplace_request_id: 75,
+        author_user_id: 317,
+        recipient_user_id: 216,
+        author_display_name: 'Shortcut Visitor',
+        author_gmfn_id: visitorId,
+        recipient_display_name: 'Shortcut Owner',
+        recipient_gmfn_id: ownerId,
+        text: 'Purchase request confirmed for Jollof tray.',
+        created_at: '2026-11-27T09:00:00Z',
+        read_at: null,
+        is_unread: false,
+        is_mine: true,
+        media_attachments: [],
+      }]));
     }
     if (path.startsWith('/marketplace/requests')) {
       return route.fulfill(json({ items: [], total: 0 }));
@@ -1864,6 +1964,109 @@ async function testPaidPromotionGuidance(browser, baseUrl) {
   }
 }
 
+async function testSpotlightPurchaseConversation(browser, baseUrl) {
+  const scenario = {
+    identity: visitorId,
+    ownerSpotlightState: 'live',
+    demandPolicyOff: false,
+    memberOfCommunity: true,
+    purchaseConversation: true,
+    purchaseConfirmations: 0,
+    mutations: [],
+  };
+  const { context, page } = await newPhonePage(browser, scenario);
+  try {
+    await page.goto(`${baseUrl}/shop/${ownerId}?clan_id=8`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 60_000,
+    });
+    const spotlightScreen = page.locator('[data-spotlight-screen="true"]');
+    await spotlightScreen.waitFor({ state: 'attached', timeout: 20_000 });
+    await spotlightScreen.scrollIntoViewIfNeeded();
+    const spotlightActionRow = page.locator('[data-spotlight-action-row="true"]');
+    await spotlightActionRow.waitFor({ state: 'attached', timeout: 20_000 });
+    await page.waitForTimeout(3_000);
+    const requestButton = page.locator('[data-spotlight-primary-action="buy_now"]');
+    if (!(await requestButton.isVisible().catch(() => false))) {
+      const renderedActions = await page.locator('[data-spotlight-primary-action]').evaluateAll((nodes) =>
+        nodes.map((node) => ({
+          action: node.getAttribute('data-spotlight-primary-action'),
+          text: node.textContent?.replace(/\s+/g, ' ').trim() || '',
+        }))
+      );
+      const shopText = (await page.locator('body').innerText()).replace(/\s+/g, ' ').slice(0, 900);
+      throw new Error(
+        `Linked Spotlight did not render buy_now after ${scenario.opportunityCalls || 0} opportunity call(s). ` +
+        `Rendered actions: ${JSON.stringify(renderedActions)}. Page: ${shopText}`
+      );
+    }
+    await requestButton.click();
+    const purchaseCard = page.locator('[data-spotlight-purchase-card="true"]');
+    await purchaseCard.waitFor({ state: 'visible', timeout: 20_000 });
+    const writesBeforeConfirmation = businessWrites(scenario.mutations);
+    if (writesBeforeConfirmation.length !== 0) {
+      throw new Error(`Opening the Spotlight purchase card issued business write request(s): ${writesBeforeConfirmation.join(', ')}.`);
+    }
+
+    await purchaseCard.getByRole('button', { name: 'Confirm request', exact: true }).click();
+    await page.waitForURL(
+      /\/app\/demand-box\?demand_id=75&queue=mine&focus=conversation$/,
+      { timeout: 20_000 }
+    );
+    const requestCard = page.locator('[data-gsn-demand-record="open"]');
+    await requestCard.waitFor({ state: 'visible', timeout: 20_000 });
+    await requestCard.getByText('Purchase request for Jollof tray', { exact: true }).waitFor({ state: 'visible' });
+    const conversation = requestCard.locator('[data-gsn-demand-conversations="integrated"]');
+    await conversation.waitFor({ state: 'visible', timeout: 20_000 });
+    const privateReplies = conversation.locator('[data-gsn-demand-private-replies="true"]');
+    await privateReplies.waitFor({ state: 'visible', timeout: 20_000 });
+    const availableReplies = conversation.locator(
+      '[data-gsn-demand-private-replies="true"][data-gsn-demand-conversation-access="available"]'
+    );
+    try {
+      await availableReplies.waitFor({ state: 'visible', timeout: 20_000 });
+    } catch {
+      const conversationAccess = await privateReplies.getAttribute('data-gsn-demand-conversation-access');
+      throw new Error(
+        `Spotlight conversation access is ${conversationAccess}: ${(await privateReplies.innerText()).replace(/\s+/g, ' ')}`
+      );
+    }
+    if (scenario.purchaseConfirmations !== 1) {
+      throw new Error(`Spotlight confirmation issued ${scenario.purchaseConfirmations} purchase requests instead of one.`);
+    }
+
+    const privateMessage = conversation.getByLabel('Private message');
+    await privateMessage.fill('Can we confirm collection time?');
+    if (!(await privateMessage.evaluate((node) => node === document.activeElement))) {
+      throw new Error('The private message field did not retain keyboard focus.');
+    }
+    const inputBox = await privateMessage.boundingBox();
+    if (!inputBox || inputBox.y + inputBox.height > 844) {
+      throw new Error('The focused private message field is not visible inside the phone viewport.');
+    }
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    if (overflow > 1) {
+      throw new Error(`Spotlight purchase conversation overflowed horizontally by ${overflow}px.`);
+    }
+
+    await page.goBack({ waitUntil: 'domcontentloaded' });
+    await page.waitForURL(new RegExp(`/shop/${ownerId}\\?clan_id=8$`), { timeout: 20_000 });
+    await requestButton.waitFor({ state: 'visible', timeout: 20_000 });
+    await page.goForward({ waitUntil: 'domcontentloaded' });
+    await page.waitForURL(
+      /\/app\/demand-box\?demand_id=75&queue=mine&focus=conversation$/,
+      { timeout: 20_000 }
+    );
+    await page.locator('[data-gsn-demand-private-replies="true"]')
+      .waitFor({ state: 'visible', timeout: 20_000 });
+    if (scenario.purchaseConfirmations !== 1) {
+      throw new Error('Browser replay duplicated the Spotlight purchase request.');
+    }
+  } finally {
+    await context.close();
+  }
+}
+
 const server = await createServer({
   root: frontendRoot,
   logLevel: 'silent',
@@ -1875,9 +2078,12 @@ const browser = await chromium.launch({ headless: true });
 const progressiveOnly = process.env.GSN_SMOKE_PROGRESSIVE_ONLY === '1';
 const shopItemJourneyOnly = process.env.GSN_SMOKE_SHOP_ITEM_JOURNEY_ONLY === '1';
 const spotlightPlusOnly = process.env.GSN_SMOKE_SPOTLIGHT_PLUS_ONLY === '1';
+const spotlightPurchaseOnly = process.env.GSN_SMOKE_SPOTLIGHT_PURCHASE_ONLY === '1';
 
 try {
-  if (spotlightPlusOnly) {
+  if (spotlightPurchaseOnly) {
+    await testSpotlightPurchaseConversation(browser, baseUrl);
+  } else if (spotlightPlusOnly) {
     await testOwnerShopShortcuts(browser, baseUrl, 'none', { skipShopHeroCheck: true });
   } else if (shopItemJourneyOnly) {
     await testOrdinaryGalleryTaskSeparation(browser, baseUrl);
@@ -1900,7 +2106,11 @@ try {
   console.log(JSON.stringify({
     ok: true,
     environment: 'local Vite + mocked synthetic API at 390x844',
-    checks: spotlightPlusOnly ? [
+    checks: spotlightPurchaseOnly ? [
+      'Spotlight purchase confirmation opens the exact private DemandBox conversation once',
+      'opening the confirmation card is write-free and browser replay does not duplicate the request',
+      'phone conversation remains keyboard-visible, overflow-free, and back/forward safe',
+    ] : spotlightPlusOnly ? [
       'owner empty Spotlight keeps the create plus visible and write-free',
     ] : shopItemJourneyOnly ? [
       'ordinary phone Shop items leads with Add item and keeps secondary shop tasks closed',

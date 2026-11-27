@@ -67,6 +67,10 @@ requirePattern(
   "Purchase confirmation must attribute the existing request to the exact Spotlight campaign and placement without confusing the display community with product ownership."
 );
 requirePattern(
+  /setSpotlightPurchaseOpen\(false\);[\s\S]*?navigate\([\s\S]*?\/app\/demand-box\?demand_id=\$\{created\.id\}&queue=mine&focus=conversation/,
+  "Confirmed Spotlight purchase requests must open the exact private DemandBox conversation."
+);
+requirePattern(
   /async function toggleSpotlightShopFollow\(\)[\s\S]*?followMarketplaceShop\([\s\S]*?unfollowMarketplaceShop\(/,
   "Spotlight follow must reuse the canonical Shop follow authority."
 );
