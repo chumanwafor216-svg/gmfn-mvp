@@ -1,5 +1,15 @@
 # Active Handoff Notes
 
+## Outstanding frontend batch release readiness - 2026-11-27
+
+- Render frontend and API are both still live on `08cb1e8c782c002178dc81ae20cf306c66d0417f`. No deploy was triggered during this review.
+- The outstanding production difference is frontend/workflow/docs only; there is no `gmfn_backend` or `render.yaml` change, so the API must not be redeployed with this batch.
+- Release review found and corrected a preferred-recipient state loop in `DemandResponsePanel`: after a requester manually closes the preselected seller thread, participant refresh no longer forces it open again. A later explicit seller focus still reopens it.
+- The DemandBox phone smoke now preserves non-owner action privacy, tests buyer-only `Buy now` and `Chat` on an owned request, follows the current `focus=conversation` route contract, uses stable disclosure locators, respects the shared 360ms repeat-tap guard, and accepts the intentional 96px compact Shop action.
+- Passing release-relevant gates: production TypeScript/Vite build, DemandBox front package, Marketplace front package, PWA boot recovery, and the complete DemandBox phone journey at 360x780, 390x844, and 430x932.
+- The broad protected-button freeze remains red from separately documented existing debt: raw `VoiceNoteRecorder` buttons, DemandBox smooth-scroll rules, Marketplace touch/lazy-data inventory, and unrelated visual sub-audits. The broad Marketplace button inventory/trusted-trade lane also retains stale baseline failures; these are not represented as green or fixed by this batch.
+- Next release action is one frontend-only manual deployment of the final exact `main` SHA after this correction is committed, promoted, and explicitly approved by the product owner. Do not deploy the API and do not dispatch both Render API and hook paths.
+
 ## Batch-first deployment is now mandatory - 2026-11-27
 
 - Successful jobs are committed and accumulated locally; they are not pushed,

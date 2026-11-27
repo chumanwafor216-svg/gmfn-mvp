@@ -159,6 +159,7 @@ export default function DemandResponsePanel({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const rowsRef = useRef<MarketplaceRequestResponseItem[]>([]);
   const recipientRef = useRef(recipientUserId);
+  const recipientSelectionDismissedRef = useRef(false);
   const stickToLatestRef = useRef(true);
   const openedThreadRef = useRef("");
   const currentUserId = Number(currentUser?.id || currentUser?.user_id || 0);
@@ -222,6 +223,7 @@ export default function DemandResponsePanel({
 
   useEffect(() => {
     if (!isOwner || !preferredRecipientUserId) return;
+    recipientSelectionDismissedRef.current = false;
     setRecipientUserId(Number(preferredRecipientUserId));
   }, [isOwner, preferredRecipientUserId]);
 
@@ -275,6 +277,7 @@ export default function DemandResponsePanel({
     if (participants.some((participant) => participant.id === recipientUserId)) {
       return;
     }
+    if (!recipientUserId && recipientSelectionDismissedRef.current) return;
     setRecipientUserId(
       preferredRecipientUserId > 0
         ? preferredRecipientUserId
@@ -888,7 +891,11 @@ export default function DemandResponsePanel({
                   onClick={() => {
                     setNewMessageCount(0);
                     stickToLatestRef.current = true;
-                    setRecipientUserId((current) => (current === thread.id ? 0 : thread.id));
+                    setRecipientUserId((current) => {
+                      const nextRecipientUserId = current === thread.id ? 0 : thread.id;
+                      recipientSelectionDismissedRef.current = nextRecipientUserId === 0;
+                      return nextRecipientUserId;
+                    });
                   }}
                   aria-expanded={selected}
                   style={{

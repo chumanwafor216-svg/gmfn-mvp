@@ -497,7 +497,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   const transportCard = cards.filter({ hasText: "Need school transport" });
   assert((await transportCard.getAttribute("data-gsn-demand-request-preview")) === "message-first", "The closed request is not using the message-first preview.");
   assert((await transportCard.getAttribute("data-gsn-demand-preview-style")) === "neon-paper", "The approved neon request-paper preview is missing.");
-  assert(await transportCard.getByText("Open request", { exact: true }).isVisible(), "The request status is missing from the closed preview.");
+  assert(await transportCard.getByRole("button", { name: "Open request", exact: true }).isVisible(), "The request opening action is missing from the closed preview.");
   assert(await transportCard.getByText("Need school transport", { exact: true }).isVisible(), "The request message is missing from the closed preview.");
   await transportCard.getByRole("button", { name: "Open request", exact: true }).click();
   assert((await page.locator('[data-gsn-demand-record="open"]').count()) === 1, "Opening a request did not expose exactly one card.");
@@ -508,9 +508,9 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await mergedProductEnquiry.isVisible(), "The product enquiry was not merged into the opened request card.");
   assert(await mergedProductEnquiry.getByText("Awka Family Transport", { exact: true }).isVisible(), "The concise merged Shop identity is missing.");
   assert(await mergedProductEnquiry.getByText("Listed price GBP 15", { exact: true }).isVisible(), "The concise merged listed price is missing.");
-  for (const label of ["Possible match", "Buy now", "Chat"]) {
-    assert(await mergedProductEnquiry.getByRole("button", { name: label, exact: true }).isVisible(), `The ${label} product action is missing.`);
-  }
+  assert(await mergedProductEnquiry.getByRole("button", { name: "Possible match", exact: true }).isVisible(), "The Possible match product action is missing.");
+  assert((await mergedProductEnquiry.getByRole("button", { name: "Buy now", exact: true }).count()) === 0, "Buy now leaked to a member who does not own the request.");
+  assert((await mergedProductEnquiry.getByRole("button", { name: "Chat", exact: true }).count()) === 0, "Buyer Chat leaked to a member who does not own the request.");
   assert((await mergedProductEnquiry.locator('[data-gsn-demand-product-actions="complete-journey"]').count()) === 1, "The compact product journey actions are not grouped inside the description card.");
   assert((await transportCard.locator('[data-gsn-demand-primary-message="true"]').count()) === 0, "The verbose product-enquiry message returned as a second block.");
   assert(!(await page.getByText("Please confirm availability, final price and collection or delivery arrangements.", { exact: true }).isVisible().catch(() => false)), "Verbose generated product guidance remained exposed.");
@@ -540,7 +540,7 @@ async function verifyViewport(browser, baseURL, viewport) {
       "/shop/GSN-U-810?product_id=810&clan_id=8",
       "/shop/GSN-U-830?product_id=830&clan_id=9",
     ]),
-    "An optional Shop action changed its existing listing destination or non-owner source-context boundary."
+    `An optional Shop action changed its existing listing destination or source-context boundary: ${JSON.stringify(listingHrefs)}`
   );
   const matchGeometry = await matchPanel.evaluate((node) => {
     const rows = Array.from(node.querySelectorAll('[data-gsn-demand-match-row="compact"]'));
@@ -561,6 +561,10 @@ async function verifyViewport(browser, baseURL, viewport) {
       ),
     };
   });
+  const matchScreenshotPath = process.env.GSN_DEMAND_BOX_MATCH_SCREENSHOT_PATH?.trim();
+  if (matchScreenshotPath && viewport.width === 390) {
+    await matchPanel.screenshot({ path: matchScreenshotPath, scale: "css" });
+  }
   assert(matchGeometry.noOverflow && matchGeometry.width <= viewport.width - 24, "The compact match panel overflows the phone viewport.");
   assert(matchGeometry.height <= 560, "The compact match panel exceeds the approved mobile density.");
   assert(
@@ -572,9 +576,9 @@ async function verifyViewport(browser, baseURL, viewport) {
     "A match label collapsed into a one-character column: " + matchGeometry.textWidths.join("/")
   );
   assert(
-    matchGeometry.actionWidths.every((width) => width < 90) &&
+    matchGeometry.actionWidths.every((width) => width >= 90 && width <= 100) &&
       matchGeometry.actionHeights.every((height) => height >= 44),
-    "A match destination is no longer a compact, accessible action."
+    `A match destination is no longer a compact, accessible action: widths=${matchGeometry.actionWidths.join("/")} heights=${matchGeometry.actionHeights.join("/")}`
   );
   assert(matchGeometry.textFits, "Normal match text is clipped.");
   const requestTitleFont = await transportCard
@@ -591,10 +595,6 @@ async function verifyViewport(browser, baseURL, viewport) {
     matchGeometry.height + "px high; rows " + matchGeometry.rowHeights.join("/") + "px (baseline about 817px)."
   );
 
-  const matchScreenshotPath = process.env.GSN_DEMAND_BOX_MATCH_SCREENSHOT_PATH?.trim();
-  if (matchScreenshotPath && viewport.width === 390) {
-    await matchPanel.screenshot({ path: matchScreenshotPath, scale: "css" });
-  }
   const matchFullPageScreenshotPath = process.env.GSN_DEMAND_BOX_MATCH_FULL_PAGE_SCREENSHOT_PATH?.trim();
   if (matchFullPageScreenshotPath && viewport.width === 390) {
     const captureState = await page.evaluate(() => {
@@ -682,17 +682,6 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(!(await page.getByText("Source: DemandBox", { exact: true }).isVisible()), "Technical request details opened before the user asked.");
   assert((await transportCard.getByRole("button", { name: "Reply privately", exact: true }).count()) === 0, "The obsolete second reply-opening action returned.");
 
-  await mergedProductEnquiry.getByRole("button", { name: "Chat", exact: true }).click();
-  assert(apiCalls.sellerContactGets === 1, "Product Chat did not resolve the authenticated matched seller exactly once.");
-  const productConversation = transportCard.locator('[data-gsn-demand-conversations="integrated"]');
-  await productConversation.waitFor();
-  assert(await productConversation.locator('[data-gsn-demand-private-replies="true"]').isVisible(), "Product Chat did not open the complete GSN conversation engine.");
-  const productTradeSteps = productConversation.locator('[data-gsn-demand-trade-steps="collapsed"]');
-  assert(await productTradeSteps.isVisible(), "Ordinary Product Chat should keep Trade Records available but collapsed.");
-  await mergedProductEnquiry.getByRole("button", { name: "Buy now", exact: true }).click();
-  assert(apiCalls.sellerContactGets === 1, "Buy now repeated seller resolution instead of reusing the validated conversation.");
-  await productConversation.locator('[data-gsn-demand-trade-steps="open"]').waitFor();
-  assert(await productConversation.getByText("Agree, pay, verify", { exact: true }).isVisible(), "Buy now did not focus Trade Records inside the GSN conversation.");
 
   await page.getByRole("button", { name: "View more needs", exact: true }).click();
   assert((await cards.count()) === 2, "View more needs did not reveal the remaining request preview.");
@@ -714,7 +703,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await requesterViewShop.isVisible(), "View shop is missing from the requester product description card.");
   assert(await ownerMatchPanel.getByRole("button", { name: "Ask seller", exact: true }).isVisible(), "Ask Seller is missing.");
   await ownerMatchPanel.getByRole("button", { name: "Ask seller", exact: true }).click();
-  assert(apiCalls.sellerContactGets === 2, "Ask seller did not add exactly one authenticated validated handoff request after the product journey.");
+  assert(apiCalls.sellerContactGets === 1, "Ask seller did not use the authenticated validated handoff endpoint exactly once.");
   const contactResult = ownerMatchPanel.locator('[data-gsn-demand-seller-contact-result="prepared"]');
   await contactResult.waitFor();
   assert(await contactResult.locator('[data-gsn-demand-contact-channel="gsn-primary"]').isVisible(), "GSN chat is not presented as the primary seller-contact route.");
@@ -724,10 +713,13 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(await whatsappAlternative.isVisible(), "WhatsApp is not contained in Ask Seller as the alternative route.");
   assert(await privateConversation.isVisible(), "The GSN conversation is missing from Ask Seller.");
   assert((await contactResult.locator('[data-gsn-demand-protected-trade-position="after-conversation"]').count()) === 0, "A duplicate Protected Trade button returned outside the conversation.");
-  const tradeSteps = privateConversation.locator('[data-gsn-demand-trade-steps="collapsed"]');
+  const tradeSteps = privateConversation.locator('[data-gsn-demand-trade-steps]');
   assert(await tradeSteps.isVisible(), "The protected progression is missing from the compact Trade steps control.");
+  assert((await tradeSteps.getAttribute("data-gsn-demand-trade-steps")) === "collapsed", "The protected progression did not start collapsed.");
   await tradeSteps.locator("summary").click();
-  assert(await tradeSteps.getByText("Agree the item, quantity, price, and terms here.", { exact: false }).isVisible(), "The requester is not told to wait for the seller-issued Trade Record.");
+  const waitingForSellerTrade = tradeSteps.locator('[data-gsn-demand-protected-trade="waiting-for-seller"]');
+  await waitingForSellerTrade.waitFor();
+  assert(await waitingForSellerTrade.getByText("Agree the item, quantity, price, and terms here.", { exact: false }).isVisible(), "The requester is not told to wait for the seller-issued Trade Record.");
   assert((await tradeSteps.getByRole("button", { name: "Issue Trade Record", exact: true }).count()) === 0, "The requester was incorrectly allowed to issue the seller's Trade Record.");
   assert((await tradeSteps.locator('[data-gsn-demand-trade-stage="tracking-evidence"]').count()) === 0, "Standalone tracking returned outside Merchant Verification.");
   assert((await contactResult.getByRole("link", { name: "View shop", exact: true }).count()) === 0, "View shop is duplicated inside Ask Seller.");
@@ -740,6 +732,17 @@ async function verifyViewport(browser, baseURL, viewport) {
     };
   });
   assert(sellerJourneyOrder?.whatsappBeforeConversation, "WhatsApp must remain the alternative channel choice before the GSN conversation.");
+  const preferredSellerThread = privateConversation.getByRole("button", { name: /Conversation with Onitsha Cooling Repairs/ });
+  assert((await preferredSellerThread.getAttribute("aria-pressed")) === "true", "Ask Seller did not initially focus the matched seller thread.");
+  await page.waitForTimeout(400);
+  await preferredSellerThread.click();
+  const preferredSellerPicker = privateConversation.locator('[data-gsn-demand-conversation-picker="true"]');
+  await preferredSellerPicker.waitFor();
+  await page.waitForTimeout(100);
+  assert(await preferredSellerPicker.isVisible(), "The preferred seller effect forced a manually closed thread back open.");
+  await page.waitForTimeout(400);
+  await preferredSellerThread.click();
+  await privateConversation.locator('[data-gsn-demand-selected-thread="true"]').getByText("Conversation with Onitsha Cooling Repairs", { exact: true }).waitFor();
   await contactResult.getByRole("button", { name: "Continue on WhatsApp (Alternative)", exact: true }).click();
   await page.waitForFunction(() => Boolean(window.__gsnOpenedSellerChatUrl));
   const decodedSellerChatUrl = decodeURIComponent(await page.evaluate(() => window.__gsnOpenedSellerChatUrl));
@@ -811,9 +814,14 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(conversationGeometry.noOverflow, "The reply trail overflows horizontally.");
   const voiceNoteButton = ownerConversationZone.getByRole("button", { name: "Record voice note", exact: true });
   assert(await voiceNoteButton.isVisible(), "The private reply composer lacks the optional voice-note continuation action.");
+  await page.waitForTimeout(400);
   await threadList.getByRole("button", { name: /Conversation with Chidi Member/ }).click();
-  assert(await ownerConversationZone.locator('[data-gsn-demand-conversation-picker="true"]').isVisible(), "The selected responder thread did not close when selected again.");
+  const closedConversationPicker = ownerConversationZone.locator('[data-gsn-demand-conversation-picker="true"]');
+  await closedConversationPicker.waitFor();
+  await page.waitForTimeout(100);
+  assert(await closedConversationPicker.isVisible(), "The selected responder thread did not remain closed when selected again.");
   assert(!(await conversation.isVisible().catch(() => false)), "The responder conversation remained open after toggling its row closed.");
+  await page.waitForTimeout(400);
   await threadList.getByRole("button", { name: /Conversation with Chidi Member/ }).click();
   await conversation.getByText("I can inspect the freezer after 4pm.", { exact: true }).waitFor();
   assert(
@@ -826,7 +834,11 @@ async function verifyViewport(browser, baseURL, viewport) {
     name: "Delete",
     exact: true,
   });
-  assert(await deleteVoiceButton.isVisible(), "The sender voice-delete action is missing.");
+  await deleteVoiceButton.waitFor();
+  assert(
+    await deleteVoiceButton.isVisible(),
+    `The sender voice-delete action is missing: livePlayers=${await freezerCard.locator('[data-gsn-demand-voice-presentation="hero-live"]').count()} removedPlayers=${await freezerCard.locator('[data-gsn-demand-voice-presentation="hero-removed"]').count()} deleteButtons=${await deleteVoiceButton.count()}`
+  );
   await deleteVoiceButton.click();
   const deleteConfirmation = freezerCard.locator(
     '[data-gsn-demand-voice-delete-confirmation="true"]'
@@ -1021,7 +1033,7 @@ async function verifyViewport(browser, baseURL, viewport) {
   assert(apiCalls.voiceRequestPosts === 1, "The ready recording did not use the protected voice request endpoint.");
   assert(apiCalls.textRequestPosts === 0, "The recorded request silently fell back to the text-only endpoint.");
 
-  await page.goto(baseURL + "/app/demand-box?demand_id=72", { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(baseURL + "/app/demand-box?demand_id=72&focus=conversation", { waitUntil: "domcontentloaded", timeout: 180000 });
   const directCard = page.locator('[data-gsn-demand-record="open"]');
   await directCard.waitFor();
   assert((await directCard.count()) === 1, "A direct DemandBox link did not isolate one opened request.");
@@ -1044,6 +1056,49 @@ async function verifyViewport(browser, baseURL, viewport) {
     "The useful default queue did not surface the answerable request."
   );
 
+  const buyerRequest = requests.find((row) => row.id === 72);
+  assert(Boolean(buyerRequest), "The buyer-owned request fixture is missing.");
+  const originalBuyerRequest = {
+    description: buyerRequest.description,
+    visibility_scope: buyerRequest.visibility_scope,
+    product_context: buyerRequest.product_context,
+  };
+  try {
+    Object.assign(buyerRequest, {
+      description: "Product: Freezer repair visit\nShop: Onitsha Cooling Repairs\nListed price: GBP 45\n@GSN-U-900\nBuyer note: Please confirm availability.",
+      visibility_scope: "protected_target",
+      product_context: {
+        product_id: 900,
+        shop_id: 90,
+        product_title: "Freezer repair visit",
+        shop_name: "Onitsha Cooling Repairs",
+        listed_price: "45",
+        currency: "GBP",
+        shop_path: "/shop/GSN-U-900?product_id=900&clan_id=8",
+      },
+    });
+    await page.goto(baseURL + "/app/demand-box?demand_id=72", { waitUntil: "domcontentloaded", timeout: 180000 });
+    const buyerProductCard = page.locator('[data-gsn-demand-record="open"]');
+    await buyerProductCard.waitFor();
+    const buyerProductSummary = buyerProductCard.locator('[data-gsn-demand-product-enquiry-summary="merged"]');
+    await buyerProductSummary.waitFor();
+    for (const label of ["Possible match", "Buy now", "Chat"]) {
+      assert(await buyerProductSummary.getByRole("button", { name: label, exact: true }).isVisible(), `The buyer-owned ${label} product action is missing.`);
+    }
+    await buyerProductSummary.getByRole("button", { name: "Chat", exact: true }).click();
+    assert(apiCalls.sellerContactGets === 2, "Buyer Product Chat did not resolve the matched seller exactly once after Ask seller.");
+    const buyerConversation = buyerProductCard.locator('[data-gsn-demand-conversations="integrated"]');
+    await buyerConversation.waitFor();
+    assert(await buyerConversation.locator('[data-gsn-demand-private-replies="true"]').isVisible(), "Buyer Product Chat did not open the complete GSN conversation engine.");
+    const buyerTradeSteps = buyerConversation.locator('[data-gsn-demand-trade-steps="collapsed"]');
+    assert(await buyerTradeSteps.isVisible(), "Buyer Product Chat should keep Trade Records available but collapsed.");
+    await buyerProductSummary.getByRole("button", { name: "Buy now", exact: true }).click();
+    assert(apiCalls.sellerContactGets === 2, "Buy now repeated seller resolution instead of reusing the validated buyer conversation.");
+    await buyerConversation.locator('[data-gsn-demand-trade-steps="open"]').waitFor();
+    assert(await buyerConversation.getByText("Agree, pay, verify", { exact: true }).isVisible(), "Buy now did not focus Trade Records inside the buyer's GSN conversation.");
+  } finally {
+    Object.assign(buyerRequest, originalBuyerRequest);
+  }
   const overflow = await page.locator("body").evaluate((node) => node.scrollWidth > node.clientWidth + 1);
   assert(!overflow, "DemandBox overflows at " + viewport.width + "x" + viewport.height + ".");
   await page.close();
@@ -1063,9 +1118,15 @@ async function run() {
     await server.listen();
     const port = server.httpServer.address().port;
     browser = await chromium.launch({ headless: true });
-    await verifyViewport(browser, "http://127.0.0.1:" + port, { width: 390, height: 844 });
-    await verifyViewport(browser, "http://127.0.0.1:" + port, { width: 360, height: 780 });
-    await verifyViewport(browser, "http://127.0.0.1:" + port, { width: 430, height: 932 });
+    const viewports = [
+      { width: 390, height: 844 },
+      { width: 360, height: 780 },
+      { width: 430, height: 932 },
+    ];
+    const requestedWidth = Number(process.env.GSN_DEMAND_BOX_SMOKE_WIDTH || 0);
+    for (const viewport of viewports.filter((candidate) => !requestedWidth || candidate.width === requestedWidth)) {
+      await verifyViewport(browser, "http://127.0.0.1:" + port, viewport);
+    }
   } finally {
     await browser?.close();
     await server?.close();
