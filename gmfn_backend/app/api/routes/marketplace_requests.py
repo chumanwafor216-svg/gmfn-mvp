@@ -18,10 +18,12 @@ from app.db.models import (
     DemandAudioAttachment,
     DemandMediaAttachment,
     MarketplaceProduct,
+    MarketplaceBroadcast,
     MarketplaceRequest,
     MarketplaceRequestActivity,
     MarketplaceRequestResponse,
     MarketplaceShop,
+    SpotlightCampaign,
     User,
     UserSettings,
 )
@@ -763,13 +765,18 @@ def _seller_contact_message(
     return "\n".join(lines)
 
 
-def _ensure_product_enquiry_private_thread(
+def _ensure_product_transaction_private_thread(
     db: Session,
     *,
     demand: MarketplaceRequest,
     buyer: User,
     seller: User,
     initial_text: str,
+    activity_detail: str,
+    notification_title: str,
+    notification_message: str,
+    notification_action_label: str,
+    notify_seller: bool = True,
 ) -> MarketplaceRequestResponse:
     from app.services.notification_service import create_notification
 
@@ -789,7 +796,7 @@ def _ensure_product_enquiry_private_thread(
         ):
             raise HTTPException(
                 status_code=409,
-                detail="This product enquiry conversation key is already in use",
+                detail="This product transaction conversation key is already in use",
             )
         return existing
 
@@ -807,23 +814,96 @@ def _ensure_product_enquiry_private_thread(
             marketplace_request_id=int(demand.id),
             actor_user_id=int(buyer.id),
             event_type="response_added",
-            detail="Buyer opened the private product enquiry conversation.",
+            detail=activity_detail,
         )
     )
-    create_notification(
-        db,
-        user_id=int(seller.id),
-        kind="demand_response",
-        title="New product enquiry",
-        message=(
-            f"{_public_requester_display_name(buyer)} asked about "
-            f"'{str(demand.title or 'a Shop product').strip()}'."
-        ),
-        action_url=_request_action_url(demand, queue="tagged"),
-        action_label="Open enquiry",
-    )
+    if notify_seller:
+        create_notification(
+            db,
+            user_id=int(seller.id),
+            kind="demand_response",
+            title=notification_title,
+            message=notification_message,
+            action_url=_request_action_url(demand, queue="tagged"),
+            action_label=notification_action_label,
+        )
+    db.flush()
     db.refresh(row)
     return row
+
+
+def _validate_purchase_origin_attribution(
+    db: Session,
+    *,
+    payload: MarketplacePurchaseIntentionCreate,
+    product: MarketplaceProduct,
+    shop: MarketplaceShop,
+    seller: User,
+) -> None:
+    campaign_id = int(payload.origin_campaign_id or 0)
+    broadcast_id = int(payload.origin_broadcast_id or 0)
+    if payload.origin_source != "spotlight":
+        if campaign_id or broadcast_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Spotlight attribution cannot be attached to another transaction source",
+            )
+        return
+
+    campaign = db.get(SpotlightCampaign, campaign_id) if campaign_id else None
+    if campaign_id and (
+        campaign is None
+        or int(getattr(campaign, "source_product_id", 0) or 0) != int(product.id)
+        or int(getattr(campaign, "shop_id", 0) or 0) != int(shop.id)
+        or int(getattr(campaign, "owner_user_id", 0) or 0) != int(seller.id)
+    ):
+        raise HTTPException(status_code=400, detail="Spotlight campaign does not match this product")
+
+    broadcast = db.get(MarketplaceBroadcast, broadcast_id) if broadcast_id else None
+    if broadcast_id and (
+        broadcast is None
+        or int(getattr(broadcast, "shop_id", 0) or 0) != int(shop.id)
+        or int(getattr(broadcast, "author_user_id", 0) or 0) != int(seller.id)
+        or (
+            campaign_id
+            and int(getattr(broadcast, "spotlight_campaign_id", 0) or 0) != campaign_id
+        )
+    ):
+        raise HTTPException(status_code=400, detail="Spotlight placement does not match this product")
+
+    if broadcast is not None and campaign is None:
+        linked_campaign_id = int(getattr(broadcast, "spotlight_campaign_id", 0) or 0)
+        linked_campaign = db.get(SpotlightCampaign, linked_campaign_id) if linked_campaign_id else None
+        if (
+            linked_campaign is None
+            or int(getattr(linked_campaign, "source_product_id", 0) or 0) != int(product.id)
+            or int(getattr(linked_campaign, "shop_id", 0) or 0) != int(shop.id)
+            or int(getattr(linked_campaign, "owner_user_id", 0) or 0) != int(seller.id)
+        ):
+            raise HTTPException(status_code=400, detail="Spotlight placement product is invalid")
+
+
+def _purchase_transaction_message(
+    *,
+    product_title: str,
+    quantity: int,
+    fulfilment_method: str,
+    note: str,
+) -> str:
+    fulfilment_labels = {
+        "collection": "Collection",
+        "delivery": "Delivery",
+        "on_request": "To be agreed",
+    }
+    lines = [
+        f"Purchase request confirmed for {product_title}.",
+        f"Quantity: {int(quantity)}.",
+        f"Fulfilment: {fulfilment_labels[fulfilment_method]}.",
+        "Please confirm availability, final price and terms. No agreement or payment has been made yet.",
+    ]
+    if note:
+        lines.append(f"Buyer note: {note}")
+    return "\n".join(lines)
 
 @router.post("/product-enquiries", response_model=MarketplaceRequestOut)
 def create_marketplace_product_enquiry(
@@ -880,13 +960,21 @@ def create_marketplace_product_enquiry(
             and context.product_id == int(payload.product_id)
             and context.shop_id == int(payload.shop_id)
         ):
-            _ensure_product_enquiry_private_thread(
+            _ensure_product_transaction_private_thread(
                 db,
                 demand=active,
                 buyer=current_user,
                 seller=seller,
                 initial_text=_safe_text(payload.note) or "Is this product still available?",
+                activity_detail="Buyer opened the private product enquiry conversation.",
+                notification_title="New product enquiry",
+                notification_message=(
+                    f"{_public_requester_display_name(current_user)} asked about "
+                    f"'{str(active.title or 'a Shop product').strip()}'."
+                ),
+                notification_action_label="Open enquiry",
             )
+            db.commit()
             return _to_out(db, active, current_user, current_user_id=int(current_user.id))
     client_request_id = payload.client_request_id.strip()
     existing = (
@@ -905,13 +993,21 @@ def create_marketplace_product_enquiry(
             or context.shop_id != int(payload.shop_id)
         ):
             raise HTTPException(status_code=409, detail="This enquiry key is already in use")
-        _ensure_product_enquiry_private_thread(
+        _ensure_product_transaction_private_thread(
             db,
             demand=existing,
             buyer=current_user,
             seller=seller,
             initial_text=_safe_text(payload.note) or "Is this product still available?",
+            activity_detail="Buyer opened the private product enquiry conversation.",
+            notification_title="New product enquiry",
+            notification_message=(
+                f"{_public_requester_display_name(current_user)} asked about "
+                f"'{str(existing.title or 'a Shop product').strip()}'."
+            ),
+            notification_action_label="Open enquiry",
         )
+        db.commit()
         return _to_out(db, existing, current_user, current_user_id=int(current_user.id))
 
     product_title = (
@@ -965,15 +1061,22 @@ def create_marketplace_product_enquiry(
             ),
         )
     )
-    db.commit()
-    db.refresh(row)
-    _ensure_product_enquiry_private_thread(
+    _ensure_product_transaction_private_thread(
         db,
         demand=row,
         buyer=current_user,
         seller=seller,
         initial_text=note or "Is this product still available?",
+        activity_detail="Buyer opened the private product enquiry conversation.",
+        notification_title="New product enquiry",
+        notification_message=(
+            f"{_public_requester_display_name(current_user)} asked about "
+            f"'{str(row.title or 'a Shop product').strip()}'."
+        ),
+        notification_action_label="Open enquiry",
     )
+    db.commit()
+    db.refresh(row)
     return _to_out(db, row, current_user, current_user_id=int(current_user.id))
 
 
@@ -983,8 +1086,6 @@ def create_marketplace_purchase_intention(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    from app.services.notification_service import create_notification
-
     product = _require_visible_supply_for_intelligence(
         db,
         product_id=int(payload.product_id),
@@ -1019,6 +1120,29 @@ def create_marketplace_purchase_intention(
             detail="Product and purchase community do not match",
         )
 
+    _validate_purchase_origin_attribution(
+        db,
+        payload=payload,
+        product=product,
+        shop=shop,
+        seller=seller,
+    )
+
+    product_title = (
+        _safe_text(getattr(product, "title", None) or getattr(product, "name", None))
+        or "Marketplace item"
+    )
+    transaction_message = _purchase_transaction_message(
+        product_title=product_title,
+        quantity=int(payload.quantity),
+        fulfilment_method=payload.fulfilment_method,
+        note=_safe_text(payload.note),
+    )
+    seller_notification_message = (
+        f"{_public_requester_display_name(current_user)} submitted a purchase request "
+        f"for '{product_title}'."
+    )
+
     client_request_id = payload.client_request_id.strip()
     existing = (
         db.query(MarketplaceRequest)
@@ -1044,6 +1168,19 @@ def create_marketplace_purchase_intention(
                 status_code=409,
                 detail="This purchase request key is already in use",
             )
+        _ensure_product_transaction_private_thread(
+            db,
+            demand=existing,
+            buyer=current_user,
+            seller=seller,
+            initial_text=transaction_message,
+            activity_detail="Buyer opened the private purchase-request conversation.",
+            notification_title="New purchase request",
+            notification_message=seller_notification_message,
+            notification_action_label="Review request",
+            notify_seller=False,
+        )
+        db.commit()
         return _to_out(db, existing, current_user, current_user_id=int(current_user.id))
 
     if not payload.start_new_transaction:
@@ -1071,6 +1208,19 @@ def create_marketplace_purchase_intention(
                 and context.shop_id == int(payload.shop_id)
                 and intent.intent_type == payload.intent_type
             ):
+                _ensure_product_transaction_private_thread(
+                    db,
+                    demand=active,
+                    buyer=current_user,
+                    seller=seller,
+                    initial_text=transaction_message,
+                    activity_detail="Buyer opened the private purchase-request conversation.",
+                    notification_title="New purchase request",
+                    notification_message=seller_notification_message,
+                    notification_action_label="Review request",
+                    notify_seller=False,
+                )
+                db.commit()
                 return _to_out(
                     db,
                     active,
@@ -1078,10 +1228,6 @@ def create_marketplace_purchase_intention(
                     current_user_id=int(current_user.id),
                 )
 
-    product_title = (
-        _safe_text(getattr(product, "title", None) or getattr(product, "name", None))
-        or "Marketplace item"
-    )
     shop_name = _safe_text(getattr(shop, "name", None)) or "Marketplace shop"
     unit_price = _safe_text(getattr(product, "price", None)) or None
     currency = _safe_text(getattr(product, "currency", None)) or None
@@ -1150,6 +1296,8 @@ def create_marketplace_purchase_intention(
                         "quantity": int(payload.quantity),
                         "fulfilment_method": payload.fulfilment_method,
                         "origin_source": payload.origin_source,
+                        "origin_campaign_id": payload.origin_campaign_id,
+                        "origin_broadcast_id": payload.origin_broadcast_id,
                         "status": "purchase_requested",
                         "unit_price": unit_price,
                         "currency": currency,
@@ -1159,17 +1307,17 @@ def create_marketplace_purchase_intention(
             ),
         )
     )
-    create_notification(
+    _ensure_product_transaction_private_thread(
         db,
-        user_id=int(seller.id),
-        kind="demand_response",
-        title="New purchase request",
-        message=(
-            f"{_public_requester_display_name(current_user)} submitted "
-            f"{intent_labels[payload.intent_type].lower()} for '{product_title}'."
-        ),
-        action_url=_request_action_url(row, queue="tagged"),
-        action_label="Review request",
+        demand=row,
+        buyer=current_user,
+        seller=seller,
+        initial_text=transaction_message,
+        activity_detail="Buyer opened the private purchase-request conversation.",
+        notification_title="New purchase request",
+        notification_message=seller_notification_message,
+        notification_action_label="Review request",
+        notify_seller=False,
     )
     db.commit()
     db.refresh(row)

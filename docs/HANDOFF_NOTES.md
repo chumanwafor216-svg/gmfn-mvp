@@ -1,5 +1,18 @@
 # Active Handoff Notes
 
+## Spotlight sales-first correction implemented locally - 2026-11-27
+
+- Founder-authorised local batch implemented on `codex/demand-box-complete-journey-20261126`; no push, merge, migration, Render trigger or production deployment was performed.
+- Shop Control now explicitly links an active community-visible product owned by the publishing Shop. The blank choice remains a general Shop promotion. `Add a new Shop item` reuses the existing guided numbered-space product flow, stores the serialisable Spotlight draft in tab session storage, and returns with the saved product selected; opening that flow creates nothing.
+- Direct Spotlight publication now validates product, Shop, seller and community ownership, stores `source_product_id` on the existing campaign, includes it in content/replay identity, and fails closed if a formerly linked product becomes private or its ownership no longer matches.
+- Public Shop now uses `Request to buy`, `Request quote`, `View shop`, or GSN House `Contact advertiser` according to verified source context. It no longer infers booking, stock or availability from category, wording or advert expiry, and it never routes `GSN-HOUSE` to a synthetic Shop.
+- Explicit buyer confirmation reuses the existing protected DemandBox request, one deterministic private buyer-seller response thread, existing Trade Record, seller banking and fulfilment continuity. Campaign and broadcast ids are stored in the existing purchase-intention activity JSON. Retry and active-request reuse create no duplicate request, conversation or seller notification.
+- Backend regression evidence uses separate authorised buyer and seller users and proves one response plus one targeted seller notification per request, exact attribution, ownership rejection, private-product rejection, stale-product fail-closed behavior, and same-key publication replay. A live two-browser/account journey was not available and is not claimed.
+- Passing validation: four focused marketplace request/public-Shop tests, the existing GSN House canonical publication test, Public Shop Spotlight product-action audit, Spotlight presentation audit, Public Shop button inventory, Shop Control button/field inventory, Python compile, `git diff --check`, and the frontend production build (`338 modules`).
+- The mandatory broad protected-button freeze remains red only on documented unrelated baseline debt: raw `VoiceNoteRecorder` buttons, DemandBox smooth-scroll/no-jump rules, a Marketplace overscroll rule, and visual audits unable to start because port `5173` is already occupied. The batch-related Shop Control inventory is green after freezing the one approved selector and one guided-product action.
+- Browser limitation: ordinary same-page product creation preserves selected local media in React state, and serialisable text/URL/settings survive a refresh; browser security prevents reconstructing an unsaved local `File` object after a hard refresh, so the owner must reselect that local file if they refresh during the handoff.
+- Production remains on frontend `b4caf88c5e87717c568d270395f41a55d2fbd6f3`; this batch is local-only and awaits a separate deployment authorisation.
+
 ## Spotlight empty-state owner plus restored - 2026-11-27
 
 - Root cause: the approved owner-only `Add Spotlight` plus still existed, but the complete Spotlight action row used `display: none` whenever no Spotlight record was saved. The create shortcut was therefore unreachable in the exact empty state where the owner needed it.

@@ -97,6 +97,7 @@ import {
   OWNER_SHOP_HASHES,
   PAID_REPOST_HASH,
   SHOP_DIARY_SPOTLIGHT_HANDOFF_STORAGE_KEY,
+  SPOTLIGHT_PRODUCT_HANDOFF_STORAGE_KEY,
   ownerShopLayerForTarget,
 } from "../lib/ownerShopHandles";
 import type {
@@ -3629,7 +3630,9 @@ export default function ShopControlPage() {
     };
   }, [location.search]);
   const ownerProductManageFocusRequested = Boolean(
-    ownerProductManageRequest.source === "public-shop-product" &&
+    ["public-shop-product", "spotlight-product"].includes(
+      ownerProductManageRequest.source
+    ) &&
       (
         ownerProductManageRequest.productId > 0 ||
         ownerProductManageRequest.blockNumber > 0
@@ -3731,6 +3734,8 @@ export default function ShopControlPage() {
   const [savingShop, setSavingShop] = useState(false);
 
   const [spotlightProductName, setSpotlightProductName] = useState("");
+  const [spotlightSelectedProductId, setSpotlightSelectedProductId] =
+    useState<number | null>(null);
   const [spotlightCorrectionProductId, setSpotlightCorrectionProductId] =
     useState<number | null>(null);
   const [spotlightPriceNote, setSpotlightPriceNote] = useState("");
@@ -4120,6 +4125,7 @@ export default function ShopControlPage() {
     spotlightPriorityMode,
     spotlightMediaChoice,
     spotlightProductName,
+    spotlightSelectedProductId,
     spotlightPriceNote,
     spotlightMessage,
     spotlightImageFile,
@@ -4131,6 +4137,7 @@ export default function ShopControlPage() {
     spotlightImagePrepJobRef.current += 1;
     spotlightVideoPrepJobRef.current += 1;
     setSpotlightProductName("");
+    setSpotlightSelectedProductId(null);
     setSpotlightCorrectionProductId(null);
     setSpotlightPriceNote("");
     setSpotlightMessage("");
@@ -4153,6 +4160,11 @@ export default function ShopControlPage() {
     setSpotlightMediaChoice("image");
     setSpotlightPublishFeedback(null);
     setSpotlightMediaFeedback(null);
+    try {
+      window.sessionStorage.removeItem(SPOTLIGHT_PRODUCT_HANDOFF_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
   }
 
   const loadPage = useCallback(async (options?: { background?: boolean; preferredClanId?: number | null }) => {
@@ -4588,6 +4600,114 @@ export default function ShopControlPage() {
     () => publicProductSlots.filter(Boolean).length,
     [publicProductSlots]
   );
+
+  function selectSpotlightProduct(productId: number | null) {
+    const selectedProduct = publicProducts.find(
+      (product) => Number(product.id) === Number(productId || 0)
+    );
+    setSpotlightSelectedProductId(selectedProduct ? Number(selectedProduct.id) : null);
+    if (!selectedProduct) return;
+    setSpotlightProductName(firstTruthy(selectedProduct.name));
+    setSpotlightPriceNote(
+      [firstTruthy(selectedProduct.currency), firstTruthy(selectedProduct.price)]
+        .filter(Boolean)
+        .join(" ")
+    );
+  }
+
+  function openSpotlightProductCreation() {
+    const emptySlotIndex = publicProductSlots.findIndex((product) => !product);
+    if (emptySlotIndex < 0) {
+      showNotice(
+        "error",
+        "All public Shop spaces are in use. Update an existing product before linking it to Spotlight."
+      );
+      return;
+    }
+    try {
+      window.sessionStorage.setItem(
+        SPOTLIGHT_PRODUCT_HANDOFF_STORAGE_KEY,
+        JSON.stringify({
+          productName: spotlightProductName,
+          priceNote: spotlightPriceNote,
+          message: spotlightMessage,
+          imageUrl: spotlightImageUrl,
+          videoUrl: spotlightVideoUrl,
+          priorityMode: spotlightPriorityMode,
+          mediaChoice: spotlightMediaChoice,
+          naturalFinishEnabled: spotlightNaturalFinishEnabled,
+          naturalFinishSeconds: spotlightNaturalFinishSeconds,
+          savedAt: new Date().toISOString(),
+        })
+      );
+    } catch {
+      // The live React draft remains available during same-page navigation.
+    }
+    const withSource = appendRouteQueryParam(
+      routes.shopGallery,
+      "source",
+      "spotlight-product"
+    );
+    const target = appendRouteQueryParam(
+      withSource,
+      "manage_block",
+      String(emptySlotIndex + 1)
+    );
+    navigate(target);
+  }
+
+  function handleSpotlightProductSaved(product: ProductRecord) {
+    setProducts((current) => {
+      const withoutSaved = current.filter(
+        (item) => Number(item.id) !== Number(product.id)
+      );
+      return [...withoutSaved, product];
+    });
+    if (ownerProductManageRequest.source !== "spotlight-product") return;
+
+    try {
+      const raw = window.sessionStorage.getItem(
+        SPOTLIGHT_PRODUCT_HANDOFF_STORAGE_KEY
+      );
+      const draft = raw ? JSON.parse(raw) : null;
+      if (draft && typeof draft === "object") {
+        setSpotlightMessage(firstTruthy(draft.message));
+        setSpotlightImageUrl(firstTruthy(draft.imageUrl));
+        setSpotlightVideoUrl(firstTruthy(draft.videoUrl));
+        setSpotlightPriorityMode(draft.priorityMode === "paid" ? "paid" : "free");
+        setSpotlightMediaChoice(
+          ["image", "video", "both"].includes(draft.mediaChoice)
+            ? draft.mediaChoice
+            : "image"
+        );
+        setSpotlightNaturalFinishEnabled(draft.naturalFinishEnabled !== false);
+        setSpotlightNaturalFinishSeconds(draft.naturalFinishSeconds === 5 ? 5 : 10);
+      }
+      window.sessionStorage.removeItem(SPOTLIGHT_PRODUCT_HANDOFF_STORAGE_KEY);
+    } catch {
+      // Keep the current in-memory draft when storage is unavailable.
+    }
+
+    setSpotlightSelectedProductId(Number(product.id));
+    setSpotlightProductName(firstTruthy(product.name));
+    setSpotlightPriceNote(
+      [firstTruthy(product.currency), firstTruthy(product.price)]
+        .filter(Boolean)
+        .join(" ")
+    );
+    if (!spotlightImageFile && !spotlightImageUrl && product.image_url) {
+      setSpotlightImageUrl(firstTruthy(product.image_url));
+      setSpotlightImagePreviewUrl(firstTruthy(product.image_url));
+    }
+    setSpotlightFlowStep("upload");
+    setSpotlightOpen(true);
+    setSpotlightPublishFeedback({
+      tone: "info",
+      text: "Shop item linked. Your Spotlight draft is ready to review.",
+    });
+    navigate(routes.freeSpotlight);
+    showNotice("success", "Shop item linked to your Spotlight draft.");
+  }
 
   const vaultProducts = useMemo(
     () =>
@@ -7072,6 +7192,21 @@ export default function ShopControlPage() {
     const activeShop = shop?.id ? shop : await ensureSpotlightShopRecord();
     if (!activeShop?.id) return;
 
+    const selectedSpotlightProduct = spotlightSelectedProductId
+      ? publicProducts.find(
+          (product) =>
+            Number(product.id) === Number(spotlightSelectedProductId) &&
+            Number(product.shop_id) === Number(activeShop.id)
+        )
+      : null;
+    if (spotlightSelectedProductId && !selectedSpotlightProduct) {
+      const productMessage =
+        "The linked product is no longer an active public item in this Shop. Choose another product before publishing.";
+      setSpotlightPublishFeedback({ tone: "error", text: productMessage });
+      showNotice("error", productMessage);
+      return;
+    }
+
     const targetClanId = Number(activeShop?.clan_id || selectedClanId || effectiveShopClanId || 0);
 
     if (preparingSpotlightImage || preparingSpotlightVideo || preparingSpotlightFinish) {
@@ -7140,6 +7275,7 @@ export default function ShopControlPage() {
         ? [spotlightVideoFile.name, spotlightVideoFile.size, spotlightVideoFile.lastModified]
         : null,
       priorityMode: spotlightPriorityMode,
+      sourceProductId: selectedSpotlightProduct?.id || null,
       visibilityScope: "direct_communities",
     });
     if (spotlightPublicationAttemptRef.current?.signature !== publicationSignature) {
@@ -7227,6 +7363,7 @@ export default function ShopControlPage() {
             video_url: videoUrl || null,
             priority_mode: spotlightPriorityMode,
             visibility_scope: "direct_communities",
+            source_product_id: selectedSpotlightProduct?.id || null,
             idempotency_key: publicationIdempotencyKey,
           });
 
@@ -7275,6 +7412,9 @@ export default function ShopControlPage() {
         ),
         created_at: firstTruthy(createdSpotlight?.created_at, new Date().toISOString()),
         source_shop_name: firstTruthy(createdSpotlight?.source_shop_name, activeShop.name),
+        source_product_id: Number(
+          createdSpotlight?.source_product_id || selectedSpotlightProduct?.id || 0
+        ) || null,
       };
 
       const propagatedCount = Number(
@@ -7527,6 +7667,9 @@ export default function ShopControlPage() {
     spotlightProductName,
     setSpotlightProductName,
     products,
+    spotlightSelectedProductId,
+    onSpotlightProductSelected: selectSpotlightProduct,
+    openSpotlightProductCreation,
     spotlightCorrectionProductId,
     setSpotlightCorrectionProductId,
     spotlightPriceNote,
@@ -7930,6 +8073,7 @@ export default function ShopControlPage() {
             focusedShopReturnPath={ownerPublicShopPath || null}
             seedShop={shop}
             seedProducts={products}
+            onProductSaved={handleSpotlightProductSaved}
             onProductDeleted={(productId) =>
               setProducts((current) =>
                 current.filter((item) => Number(item?.id || 0) !== productId)

@@ -2956,6 +2956,7 @@ def _direct_publication_replay(
     publication_key: Optional[str],
     target_clan_ids: list[int],
     shop_id: Optional[int],
+    source_product_id: Optional[int] = None,
     message: str,
     image_url: Optional[str],
     video_url: Optional[str],
@@ -2977,9 +2978,21 @@ def _direct_publication_replay(
         return None
     expected_clans = {int(value) for value in target_clan_ids}
     actual_clans = {int(row.clan_id) for row in rows}
+    campaign_product_ids = {
+        int(campaign.source_product_id)
+        if campaign is not None and campaign.source_product_id is not None
+        else None
+        for campaign in (
+            db.get(SpotlightCampaign, int(row.spotlight_campaign_id))
+            if row.spotlight_campaign_id is not None
+            else None
+            for row in rows
+        )
+    }
     matches = (
         actual_clans == expected_clans
         and all((int(row.shop_id) if row.shop_id is not None else None) == shop_id for row in rows)
+        and campaign_product_ids == {source_product_id}
         and all(_safe_str(row.message) == _safe_str(message) for row in rows)
         and all(_safe_str(row.image_url) == _safe_str(image_url) for row in rows)
         and all(_safe_str(row.video_url) == _safe_str(video_url) for row in rows)
@@ -3485,6 +3498,8 @@ def _spotlight_content_fingerprint(
             "image_url": _safe_str(image_url),
             "video_url": _safe_str(video_url),
         }
+        if source_product_id is not None:
+            canonical["source_product_id"] = int(source_product_id)
         if _safe_str(advertiser_contact_phone):
             canonical["advertiser_contact_phone"] = _safe_str(
                 advertiser_contact_phone
@@ -4250,6 +4265,7 @@ class MarketplaceListingReviewDecisionIn(BaseModel):
 class MarketplaceBroadcastCreateIn(BaseModel):
     clan_id: Optional[int] = None
     shop_id: Optional[int] = Field(default=None, gt=0)
+    source_product_id: Optional[int] = Field(default=None, gt=0)
     message: str = Field(min_length=2, max_length=2000)
     image_url: Optional[str] = Field(default=None, max_length=4000)
     video_url: Optional[str] = Field(default=None, max_length=4000)
@@ -4634,7 +4650,37 @@ def _products_out(
     ]
 
 
-def _broadcast_repost_product(db: Session, item: MarketplaceBroadcast) -> Optional[MarketplaceProduct]:
+def _broadcast_source_product(
+    db: Session,
+    item: MarketplaceBroadcast,
+    campaign: Optional[SpotlightCampaign],
+) -> Optional[MarketplaceProduct]:
+    campaign_product_id = int(getattr(campaign, "source_product_id", 0) or 0)
+    if campaign_product_id > 0:
+        product = db.get(MarketplaceProduct, campaign_product_id)
+        source_shop = (
+            db.get(MarketplaceShop, int(getattr(item, "shop_id", 0) or 0))
+            if getattr(item, "shop_id", None) is not None
+            else None
+        )
+        visibility_mode = _safe_str(
+            getattr(product, "visibility_mode", None),
+            VISIBILITY_COMMUNITY,
+        ).lower()
+        if (
+            product is not None
+            and source_shop is not None
+            and visibility_mode in {VISIBILITY_COMMUNITY, "public", "community"}
+            and int(getattr(product, "shop_id", 0) or 0)
+            == int(getattr(item, "shop_id", 0) or 0)
+            and int(getattr(product, "seller_user_id", 0) or 0)
+            == int(getattr(item, "author_user_id", 0) or 0)
+            and int(getattr(product, "seller_user_id", 0) or 0)
+            == int(getattr(source_shop, "owner_user_id", 0) or 0)
+        ):
+            return product
+        return None
+
     if _safe_str(getattr(item, "visibility_scope", None)) != "marketplace_repost":
         return None
 
@@ -4779,7 +4825,7 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
             or str(author.id)
         )
 
-    repost_product = _broadcast_repost_product(db, item)
+    repost_product = _broadcast_source_product(db, item, campaign)
     repost_block_number = (
         _public_product_block_number(getattr(repost_product, "description", None))
         if repost_product is not None
@@ -4823,10 +4869,12 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         if repost_product is not None
         else "Spotlight update"
     )
-    source_product_availability = _spotlight_availability_label(
-        getattr(item, "expires_at", None)
+    source_product_availability = (
+        None
+        if repost_product is not None
+        else _spotlight_availability_label(getattr(item, "expires_at", None))
     )
-    if message_parts["availability"]:
+    if repost_product is None and message_parts["availability"]:
         source_product_availability = message_parts["availability"]
 
     item_authorized_expiry = authorized_expiry(item)
@@ -4911,8 +4959,6 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         "source_product_id": (
             int(repost_product.id)
             if repost_product is not None
-            else int(campaign.source_product_id)
-            if campaign is not None and campaign.source_product_id is not None
             else None
         ),
         "source_product_block": repost_block_number,
@@ -4923,6 +4969,11 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         "source_product_currency": source_product_currency or None,
         "source_product_category": source_product_category,
         "source_product_availability": source_product_availability,
+        "source_product_is_active": (
+            bool(getattr(repost_product, "is_active", False))
+            if repost_product is not None
+            else None
+        ),
         "source_product_image_url": source_product_image_url or None,
         "source_product_video_url": source_product_video_url or None,
         "spotlight_title": source_product_title or shop_display_name or author_name,
@@ -10051,6 +10102,39 @@ def create_marketplace_broadcast(
         )
         resolved_clan_id = int(requested_clan_id)
 
+    source_product = None
+    if payload.source_product_id is not None:
+        if shop is None:
+            raise HTTPException(
+                status_code=400,
+                detail="A Spotlight product must belong to the publishing shop.",
+            )
+        source_product = db.get(MarketplaceProduct, int(payload.source_product_id))
+        if source_product is None:
+            raise HTTPException(status_code=404, detail="Spotlight product not found")
+        visibility_mode = _safe_str(
+            getattr(source_product, "visibility_mode", None),
+            VISIBILITY_COMMUNITY,
+        ).lower()
+        if (
+            not bool(getattr(source_product, "is_active", False))
+            or visibility_mode not in {VISIBILITY_COMMUNITY, "public", "community"}
+            or int(getattr(source_product, "shop_id", 0) or 0) != int(shop.id)
+            or int(getattr(source_product, "seller_user_id", 0) or 0)
+            != int(getattr(shop, "owner_user_id", 0) or 0)
+            or int(getattr(source_product, "clan_id", 0) or 0)
+            != int(getattr(shop, "clan_id", 0) or 0)
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "spotlight_source_product_invalid",
+                    "message": (
+                        "Choose an active community-visible product owned by this Shop."
+                    ),
+                },
+            )
+
     _require_active_spotlight_clan(db=db, clan_id=resolved_clan_id)
     _require_active_membership(
         db=db,
@@ -10089,6 +10173,7 @@ def create_marketplace_broadcast(
         publication_key=publication_key,
         target_clan_ids=target_clan_ids,
         shop_id=(int(shop.id) if shop is not None else None),
+        source_product_id=(int(source_product.id) if source_product is not None else None),
         message=payload.message,
         image_url=image_url,
         video_url=video_url,
@@ -10150,6 +10235,9 @@ def create_marketplace_broadcast(
                 publication_key=publication_key,
                 target_clan_ids=target_clan_ids,
                 shop_id=int(shop.id),
+                source_product_id=(
+                    int(source_product.id) if source_product is not None else None
+                ),
                 message=payload.message,
                 image_url=image_url,
                 video_url=video_url,
@@ -10188,6 +10276,7 @@ def create_marketplace_broadcast(
         message=payload.message,
         image_url=image_url,
         video_url=video_url,
+        source_product_id=(int(source_product.id) if source_product is not None else None),
     )
     campaign = _ensure_active_spotlight_campaign(
         db=db,
@@ -10200,7 +10289,12 @@ def create_marketplace_broadcast(
         expires_at=expires_at,
         content_kind=SPOTLIGHT_CONTENT_KIND_BROADCAST,
         content_fingerprint=content_fingerprint,
-        opportunity_metadata=_spotlight_opportunity_metadata_from_payload(payload),
+        source_product_id=(int(source_product.id) if source_product is not None else None),
+        opportunity_metadata=(
+            _spotlight_opportunity_metadata_for_product(source_product)
+            if source_product is not None
+            else _spotlight_opportunity_metadata_from_payload(payload)
+        ),
         created_at=created_at,
     )
     created_items: list[MarketplaceBroadcast] = []
@@ -10237,6 +10331,7 @@ def create_marketplace_broadcast(
             publication_key=publication_key,
             target_clan_ids=target_clan_ids,
             shop_id=(int(shop.id) if shop is not None else None),
+            source_product_id=(int(source_product.id) if source_product is not None else None),
             message=payload.message,
             image_url=image_url,
             video_url=video_url,

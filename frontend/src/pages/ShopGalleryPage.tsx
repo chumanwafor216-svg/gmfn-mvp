@@ -197,11 +197,13 @@ type ShopBroadcast = {
   sourceProductCurrency: string;
   sourceProductCategory: string;
   sourceProductAvailability: string;
+  sourceProductIsActive?: boolean;
   sourceProductImageUrl: string;
   sourceProductVideoUrl: string;
   sourceShopName: string;
   sourceShopWhatsApp: string;
   advertiserContactPhone: string;
+  campaignSourceKind: string;
   sourceClanName: string;
   sourceClanId?: number;
   trustBand: string;
@@ -1269,6 +1271,12 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
       src?.source_product_availability,
       src?.sourceProductAvailability
     ),
+    sourceProductIsActive:
+      typeof src?.source_product_is_active === "boolean"
+        ? src.source_product_is_active
+        : typeof src?.sourceProductIsActive === "boolean"
+        ? src.sourceProductIsActive
+        : undefined,
     sourceProductImageUrl: resolveImageSrc(
       src?.source_product_image_url || src?.sourceProductImageUrl
     ),
@@ -1287,6 +1295,10 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
     advertiserContactPhone: firstMeaningful(
       src?.advertiser_contact_phone,
       src?.advertiserContactPhone
+    ),
+    campaignSourceKind: firstMeaningful(
+      src?.campaign_source_kind,
+      src?.campaignSourceKind
     ),
     sourceClanName: firstMeaningful(src?.source_clan_name, src?.sourceClanName),
     sourceClanId:
@@ -4255,6 +4267,11 @@ export default function ShopGalleryPage() {
   const spotlightOwnershipCheckRequired = Boolean(
     getAccessToken() && spotlightSourceShopId
   );
+  const spotlightIsGsnHouse =
+    safeStr(miniSpotlight?.campaignSourceKind).toLowerCase() === "gsn_house";
+  const spotlightAdvertiserCallUrl = buildPhoneCallUrl(
+    miniSpotlightView.advertiserContactPhone
+  );
   const spotlightOwnershipStateMatchesSource =
     spotlightShopFollowState.shopId === spotlightSourceShopId;
   const spotlightOwnershipResolved =
@@ -4281,34 +4298,37 @@ export default function ShopGalleryPage() {
         (!spotlightOwnershipResolved || signedInOwnsSpotlightSourceShop))
   );
   const spotlightCommercialAction = useMemo(() => {
-    if (!spotlightProductLinked) {
-      return { kind: "visit_shop" as const, label: "Visit shop" };
-    }
-    const availability = safeStr(
-      miniSpotlight?.sourceProductAvailability
-    ).toLowerCase();
-    if (/unavailable|out of stock|sold out/.test(availability)) {
+    if (spotlightProductLinked) {
+      if (miniSpotlight?.sourceProductIsActive === false) {
+        return { kind: "visit_shop" as const, label: "View shop" };
+      }
+      const hasPrice = Boolean(safeStr(miniSpotlight?.sourceProductPrice));
       return {
         kind: "intent" as const,
-        intentType: "notify_me" as SpotlightCommercialIntentType,
-        label: "Notify me",
+        intentType: (hasPrice ? "buy_now" : "request_quote") as SpotlightCommercialIntentType,
+        label: hasPrice ? "Request to buy" : "Request quote",
       };
     }
-    const category = safeStr(miniSpotlight?.sourceProductCategory).toLowerCase();
-    const hasPrice = Boolean(safeStr(miniSpotlight?.sourceProductPrice));
-    if (category.includes("service")) {
+    if (spotlightIsGsnHouse) {
+      if (spotlightAdvertiserCallUrl) {
+        return { kind: "contact_advertiser" as const, label: "Contact advertiser" };
+      }
       return {
-        kind: "intent" as const,
-        intentType: (hasPrice ? "book_now" : "request_quote") as SpotlightCommercialIntentType,
-        label: hasPrice ? "Book now" : "Request quote",
+        kind: "unavailable" as const,
+        label: "Advert details only",
       };
     }
-    return {
-      kind: "intent" as const,
-      intentType: (hasPrice ? "buy_now" : "request_quote") as SpotlightCommercialIntentType,
-      label: hasPrice ? "Buy now" : "Request quote",
-    };
-  }, [miniSpotlight, spotlightProductLinked]);
+    if (spotlightSourceShopId || miniSpotlight?.sourceShopName) {
+      return { kind: "visit_shop" as const, label: "View shop" };
+    }
+    return { kind: "unavailable" as const, label: "Advert details only" };
+  }, [
+    miniSpotlight,
+    spotlightAdvertiserCallUrl,
+    spotlightIsGsnHouse,
+    spotlightProductLinked,
+    spotlightSourceShopId,
+  ]);
   const spotlightPurchaseUnitAmount = useMemo(() => {
     const normalized = safeStr(miniSpotlight?.sourceProductPrice)
       .replace(/,/g, "")
@@ -6510,6 +6530,13 @@ export default function ShopGalleryPage() {
   }
 
   function openSpotlightSourceShop() {
+    if (spotlightIsGsnHouse) {
+      setNotice({
+        tone: "error",
+        text: "This GSN House advert is not attached to a GSN Shop.",
+      });
+      return;
+    }
     const sourceOwnerId = firstMeaningful(miniSpotlight?.authorGmfnId);
     if (!sourceOwnerId) {
       setNotice({
@@ -6531,6 +6558,19 @@ export default function ShopGalleryPage() {
 
   function openSpotlightCommercialAction() {
     pauseSpotlightPresentationRotation();
+    if (spotlightCommercialAction.kind === "contact_advertiser") {
+      if (spotlightAdvertiserCallUrl && typeof window !== "undefined") {
+        window.location.assign(spotlightAdvertiserCallUrl);
+      }
+      return;
+    }
+    if (spotlightCommercialAction.kind === "unavailable") {
+      setNotice({
+        tone: "error",
+        text: "This advert has no verified Shop, product, or advertiser contact destination.",
+      });
+      return;
+    }
     if (spotlightCommercialAction.kind === "visit_shop") {
       openSpotlightSourceShop();
       return;
@@ -6571,10 +6611,11 @@ export default function ShopGalleryPage() {
       const created = await createMarketplacePurchaseIntention({
         product_id: spotlightSourceProductId,
         shop_id: spotlightSourceShopId,
-        clan_id: spotlightSourceClanId || undefined,
+        clan_id: null,
         client_request_id:
           `spotlight-${spotlightCommercialAction.intentType}-` +
-          `${spotlightSourceProductId}-${Date.now()}`,
+          `${spotlightCampaignId || positiveNumber(miniSpotlight?.id) || 0}-` +
+          `${spotlightSourceProductId}`,
         intent_type: spotlightCommercialAction.intentType,
         quantity:
           spotlightCommercialAction.intentType === "notify_me"
@@ -6584,6 +6625,8 @@ export default function ShopGalleryPage() {
           ? spotlightPurchaseFulfilment
           : "on_request",
         origin_source: "spotlight",
+        origin_campaign_id: spotlightCampaignId || null,
+        origin_broadcast_id: positiveNumber(miniSpotlight?.id) || null,
       });
       setSpotlightPurchaseOpen(false);
       navigate(`/app/demand-box?demand_id=${created.id}&queue=mine`);
@@ -8616,7 +8659,7 @@ export default function ShopGalleryPage() {
                 ) : null}
                 {spotlightProductLinked ? (
                   <div data-spotlight-protected-sales-path="true">
-                    Buy Now records a private purchase intention. Payment and
+                    Request to buy records a private purchase intention. Payment and
                     availability are not confirmed until the parties agree;
                     eligible transactions continue through the existing Protected Sales workflow.
                   </div>
@@ -8865,6 +8908,7 @@ export default function ShopGalleryPage() {
                       ) : null}
                     <PrimaryButton
                       onClick={openSpotlightCommercialAction}
+                      disabled={spotlightCommercialAction.kind === "unavailable"}
                       minWidth={0}
                       fullWidth={false}
                       stableHeight={isCompact ? 44 : 48}
@@ -8873,7 +8917,7 @@ export default function ShopGalleryPage() {
                       data-spotlight-primary-action={
                         spotlightCommercialAction.kind === "intent"
                           ? spotlightCommercialAction.intentType
-                          : "visit_shop"
+                          : spotlightCommercialAction.kind
                       }
                       style={{
                         ...primaryBtn(false),
@@ -8899,7 +8943,13 @@ export default function ShopGalleryPage() {
                           gap: isCompact ? 3 : 8,
                         }}
                       >
-                        {inlineShopIcon("cart", "#FFFFFF", isCompact ? 11 : 15)}
+                        {inlineShopIcon(
+                          spotlightCommercialAction.kind === "contact_advertiser"
+                            ? "phone"
+                            : "cart",
+                          "#FFFFFF",
+                          isCompact ? 11 : 15
+                        )}
                         {spotlightCommercialAction.label}
                       </span>
                     </PrimaryButton>
@@ -9739,10 +9789,19 @@ export default function ShopGalleryPage() {
                       >
                         {spotlightPurchaseBusy
                           ? "Recording..."
-                          : spotlightCommercialAction.intentType === "notify_me"
-                          ? "Request availability notice"
-                          : "Confirm purchase request"}
+                          : "Confirm request"}
                       </PrimaryButton>
+                      {!spotlightIsGsnHouse && miniSpotlight?.authorGmfnId ? (
+                        <SubtleButton
+                          onClick={openSpotlightSourceShop}
+                          minWidth={0}
+                          stableHeight={42}
+                          debugId="shop-gallery.spotlight.purchase.view-shop"
+                          style={{ width: "100%", marginTop: 6, borderRadius: 12 }}
+                        >
+                          View shop
+                        </SubtleButton>
+                      ) : null}
                       {spotlightProductLinked ? (
                         <SubtleButton
                           onClick={() => void contactSpotlightProductSeller()}

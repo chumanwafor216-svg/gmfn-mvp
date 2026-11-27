@@ -30,13 +30,13 @@ const shopDiaryVisualSmokeSource = readFileSync(
 const findings = [];
 
 const expectedPageSourceActions = {
-  PrimaryButton: 7,
-  SecondaryButton: 23,
+  PrimaryButton: 8,
+  SecondaryButton: 26,
   StableCtaLink: 8,
-  total: 38,
+  total: 42,
 };
 const expectedExistingWorkflowPlusShortcuts = 4;
-const expectedNativeFieldCount = 0;
+const expectedNativeFieldCount = 1;
 const expectedSignedInShortcutCount = 8;
 const expectedInstallPromptActions = 0;
 const expectedMediaFrameInvocations = 3;
@@ -208,12 +208,13 @@ const expectedActionOrder = [
   "shop-gallery.owner-contact.phone-call",
   "shop-gallery.toggle-all-products",
   "shop-gallery.more.compact-toggle",
-  "shop-gallery.spotlight.contact-advertiser",
+  "shop-gallery.spotlight.primary-follow",
+  "shop-gallery.spotlight.primary-commercial-action",
+  "shop-gallery.spotlight.owner-shortcut",
   "shop-gallery.spotlight-product.toggle",
   "shop-gallery.spotlight-product.save",
   "shop-gallery.spotlight-product.ask-seller",
   "shop-gallery.spotlight-product.share",
-  "shop-gallery.spotlight-product.follow-shop",
   "shop-gallery.spotlight-product.similar",
   "shop-gallery.vault.owner-shortcut",
   "shop-gallery.ask-vault-access",
@@ -677,8 +678,8 @@ assertNotContains(
 );
 
 assertContains(
-  /className="public-shop-spotlight-action-row"[\s\S]*?data-spotlight-action-row="true"[\s\S]*?Number\(signedInOwnsShop\) \+ Number\(spotlightContactActionAvailable\)[\s\S]*?gridTemplateColumns: signedInOwnsShop && spotlightContactActionAvailable[\s\S]*?"48px minmax\(0, 1fr\)"[\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?spotlightWhatsAppAvailable \? "WhatsApp" : "Call advertiser"/,
-  "Public Shop Spotlight must keep one compact bottom action row containing only the authorised owner shortcut and source-aware contact handle."
+  /debugId="shop-gallery\.spotlight\.primary-follow"[\s\S]*?debugId="shop-gallery\.spotlight\.primary-commercial-action"[\s\S]*?spotlightCommercialAction\.kind === "contact_advertiser"[\s\S]*?debugId="shop-gallery\.spotlight\.owner-shortcut"/,
+  "Public Shop Spotlight must keep source-aware visitor actions and the authorised owner shortcut in the compact principal action area."
 );
 
 assertNotContains(

@@ -8,6 +8,14 @@ const toolDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(toolDir, "..", "..");
 const shopGalleryPath = "frontend/src/pages/ShopGalleryPage.tsx";
 const source = readFileSync(join(repoRoot, shopGalleryPath), "utf8");
+const shopControlSource = readFileSync(
+  join(repoRoot, "frontend/src/pages/ShopControlPage.tsx"),
+  "utf8"
+);
+const spotlightWorkflowSource = readFileSync(
+  join(repoRoot, "frontend/src/pages/shopControl/ShopControlSpotlightWorkflow.tsx"),
+  "utf8"
+);
 const findings = [];
 
 function requirePattern(pattern, message) {
@@ -43,15 +51,20 @@ requirePattern(
   "The principal commercial action must create a source-attributed structured purchase intention."
 );
 requirePattern(
-  /const spotlightCommercialAction = useMemo\(\(\) => \{[\s\S]*?label: "Visit shop"[\s\S]*?label: "Notify me"[\s\S]*?label: hasPrice \? "Book now" : "Request quote"[\s\S]*?label: hasPrice \? "Buy now" : "Request quote"/,
-  "Spotlight must use contextual Visit shop, Notify me, Book now, Buy now, or Request quote wording instead of Call advertiser."
-);requirePattern(
+  /const spotlightCommercialAction = useMemo\(\(\) => \{[\s\S]*?label: hasPrice \? "Request to buy" : "Request quote"[\s\S]*?kind: "contact_advertiser"[\s\S]*?label: "Contact advertiser"[\s\S]*?kind: "visit_shop"[\s\S]*?label: "View shop"[\s\S]*?kind: "unavailable"/,
+  "Spotlight must distinguish a product request, a verified Shop, a GSN House advertiser phone, and an advert with no destination."
+);
+requirePattern(
   /data-spotlight-primary-action="follow-shop"[\s\S]*?data-spotlight-primary-action=\{[\s\S]*?spotlightCommercialAction\.intentType/,
   "Visitor Follow and adaptive commercial actions must be principal Spotlight controls."
 );
 requirePattern(
-  /data-spotlight-purchase-card="true"[\s\S]*?Quantity[\s\S]*?Collection[\s\S]*?Delivery[\s\S]*?Confirm purchase request/,
+  /data-spotlight-purchase-card="true"[\s\S]*?Quantity[\s\S]*?Collection[\s\S]*?Delivery[\s\S]*?Confirm request[\s\S]*?View shop[\s\S]*?Ask seller/,
   "Spotlight must provide a compact structured purchase card without claiming payment."
+);
+requirePattern(
+  /createMarketplacePurchaseIntention\(\{[\s\S]*?clan_id: null[\s\S]*?origin_source: "spotlight"[\s\S]*?origin_campaign_id: spotlightCampaignId[\s\S]*?origin_broadcast_id: positiveNumber\(miniSpotlight\?\.id\)/,
+  "Purchase confirmation must attribute the existing request to the exact Spotlight campaign and placement without confusing the display community with product ownership."
 );
 requirePattern(
   /async function toggleSpotlightShopFollow\(\)[\s\S]*?followMarketplaceShop\([\s\S]*?unfollowMarketplaceShop\(/,
@@ -81,13 +94,32 @@ requirePattern(
   /debugId="shop-gallery\.spotlight\.owner-share"[\s\S]*?public_shop_spotlight_owner_share_[\s\S]*?debugId="shop-gallery\.spotlight\.owner-shortcut"/,
   "Advert owners must receive tracked ordinary Share and the existing management shortcut instead of self-purchase controls."
 );
-if (/shop-gallery\.spotlight\.contact-advertiser|Call advertiser/.test(source)) {
-  findings.push("The redundant Spotlight Call advertiser primary action must remain removed.");
-}
+requirePattern(
+  /spotlightIsGsnHouse[\s\S]*?spotlightAdvertiserCallUrl[\s\S]*?This GSN House advert is not attached to a GSN Shop[\s\S]*?window\.location\.assign\(spotlightAdvertiserCallUrl\)/,
+  "GSN House must use its explicit advertiser phone and must never be redirected to a synthetic Shop."
+);
 requirePattern(
   /sourceClanName/,
   "Spotlight product context may show only the supplied broad community location."
 );
+
+if (!/source_product_id: selectedSpotlightProduct\?\.id \|\| null/.test(shopControlSource)) {
+  findings.push("Direct Spotlight publishing must carry the explicitly selected Shop product id.");
+}
+if (
+  !/SPOTLIGHT_PRODUCT_HANDOFF_STORAGE_KEY[\s\S]*?source[\s\S]*?spotlight-product[\s\S]*?handleSpotlightProductSaved/.test(
+    shopControlSource
+  )
+) {
+  findings.push("The existing guided product editor must return to the preserved Spotlight draft.");
+}
+if (
+  !/onSpotlightProductSelected[\s\S]*?General Shop promotion - no product request[\s\S]*?Add a new Shop item/.test(
+    spotlightWorkflowSource
+  )
+) {
+  findings.push("The composer must offer explicit product selection without silently creating a product.");
+}
 requirePattern(
   /\{ allowShopFallback: false \}/,
   "Product-linked analytics must not silently fall back to the host Shop."

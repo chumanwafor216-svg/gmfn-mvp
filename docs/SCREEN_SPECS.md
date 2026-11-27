@@ -2519,6 +2519,15 @@ Rules:
   should use that saved shop identity, quietly prepare the backend shop row if
   it is missing, and ask only for the product/update details, price note, media,
   and short instruction that belong to the current spotlight.
+- Founder-approved 2026-11-27 sales-first composer correction: before ordinary
+  publication, offer one explicit selector containing only the owner's active,
+  community-visible Shop products. The blank choice remains a general Shop
+  promotion and creates no product or purchase path. `Add a new Shop item`
+  opens the existing guided numbered-space product process; it preserves the
+  current Spotlight draft and returns only after a real product save, with that
+  product selected. Review and publish must carry the selected product id to
+  backend Shop/owner/community validation. A linked product creates no request
+  until the buyer explicitly confirms on Public Shop.
 - Owner-approved 2026-10-26 phone correction: Shop Control Free Spotlight uses
   member language: `Promote your shop`, `What are you selling?`, `Add a picture
   or short video`, and `How should customers contact you?`. It must not show a
@@ -3122,7 +3131,7 @@ Rules:
 - The review action must remain tappable before the draft is ready and explain every missing requirement in the same action area. It must never appear silently disabled merely because destination, message, or media is missing.
 - On phone, the review action must appear immediately after the media picker and preparation status, before the first-media preview and prepared-media list. Its label must make the complete path obvious (`Review and publish`) while still stating that the first tap opens a final check and does not publish immediately.
 - The message field may retain the backend's 2,000-character maximum, but the screen must explain that this is only an allowance and that one short sentence is sufficient; it must not present a bare counter that looks like a writing requirement.
-- Every new GSN house promotion must store an admin-supplied public advertiser phone in international `+country-code` format. The same phone applies to every media item in the reviewed batch and appears in read-only review and campaign history, but it must not become a generic public `Call advertiser` primary action. Public Shop Spotlight uses the source context instead: `Buy now` for a priced product, `Book now` for a priced service, `Request quote` when no price is supplied, `Notify me` when the item is unavailable, or `Visit shop` when no product is linked. These actions record or open the existing source-aware commercial path; they do not claim payment, confirmed availability, a binding order, verification, or endorsement. Older records without the phone field remain readable and must not manufacture a contact route.
+- Every new GSN house promotion must store an admin-supplied public advertiser phone in international `+country-code` format. The same phone applies to every media item in the reviewed batch and appears in read-only review and campaign history. Public Shop uses that exact phone for the single `Contact advertiser` commercial action and must not invent a website, a member Shop, or `/shop/GSN-HOUSE`; older records without a phone remain readable without manufacturing a destination. Member Spotlight uses `Request to buy` for a linked priced product, `Request quote` for a linked unpriced product, and `View shop` when no product is linked. Product requests write only after explicit confirmation, reuse one idempotent private DemandBox buyer-seller conversation plus existing Trade Record/banking/fulfilment, and state that payment, final price and availability remain unconfirmed. Product-active state may prevent a request, but Spotlight must not infer stock, booking capability or availability from advert wording, category or expiry.
 - The final batch publish action must require one explicit confirmation and a distinct idempotency key for every media item. Publication runs sequentially, shows progress, preserves already-published results after a later failure, and resumes without duplicating successful campaigns.
 - Discarding an entirely unpublished batch must attempt reference-safe cleanup for every uploaded media item. Once any item has published, the page must not discard or delete media that may already be referenced.
 - Emergency stop must permanently withdraw the canonical campaign and placements, invalidate pending presentation leases, preserve history, record the signed-in admin as actor, and remain idempotent on retry.

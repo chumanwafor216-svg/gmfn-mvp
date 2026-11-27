@@ -13,6 +13,7 @@ export const OWNER_SHOP_HASHES = {
 export const PAID_REPOST_HASH = "marketplace-paid-network-placement";
 export const ROSCA_MARKETPLACE_HASH = "marketplace-rosca";
 export const SHOP_DIARY_SPOTLIGHT_HANDOFF_STORAGE_KEY = "gsn.shopDiary.spotlightHandoff.v1";
+export const SPOTLIGHT_PRODUCT_HANDOFF_STORAGE_KEY = "gsn.spotlight.productHandoff.v1";
 
 export type OwnerShopHandleId =
   | "shop-control"

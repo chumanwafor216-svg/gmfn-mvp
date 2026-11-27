@@ -5889,6 +5889,112 @@ def test_unrelated_network_repost_is_rejected_before_credit_consumption(
     assert int(used) == 0
 
 
+def test_direct_spotlight_links_only_owned_public_product_and_replays_once(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT INTO users (id, email, hashed_password, display_name, role, gmfn_id)
+            VALUES
+                (1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-DIRECTPRODUCT'),
+                (2, 'other@example.com', 'hashed', 'Other Owner', 'user', 'GMFN-U-OTHERPRODUCT')
+        """))
+        conn.execute(text("""
+            INSERT INTO clans (id, name, marketplace_name, invite_code)
+            VALUES (1, 'Golden boys', 'Golden boys Marketplace', 'DIRPROD1')
+        """))
+        conn.execute(text("""
+            INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+            VALUES (1, 1, 1, 'member', 0)
+        """))
+        conn.execute(text("""
+            INSERT INTO marketplace_shops (
+                id, clan_id, owner_user_id, shop_name, description, is_active
+            ) VALUES
+                (1, 1, 1, 'Owner Shop', 'Owned products', 1),
+                (2, 1, 2, 'Other Shop', 'Other products', 1)
+        """))
+        conn.execute(text("""
+            INSERT INTO marketplace_products (
+                id, clan_id, shop_id, seller_user_id, title, description,
+                price, currency, image_url, visibility_mode, is_active
+            ) VALUES
+                (1, 1, 1, 1, 'Fresh Rice', '[BLOCK:3] Bag of rice',
+                 '25000', 'NGN', '/uploads/marketplace/images/rice.jpg',
+                 'community_visible', 1),
+                (2, 1, 2, 2, 'Other Rice', '[BLOCK:4] Not owned',
+                 '26000', 'NGN', '/uploads/marketplace/images/other.jpg',
+                 'community_visible', 1),
+                (3, 1, 1, 1, 'Private Rice', 'Private stock',
+                 '27000', 'NGN', '/uploads/marketplace/images/private.jpg',
+                 'vault_private', 1)
+        """))
+
+    base_payload = {
+        "clan_id": 1,
+        "shop_id": 1,
+        "message": "Fresh rice available from our Shop",
+        "image_url": "https://cdn.example.test/spotlight/rice.jpg",
+        "priority_mode": "free",
+        "visibility_scope": "direct_communities",
+        "idempotency_key": "direct-product-rice-1",
+    }
+
+    wrong_owner = client.post(
+        "/marketplace/broadcasts",
+        json={**base_payload, "source_product_id": 2},
+    )
+    assert wrong_owner.status_code == 400, wrong_owner.text
+    assert wrong_owner.json()["detail"]["code"] == "spotlight_source_product_invalid"
+
+    private_product = client.post(
+        "/marketplace/broadcasts",
+        json={**base_payload, "source_product_id": 3},
+    )
+    assert private_product.status_code == 400, private_product.text
+    assert private_product.json()["detail"]["code"] == "spotlight_source_product_invalid"
+
+    payload = {**base_payload, "source_product_id": 1}
+    first = client.post("/marketplace/broadcasts", json=payload)
+    assert first.status_code == 200, first.text
+    replay = client.post("/marketplace/broadcasts", json=payload)
+    assert replay.status_code == 200, replay.text
+    assert replay.json()["idempotent_replay"] is True
+
+    item = first.json()["item"]
+    assert item["source_product_id"] == 1
+    assert item["source_product_title"] == "Fresh Rice"
+    assert item["source_product_price"] == "25000"
+    assert item["source_product_currency"] == "NGN"
+    assert item["source_product_block"] == 3
+    assert item["source_product_is_active"] is True
+    assert item["source_product_availability"] is None
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE marketplace_products SET visibility_mode = 'vault_private' WHERE id = 1"
+            )
+        )
+        campaign_source_product_id = conn.execute(
+            text("SELECT source_product_id FROM spotlight_campaigns")
+        ).scalar_one()
+        broadcast_count = conn.execute(
+            text("SELECT COUNT(*) FROM marketplace_broadcasts")
+        ).scalar_one()
+
+    assert int(campaign_source_product_id) == 1
+    assert int(broadcast_count) == 1
+
+    stale_feed = client.get("/marketplace/broadcasts?clan_id=1&active_only=true")
+    assert stale_feed.status_code == 200, stale_feed.text
+    assert stale_feed.json()["items"][0]["source_product_id"] is None
+    assert stale_feed.json()["items"][0]["source_product_is_active"] is None
+
+
 def test_direct_spotlight_rejects_invalid_media_scope_shop_and_community_without_writes(
     client,
     override_current_user_user,

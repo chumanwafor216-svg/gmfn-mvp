@@ -1236,7 +1236,6 @@ def test_product_enquiry_reuses_protected_demand_box_and_is_idempotent():
                 """
             )
         )
-
     with SessionLocal() as db:
         first = marketplace_requests.create_marketplace_product_enquiry(
             MarketplaceProductEnquiryCreate(
@@ -1382,6 +1381,36 @@ def test_purchase_intention_is_private_structured_idempotent_and_allows_repeat_p
                 """
             )
         )
+        conn.execute(
+            text(
+                """
+                INSERT INTO spotlight_campaigns (
+                    id, owner_user_id, shop_id, origin_clan_id, source_product_id,
+                    content_kind, content_fingerprint, status, source_kind,
+                    commercial_mode, distribution_scope, created_at, activated_at
+                ) VALUES (
+                    51, 2, 31, 1, 41, 'broadcast_snapshot', :fingerprint,
+                    'active', 'direct_broadcast', 'free', 'direct_communities',
+                    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {"fingerprint": "a" * 64},
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_broadcasts (
+                    id, spotlight_campaign_id, clan_id, author_user_id, shop_id,
+                    message, image_url, priority_mode, visibility_scope, created_at
+                ) VALUES (
+                    61, 51, 1, 2, 31, 'Leather shoes',
+                    'https://cdn.example.test/shoes.jpg', 'free',
+                    'direct_communities', CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
 
     with SessionLocal() as db:
         first = marketplace_requests.create_marketplace_purchase_intention(
@@ -1394,6 +1423,8 @@ def test_purchase_intention_is_private_structured_idempotent_and_allows_repeat_p
                 quantity=2,
                 fulfilment_method="delivery",
                 origin_source="spotlight",
+                origin_campaign_id=51,
+                origin_broadcast_id=61,
             ),
             db=db,
             current_user=_fake_current_user(),
@@ -1408,6 +1439,8 @@ def test_purchase_intention_is_private_structured_idempotent_and_allows_repeat_p
                 quantity=2,
                 fulfilment_method="delivery",
                 origin_source="spotlight",
+                origin_campaign_id=51,
+                origin_broadcast_id=61,
             ),
             db=db,
             current_user=_fake_current_user(),
@@ -1422,6 +1455,8 @@ def test_purchase_intention_is_private_structured_idempotent_and_allows_repeat_p
                 quantity=1,
                 fulfilment_method="collection",
                 origin_source="spotlight",
+                origin_campaign_id=51,
+                origin_broadcast_id=61,
             ),
             db=db,
             current_user=_fake_current_user(),
@@ -1436,6 +1471,8 @@ def test_purchase_intention_is_private_structured_idempotent_and_allows_repeat_p
                 quantity=1,
                 fulfilment_method="collection",
                 origin_source="spotlight",
+                origin_campaign_id=51,
+                origin_broadcast_id=61,
                 start_new_transaction=True,
             ),
             db=db,
@@ -1458,6 +1495,34 @@ def test_purchase_intention_is_private_structured_idempotent_and_allows_repeat_p
             current_user=_fake_current_user(),
         )
         seller_notifications = list_my_notifications(db, user_id=2, limit=20)
+        purchase_activity_detail = db.execute(
+            text(
+                """
+                SELECT detail
+                FROM marketplace_request_activities
+                WHERE marketplace_request_id = :request_id
+                  AND event_type = 'purchase_intention_created'
+                """
+            ),
+            {"request_id": int(first.id)},
+        ).scalar_one()
+        with pytest.raises(HTTPException) as invalid_attribution_error:
+            marketplace_requests.create_marketplace_purchase_intention(
+                MarketplacePurchaseIntentionCreate(
+                    product_id=41,
+                    shop_id=31,
+                    clan_id=1,
+                    client_request_id="spotlight-buy-invalid-origin",
+                    intent_type="buy_now",
+                    quantity=1,
+                    fulfilment_method="collection",
+                    origin_source="spotlight",
+                    origin_campaign_id=999,
+                    origin_broadcast_id=61,
+                ),
+                db=db,
+                current_user=_fake_current_user(),
+            )
         with pytest.raises(HTTPException) as self_purchase_error:
             marketplace_requests.create_marketplace_purchase_intention(
                 MarketplacePurchaseIntentionCreate(
@@ -1499,11 +1564,30 @@ def test_purchase_intention_is_private_structured_idempotent_and_allows_repeat_p
         "currency": "GBP",
     }
     assert len(seller_rows) == 2
-    assert responses == []
+    assert len(responses) == 1
+    assert responses[0].author_user_id == 1
+    assert responses[0].recipient_user_id == 2
+    assert responses[0].text == (
+        "Purchase request confirmed for Leather shoes.\n"
+        "Quantity: 2.\n"
+        "Fulfilment: Delivery.\n"
+        "Please confirm availability, final price and terms. No agreement or payment has been made yet."
+    )
+    purchase_activity = json.loads(
+        purchase_activity_detail.removeprefix("purchase_intention:v1:")
+    )
+    assert purchase_activity["origin_campaign_id"] == 51
+    assert purchase_activity["origin_broadcast_id"] == 61
     purchase_notifications = [
+        item
+        for item in seller_notifications["items"]
+        if item["title"] == "Private request for you"
+    ]
+    assert len(purchase_notifications) == 2
+    assert not [
         item
         for item in seller_notifications["items"]
         if item["title"] == "New purchase request"
     ]
-    assert len(purchase_notifications) == 2
+    assert invalid_attribution_error.value.status_code == 400
     assert self_purchase_error.value.status_code == 400

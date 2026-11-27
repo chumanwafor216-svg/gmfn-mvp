@@ -158,6 +158,7 @@ type ShopAssetsPageProps = {
   focusedShopReturnPath?: string | null;
   seedShop?: ShopRecord | null;
   seedProducts?: ProductRecord[] | null;
+  onProductSaved?: (product: ProductRecord) => void;
   onProductDeleted?: (productId: number) => void;
 };
 
@@ -1073,7 +1074,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     };
   }, []);
   const ownerProductManageFocusRequested = Boolean(
-    ownerProductManageRequest.source === "public-shop-product" &&
+    ["public-shop-product", "spotlight-product"].includes(
+      ownerProductManageRequest.source
+    ) &&
       (
         ownerProductManageRequest.productId > 0 ||
         ownerProductManageRequest.blockNumber > 0
@@ -2685,6 +2688,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         setProductEditorOpen(true);
         setPublicBlocksOpen(true);
         return;
+      }
+      const savedProduct = hydratedProducts.find(
+        (item) => Number(item?.id || 0) === savedId
+      );
+      if (savedProduct) {
+        props.onProductSaved?.(savedProduct);
       }
       resetProductForm();
       setProductEditorOpen(false);

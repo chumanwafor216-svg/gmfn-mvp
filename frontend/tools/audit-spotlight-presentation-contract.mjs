@@ -324,8 +324,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
-  /const spotlightContactAvailable = Boolean\([\s\S]*?const spotlightContactActionAvailable = Boolean\([\s\S]*?spotlightContactAvailable && !spotlightSelfActionsBlocked[\s\S]*?data-spotlight-information-popover="true"[\s\S]*?data-spotlight-action-row="true"[\s\S]*?\{spotlightContactActionAvailable \? \([\s\S]*?debugId="shop-gallery\.spotlight\.contact-advertiser"[\s\S]*?: null\}[\s\S]*?data-spotlight-screen="true"[\s\S]*?heroImage && !ownerSpotlightStatusView && !miniSpotlight/,
-  "Spotlight contact must remain in the normal-flow action row, disappear without a live contact or for the source-shop owner, preserve the relocated information popover, and never reuse shop hero media for owner status."
+  /data-spotlight-information-popover="true"[\s\S]*?debugId="shop-gallery\.spotlight\.primary-commercial-action"[\s\S]*?data-spotlight-primary-action=\{[\s\S]*?data-spotlight-screen="true"[\s\S]*?heroImage && !ownerSpotlightStatusView && !miniSpotlight/,
+  "Spotlight must preserve the information popover, expose one source-aware principal commercial action, and never reuse shop hero media for owner status."
 );
 
 assertContains(
@@ -432,14 +432,14 @@ assertContains(
 
 assertContains(
   'frontend/src/pages/ShopGalleryPage.tsx',
-  /source_shop_whatsapp[^]*?sourceShopWhatsApp[^]*?spotlightWhatsAppAvailable/,
+  /source_shop_whatsapp[^]*?sourceShopWhatsApp[^]*?miniSpotlightView\.sourceShopWhatsApp/,
   'Spotlight normalization must retain an already-normalized WhatsApp contact.'
 );
 
 assertContains(
   'frontend/src/pages/ShopGalleryPage.tsx',
-  /advertiser_contact_phone[^]*?advertiserContactPhone[^]*?spotlightAdvertiserCallUrl[^]*?spotlightContactAvailable[^]*?shop-gallery\.spotlight\.contact-advertiser[^]*?Call advertiser/,
-  'GSN-house Spotlight must retain its explicit advertiser phone and expose one call action without adding another competing button.'
+  /advertiser_contact_phone[^]*?advertiserContactPhone[^]*?spotlightIsGsnHouse[^]*?spotlightAdvertiserCallUrl[^]*?kind: "contact_advertiser"[^]*?label: "Contact advertiser"[^]*?window\.location\.assign\(spotlightAdvertiserCallUrl\)/,
+  'GSN House Spotlight must retain its explicit advertiser phone and route the principal commercial action to that phone.'
 );
 
 assertContains(

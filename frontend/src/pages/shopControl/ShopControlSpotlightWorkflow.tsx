@@ -157,6 +157,9 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     spotlightProductName,
     setSpotlightProductName,
     products,
+    spotlightSelectedProductId,
+    onSpotlightProductSelected,
+    openSpotlightProductCreation,
     spotlightCorrectionProductId,
     setSpotlightCorrectionProductId,
     spotlightPriceNote,
@@ -216,6 +219,9 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
       currentActiveSpotlight?.campaign_serving_status,
       currentActiveSpotlight?.serving_status
     ) === "correction_hold";
+  const spotlightSelectedProduct = products.find(
+    (product) => Number(product.id) === Number(spotlightSelectedProductId || 0)
+  );
 
   function focusSpotlightTarget(targetId: string, openVideoOptions = false) {
     if (openVideoOptions) {
@@ -895,6 +901,52 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                 </div>
               ) : null}
 
+              {!correctionHoldActive ? (
+                <div style={{ marginTop: 14 }}>
+                  <div style={sectionLabel()}>Link a Shop product (recommended)</div>
+                  <select
+                    value={spotlightSelectedProductId || ""}
+                    onChange={(event) =>
+                      onSpotlightProductSelected(
+                        Number(event.target.value || 0) || null
+                      )
+                    }
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  >
+                    <option value="">General Shop promotion - no product request</option>
+                    {products
+                      .filter(
+                        (product) =>
+                          product.is_active !== false &&
+                          ["community_visible", "public", "community"].includes(
+                            firstTruthy(
+                              product.visibility_mode,
+                              "community_visible"
+                            ).toLowerCase()
+                          )
+                      )
+                      .map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {firstTruthy(product.name, `Product ${product.id}`)}
+                        </option>
+                      ))}
+                  </select>
+                  <div style={{ marginTop: 7, ...helperText(), fontSize: 12.5 }}>
+                    A linked product lets a buyer confirm one private purchase request. A general promotion only opens your Shop.
+                  </div>
+                  <SecondaryButton
+                    type="button"
+                    onClick={openSpotlightProductCreation}
+                    minWidth={0}
+                    stableHeight={42}
+                    debugId="shop-control.spotlight.add-product"
+                    style={{ marginTop: 9 }}
+                  >
+                    Add a new Shop item
+                  </SecondaryButton>
+                </div>
+              ) : null}
+
               <div
                 style={{
                   marginTop: 14,
@@ -909,6 +961,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                     id="shop-control-spotlight-item"
                     value={spotlightProductName}
                     onChange={(e) => setSpotlightProductName(e.target.value)}
+                    readOnly={Boolean(spotlightSelectedProduct)}
                     placeholder="Fresh fish"
                     style={{ ...inputStyle(), marginTop: 8 }}
                   />
@@ -919,6 +972,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
                     id="shop-control-spotlight-price"
                     value={spotlightPriceNote}
                     onChange={(e) => setSpotlightPriceNote(e.target.value)}
+                    readOnly={Boolean(spotlightSelectedProduct)}
                     placeholder="₦90,000 for a quarter box"
                     style={{ ...inputStyle(), marginTop: 8 }}
                   />

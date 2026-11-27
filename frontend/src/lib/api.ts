@@ -8361,6 +8361,7 @@ export async function createMarketplaceBroadcast(payload: {
   expires_at?: string | null;
   priority_mode?: string | null;
   visibility_scope?: string | null;
+  source_product_id?: number | null;
   idempotency_key?: string | null;
 }): Promise<any> {
   const effectiveClanId =
@@ -8374,6 +8375,7 @@ export async function createMarketplaceBroadcast(payload: {
   const expiresAt = normalizeApiDateTime(payload?.expires_at);
   const priorityMode = String(payload?.priority_mode || "").trim();
   const visibilityScope = String(payload?.visibility_scope || "").trim();
+  const sourceProductId = Number(payload?.source_product_id || 0);
   const idempotencyKey =
     String(payload?.idempotency_key || "").trim() ||
     globalThis.crypto?.randomUUID?.() ||
@@ -8410,6 +8412,10 @@ export async function createMarketplaceBroadcast(payload: {
 
   if (shopId > 0) {
     baseBody.shop_id = shopId;
+  }
+
+  if (sourceProductId > 0) {
+    baseBody.source_product_id = sourceProductId;
   }
 
   const options =
@@ -10525,6 +10531,8 @@ export async function createMarketplacePurchaseIntention(payload: {
   quantity: number;
   fulfilment_method: "collection" | "delivery" | "on_request";
   origin_source: "shop" | "spotlight" | "vault" | "demand_box" | "business_demand";
+  origin_campaign_id?: number | null;
+  origin_broadcast_id?: number | null;
   start_new_transaction?: boolean;
   note?: string;
 }): Promise<MarketplaceRequestItem> {

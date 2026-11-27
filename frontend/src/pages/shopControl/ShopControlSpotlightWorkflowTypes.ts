@@ -144,9 +144,17 @@ export type ShopControlSpotlightWorkflowProps = {
   products: Array<{
     id: number;
     name?: string | null;
+    description?: string | null;
+    price?: string | null;
+    currency?: string | null;
+    image_url?: string | null;
+    video_url?: string | null;
     is_active?: boolean;
     visibility_mode?: string | null;
   }>;
+  spotlightSelectedProductId: number | null;
+  onSpotlightProductSelected: (productId: number | null) => void;
+  openSpotlightProductCreation: () => void;
   spotlightCorrectionProductId: number | null;
   setSpotlightCorrectionProductId: Dispatch<SetStateAction<number | null>>;
   spotlightPriceNote: string;

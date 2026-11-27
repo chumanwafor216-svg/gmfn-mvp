@@ -36,13 +36,13 @@ const findings = [];
 
 const expectedSourceActions = {
   PrimaryButton: 14,
-  SecondaryButton: 25,
+  SecondaryButton: 26,
   SubtleButton: 3,
   StableButton: 7,
   StableCtaLink: 13,
-  total: 62,
+  total: 63,
 };
-const expectedNativeFieldCount = 33;
+const expectedNativeFieldCount = 34;
 const expectedFileInputActionRoots = 4;
 const expectedMobileTaskShellBreakdown = {
   top: 2,
@@ -235,6 +235,7 @@ for (const action of actions) {
 const expectedActionOrder = [
   "shop-control.spotlight.setup.continue",
   "shop-control.spotlight.setup.cancel",
+  "shop-control.spotlight.add-product",
   "shop-control.spotlight.media.image",
   "shop-control.spotlight.media.video",
   "shop-control.spotlight.upload.preview",

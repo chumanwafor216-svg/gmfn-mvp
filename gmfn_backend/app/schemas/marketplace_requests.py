@@ -208,10 +208,20 @@ class MarketplacePurchaseIntentionCreate(BaseModel):
         default="shop",
         pattern="^(shop|spotlight|vault|demand_box|business_demand)$",
     )
+    origin_campaign_id: Optional[int] = Field(default=None, ge=1)
+    origin_broadcast_id: Optional[int] = Field(default=None, ge=1)
     start_new_transaction: bool = False
     note: Optional[str] = Field(default=None, max_length=1000)
 
-    @field_validator("product_id", "shop_id", "clan_id", "quantity", mode="before")
+    @field_validator(
+        "product_id",
+        "shop_id",
+        "clan_id",
+        "quantity",
+        "origin_campaign_id",
+        "origin_broadcast_id",
+        mode="before",
+    )
     @classmethod
     def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
         return _reject_bool_integer(value, info.field_name)
