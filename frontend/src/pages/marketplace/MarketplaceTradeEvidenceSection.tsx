@@ -19,10 +19,6 @@ import type {
 import type {
   MarketplaceGlyphName,
   NoticeTone,
-  ProtectedTradeDraft,
-  ProtectedTradeEventOption,
-  ProtectedTradeOutcomeAction,
-  ProtectedTradeUserSide,
 } from "../MarketplacePage";
 
 const GsnSnapshotPaperCard = lazy(
@@ -34,28 +30,11 @@ type MarketplaceGlyphComponent = (props: {
   size?: number;
 }) => React.ReactElement | null;
 
-type ProtectedTradeCounterpartOption = {
-  userId: number;
-  name: string;
-};
-
 export type MarketplaceTradeEvidenceSectionData = {
   MarketplaceGlyph: MarketplaceGlyphComponent;
-  PROTECTED_TRADE_EVENT_OPTIONS: readonly ProtectedTradeEventOption[];
   consumeMarketplaceButtonEvent: (
     event?: SyntheticEvent<HTMLElement>
   ) => void;
-  creatingProtectedTrade: boolean;
-  handleConfirmProtectedTradeOutcome: (
-    event: SyntheticEvent<HTMLElement> | undefined,
-    outcome: ProtectedTradeOutcomeAction
-  ) => Promise<void>;
-  handleCreateProtectedTrade: (
-    event?: SyntheticEvent<HTMLElement>
-  ) => Promise<void>;
-  handleRecordProtectedTradeEvent: (
-    event?: SyntheticEvent<HTMLElement>
-  ) => Promise<void>;
   helperText: () => CSSProperties;
   innerCard: (bg?: string) => CSSProperties;
   inputStyle: () => CSSProperties;
@@ -68,11 +47,6 @@ export type MarketplaceTradeEvidenceSectionData = {
     isCompact: boolean
   ) => CSSProperties;
   marketplaceFieldTouchProps: (debugId: string) => MarketplaceFieldTouchProps;
-  marketplaceInlineActionStyle: (
-    kind: MarketplaceActionKind,
-    disabled: boolean,
-    isCompact: boolean
-  ) => CSSProperties;
   marketplaceActionStyle: (
     kind?: MarketplaceActionKind,
     disabled?: boolean
@@ -82,49 +56,28 @@ export type MarketplaceTradeEvidenceSectionData = {
   marketplaceSurfaceTouchProps: (debugId: string) => MarketplaceSurfaceTouchProps;
   pageCard: (bg?: string) => CSSProperties;
   positiveNumber: (value: unknown) => number;
-  protectedTradeCounterpartOptions: ProtectedTradeCounterpartOption[];
-  protectedTradeCreateOpen: boolean;
-  protectedTradeDraft: ProtectedTradeDraft;
   protectedTradeEventLine: (event: ProtectedTradeEventRecord) => string;
-  protectedTradeEventNote: string;
-  protectedTradeEventType: string;
   protectedTradeEvidencePaperText: string;
-  routeProtectedTradeFocus: string;
   protectedTradeStatusLabel: (value: unknown, fallback?: string) => string;
   protectedTrades: ProtectedTradeRecord[];
   recentProtectedTradeEvents: ProtectedTradeEventRecord[];
   recentProtectedTrades: ProtectedTradeRecord[];
-  recordingProtectedTradeEvent: boolean;
-  recordingProtectedTradeOutcome: ProtectedTradeOutcomeAction["key"] | null;
   refreshProtectedTrades: () => Promise<void>;
   safeCopy: (text: string) => Promise<boolean>;
   safeStr: (value: unknown) => string;
   sectionLabel: () => CSSProperties;
   sectionsOpen: Record<MarketplaceSectionKey, boolean>;
   selectedProtectedTrade: ProtectedTradeRecord | null;
-  selectedProtectedTradeEventOption: ProtectedTradeEventOption;
   selectedProtectedTradeHasDetail: boolean;
   selectedProtectedTradeId: string;
-  selectedProtectedTradeOutcomeActions: Record<
-    ProtectedTradeOutcomeAction["key"],
-    ProtectedTradeOutcomeAction
-  >;
-  selectedProtectedTradeUserSide: ProtectedTradeUserSide;
-  setProtectedTradeCreateOpen: Dispatch<SetStateAction<boolean>>;
-  setProtectedTradeDraft: Dispatch<SetStateAction<ProtectedTradeDraft>>;
-  setProtectedTradeEventNote: Dispatch<SetStateAction<string>>;
-  setProtectedTradeEventType: Dispatch<SetStateAction<string>>;
   setSelectedProtectedTradeId: Dispatch<SetStateAction<string>>;
   showNotice: (tone: NoticeTone, text: string) => void;
-  showProtectedTradeCreateForm: boolean;
   stableStatusPillStyle: (primary?: boolean) => CSSProperties;
-  textAreaStyle: () => CSSProperties;
   toggleSectionFromButton: (
     event: SyntheticEvent<HTMLElement> | undefined,
     key: MarketplaceSectionKey
   ) => void;
 };
-
 type MarketplaceTradeEvidenceSectionProps = {
   data: MarketplaceTradeEvidenceSectionData;
   landingRef?: (node: HTMLElement | null) => void;
