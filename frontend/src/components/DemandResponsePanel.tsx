@@ -104,6 +104,20 @@ function clientKey(prefix: string): string {
   return `${prefix}-${random}`;
 }
 
+function stableTradeConversationKey(
+  prefix: string,
+  requestId: number,
+  tradeId: number,
+  action: string
+): string {
+  const stableAction = String(action || "update")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "update";
+  return `${prefix}-${requestId}-${tradeId}-${stableAction}`;
+}
+
 function initials(value: string): string {
   const parts = String(value || "Member").trim().split(/\s+/).filter(Boolean);
   return parts.slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "M";
@@ -397,6 +411,28 @@ export default function DemandResponsePanel({
 
   const activePeerUserId = isOwner ? recipientUserId : ownerUserId;
   const tradeContextAvailable = Boolean(requestId && supplyProductId && supplyShopId);
+
+  async function createTradeConversationResponse(
+    text: string,
+    clientResponseId: string
+  ) {
+    if (isOwner && !activePeerUserId) {
+      throw new Error("The seller conversation is not selected. Reopen the correct private conversation and try again.");
+    }
+    const payload = {
+      text,
+      client_response_id: clientResponseId,
+      recipient_user_id: isOwner ? activePeerUserId : undefined,
+      supply_product_id: isOwner && supplyProductId ? supplyProductId : undefined,
+      supply_shop_id: isOwner && supplyShopId ? supplyShopId : undefined,
+      show_sender_photo: false,
+    };
+    try {
+      return await createMarketplaceRequestResponse(requestId, payload);
+    } catch {
+      return createMarketplaceRequestResponse(requestId, payload);
+    }
+  }
 
   useEffect(() => {
     if (!tradeContextAvailable) return;
@@ -715,22 +751,41 @@ export default function DemandResponsePanel({
     if (recordingAgreementTradeId) return;
     setRecordingAgreementTradeId(agreement.tradeId);
     setError("");
+    let decisionSaved = false;
     try {
       const accepted = decision === "accept";
-      await addProtectedTradeEvent(agreement.tradeId, {
-        event_type: accepted ? "terms.agreed" : "terms.amendment_requested",
-        note: accepted
-          ? "Buyer accepted the seller's Trade Record agreement."
-          : "Buyer requested changes to the Trade Record agreement in the conversation.",
-        meta: { source: "demand_box_conversation", request_id: requestId },
-      });
-      await createMarketplaceRequestResponse(requestId, {
-        text: accepted
+      const eventType = accepted ? "terms.agreed" : "terms.amendment_requested";
+      const expectedStatus = accepted ? "agreed" : "amendment_requested";
+      try {
+        await addProtectedTradeEvent(agreement.tradeId, {
+          event_type: eventType,
+          note: accepted
+            ? "Buyer accepted the seller's Trade Record agreement."
+            : "Buyer requested changes to the Trade Record agreement in the conversation.",
+          meta: { source: "demand_box_conversation", request_id: requestId },
+        });
+      } catch (eventError) {
+        const items = await listProtectedTrades({ limit: 50 });
+        setProtectedTrades(Array.isArray(items) ? items : []);
+        const currentTrade = items.find(
+          (trade) => Number(trade.id || 0) === agreement.tradeId
+        );
+        if (String(currentTrade?.status || "").toLowerCase() !== expectedStatus) {
+          throw eventError;
+        }
+      }
+      decisionSaved = true;
+      await createTradeConversationResponse(
+        accepted
           ? `Trade Record accepted: ${agreement.tradeCode}`
           : `Changes requested for Trade Record: ${agreement.tradeCode}`,
-        client_response_id: clientKey("demand-protected-trade-decision"),
-        show_sender_photo: false,
-      });
+        stableTradeConversationKey(
+          "demand-protected-trade-decision",
+          requestId,
+          agreement.tradeId,
+          eventType
+        )
+      );
       if (!accepted) {
         setText(`Please amend Trade Record ${agreement.tradeCode}: `);
         window.requestAnimationFrame(() => textareaRef.current?.focus());
@@ -741,7 +796,11 @@ export default function DemandResponsePanel({
       setProtectedTrades(Array.isArray(items) ? items : []);
       await load();
     } catch (err: any) {
-      setError(String(err?.message || "Trade Record decision could not be recorded."));
+      setError(
+        decisionSaved
+          ? "Your Trade Record decision was saved, but its conversation update could not be completed. Do not create another agreement; reopen this conversation and retry the same action."
+          : String(err?.message || "Trade Record decision could not be recorded.")
+      );
     } finally {
       setRecordingAgreementTradeId(0);
     }
@@ -756,23 +815,46 @@ export default function DemandResponsePanel({
     if (!tradeId || recordingAgreementTradeId) return;
     setRecordingAgreementTradeId(tradeId);
     setError("");
+    let stageSaved = false;
     try {
-      await addProtectedTradeEvent(tradeId, {
-        event_type: eventType,
-        note,
-        meta: { source: "demand_box_conversation", request_id: requestId },
-      });
-      await createMarketplaceRequestResponse(requestId, {
-        text: conversationText,
-        client_response_id: clientKey("demand-protected-trade-stage"),
-        show_sender_photo: false,
-      });
+      const expectedStatus = eventType === "payment.claimed" ? "payment_claimed" : "payment_received";
+      const expectedPaymentStatus = eventType === "payment.claimed" ? "claimed" : "seller_confirmed_received";
+      try {
+        await addProtectedTradeEvent(tradeId, {
+          event_type: eventType,
+          note,
+          meta: { source: "demand_box_conversation", request_id: requestId },
+        });
+      } catch (eventError) {
+        const items = await listProtectedTrades({ limit: 50 });
+        setProtectedTrades(Array.isArray(items) ? items : []);
+        const currentTrade = items.find((trade) => Number(trade.id || 0) === tradeId);
+        const currentStatus = String(currentTrade?.status || "").toLowerCase();
+        const currentPaymentStatus = String(currentTrade?.payment_status || "").toLowerCase();
+        if (currentStatus !== expectedStatus && currentPaymentStatus !== expectedPaymentStatus) {
+          throw eventError;
+        }
+      }
+      stageSaved = true;
+      await createTradeConversationResponse(
+        conversationText,
+        stableTradeConversationKey(
+          "demand-protected-trade-stage",
+          requestId,
+          tradeId,
+          eventType
+        )
+      );
       const items = await listProtectedTrades({ limit: 50 });
       setProtectedTrades(Array.isArray(items) ? items : []);
       stickToLatestRef.current = true;
       await load();
     } catch (err: any) {
-      setError(String(err?.message || "Trade Record step could not be recorded."));
+      setError(
+        stageSaved
+          ? "This Trade Record step was saved, but its conversation update could not be completed. Do not repeat a different payment action; reopen this conversation and retry the same step."
+          : String(err?.message || "Trade Record step could not be recorded.")
+      );
     } finally {
       setRecordingAgreementTradeId(0);
     }
