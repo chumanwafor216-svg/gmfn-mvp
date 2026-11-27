@@ -249,11 +249,14 @@ For every coding task:
    - behavior changed
    - remaining risks or unknowns
 8. Update `docs/HANDOFF_NOTES.md` after substantial work so the next session can resume without depending on chat history.
-9. During active pilot testing, commit and push completed fixes unless the product owner explicitly says not to publish yet. If the worktree contains unrelated changes, stage only the files that belong to the completed fix and report the pushed branch/commit.
+9. During active pilot testing, commit successful jobs locally, but do not push, promote, or deploy each job independently. Accumulate a coherent batch of completed jobs, run the relevant checks against the combined batch, and publish only when the product owner says that batch is ready. If the worktree contains unrelated changes, stage only the files that belong to the approved batch and report the pushed branch/commit.
 10. Active pilot deploy protocol:
-   - after a verified fix is committed, push the working branch and promote the same commit to `main`;
+   - deploy only a validated batch after explicit product-owner approval; a production outage or urgent security repair is the only default exception;
+   - push the working branch and promote the same verified batch commit to `main`;
    - treat `main` as the Render deployment branch;
-   - verify the `Trigger Render Deploy` GitHub Actions run after the `main` push;
+   - manually dispatch `Trigger Render Deploy` once for that exact commit; a `main` push alone must not trigger Render;
+   - reuse an active or live deployment for the same commit and never invoke both the frontend deploy hook and Render API path in one workflow run;
+   - verify the single `Trigger Render Deploy` GitHub Actions run and its exact commit SHA;
    - if GitHub does not have `RENDER_FRONTEND_DEPLOY_HOOK_URL` or `RENDER_API_KEY`, trigger the frontend Render deploy hook out-of-band when the product owner provides it and report the Render deploy id;
    - never commit Render deploy hook URLs, API keys, or other deployment secrets into the repository;
    - do not claim Render deployed unless the GitHub workflow accepted a deploy hook/API request, Render auto-deploy is confirmed, or Render returned a deploy id.

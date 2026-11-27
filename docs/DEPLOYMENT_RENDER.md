@@ -109,10 +109,14 @@ The frontend service is configured to:
 
 ## 4.1 Pilot deploy trigger rule
 
-During the live pilot, every verified fix must be pushed to `main`.
+During the live pilot, verified jobs accumulate into a coherent release batch.
+Do not push or deploy each successful job independently. After the combined
+batch passes its relevant checks, the product owner must explicitly approve it
+for publication before it is promoted to `main` or sent to Render.
 
 The repo also includes `.github/workflows/render-deploy.yml` so GitHub can
-trigger Render directly after a `main` push or from a manual workflow dispatch.
+trigger Render from a manual workflow dispatch. A `main` push alone does not
+trigger this workflow and must not be reported as a deployment.
 This workflow does not store Render credentials in code. It expects these
 GitHub repository secrets:
 
@@ -187,21 +191,29 @@ before asking for phone retesting.
 
 ## 4.2 Active pilot deploy protocol
 
-For the active pilot, every completed verified fix follows this protocol unless
-the product owner explicitly says not to publish:
+For the active pilot, completed jobs follow this batch release protocol:
 
-1. Commit the completed fix locally.
-2. Push the working branch.
-3. Fast-forward `main` to the same verified commit.
-4. Confirm that GitHub Actions started `Trigger Render Deploy` for the `main`
-   push.
-5. Confirm one of these deployment evidence points:
-   - `Trigger frontend deploy hook` completed successfully;
-   - `Trigger frontend deploy through Render API` completed successfully;
+1. Commit each successful job locally without triggering Render.
+2. Accumulate a coherent batch and exclude failed, incomplete, or unverified
+   jobs.
+3. Run the relevant checks against the final combined batch.
+4. Obtain explicit product-owner approval to publish that batch.
+5. Push the working branch and fast-forward `main` to the same verified batch
+   commit.
+6. Manually dispatch `Trigger Render Deploy` exactly once for that commit SHA.
+7. Confirm one of these deployment evidence points:
+   - `Trigger frontend deploy hook fallback` completed successfully;
+   - `Reuse or trigger exact frontend deploy through Render API` completed
+     successfully;
    - Render auto-deploy is confirmed in the Render dashboard;
    - an owner-provided Render deploy hook was triggered out of band and returned
      a deploy id.
-6. Report the branch, commit SHA, GitHub Actions run, and Render deploy evidence.
+8. Report the branch, commit SHA, GitHub Actions run, and Render deploy evidence.
+
+An urgent production outage or security repair may bypass the accumulation
+wait, but not validation, owner approval, exact-SHA deployment, or evidence.
+Never start a second deploy merely because the workflow was dispatched again;
+reuse an active or live deployment for the same SHA.
 
 Never commit Render deploy hook URLs, API keys, or other deployment credentials
 to this repository. If a deploy hook is shared in chat for immediate pilot

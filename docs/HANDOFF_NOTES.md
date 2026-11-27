@@ -1,5 +1,18 @@
 # Active Handoff Notes
 
+## Batch-first deployment is now mandatory - 2026-11-27
+
+- Successful jobs are committed and accumulated locally; they are not pushed,
+  promoted, or deployed one by one.
+- A coherent combined batch must pass its relevant checks and receive explicit
+  product-owner approval before promotion to `main`.
+- `Trigger Render Deploy` remains manual-only and is dispatched once for the
+  final batch SHA. Same-SHA active/live deployments are reused, and the deploy
+  hook remains fallback-only to the Render API path.
+- Only an urgent production outage or security repair may bypass the batch
+  accumulation wait. Validation, owner approval, exact-SHA deployment, and
+  deployment evidence remain mandatory.
+
 ## Render frontend duplicate-trigger fault repaired - 2026-11-27
 
 - The manual `Trigger Render Deploy` workflow previously ran both the frontend

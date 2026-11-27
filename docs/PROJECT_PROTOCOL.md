@@ -463,6 +463,12 @@ The original phone flow should currently be treated as the reference point for p
 During the active pilot, deployment must be intentional rather than automatic.
 The current pipeline-saving posture is now **batch-first / push-last**:
 
+- A successful job is a scoped change whose relevant checks pass and which has
+  no known release-blocking regression. One successful job does not, by itself,
+  authorise a GitHub push or Render deployment.
+- Successful jobs must accumulate into a coherent release batch. Run the
+  relevant combined checks against the final batch, then obtain explicit
+  product-owner approval before publishing it.
 - Render frontend Auto-Deploy is turned off in the Render dashboard.
 - `.github/workflows/render-deploy.yml` must stay manual-only
   (`workflow_dispatch`) and must not regain a `push` trigger unless the product
@@ -480,6 +486,12 @@ The current pipeline-saving posture is now **batch-first / push-last**:
   work. Push only once the product owner explicitly says the current batch is
   ready to publish.
 - Deploy only when the product owner says the current batch should go live.
+- Dispatch one Render workflow for the final batch SHA. Repeated dispatches for
+  the same SHA must reuse an active or live deploy, and the frontend hook and
+  Render API trigger must never both run in the same workflow execution.
+- An urgent production outage or security repair may ship without waiting for
+  a larger batch, but it still requires validation, explicit owner approval,
+  one exact-SHA deployment request, and post-deploy evidence.
 - If Render credits/minutes are exhausted or Render is unavailable, continue
   local implementation and verification. Do not spend time trying repeated
   deploys unless the owner explicitly asks for a deploy attempt.
