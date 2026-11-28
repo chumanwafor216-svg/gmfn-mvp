@@ -486,8 +486,8 @@ assertContains(
 
 assertContains(
   'frontend/tools/smoke-spotlight-owner-visibility.mjs',
-  /testCanonicalRefreshFailureClearsConsumedSpotlight[^]*?transient refresh outage kept a consumed Spotlight painted[^]*?canonicalCalls !== 5[^]*?qualifyCalls !== 1[^]*?impressionCalls !== 1/,
-  'The phone smoke must prove a transient canonical outage clears a consumed occurrence while bounded retries cannot alter accounting.'
+  /testCanonicalRefreshFailureClearsConsumedSpotlight[^]*?A transient refresh outage erased a still-current presentation[^]*?canonicalCalls !== 6[^]*?canonicalFailuresRemaining !== 0[^]*?qualifyCalls !== 1[^]*?impressionCalls !== 1/,
+  'The phone smoke must prove a transient canonical outage preserves a still-current presentation during bounded retry, then clears it without altering accounting.'
 );
 
 assertContains(
@@ -580,8 +580,8 @@ assertContains(
 
 assertContains(
   'frontend/tools/smoke-spotlight-owner-visibility.mjs',
-  /testDuplicateCanonicalRefillUsesCooldown[^]*?waitForTimeout\(8_000\)[^]*?consumed Spotlight remained painted[^]*?canonicalCalls !== 2[^]*?qualifyCalls !== 1/,
-  'Focused browser coverage must prove duplicate refill cooldown removes the consumed occurrence without duplicating accounting.'
+  /testDuplicateCanonicalRefillUsesCooldown[^]*?waitForTimeout\(8_000\)[^]*?Duplicate-refill cooldown did not retain the still-authorised frame without replay[^]*?canonicalCalls !== 2[^]*?qualifyCalls !== 1[^]*?impressionCalls !== 1/,
+  'Focused browser coverage must prove duplicate refill cooldown retains the still-authorised frame without replay or duplicate accounting.'
 );
 
 assertContains(

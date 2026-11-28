@@ -501,7 +501,7 @@ assertShopContains(
 );
 
 assertShopContains(
-  /setSpotlightVideoFile\(prepared\.file\);\s*setSpotlightVideoDurationSeconds\(prepared\.durationSeconds \?\? null\);\s*setSpotlightPublishFeedback\(null\);\s*if \(prepared\.message\)/,
+  /async function handleSpotlightVideoPicked\(file: File \| null\)[\s\S]*?setSpotlightVideoFile\(prepared\.file\);\s*setSpotlightVideoDurationSeconds\(prepared\.durationSeconds \?\? null\);\s*setSpotlightPublishFeedback\(null\);(?:(?!setSpotlightFlowStep\("preview"\))[\s\S])*?async function prepareSpotlightNaturalFinish/,
   "Picking a Spotlight video must keep the owner in the simple publisher until they tap Preview."
 );
 assertShopContains(
