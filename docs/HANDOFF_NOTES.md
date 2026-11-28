@@ -7944,3 +7944,10 @@ under `docs/` or `docs/archive/`, then link that file here.
 - The broad protected-button freeze still reports the same baseline static findings already present on `origin/main`: smooth post-action DemandBox scroll calls, Marketplace fixed-card overscroll, DemandBox raw reveal expectation and raw `VoiceNoteRecorder` buttons. Today's Shop Control stale pattern was corrected to assert the real invariant: choosing a video cannot advance to Preview; only the explicit review action can.
 - Spotlight presentation audit labels were reconciled with the current passing smoke contract: a still-authorised frame remains visible during bounded transient retry, duplicate refill does not replay or duplicate accounting, and accounting remains one qualification plus one impression.
 - No production release is claimed by this record. Push, exact-SHA promotion to `main`, GitHub deploy-trigger verification and Render live verification must occur after the release-evidence commit is sealed.
+
+## Release-gate authentication test correction - 2026-11-28
+
+- Main push `3a5d9ab1e47f8e8fb05f1cbf13d0782bf1fecb70` was not sent to Render because GitHub backend run `46088034816` correctly failed the successful-jobs-first gate: PostgreSQL concurrency passed, while the full suite reported `1 failed, 1894 passed, 36 skipped`.
+- The only failure was the new two-user reauthentication acceptance test. The protected route already required `get_current_user`; the test removed its override and then encountered the intentional development-mode seeded-user fallback, so its supposed signed-out request returned `200` instead of `401`.
+- The test now installs an explicit unauthenticated dependency for the signed-out step, then restores the authorised buyer before checking recovery of the same transaction. No production authentication, route, permission or commerce behavior changed.
+- Verification after correction: exact failed test `1 passed`; focused commerce backend suite `133 passed`. The successor must pass the complete GitHub gate before any Render trigger.

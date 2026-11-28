@@ -1687,6 +1687,9 @@ def test_spotlight_purchase_two_user_acceptance_recovers_same_transaction_after_
         )
         db.commit()
 
+    def require_sign_in():
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
     selected_user = {"value": _fake_current_user()}
     app.dependency_overrides[get_current_user] = lambda: selected_user["value"]
     purchase_payload = {
@@ -1790,9 +1793,9 @@ def test_spotlight_purchase_two_user_acceptance_recovers_same_transaction_after_
         assert payment_payload["direct_to_seller"] is True
         assert payment_payload["automatic_bank_reconciliation"] is False
 
-        app.dependency_overrides.pop(get_current_user, None)
+        app.dependency_overrides[get_current_user] = require_sign_in
         signed_out = client.get(f"/protected-trades/{trade_id}")
-        assert signed_out.status_code in {401, 403}
+        assert signed_out.status_code == 401
 
         app.dependency_overrides[get_current_user] = lambda: selected_user["value"]
         selected_user["value"] = _fake_current_user()
